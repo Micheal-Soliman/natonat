@@ -1,26 +1,110 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-montserrat);
+  --font-arabic: var(--font-lama);
+  
+  /* Brand Colors */
+  --color-brand-dark: #0F1A26;
+  --color-brand-gold: #EEBC3F;
+  --color-brand-cream: #F1EBE3;
+  --color-brand-black: #000000;
+  
+  /* Secondary Colors */
+  --color-brand-brown: #4B1F1F;
+  --color-brand-chocolate: #5A3E2C;
+  --color-brand-copper: #7C4C2B;
+  --color-brand-sand: #D1B897;
+  
+  /* Gradients */
+  --color-gradient-navy-start: #364353;
+  --color-gradient-navy-end: #0F1A26;
+  --color-gradient-gold-start: #A08028;
+  --color-gradient-gold-end: #F0C14A;
+  --color-gradient-rose-start: #A04B4A;
+  --color-gradient-rose-end: #4B1F1F;
+  --color-gradient-brown-start: #472608;
+  --color-gradient-brown-end: #7C4C2B;
+}
+
+:root {
+  --background: #F1EBE3;
+  --foreground: #0F1A26;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #0F1A26;
+    --foreground: #F1EBE3;
   }
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  letter-spacing: -0.01em;
+}
+
+/* Fashion-forward typography refinements */
+h1, h2, h3, h4 {
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+
+/* Smooth transitions for interactive elements */
+a, button {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Glassmorphism utility */
+.glass {
+  background: rgba(241, 235, 227, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Fashion gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #EEBC3F 0%, #F0C14A 50%, #A08028 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Smooth image zoom */
+.image-zoom {
+  transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.image-zoom:hover {
+  transform: scale(1.05);
+}
+
+/* Fashion underline effect */
+.fashion-link {
+  position: relative;
+}
+
+.fashion-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: #EEBC3F;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fashion-link:hover::after {
+  width: 100%;
 }
