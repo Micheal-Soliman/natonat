@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
@@ -57,6 +58,19 @@ function getTotalPrice(price: number, variants: GroupedItem['variants']) {
 }
 
 export default function CartPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#F1EBE3] flex items-center justify-center">
+      <div className="text-center">
+        <ShoppingBag className="w-12 h-12 text-[#EEBC3F] mx-auto mb-4 animate-pulse" />
+        <p className="text-[#0F1A26]/60">Loading cart...</p>
+      </div>
+    </div>}>
+      <CartContent />
+    </Suspense>
+  );
+}
+
+function CartContent() {
   const { items, removeFromCart, updateQuantity, subtotal } = useCart();
   const groupedItems = groupCartItems(items);
   const shipping = subtotal > 1000 ? 0 : 50;

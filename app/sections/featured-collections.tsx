@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -54,7 +54,7 @@ export function FeaturedCollections() {
           </h2>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8">
+        <div className="grid md:grid-cols-2 gap-4 md:gap-6">
           {collections.map((collection, index) => (
             <Link
               key={collection.title}
@@ -65,32 +65,32 @@ export function FeaturedCollections() {
               style={{ transitionDelay: `${(index + 1) * 150}ms` }}
             >
               {/* Background Image */}
-              <div 
+              <div
                 className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
                 style={{ backgroundImage: `url(${collection.image})` }}
               />
-              
+
               {/* Overlay gradient */}
               <div className={`absolute inset-0 bg-gradient-to-br ${collection.bgColor} opacity-80 transition-all duration-700 group-hover:opacity-0`} />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent transition-all duration-700 group-hover:opacity-0" />
-              
+
               {/* Content */}
-              <div className="absolute inset-0 flex flex-col justify-end p-10">
-                <span 
+              <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-10">
+                <span
                   className="text-xs font-medium tracking-[0.2em] uppercase mb-3 transition-colors duration-300"
                   style={{ color: collection.accent }}
                 >
                   {index === 0 ? 'Essential' : 'Premium Leather'}
                 </span>
-                <h3 className="text-3xl md:text-4xl font-semibold text-white tracking-tight mb-3">
+                <h3 className="text-2xl md:text-3xl lg:text-4xl font-semibold text-white tracking-tight mb-2 md:mb-3">
                   {collection.title}
                 </h3>
-                <p className="text-white/70 mb-6 max-w-xs font-light">
+                <p className="text-white/70 mb-4 md:mb-6 max-w-xs font-light text-sm md:text-base">
                   {collection.description}
                 </p>
-                <span className="inline-flex items-center gap-2 text-white font-medium group-hover:gap-3 transition-all duration-300">
+                <span className="inline-flex items-center gap-2 text-white font-medium group-hover:gap-3 transition-all duration-300 text-sm md:text-base">
                   Explore Collection
-                  <ArrowUpRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-1" />
+                  <ArrowUpRight className="w-4 h-4 md:w-5 md:h-5 transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-1" />
                 </span>
               </div>
 
