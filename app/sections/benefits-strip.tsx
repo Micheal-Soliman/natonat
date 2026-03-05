@@ -75,8 +75,8 @@ export function BenefitsStrip() {
           <div className="h-px bg-gradient-to-r from-[#EEBC3F]/50 via-[#0F1A26]/10 to-transparent mt-8" />
         </div>
 
-        {/* Editorial Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Editorial Grid - Mobile: 1 column */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {benefits.map((benefit, index) => (
             <div
               key={index}
