@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
@@ -31,6 +31,19 @@ const stats = [
 ];
 
 export default function AboutPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#F1EBE3] flex items-center justify-center">
+      <div className="text-center">
+        <Award className="w-12 h-12 text-[#EEBC3F] mx-auto mb-4 animate-pulse" />
+        <p className="text-[#0F1A26]/60">Loading...</p>
+      </div>
+    </div>}>
+      <AboutContent />
+    </Suspense>
+  );
+}
+
+function AboutContent() {
   const [isVisible, setIsVisible] = useState(false);
   const [statsVisible, setStatsVisible] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
