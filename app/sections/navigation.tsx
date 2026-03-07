@@ -79,14 +79,14 @@ export function Navigation() {
         }`}
       >
         <div className={`flex items-center justify-between transition-all duration-700 ${scrolled ? "h-14 px-6" : "h-16 px-8"}`}>
-          {/* Logo */}
+          {/* Logo - Smaller for mobile */}
           <Link href="/" className="flex items-center gap-2 group">
             <img 
               src={scrolled ? '/logo-after.png' : '/logo-before.png'} 
-              width={200} 
-              height={32} 
+              width={120} 
+              height={24} 
               alt="logo" 
-              className="object-contain transition-all duration-500" 
+              className="object-contain transition-all duration-500 w-auto h-6 md:h-8" 
             />
           </Link>
 
@@ -144,11 +144,11 @@ export function Navigation() {
             </Link>
           </div>
 
-          {/* Mobile menu button */}
+          {/* Mobile menu button - Fixed icon colors */}
           <div className="md:hidden flex items-center gap-3">
             <Link href="/cart" className="relative" onClick={() => setMobileMenuOpen(false)}>
               <button className={`w-10 h-10 rounded-full flex items-center justify-center cursor-pointer ${
-                scrolled ? "text-[#0F1A26]" : "text-[#0F1A26]/70 hover:text-[#0F1A26]"
+                scrolled ? "bg-white/10 text-white" : "bg-[#0F1A26]/10 text-[#0F1A26]"
               }`}>
                 <ShoppingBag className="w-5 h-5" />
                 {totalItems > 0 && (
@@ -162,7 +162,7 @@ export function Navigation() {
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className={`w-10 h-10 rounded-full flex items-center justify-center cursor-pointer ${
                 scrolled 
-                  ? "bg-[#0F1A26]/10 text-[#0F1A26]" 
+                  ? "bg-white/10 text-white" 
                   : "bg-[#0F1A26]/10 text-[#0F1A26]"
               }`}
             >

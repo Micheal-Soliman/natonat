@@ -28,9 +28,10 @@ export function Footer() {
   return (
     <footer className="bg-[#0F1A26] text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-12">
+        {/* Main Footer Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12">
           {/* Brand column */}
-          <div className="lg:col-span-2">
+          <div className="col-span-2 lg:col-span-4">
             <Link href="/" className="inline-block">
               <img 
                 src="/logo-after.png" 
@@ -41,9 +42,11 @@ export function Footer() {
             <p className="text-white/60 mt-4 mb-6 max-w-sm">
               Pack smart, travel easy. Premium travel accessories that protect your gear and make it stand out.
             </p>
-            
-            {/* Contact info */}
-            <div className="space-y-3">
+          </div>
+
+          {/* Contact info - Full width row */}
+          <div className="col-span-2 lg:col-span-4">
+            <div className="flex flex-wrap gap-4 md:gap-8">
               <a
                 href="mailto:info@natonat.com"
                 className="flex items-center gap-2 text-white/60 hover:text-[#EEBC3F] transition-colors"
