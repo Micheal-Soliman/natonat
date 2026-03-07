@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { Suspense, useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
@@ -108,6 +108,19 @@ const faqs = [
 ];
 
 export default function FAQsPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#F1EBE3] flex items-center justify-center">
+      <div className="text-center">
+        <HelpCircle className="w-12 h-12 text-[#EEBC3F] mx-auto mb-4 animate-pulse" />
+        <p className="text-[#0F1A26]/60">Loading...</p>
+      </div>
+    </div>}>
+      <FAQsContent />
+    </Suspense>
+  );
+}
+
+function FAQsContent() {
   const [activeCategory, setActiveCategory] = useState("all");
   const [openItems, setOpenItems] = useState<number[]>([]);
   const [isVisible, setIsVisible] = useState(false);
