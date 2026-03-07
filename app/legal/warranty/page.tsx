@@ -1,12 +1,25 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { ChevronRight, Shield, Check, AlertTriangle, Clock, Package, Sparkles, Mail, ArrowRight } from "lucide-react";
 
 export default function WarrantyPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#F1EBE3] flex items-center justify-center">
+      <div className="text-center">
+        <Shield className="w-12 h-12 text-[#EEBC3F] mx-auto mb-4 animate-pulse" />
+        <p className="text-[#0F1A26]/60">Loading...</p>
+      </div>
+    </div>}>
+      <WarrantyContent />
+    </Suspense>
+  );
+}
+
+function WarrantyContent() {
   const [isVisible, setIsVisible] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
