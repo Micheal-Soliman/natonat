@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { toast } from "sonner";
 
 export interface CartItem {
   id: number;
@@ -30,6 +31,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
 
   const addToCart = useCallback((newItem: Omit<CartItem, "quantity"> & { quantity?: number }) => {
+    const qty = newItem.quantity || 1;
+
     setItems((currentItems) => {
       const existingItem = currentItems.find((item) => 
         item.id === newItem.id && item.size === newItem.size && item.color === newItem.color
@@ -43,7 +46,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
         );
       }
 
-      return [...currentItems, { ...newItem, quantity: newItem.quantity || 1 }];
+      return [...currentItems, { ...newItem, quantity: qty }];
+    });
+
+    toast.success(`${newItem.name} added to cart`, {
+      description: `Qty: ${qty}${newItem.size ? ` • Size: ${newItem.size.toUpperCase()}` : ""}`,
+      action: {
+        label: "Size Guide",
+        onClick: () => {
+          window.location.href = "/how-it-works";
+        },
+      },
     });
   }, []);
 

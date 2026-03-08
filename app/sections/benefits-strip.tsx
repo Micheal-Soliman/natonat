@@ -125,11 +125,11 @@ export function BenefitsStrip() {
 
         {/* Bottom Tagline */}
         <div className={`mt-16 flex items-center justify-center gap-4 transition-all duration-1000 delay-700 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
-          <div className="h-px w-16 bg-[#0F1A26]/20" />
-          <span className="text-[#0F1A26]/40 text-xs tracking-[0.4em] uppercase font-light">
+          <div className="h-px w-16 bg-[#0F1A26]/30" />
+          <span className="text-[#0F1A26]/70 text-xs tracking-[0.4em] uppercase font-medium">
             Est. 2024 — Cairo
           </span>
-          <div className="h-px w-16 bg-[#0F1A26]/20" />
+          <div className="h-px w-16 bg-[#0F1A26]/30" />
         </div>
       </div>
     </section>

@@ -38,8 +38,11 @@ export function Hero() {
           Premium Travel Gear
         </p>
 
-        {/* Big bold headline */}
-        <h1 className={`text-7xl md:text-9xl lg:text-[12rem] font-bold leading-none tracking-tighter mb-6 transition-all duration-1000 delay-200 ${loaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+        {/* Big bold headline with logo-matching font */}
+        <h1 
+          className={`text-7xl md:text-9xl lg:text-[12rem] font-light leading-none tracking-[0.15em] mb-6 transition-all duration-1000 delay-200 ${loaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`} 
+          style={{ fontFamily: "'Nexa', 'Montserrat', sans-serif", fontWeight: 300 }}
+        >
           <span className="block text-white">nat<span className="text-[#EEBC3F]">O</span>nat</span>
         </h1>
 

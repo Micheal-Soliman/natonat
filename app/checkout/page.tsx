@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, CreditCard, Truck, Shield, Check, MapPin, Phone, Mail, Building } from "lucide-react";
+import { ArrowLeft, CreditCard, Truck, Shield, Check, MapPin, Phone, Mail, Building, Newspaper } from "lucide-react";
 import { useCart } from "@/app/lib/cart-context";
 
 export default function CheckoutPage() {
@@ -30,6 +30,7 @@ function CheckoutContent() {
     address: "",
     city: "",
     phone: "",
+    newsletter: false,
   });
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -126,6 +127,19 @@ function CheckoutContent() {
                         placeholder="your@email.com"
                       />
                     </div>
+                    {/* Newsletter Subscribe */}
+                    <label className="flex items-center gap-3 p-4 rounded-xl border-2 border-[#EEBC3F]/20 cursor-pointer transition-all hover:bg-[#EEBC3F]/5 hover:border-[#EEBC3F]/40">
+                      <input
+                        type="checkbox"
+                        checked={formData.newsletter}
+                        onChange={(e) => setFormData({ ...formData, newsletter: e.target.checked })}
+                        className="w-5 h-5 accent-[#EEBC3F] rounded"
+                      />
+                      <div className="flex items-center gap-2">
+                        <Newspaper className="w-4 h-4 text-[#EEBC3F]" />
+                        <span className="text-sm font-medium text-[#0F1A26]">Subscribe to our newsletter for exclusive offers & updates</span>
+                      </div>
+                    </label>
                   </div>
                 </div>
 

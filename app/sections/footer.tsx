@@ -28,10 +28,10 @@ export function Footer() {
   return (
     <footer className="bg-[#0F1A26] text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        {/* Main Footer Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12">
+        {/* Main Footer - Desktop: 1 row, Mobile: stacked */}
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-8 lg:gap-12">
           {/* Brand column */}
-          <div className="col-span-2 lg:col-span-4">
+          <div className="lg:w-1/4">
             <Link href="/" className="inline-block">
               <img 
                 src="/logo-after.png" 
@@ -39,31 +39,28 @@ export function Footer() {
                 className="h-8 w-auto object-contain"
               />
             </Link>
-            <p className="text-white/60 mt-4 mb-6 max-w-sm">
+            <p className="text-white/60 mt-4 mb-6 max-w-sm text-sm">
               Pack smart, travel easy. Premium travel accessories that protect your gear and make it stand out.
             </p>
-          </div>
-
-          {/* Contact info - Full width row */}
-          <div className="col-span-2 lg:col-span-4">
-            <div className="flex flex-wrap gap-4 md:gap-8">
+            {/* Contact info */}
+            <div className="flex flex-col gap-2">
               <a
                 href="mailto:info@natonat.com"
-                className="flex items-center gap-2 text-white/60 hover:text-[#EEBC3F] transition-colors"
+                className="flex items-center gap-2 text-white/60 hover:text-[#EEBC3F] transition-colors text-sm"
               >
                 <Mail className="w-4 h-4" />
-                <span className="text-sm">info@natonat.com</span>
+                <span>info@natonat.com</span>
               </a>
               <a
                 href="tel:+201000000061"
-                className="flex items-center gap-2 text-white/60 hover:text-[#EEBC3F] transition-colors"
+                className="flex items-center gap-2 text-white/60 hover:text-[#EEBC3F] transition-colors text-sm"
               >
                 <Phone className="w-4 h-4" />
-                <span className="text-sm">+20 100 000 0061</span>
+                <span>+20 100 000 0061</span>
               </a>
-              <div className="flex items-center gap-2 text-white/60">
+              <div className="flex items-center gap-2 text-white/60 text-sm">
                 <MapPin className="w-4 h-4" />
-                <span className="text-sm">Cairo, Egypt</span>
+                <span>Cairo, Egypt</span>
               </div>
             </div>
           </div>
@@ -73,7 +70,7 @@ export function Footer() {
             <h3 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">
               Shop
             </h3>
-            <ul className="space-y-3">
+            <ul className="space-y-2">
               {footerLinks.shop.map((link) => (
                 <li key={link.href}>
                   <Link
@@ -92,7 +89,7 @@ export function Footer() {
             <h3 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">
               Company
             </h3>
-            <ul className="space-y-3">
+            <ul className="space-y-2">
               {footerLinks.company.map((link) => (
                 <li key={link.href}>
                   <Link
@@ -111,7 +108,7 @@ export function Footer() {
             <h3 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">
               Legal
             </h3>
-            <ul className="space-y-3">
+            <ul className="space-y-2">
               {footerLinks.legal.map((link) => (
                 <li key={link.href}>
                   <Link
@@ -151,6 +148,16 @@ export function Footer() {
                 className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:bg-[#EEBC3F] hover:text-[#0F1A26] transition-all"
               >
                 <Facebook className="w-5 h-5" />
+              </a>
+              <a
+                href="https://tiktok.com/@natonat"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:bg-[#EEBC3F] hover:text-[#0F1A26] transition-all"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+                </svg>
               </a>
               <a
                 href="https://wa.me/201000000061"

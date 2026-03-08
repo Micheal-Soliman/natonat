@@ -57,7 +57,7 @@ function WarrantyContent() {
               Customer Service
             </span>
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold text-white mb-8 tracking-tight">
-              <span className="text-[#EEBC3F]">6-Month</span> Warranty
+              <span className="text-[#EEBC3F]">1-Year</span> Warranty
             </h1>
             <p className="text-xl md:text-2xl text-white/50 max-w-3xl mx-auto font-light leading-relaxed">
               Our commitment to quality and your satisfaction
@@ -74,7 +74,7 @@ function WarrantyContent() {
               </div>
               <div>
                 <p className="text-sm text-[#0F1A26]/50">Limited Warranty</p>
-                <p className="text-2xl font-bold text-[#0F1A26]">6 Months</p>
+                <p className="text-2xl font-bold text-[#0F1A26]">1 Year</p>
               </div>
             </div>
           </div>
@@ -89,7 +89,7 @@ function WarrantyContent() {
             </div>
             <div className="bg-white rounded-3xl p-8 border border-[#0F1A26]/5 shadow-lg shadow-[#0F1A26]/5">
               <p className="text-[#0F1A26]/70 mb-6 text-lg">
-                All natOnat products come with a <strong className="text-[#0F1A26]">6-month limited warranty</strong> against manufacturing defects from the date of purchase.
+                All natOnat products come with a <strong className="text-[#0F1A26]">1-year limited warranty</strong> against manufacturing defects from the date of purchase.
               </p>
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="bg-green-50 rounded-2xl p-6 border border-green-100">

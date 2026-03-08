@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
-import { Ruler, Package, Check, Shield, Sparkles, Eye, HelpCircle, ArrowRight, Calculator, ChevronDown, ChevronUp, Luggage } from "lucide-react";
+import { Ruler, Package, Check, Shield, Sparkles, Eye, HelpCircle, ArrowRight, Calculator, ChevronDown, ChevronUp, Luggage, Play } from "lucide-react";
 
 const steps = [
   {
@@ -90,9 +90,9 @@ function SizeCalculator() {
     const inches = unit === "cm" ? height / 2.54 : height;
     
     let recommended = null;
-    if (inches >= 18 && inches <= 21) recommended = sizes[0];
-    else if (inches >= 22 && inches <= 25) recommended = sizes[1];
-    else if (inches >= 26 && inches <= 29) recommended = sizes[2];
+    if (inches >= 18 && inches < 22) recommended = sizes[0];
+    else if (inches >= 22 && inches < 26) recommended = sizes[1];
+    else if (inches >= 26 && inches < 30) recommended = sizes[2];
     else if (inches >= 30 && inches <= 32) recommended = sizes[3];
     
     setTimeout(() => {
@@ -194,7 +194,7 @@ function SizeCalculator() {
               <p className="text-white/60 text-sm mt-1">{result.height} / {result.cm}</p>
             </div>
             <Button asChild className="bg-[#EEBC3F] text-[#0F1A26] hover:bg-white rounded-xl">
-              <Link href={`/shop?category=luggage-covers&size=${result.size.toLowerCase()}`}>
+              <Link href={`/shop?category=luggage-covers&size=${result.size}`}>
                 Shop
               </Link>
             </Button>
@@ -334,44 +334,60 @@ function HowItWorksContent() {
           </div>
         </div>
 
-        {/* How to Measure - Visual Guide */}
+        {/* Video/Image Measurement Guide - Enhanced */}
         <div className="bg-white py-20">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="bg-[#0F1A26] rounded-3xl p-8 md:p-12">
-              <div className="grid md:grid-cols-2 gap-8 items-center">
-                <div>
-                  <span className="text-[#EEBC3F] text-xs font-semibold tracking-[0.3em] uppercase">Measurement Guide</span>
-                  <h3 className="text-2xl md:text-3xl font-bold text-white mt-3 mb-6">How to Measure Your Suitcase</h3>
-                  <div className="space-y-4">
-                    {[
-                      "Stand your suitcase upright on a flat surface",
-                      "Measure from floor to top (excluding wheels)",
-                      "Match your measurement to our size chart",
-                      "Order your perfect cover"
-                    ].map((step, index) => (
-                      <div key={index} className="flex items-start gap-4">
-                        <div className="w-8 h-8 rounded-full bg-[#EEBC3F] text-[#0F1A26] flex items-center justify-center text-sm font-bold flex-shrink-0">
-                          {index + 1}
-                        </div>
-                        <p className="text-white/70">{step}</p>
-                      </div>
-                    ))}
+            <div className="text-center mb-12">
+              <span className="text-[#EEBC3F] text-xs font-semibold tracking-[0.3em] uppercase">Video Guide</span>
+              <h2 className="text-3xl md:text-4xl font-bold text-[#0F1A26] mt-3">Watch How to Measure</h2>
+              <p className="text-[#0F1A26]/50 mt-3 max-w-xl mx-auto">
+                See exactly how to measure your suitcase with our step-by-step video guide
+              </p>
+            </div>
+            <div className="bg-[#0F1A26] rounded-3xl overflow-hidden">
+              {/* Video/Image Placeholder */}
+              <div className="aspect-video relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-[#1a2a3a] to-[#0F1A26]" />
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-8">
+                  <div className="w-24 h-24 rounded-full bg-[#EEBC3F]/20 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform cursor-pointer hover:bg-[#EEBC3F]/30">
+                    <Play className="w-10 h-10 text-[#EEBC3F] ml-1" />
                   </div>
+                  <p className="text-white/80 text-xl font-semibold mb-2">Video Coming Soon</p>
+                  <p className="text-white/50 text-sm max-w-md">
+                    Watch a demonstration of how to properly measure your suitcase height (excluding wheels)
+                  </p>
                 </div>
-                <div className="relative">
-                  <div className="aspect-square bg-white/5 rounded-2xl flex items-center justify-center border border-white/10">
-                    <div className="text-center">
-                      <Luggage className="w-24 h-24 text-[#EEBC3F]/30 mx-auto mb-4" />
-                      <p className="text-white/40 text-sm">Measure height only</p>
-                      <p className="text-[#EEBC3F] text-xs mt-2">Excluding wheels</p>
+                {/* Measurement Tips Overlay */}
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-8">
+                  <div className="flex flex-wrap gap-4 justify-center">
+                    <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2">
+                      <Ruler className="w-4 h-4 text-[#EEBC3F]" />
+                      <span className="text-white text-sm">Measure in cm or inches</span>
+                    </div>
+                    <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2">
+                      <Luggage className="w-4 h-4 text-[#EEBC3F]" />
+                      <span className="text-white text-sm">Exclude wheels & handles</span>
                     </div>
                   </div>
-                  {/* Measurement indicator */}
-                  <div className="absolute top-4 bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center">
-                    <div className="w-px flex-1 bg-[#EEBC3F]/50" />
-                    <span className="text-[#EEBC3F] text-xs font-medium my-2 bg-[#0F1A26] px-2">Height</span>
-                    <div className="w-px flex-1 bg-[#EEBC3F]/50" />
-                  </div>
+                </div>
+              </div>
+              {/* CM to Inches Conversion Table */}
+              <div className="p-8 border-t border-white/10">
+                <h3 className="text-xl font-bold text-white mb-6 text-center">Size Conversion Chart</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {[
+                    { size: "S", inches: "18-21\"", cm: "46-53 cm", type: "Carry-on" },
+                    { size: "M", inches: "22-25\"", cm: "56-64 cm", type: "Medium" },
+                    { size: "L", inches: "26-29\"", cm: "66-74 cm", type: "Large" },
+                    { size: "XL", inches: "30-32\"", cm: "76-81 cm", type: "Extra Large" },
+                  ].map((item) => (
+                    <div key={item.size} className="bg-white/5 rounded-xl p-4 text-center border border-white/10">
+                      <span className="text-2xl font-bold text-[#EEBC3F]">{item.size}</span>
+                      <p className="text-white font-semibold mt-1">{item.inches}</p>
+                      <p className="text-[#EEBC3F] text-sm">{item.cm}</p>
+                      <p className="text-white/40 text-xs mt-1">{item.type}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>

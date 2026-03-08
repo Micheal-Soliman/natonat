@@ -44,9 +44,6 @@ function ShippingContent() {
     { region: "Cairo & Giza", standard: "Free (500+ EGP)", express: "60 EGP", time: "1-2 business days" },
     { region: "Alexandria", standard: "Free (500+ EGP)", express: "80 EGP", time: "2-3 business days" },
     { region: "Other Egypt Governorates", standard: "50 EGP", express: "100 EGP", time: "3-5 business days" },
-    { region: "Saudi Arabia", standard: "150 SAR", express: "250 SAR", time: "5-7 business days" },
-    { region: "UAE", standard: "50 AED", express: "120 AED", time: "5-7 business days" },
-    { region: "Other GCC Countries", standard: "Contact us", express: "Contact us", time: "7-14 business days" },
   ];
 
   const returnSteps = [
@@ -84,7 +81,7 @@ function ShippingContent() {
               </div>
               <div>
                 <h2 className="text-3xl font-bold text-[#0F1A26]">Shipping Information</h2>
-                <p className="text-[#0F1A26]/60">Fast delivery across Egypt and GCC</p>
+                <p className="text-[#0F1A26]/60">Fast delivery across Egypt</p>
               </div>
             </div>
 

@@ -113,7 +113,7 @@ export function ShopMegaMenu({ scrolled }: ShopMegaMenuProps) {
 
       {/* Mega Menu Dropdown - Wide Horizontal Layout */}
       <div 
-        className={`absolute top-full left-1/2 -translate-x-1/2 mt-4 w-[1000px] max-w-[95vw] transition-all duration-300 z-[100] ${
+        className={`absolute top-full left-1/2 -translate-x-1/2 mt-4 w-[1000px] max-w-[calc(100vw-2rem)] mx-4 transition-all duration-300 z-[100] ${
           isOpen 
             ? "opacity-100 translate-y-0 pointer-events-auto" 
             : "opacity-0 -translate-y-2 pointer-events-none"

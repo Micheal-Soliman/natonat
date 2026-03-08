@@ -57,6 +57,7 @@ export function Navigation() {
   const isActive = (href: string) => pathname === href || pathname?.startsWith(`${href}/`);
 
   const otherNavLinks = [
+    { href: "/shop?sort=best-sellers", label: "Best Sellers" },
     { href: "/how-it-works", label: "Size Guide" },
     { href: "/about", label: "About" },
     { href: "/faqs", label: "FAQs" },

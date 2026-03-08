@@ -3,6 +3,7 @@
 
 export interface Product {
   id: number;
+  slug: string;
   name: string;
   category: string;
   size: string | null;
@@ -21,6 +22,7 @@ export const products: Product[] = [
   // Luggage Covers
   { 
     id: 1, 
+    slug: "geo-print-cover",
     name: "Geo Print Cover", 
     category: "luggage-covers", 
     size: "s", 
@@ -34,6 +36,7 @@ export const products: Product[] = [
   },
   { 
     id: 2, 
+    slug: "floral-design-cover",
     name: "Floral Design Cover", 
     category: "luggage-covers", 
     size: "m", 
@@ -47,6 +50,7 @@ export const products: Product[] = [
   },
   { 
     id: 4, 
+    slug: "abstract-art-cover",
     name: "Abstract Art Cover", 
     category: "luggage-covers", 
     size: "l", 
@@ -60,6 +64,7 @@ export const products: Product[] = [
   },
   { 
     id: 6, 
+    slug: "minimal-cover-xl",
     name: "Minimal Cover - XL", 
     category: "luggage-covers", 
     size: "xl", 
@@ -73,6 +78,7 @@ export const products: Product[] = [
   },
   { 
     id: 7, 
+    slug: "airplane-pattern-cover",
     name: "Airplane Pattern Cover", 
     category: "luggage-covers", 
     size: "m", 
@@ -86,6 +92,7 @@ export const products: Product[] = [
   },
   { 
     id: 8, 
+    slug: "cartoon-animals-cover",
     name: "Cartoon Animals Cover", 
     category: "luggage-covers", 
     size: "s", 
@@ -99,6 +106,7 @@ export const products: Product[] = [
   },
   { 
     id: 11, 
+    slug: "tropical-print-cover",
     name: "Tropical Print Cover", 
     category: "luggage-covers", 
     size: "l", 
@@ -112,6 +120,7 @@ export const products: Product[] = [
   },
   { 
     id: 12, 
+    slug: "world-map-cover",
     name: "World Map Cover", 
     category: "luggage-covers", 
     size: "m", 
@@ -127,6 +136,7 @@ export const products: Product[] = [
   // Passport Wallets
   { 
     id: 3, 
+    slug: "classic-leather-wallet",
     name: "Classic Leather Wallet", 
     category: "passport-wallets", 
     size: null, 
@@ -142,6 +152,7 @@ export const products: Product[] = [
   },
   { 
     id: 9, 
+    slug: "rfid-premium-wallet",
     name: "RFID Premium Wallet", 
     category: "passport-wallets", 
     size: null, 
@@ -157,6 +168,7 @@ export const products: Product[] = [
   },
   { 
     id: 101, 
+    slug: "slim-travel-wallet",
     name: "Slim Travel Wallet", 
     category: "passport-wallets", 
     size: null, 
@@ -172,6 +184,7 @@ export const products: Product[] = [
   },
   { 
     id: 102, 
+    slug: "family-passport-wallet",
     name: "Family Passport Wallet", 
     category: "passport-wallets", 
     size: null, 
@@ -187,6 +200,7 @@ export const products: Product[] = [
   },
   { 
     id: 103, 
+    slug: "deluxe-travel-organizer",
     name: "Deluxe Travel Organizer", 
     category: "passport-wallets", 
     size: null, 
@@ -202,6 +216,7 @@ export const products: Product[] = [
   },
   { 
     id: 104, 
+    slug: "compact-card-holder",
     name: "Compact Card Holder", 
     category: "passport-wallets", 
     size: null, 
@@ -219,6 +234,7 @@ export const products: Product[] = [
   // Travel Sets / Bundles
   { 
     id: 5, 
+    slug: "travel-set-geo",
     name: "Travel Set - Geo", 
     category: "travel-sets", 
     size: "m", 
@@ -232,6 +248,7 @@ export const products: Product[] = [
   },
   { 
     id: 10, 
+    slug: "family-pack",
     name: "Family Pack", 
     category: "travel-sets", 
     size: null, 
@@ -245,6 +262,7 @@ export const products: Product[] = [
   },
   { 
     id: 105, 
+    slug: "solo-traveler-set",
     name: "Solo Traveler Set", 
     category: "travel-sets", 
     size: "m", 
@@ -258,6 +276,7 @@ export const products: Product[] = [
   },
   { 
     id: 106, 
+    slug: "couples-bundle",
     name: "Couple's Bundle", 
     category: "travel-sets", 
     size: "m", 
@@ -274,6 +293,10 @@ export const products: Product[] = [
 // Helper functions
 export const getProductById = (id: number): Product | undefined => {
   return products.find(p => p.id === id);
+};
+
+export const getProductBySlug = (slug: string): Product | undefined => {
+  return products.find(p => p.slug === slug);
 };
 
 export const getProductsByCategory = (category: string): Product[] => {

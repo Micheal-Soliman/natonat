@@ -16,9 +16,11 @@ function ShopContent() {
   const searchParams = useSearchParams();
   const categoryFromUrl = searchParams.get("category") || "all";
   const sizeFromUrl = searchParams.get("size");
+  const sortFromUrl = searchParams.get("sort");
   const [activeCategory, setActiveCategory] = useState(categoryFromUrl);
   const [selectedSizes, setSelectedSizes] = useState<string[]>(sizeFromUrl ? [sizeFromUrl] : []);
   const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
+  const [showBestSellers, setShowBestSellers] = useState(sortFromUrl === "best-sellers");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [hideNav, setHideNav] = useState(false);
@@ -32,12 +34,10 @@ function ShopContent() {
     setActiveCategory(categoryFromUrl);
   }, [categoryFromUrl]);
 
-  // Update selectedSizes when URL changes
+  // Update showBestSellers when URL changes
   useEffect(() => {
-    if (sizeFromUrl) {
-      setSelectedSizes([sizeFromUrl]);
-    }
-  }, [sizeFromUrl]);
+    setShowBestSellers(sortFromUrl === "best-sellers");
+  }, [sortFromUrl]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -70,6 +70,7 @@ function ShopContent() {
   }, []);
 
   const filteredProducts = products.filter((product) => {
+    if (showBestSellers && product.tag !== "Best Seller") return false;
     if (activeCategory !== "all" && product.category !== activeCategory) return false;
     if (selectedSizes.length > 0 && product.size && !selectedSizes.includes(product.size)) return false;
     if (selectedThemes.length > 0 && !selectedThemes.includes(product.theme)) return false;
@@ -82,6 +83,10 @@ function ShopContent() {
     );
   };
 
+  const toggleBestSellers = () => {
+    setShowBestSellers((prev) => !prev);
+  };
+
   const toggleTheme = (themeId: string) => {
     setSelectedThemes((prev) =>
       prev.includes(themeId) ? prev.filter((t) => t !== themeId) : [...prev, themeId]
@@ -91,9 +96,10 @@ function ShopContent() {
   const clearFilters = () => {
     setSelectedSizes([]);
     setSelectedThemes([]);
+    setShowBestSellers(false);
   };
 
-  const activeFiltersCount = selectedSizes.length + selectedThemes.length;
+  const activeFiltersCount = selectedSizes.length + selectedThemes.length + (showBestSellers ? 1 : 0);
 
   // Dynamic header based on category
   const getHeaderContent = () => {
@@ -177,6 +183,30 @@ function ShopContent() {
                       Clear {activeFiltersCount}
                     </button>
                   )}
+                </div>
+
+                {/* Best Seller Filter - Desktop */}
+                <div className="mb-8">
+                  <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">Best Sellers</h3>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <div
+                      className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${
+                        showBestSellers 
+                          ? "bg-[#EEBC3F] border-[#EEBC3F]" 
+                          : "border-[#0F1A26]/20"
+                      }`}
+                      onClick={toggleBestSellers}
+                    >
+                      {showBestSellers && (
+                        <svg className="w-3 h-3 text-[#0F1A26]" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </div>
+                    <span className={`text-sm ${showBestSellers ? "text-[#0F1A26] font-medium" : "text-[#0F1A26]/60"}`}>
+                      Show Best Sellers Only
+                    </span>
+                  </label>
                 </div>
 
                 {/* Size Filter - Clean */}
@@ -278,7 +308,7 @@ function ShopContent() {
                 {filteredProducts.map((product, index) => (
                   <Link
                     key={product.id}
-                    href={`/product/${product.id}`}
+                    href={`/product/${product.slug}`}
                     className={`group transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
                     style={{ transitionDelay: `${index * 50}ms` }}
                   >
@@ -291,7 +321,7 @@ function ShopContent() {
                       />
                       
                       {product.tag && (
-                        <span className={`absolute top-3 left-3 text-[10px] font-semibold tracking-wider uppercase px-2.5 py-1 rounded-full ${
+                        <span className={`absolute top-3 left-3 text-[10px] font-semibold tracking-wider uppercase px-2.5 py-1 rounded-full z-10 ${
                           product.tag === 'Best Seller' ? 'bg-[#EEBC3F] text-[#0F1A26]' :
                           product.tag === 'New' ? 'bg-[#0F1A26] text-white' :
                           product.tag === 'RFID' ? 'bg-[#4B1F1F] text-[#F1EBE3]' :
@@ -300,6 +330,11 @@ function ShopContent() {
                           {product.tag}
                         </span>
                       )}
+                      
+                      {/* Discount Badge - Top Right */}
+                      <span className="absolute top-3 right-3 bg-[#EEBC3F] text-[#1e3a5f] text-sm font-bold px-3 py-1.5 rounded-full z-10 shadow-lg">
+                        -{Math.round((1 - product.price / product.originalPrice) * 100)}%
+                      </span>
                       
                       {/* Hover overlay - Clean */}
                       <div className="absolute inset-0 bg-[#0F1A26]/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
@@ -337,9 +372,11 @@ function ShopContent() {
                       <h3 className="text-[#0F1A26] font-medium text-sm mt-1 mb-1 group-hover:text-[#EEBC3F] transition-colors">
                         {product.name}
                       </h3>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-[#0F1A26] font-semibold">EGP {product.price}</span>
-                        <span className="text-[#0F1A26]/30 text-xs line-through">EGP {product.originalPrice}</span>
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-[#0F1A26] font-bold text-lg">EGP {product.price}</span>
+                          <span className="text-[#0F1A26]/50 text-sm line-through font-medium">EGP {product.originalPrice}</span>
+                        </div>
                       </div>
                     </div>
                   </Link>
@@ -371,6 +408,28 @@ function ShopContent() {
                 <button onClick={() => setMobileFiltersOpen(false)} className="w-8 h-8 rounded-full bg-[#0F1A26]/5 flex items-center justify-center">
                   <X className="w-4 h-4 text-[#0F1A26]" />
                 </button>
+              </div>
+
+              {/* Mobile Best Seller Filter */}
+              <div className="mb-6">
+                <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">Best Sellers</h3>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <div
+                    className={`w-4 h-4 rounded border flex items-center justify-center ${
+                      showBestSellers ? "bg-[#EEBC3F] border-[#EEBC3F]" : "border-[#0F1A26]/20"
+                    }`}
+                    onClick={toggleBestSellers}
+                  >
+                    {showBestSellers && (
+                      <svg className="w-3 h-3 text-[#0F1A26]" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </div>
+                  <span className={`text-sm ${showBestSellers ? "text-[#0F1A26] font-medium" : "text-[#0F1A26]/60"}`}>
+                    Show Best Sellers Only
+                  </span>
+                </label>
               </div>
 
               {/* Mobile Size Filter - Clean */}
