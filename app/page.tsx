@@ -8,16 +8,11 @@ import { TravelSets } from "./sections/travel-sets";
 import { HowItWorks } from "./sections/how-it-works";
 import { SocialProof } from "./sections/social-proof";
 import { Footer } from "./sections/footer";
-import { Sparkles } from "lucide-react";
+import { Loading } from "./components/loading";
 
 export default function Home() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#0a0f14] flex items-center justify-center">
-      <div className="text-center">
-        <Sparkles className="w-12 h-12 text-[#EEBC3F] mx-auto mb-4 animate-pulse" />
-        <p className="text-white/60">Loading...</p>
-      </div>
-    </div>}>
+    <Suspense fallback={<Loading />}>
       <HomeContent />
     </Suspense>
   );

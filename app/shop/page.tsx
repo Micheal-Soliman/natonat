@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { ShoppingBag, Filter, X } from "lucide-react";
 import { products, categories, sizes, themes } from "@/lib/products";
 import { SizeModal } from "@/app/components/size-modal";
+import { Loading } from "@/app/components/loading";
 
 function ShopContent() {
   const { addToCart } = useCart();
@@ -523,7 +524,7 @@ function ShopContent() {
 
 export default function ShopPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#F1EBE3] flex items-center justify-center">Loading...</div>}>
+    <Suspense fallback={<Loading />}>
       <ShopContent />
     </Suspense>
   );

@@ -6,6 +6,7 @@ import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Award, Globe, Users, Target, TrendingUp, Check, Star, MapPin, Package, Heart } from "lucide-react";
+import { Loading } from "@/app/components/loading";
 
 const milestones = [
   { year: "2019", title: "The Beginning", description: "natOnat launched on Amazon with a simple mission: protect luggage in style." },
@@ -32,12 +33,7 @@ const stats = [
 
 export default function AboutPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#F1EBE3] flex items-center justify-center">
-      <div className="text-center">
-        <Award className="w-12 h-12 text-[#EEBC3F] mx-auto mb-4 animate-pulse" />
-        <p className="text-[#0F1A26]/60">Loading...</p>
-      </div>
-    </div>}>
+    <Suspense fallback={<Loading />}>
       <AboutContent />
     </Suspense>
   );

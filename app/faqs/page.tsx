@@ -6,6 +6,7 @@ import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp, HelpCircle, MessageCircle, ArrowUpRight, Search, Sparkles, Shield, Package, Truck, RotateCcw } from "lucide-react";
+import { Loading } from "@/app/components/loading";
 
 const categories = [
   { id: "all", label: "All Questions", icon: Sparkles },
@@ -109,12 +110,7 @@ const faqs = [
 
 export default function FAQsPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#F1EBE3] flex items-center justify-center">
-      <div className="text-center">
-        <HelpCircle className="w-12 h-12 text-[#EEBC3F] mx-auto mb-4 animate-pulse" />
-        <p className="text-[#0F1A26]/60">Loading...</p>
-      </div>
-    </div>}>
+    <Suspense fallback={<Loading />}>
       <FAQsContent />
     </Suspense>
   );

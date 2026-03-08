@@ -65,7 +65,7 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
   return (
     <>
       <Navigation />
-      <main className="min-h-screen bg-[#F1EBE3]" ref={ref}>
+      <main className="min-h-screen bg-[#F1EBE3] overflow-x-hidden" ref={ref}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12">
           {/* Product Navigation - Top */}
           <div className="flex items-center justify-between mb-8">
@@ -116,14 +116,14 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
               >
                 <div className="flex flex-col items-end leading-tight">
                   <span className="text-xs text-[#0F1A26]/50 group-hover:text-white/70">Next</span>
-                  <span className="text-sm font-semibold hidden sm:block">{nextProduct.name}</span>
+                  <span className="text-sm font-semibold hidden md:block">{nextProduct.name}</span>
                 </div>
                 <div className="w-8 h-8 rounded-full bg-[#0F1A26]/5 group-hover:bg-white/20 flex items-center justify-center transition-all">
                   <ChevronRightIcon className="w-5 h-5" />
                 </div>
               </Link>
             ) : (
-              <div className="w-[140px]" /> /* Spacer to maintain layout balance */
+              <div className="hidden sm:block w-[140px]" /> /* Spacer to maintain layout balance - hidden on mobile */
             )}
           </div>
 
@@ -180,67 +180,64 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
             {/* Product Info - Premium */}
             <div className={`lg:pl-8 transition-all duration-700 delay-100 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'}`}>
               {/* Category & Actions */}
-              <div className="flex items-start justify-between mb-6">
-                <div>
+              <div className="flex items-start justify-between mb-4 sm:mb-6">
+                <div className="flex-1 min-w-0">
                   <span className="text-[#EEBC3F] text-xs font-bold tracking-[0.3em] uppercase">{product.type}</span>
-                  <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-[#0F1A26] mt-2 tracking-tight">{product.name}</h1>
+                  <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#0F1A26] mt-1 sm:mt-2 tracking-tight">{product.name}</h1>
                 </div>
-                <div className="flex gap-3">
-                  <button className="w-12 h-12 rounded-full bg-white border border-[#0F1A26]/10 flex items-center justify-center text-[#0F1A26]/40 hover:text-[#EEBC3F] hover:border-[#EEBC3F] transition-all duration-300 hover:shadow-lg hover:scale-110">
-                    <Heart className="w-5 h-5" strokeWidth={1.5} />
+                <div className="flex gap-2 sm:gap-3 ml-4">
+                  <button className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white border border-[#0F1A26]/10 flex items-center justify-center text-[#0F1A26]/40 hover:text-[#EEBC3F] hover:border-[#EEBC3F] transition-all duration-300 hover:shadow-lg hover:scale-110">
+                    <Heart className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={1.5} />
                   </button>
-                  <button className="w-12 h-12 rounded-full bg-white border border-[#0F1A26]/10 flex items-center justify-center text-[#0F1A26]/40 hover:text-[#EEBC3F] hover:border-[#EEBC3F] transition-all duration-300 hover:shadow-lg hover:scale-110">
-                    <Share2 className="w-5 h-5" strokeWidth={1.5} />
+                  <button className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white border border-[#0F1A26]/10 flex items-center justify-center text-[#0F1A26]/40 hover:text-[#EEBC3F] hover:border-[#EEBC3F] transition-all duration-300 hover:shadow-lg hover:scale-110">
+                    <Share2 className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={1.5} />
                   </button>
                 </div>
               </div>
 
               {/* Rating - Premium */}
-              <div className="flex items-center gap-4 mb-8">
-                <div className="flex items-center gap-1 bg-white rounded-full px-4 py-2 border border-[#0F1A26]/5">
+              <div className="flex items-center gap-2 sm:gap-4 mb-6 sm:mb-8 flex-wrap">
+                <div className="flex items-center gap-1 bg-white rounded-full px-3 sm:px-4 py-1.5 sm:py-2 border border-[#0F1A26]/5">
                   {[1, 2, 3, 4, 5].map((star) => (
-                    <Star key={star} className="w-4 h-4 fill-[#EEBC3F] text-[#EEBC3F]" strokeWidth={1.5} />
+                    <Star key={star} className="w-3 h-3 sm:w-4 sm:h-4 fill-[#EEBC3F] text-[#EEBC3F]" strokeWidth={1.5} />
                   ))}
-                  <span className="text-sm font-bold text-[#0F1A26] ml-2">4.9</span>
+                  <span className="text-xs sm:text-sm font-bold text-[#0F1A26] ml-1 sm:ml-2">4.9</span>
                 </div>
-                <span className="text-sm text-[#0F1A26]/50 underline decoration-[#0F1A26]/20 underline-offset-4">127 verified reviews</span>
+                <span className="text-xs sm:text-sm text-[#0F1A26]/50 underline decoration-[#0F1A26]/20 underline-offset-4">127 verified reviews</span>
               </div>
 
               {/* Price - Premium */}
-              <div className="flex items-baseline gap-4 mb-8 p-6 bg-gradient-to-r from-[#EEBC3F]/20 to-[#EEBC3F]/5 rounded-2xl border-2 border-[#EEBC3F]/30">
-                <span className="text-5xl md:text-6xl font-bold text-[#0F1A26] tracking-tight">EGP {product.price}</span>
-                <span className="text-2xl text-[#0F1A26]/50 line-through font-medium">EGP {product.originalPrice}</span>
-                <span className="bg-[#EEBC3F] text-[#0F1A26] text-sm font-bold px-4 py-2 rounded-full shadow-lg">Save {Math.round((1 - product.price / product.originalPrice) * 100)}%</span>
+              <div className="flex flex-wrap items-baseline gap-2 sm:gap-4 mb-6 sm:mb-8 p-3 sm:p-6 bg-gradient-to-r from-[#EEBC3F]/20 to-[#EEBC3F]/5 rounded-xl sm:rounded-2xl border-2 border-[#EEBC3F]/30">
+                <span className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#0F1A26] tracking-tight">EGP {product.price}</span>
+                <span className="text-lg sm:text-xl md:text-2xl text-[#0F1A26]/50 line-through font-medium">EGP {product.originalPrice}</span>
+                <span className="bg-[#EEBC3F] text-[#0F1A26] text-xs sm:text-sm font-bold px-3 sm:px-4 py-1 sm:py-2 rounded-full shadow-lg">Save {Math.round((1 - product.price / product.originalPrice) * 100)}%</span>
               </div>
 
               {/* Size Selection - Premium */}
               {product.size && (
-                <div className="mb-8">
-                  <div className="flex items-center justify-between mb-5">
-                    <label className="text-sm font-bold text-[#0F1A26] tracking-[0.1em] uppercase flex items-center gap-2">
-                      <Award className="w-4 h-4 text-[#EEBC3F]" />
+                <div className="mb-6 sm:mb-8">
+                  <div className="flex items-center justify-between mb-3 sm:mb-5">
+                    <label className="text-xs sm:text-sm font-bold text-[#0F1A26] tracking-[0.1em] uppercase flex items-center gap-2">
+                      <Award className="w-3 h-3 sm:w-4 sm:h-4 text-[#EEBC3F]" />
                       Select Size
                     </label>
-                    <Link href="/how-it-works" className="text-sm bg-[#EEBC3F]/10 hover:bg-[#EEBC3F] text-[#EEBC3F] hover:text-[#0F1A26] transition-all flex items-center gap-1.5 font-bold px-3 py-1.5 rounded-lg border border-[#EEBC3F]/30">
-                      <Ruler className="w-4 h-4" />
+                    <Link href="/how-it-works" className="text-xs sm:text-sm bg-[#EEBC3F]/10 hover:bg-[#EEBC3F] text-[#EEBC3F] hover:text-[#0F1A26] transition-all flex items-center gap-1.5 font-bold px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-[#EEBC3F]/30">
+                      <Ruler className="w-3 h-3 sm:w-4 sm:h-4" />
                       How to Measure?
                     </Link>
                   </div>
-                  <div className="grid grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
                     {sizes.map((size) => (
                       <button
                         key={size.id}
                         onClick={() => setSelectedSize(size.id)}
-                        disabled={product.size !== size.id}
-                        className={`py-5 rounded-2xl border-2 text-center transition-all duration-300 ${selectedSize === size.id
+                        className={`py-3 sm:py-5 rounded-xl sm:rounded-2xl border-2 text-center transition-all duration-300 ${selectedSize === size.id
                             ? "border-[#EEBC3F] bg-[#EEBC3F] text-white shadow-xl shadow-[#EEBC3F]/30 scale-105"
-                            : product.size === size.id
-                            ? "border-[#0F1A26]/10 hover:border-[#EEBC3F]/50 bg-white hover:shadow-lg"
-                            : "border-[#0F1A26]/10 bg-gray-100 opacity-50 cursor-not-allowed"
+                            : "border-[#0F1A26]/10 hover:border-[#EEBC3F]/50 bg-white hover:shadow-lg"
                           }`}
                       >
-                        <span className={`block font-bold text-lg ${selectedSize === size.id ? "text-white" : product.size === size.id ? "text-[#0F1A26]" : "text-[#0F1A26]/40"}`}>{size.label}</span>
-                        <span className={`block text-xs mt-1 ${selectedSize === size.id ? "text-white/70" : product.size === size.id ? "text-[#0F1A26]/50" : "text-[#0F1A26]/30"}`}>{size.range}</span>
+                        <span className={`block font-bold text-base sm:text-lg ${selectedSize === size.id ? "text-white" : "text-[#0F1A26]"}`}>{size.label}</span>
+                        <span className={`block text-xs mt-1 ${selectedSize === size.id ? "text-white/70" : "text-[#0F1A26]/50"}`}>{size.range}</span>
                       </button>
                     ))}
                   </div>
@@ -248,18 +245,18 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
               )}
 
               {/* Quantity & Add to Cart - Premium */}
-              <div className="flex gap-4 mb-8">
-                <div className="flex items-center bg-white border-2 border-[#0F1A26]/10 rounded-2xl overflow-hidden hover:border-[#EEBC3F]/30 transition-colors">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6 sm:mb-8">
+                <div className="flex items-center bg-white border-2 border-[#0F1A26]/10 rounded-2xl overflow-hidden hover:border-[#EEBC3F]/30 transition-colors w-full sm:w-auto">
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="w-16 h-16 flex items-center justify-center text-[#0F1A26]/60 hover:bg-[#EEBC3F]/10 hover:text-[#EEBC3F] transition-all text-xl font-bold"
+                    className="flex-1 sm:flex-none sm:w-12 h-14 sm:h-16 flex items-center justify-center text-[#0F1A26]/60 hover:bg-[#EEBC3F]/10 hover:text-[#EEBC3F] transition-all text-lg sm:text-xl font-bold"
                   >
                     -
                   </button>
-                  <span className="w-16 text-center font-bold text-[#0F1A26] text-xl">{quantity}</span>
+                  <span className="flex-1 sm:flex-none sm:w-12 text-center font-bold text-[#0F1A26] text-lg sm:text-xl">{quantity}</span>
                   <button
                     onClick={() => setQuantity(quantity + 1)}
-                    className="w-16 h-16 flex items-center justify-center text-[#0F1A26]/60 hover:bg-[#EEBC3F]/10 hover:text-[#EEBC3F] transition-all text-xl font-bold"
+                    className="flex-1 sm:flex-none sm:w-12 h-14 sm:h-16 flex items-center justify-center text-[#0F1A26]/60 hover:bg-[#EEBC3F]/10 hover:text-[#EEBC3F] transition-all text-lg sm:text-xl font-bold"
                   >
                     +
                   </button>
@@ -277,7 +274,7 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                       quantity: quantity,
                     });
                   }}
-                  className="flex-1 bg-[#0F1A26] text-white hover:bg-[#EEBC3F] hover:text-[#0F1A26] h-16 rounded-2xl font-bold text-lg transition-all duration-300 hover:shadow-xl hover:shadow-[#EEBC3F]/20 group"
+                  className="flex-1 bg-[#0F1A26] text-white hover:bg-[#EEBC3F] hover:text-[#0F1A26] h-14 sm:h-16 rounded-2xl font-bold text-base sm:text-lg transition-all duration-300 hover:shadow-xl hover:shadow-[#EEBC3F]/20 group"
                 >
                   Add to Cart
                 </Button>
@@ -295,26 +292,26 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                     });
                     router.push("/checkout");
                   }}
-                  className="bg-gradient-to-r from-[#EEBC3F] to-[#d4a535] text-[#0F1A26] hover:shadow-xl hover:shadow-[#EEBC3F]/30 h-16 px-10 rounded-2xl font-bold text-lg transition-all duration-300 group"
+                  className="flex-1 sm:flex-none bg-gradient-to-r from-[#EEBC3F] to-[#d4a535] text-[#0F1A26] hover:shadow-xl hover:shadow-[#EEBC3F]/30 h-14 sm:h-16 px-4 sm:px-10 rounded-2xl font-bold text-base sm:text-lg transition-all duration-300 group"
                 >
                   Buy Now
                 </Button>
               </div>
 
               {/* Benefits - Premium Grid */}
-              <div className="grid grid-cols-2 gap-4 mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6 sm:mb-8">
                 {[
                   { icon: Shield, title: "Scratch Protection", desc: "Protects your luggage" },
                   { icon: Sparkles, title: "Machine Washable", desc: "Easy to clean" },
                   { icon: Truck, title: "Free Shipping", desc: "On orders over 500 EGP" },
                   { icon: RotateCcw, title: "30-Day Returns", desc: "Hassle free" },
                 ].map((benefit, index) => (
-                  <div key={index} className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-[#0F1A26]/5 hover:border-[#EEBC3F]/20 hover:shadow-lg transition-all duration-300 group">
-                    <div className="w-12 h-12 rounded-xl bg-[#EEBC3F]/10 flex items-center justify-center group-hover:bg-[#EEBC3F] transition-colors">
-                      <benefit.icon className="w-6 h-6 text-[#EEBC3F] group-hover:text-white transition-colors" strokeWidth={1.5} />
+                  <div key={index} className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-white rounded-xl sm:rounded-2xl border border-[#0F1A26]/5 hover:border-[#EEBC3F]/20 hover:shadow-lg transition-all duration-300 group">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-[#EEBC3F]/10 flex items-center justify-center group-hover:bg-[#EEBC3F] transition-colors flex-shrink-0">
+                      <benefit.icon className="w-5 h-5 sm:w-6 sm:h-6 text-[#EEBC3F] group-hover:text-white transition-colors" strokeWidth={1.5} />
                     </div>
-                    <div>
-                      <span className="block font-bold text-[#0F1A26] text-sm">{benefit.title}</span>
+                    <div className="min-w-0">
+                      <span className="block font-bold text-[#0F1A26] text-xs sm:text-sm">{benefit.title}</span>
                       <span className="block text-[#0F1A26]/50 text-xs">{benefit.desc}</span>
                     </div>
                   </div>
@@ -358,7 +355,7 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                 <ArrowUpRight className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" strokeWidth={2} />
               </Link>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
               {relatedProducts.map((product, index) => (
                 <Link
                   key={product.id}
@@ -366,7 +363,7 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                   className={`group transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
                   style={{ transitionDelay: `${index * 100 + 200}ms` }}
                 >
-                  <div className="relative aspect-[3/4] bg-gradient-to-br from-[#0F1A26] to-[#364353] rounded-3xl overflow-hidden mb-4 border border-[#0F1A26]/10 shadow-lg shadow-[#0F1A26]/5">
+                  <div className="relative aspect-[3/4] bg-gradient-to-br from-[#0F1A26] to-[#364353] rounded-2xl sm:rounded-3xl overflow-hidden mb-3 sm:mb-4 border border-[#0F1A26]/10 shadow-lg shadow-[#0F1A26]/5">
                     <div className="absolute inset-0 flex items-center justify-center">
                       <span className="text-white/20 text-sm font-light">Product Image</span>
                     </div>
@@ -396,16 +393,16 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
 
                     {/* Sale Badge */}
                     {product.originalPrice > product.price && (
-                      <div className="absolute top-4 left-4 bg-[#EEBC3F] text-[#0F1A26] text-xs font-bold px-3 py-1.5 rounded-full">
+                      <div className="absolute top-2 left-2 sm:top-4 sm:left-4 bg-[#EEBC3F] text-[#0F1A26] text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-1 sm:py-1.5 rounded-full">
                         SALE
                       </div>
                     )}
                   </div>
                   <div>
-                    <h3 className="text-[#0F1A26] font-bold group-hover:text-[#EEBC3F] transition-colors duration-300 text-lg">{product.name}</h3>
-                    <div className="flex items-baseline gap-3 mt-2">
-                      <span className="text-[#0F1A26] font-bold text-lg">EGP {product.price}</span>
-                      <span className="text-[#0F1A26]/30 text-sm line-through">EGP {product.originalPrice}</span>
+                    <h3 className="text-[#0F1A26] font-bold group-hover:text-[#EEBC3F] transition-colors duration-300 text-sm sm:text-lg line-clamp-1">{product.name}</h3>
+                    <div className="flex items-baseline gap-2 sm:gap-3 mt-1 sm:mt-2">
+                      <span className="text-[#0F1A26] font-bold text-sm sm:text-lg">EGP {product.price}</span>
+                      <span className="text-[#0F1A26]/30 text-xs sm:text-sm line-through">EGP {product.originalPrice}</span>
                     </div>
                   </div>
                 </Link>
