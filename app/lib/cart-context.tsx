@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback, ReactNode } from "react";
-import { toast } from "sonner";
+import { useToast } from "../components/toast-provider";
 
 export interface CartItem {
   id: number;
@@ -29,6 +29,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
+  const { showToast } = useToast();
 
   const addToCart = useCallback((newItem: Omit<CartItem, "quantity"> & { quantity?: number }) => {
     const qty = newItem.quantity || 1;
@@ -49,9 +50,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return [...currentItems, { ...newItem, quantity: qty }];
     });
 
-    toast.success(`${newItem.name} added to cart`, {
+    showToast({
+      title: newItem.name,
       description: `Qty: ${qty}${newItem.size ? ` • Size: ${newItem.size.toUpperCase()}` : ""}`,
       action: {
+        label: "View Cart",
+        onClick: () => {
+          window.location.href = "/cart";
+        },
+      },
+      cancel: {
         label: "Size Guide",
         onClick: () => {
           window.location.href = "/how-it-works";
