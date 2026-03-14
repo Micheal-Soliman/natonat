@@ -9,7 +9,7 @@ import { useCart } from "@/app/lib/cart-context";
 import { SizeModal } from "@/app/components/size-modal";
 
 // Get bundle products from lib/products
-const bundles = products.filter(p => p.category === "travel-sets").slice(0, 4);
+const bundles = products.filter(p => p.category === "bundles").slice(0, 4);
 
 export function TravelSets() {
   const { addToCart } = useCart();
@@ -72,7 +72,7 @@ export function TravelSets() {
 
                 <Button
                   onClick={() => {
-                    if (bundle.category === "luggage-covers" || bundle.category === "travel-sets") {
+                    if (bundle.category === "luggage-covers") {
                       setSelectedProduct(bundle);
                       setSizeModalOpen(true);
                     } else {
@@ -103,7 +103,7 @@ export function TravelSets() {
             variant="outline"
             className="border-[#0F1A26] text-[#0F1A26] hover:bg-[#0F1A26] hover:text-[#F1EBE3]"
           >
-            <Link href="/shop?category=travel-sets">View All Bundles</Link>
+            <Link href="/shop?category=bundles">View All Bundles</Link>
           </Button>
         </div>
       </div>

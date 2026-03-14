@@ -131,28 +131,32 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
             {/* Images - Premium Gallery */}
             <div className={`space-y-6 lg:sticky lg:top-28 transition-all duration-700 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'}`}>
               {/* Main Image - Premium with Navigation Arrows */}
-              <div className="aspect-square bg-gradient-to-br from-[#0F1A26] via-[#1a2a3a] to-[#364353] rounded-3xl flex items-center justify-center relative overflow-hidden border border-[#0F1A26]/10 shadow-2xl shadow-[#0F1A26]/10">
+              <div className="aspect-square bg-white/50 backdrop-blur-sm rounded-3xl flex items-center justify-center relative overflow-hidden border border-[#0F1A26]/10 shadow-2xl shadow-[#0F1A26]/10">
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(238,188,63,0.15),transparent_60%)]" />
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(255,255,255,0.05),transparent_50%)]" />
-                <span className="text-white/20 text-sm font-light tracking-widest uppercase">Product Image {activeImage + 1}</span>
+                <img 
+                  src={product.images?.[activeImage] || product.image} 
+                  alt={product.name}
+                  className="absolute inset-0 w-full h-full object-contain p-4"
+                />
 
                 {/* Premium Tag */}
                 <div className="absolute top-6 left-6">
-                  <div className="bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20">
-                    <span className="text-white/80 text-xs font-semibold tracking-wider">PREMIUM</span>
+                  <div className="bg-[#EEBC3F] rounded-full px-4 py-2 border border-[#EEBC3F] shadow-lg">
+                    <span className="text-[#0F1A26] text-xs font-bold tracking-wider">PREMIUM</span>
                   </div>
                 </div>
 
                 {/* Previous/Next Arrows */}
                 <button
-                  onClick={() => setActiveImage((prev) => (prev === 0 ? productImages.length - 1 : prev - 1))}
+                  onClick={() => setActiveImage((prev) => (prev === 0 ? (product.images?.length || 1) - 1 : prev - 1))}
                   className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/90 hover:bg-[#EEBC3F] text-[#0F1A26] rounded-full flex items-center justify-center transition-all duration-300 shadow-lg hover:scale-110"
                   aria-label="Previous image"
                 >
                   <ChevronLeft className="w-6 h-6" />
                 </button>
                 <button
-                  onClick={() => setActiveImage((prev) => (prev === productImages.length - 1 ? 0 : prev + 1))}
+                  onClick={() => setActiveImage((prev) => (prev === (product.images?.length || 1) - 1 ? 0 : prev + 1))}
                   className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/90 hover:bg-[#EEBC3F] text-[#0F1A26] rounded-full flex items-center justify-center transition-all duration-300 shadow-lg hover:scale-110"
                   aria-label="Next image"
                 >
@@ -160,20 +164,54 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                 </button>
               </div>
 
-              {/* Thumbnails - Premium */}
-              <div className="grid grid-cols-4 gap-4">
-                {productImages.map((img, idx) => (
-                  <button
-                    key={img.id}
-                    onClick={() => setActiveImage(idx)}
-                    className={`aspect-square rounded-2xl bg-gradient-to-br from-[#0F1A26] to-[#364353] flex items-center justify-center transition-all duration-300 border-2 ${activeImage === idx
-                        ? "border-[#EEBC3F] shadow-lg shadow-[#EEBC3F]/20 scale-105"
-                        : "border-transparent opacity-50 hover:opacity-80 hover:scale-105"
-                      }`}
-                  >
-                    <span className={`font-bold ${activeImage === idx ? "text-[#EEBC3F]" : "text-white/40"}`}>{idx + 1}</span>
-                  </button>
-                ))}
+              {/* Thumbnails - Horizontal Scrollable with Index */}
+              <div className="space-y-3">
+                {/* Thumbnails Row */}
+                <div className="flex gap-3 overflow-x-auto pb-3 px-1 scrollbar-thin scrollbar-thumb-[#EEBC3F]/40 scrollbar-track-transparent hover:scrollbar-thumb-[#EEBC3F]">
+                  {(product.images || [product.image]).map((img, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setActiveImage(idx)}
+                      className={`flex-shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-white/80 flex items-center justify-center transition-all duration-300 border-2 overflow-hidden ${activeImage === idx
+                          ? "border-[#EEBC3F] shadow-lg shadow-[#EEBC3F]/20"
+                          : "border-transparent opacity-80 hover:opacity-100"
+                        }`}
+                    >
+                      <img 
+                        src={img} 
+                        alt={`${product.name} view ${idx + 1}`}
+                        className="w-full h-full object-contain p-1"
+                      />
+                    </button>
+                  ))}
+                </div>
+                
+                {/* Index Indicator with Dots */}
+                <div className="flex items-center justify-center gap-4">
+                  <span className="text-sm font-bold text-[#EEBC3F] min-w-[20px]">
+                    {String(activeImage + 1).padStart(2, '0')}
+                  </span>
+                  
+                  {/* Dots */}
+                  <div className="flex items-center gap-1.5">
+                    {(product.images || [product.image]).map((_, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setActiveImage(idx)}
+                        className={`h-1.5 rounded-full transition-all duration-300 ${
+                          activeImage === idx 
+                            ? "w-6 bg-[#EEBC3F]" 
+                            : "w-1.5 bg-[#0F1A26]/20 hover:bg-[#0F1A26]/40"
+                        }`}
+                        aria-label={`Go to image ${idx + 1}`}
+                      />
+                    ))}
+                  </div>
+                  
+                  <span className="text-sm text-[#0F1A26]/60 min-w-[20px]">
+                    {String(product.images?.length || 1).padStart(2, '0')}
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -364,9 +402,11 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                   style={{ transitionDelay: `${index * 100 + 200}ms` }}
                 >
                   <div className="relative aspect-[3/4] bg-gradient-to-br from-[#0F1A26] to-[#364353] rounded-2xl sm:rounded-3xl overflow-hidden mb-3 sm:mb-4 border border-[#0F1A26]/10 shadow-lg shadow-[#0F1A26]/5">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-white/20 text-sm font-light">Product Image</span>
-                    </div>
+                    <img 
+                      src={products.find(p => p.slug === product.slug)?.image || product.image} 
+                      alt={product.name}
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
 
                     {/* Hover overlay */}
                     <div className="absolute inset-0 bg-[#0F1A26]/60 opacity-0 group-hover:opacity-100 transition-all duration-500 flex items-center justify-center">

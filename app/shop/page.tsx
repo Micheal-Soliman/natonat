@@ -11,6 +11,7 @@ import { ShoppingBag, Filter, X } from "lucide-react";
 import { products, categories, sizes, themes } from "@/lib/products";
 import { SizeModal } from "@/app/components/size-modal";
 import { Loading } from "@/app/components/loading";
+import { SwipeableProductImage } from "@/app/components/swipeable-product-image";
 
 function ShopContent() {
   const { addToCart } = useCart();
@@ -115,9 +116,9 @@ function ShopContent() {
           title: <>Passport <span className="text-[#EEBC3F]">Wallets</span></>,
           subtitle: "Premium leather with RFID protection for secure travel"
         };
-      case "travel-sets":
+      case "bundles":
         return {
-          title: <>Travel <span className="text-[#EEBC3F]">Sets</span></>,
+          title: <>Bundle <span className="text-[#EEBC3F]">Deals</span></>,
           subtitle: "Curated bundles at better prices. Save up to 30%."
         };
       default:
@@ -129,6 +130,25 @@ function ShopContent() {
   };
 
   const headerContent = getHeaderContent();
+
+  const handleAddToCart = (e: React.MouseEvent, product: typeof products[0]) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (product.category === "luggage-covers") {
+      setSelectedProduct(product);
+      setSizeModalOpen(true);
+    } else {
+      addToCart({
+        id: product.id,
+        name: product.name,
+        type: product.type,
+        price: product.price,
+        originalPrice: product.originalPrice,
+        image: product.image,
+        quantity: 1,
+      });
+    }
+  };
 
   return (
     <>
@@ -211,7 +231,7 @@ function ShopContent() {
                 </div>
 
                 {/* Size Filter - Clean */}
-                {(activeCategory === "all" || activeCategory === "luggage-covers" || activeCategory === "travel-sets") && (
+                {(activeCategory === "all" || activeCategory === "luggage-covers") && (
                   <div className="mb-8">
                     <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">Size</h3>
                     <div className="grid grid-cols-4 gap-2">
@@ -310,60 +330,13 @@ function ShopContent() {
                   <Link
                     key={product.id}
                     href={`/product/${product.slug}`}
-                    className={`group transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+                    className={`group transition-all duration-500 hover:-translate-y-2 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
                     style={{ transitionDelay: `${index * 50}ms` }}
                   >
-                    {/* Product Image - Clean */}
-                    <div className="relative aspect-[3/4] rounded-2xl overflow-hidden mb-3 border border-[#0F1A26]/5">
-                      <img 
-                        src={product.image} 
-                        alt={product.name}
-                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                      
-                      {product.tag && (
-                        <span className={`absolute top-3 left-3 text-[10px] font-semibold tracking-wider uppercase px-2.5 py-1 rounded-full z-10 ${
-                          product.tag === 'Best Seller' ? 'bg-[#EEBC3F] text-[#0F1A26]' :
-                          product.tag === 'New' ? 'bg-[#0F1A26] text-white' :
-                          product.tag === 'RFID' ? 'bg-[#4B1F1F] text-[#F1EBE3]' :
-                          'bg-white/90 text-[#0F1A26]'
-                        }`}>
-                          {product.tag}
-                        </span>
-                      )}
-                      
-                      {/* Discount Badge - Top Right */}
-                      <span className="absolute top-3 right-3 bg-[#EEBC3F] text-[#1e3a5f] text-sm font-bold px-3 py-1.5 rounded-full z-10 shadow-lg">
-                        -{Math.round((1 - product.price / product.originalPrice) * 100)}%
-                      </span>
-                      
-                      {/* Hover overlay - Clean */}
-                      <div className="absolute inset-0 bg-[#0F1A26]/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                        <button 
-                          className="w-10 h-10 bg-white rounded-full flex items-center justify-center"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            if (product.category === "luggage-covers") {
-                              setSelectedProduct(product);
-                              setSizeModalOpen(true);
-                            } else {
-                              addToCart({
-                                id: product.id,
-                                name: product.name,
-                                type: product.type,
-                                price: product.price,
-                                originalPrice: product.originalPrice,
-                                image: product.image,
-                                quantity: 1,
-                              });
-                            }
-                          }}
-                        >
-                          <ShoppingBag className="w-5 h-5 text-[#0F1A26]" />
-                        </button>
-                      </div>
-                    </div>
+                    <SwipeableProductImage 
+                      product={product}
+                      onAddToCart={handleAddToCart}
+                    />
 
                     {/* Product Info - Clean */}
                     <div>
@@ -434,7 +407,7 @@ function ShopContent() {
               </div>
 
               {/* Mobile Size Filter - Clean */}
-              {(activeCategory === "all" || activeCategory === "luggage-covers" || activeCategory === "travel-sets") && (
+              {(activeCategory === "all" || activeCategory === "luggage-covers") && (
                 <div className="mb-6">
                   <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">Size</h3>
                   <div className="grid grid-cols-4 gap-2">
