@@ -39,11 +39,9 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
     { id: 4, alt: "Fabric detail" },
   ];
 
-  const relatedProducts = [
-    { id: 2, slug: "floral-design-cover", name: "Floral Design Cover", price: 649, originalPrice: 800 },
-    { id: 3, slug: "classic-leather-wallet", name: "Classic Leather Wallet", price: 449, originalPrice: 550 },
-    { id: 5, slug: "travel-set-geo", name: "Travel Set - Geo", price: 899, originalPrice: 1150 },
-  ];
+  const relatedProducts = products
+    .filter(p => p.theme === product.theme && p.id !== product.id)
+    .slice(0, 3);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
