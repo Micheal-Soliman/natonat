@@ -26,10 +26,10 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
   const ref = useRef<HTMLDivElement>(null);
 
   const sizes = [
-    { id: "s", label: "S", range: "18-21 inches" },
-    { id: "m", label: "M", range: "22-25 inches" },
-    { id: "l", label: "L", range: "26-29 inches" },
-    { id: "xl", label: "XL", range: "30-32 inches" },
+    { id: "s", label: "S", range: "45-53 cm" },
+    { id: "m", label: "M", range: "55-63 cm" },
+    { id: "l", label: "L", range: "65-74 cm" },
+    { id: "xl", label: "XL", range: "76-81 cm" },
   ];
 
   const productImages = [
@@ -257,7 +257,7 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                       <Award className="w-3 h-3 sm:w-4 sm:h-4 text-[#EEBC3F]" />
                       Select Size
                     </label>
-                    <Link href="/how-it-works" className="text-xs sm:text-sm bg-[#EEBC3F]/10 hover:bg-[#EEBC3F] text-[#EEBC3F] hover:text-[#0F1A26] transition-all flex items-center gap-1.5 font-bold px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-[#EEBC3F]/30">
+                    <Link href="/how-it-works" className="text-xs sm:text-sm bg-[#EEBC3F] hover:bg-[#d4a535] text-[#0F1A26] transition-all flex items-center gap-1.5 font-bold px-3 sm:px-4 py-2 sm:py-2 rounded-lg shadow-md hover:shadow-lg hover:scale-105">
                       <Ruler className="w-3 h-3 sm:w-4 sm:h-4" />
                       How to Measure?
                     </Link>

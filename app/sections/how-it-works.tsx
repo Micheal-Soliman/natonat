@@ -79,10 +79,10 @@ export function HowItWorks() {
             </h3>
             <div className="space-y-4">
               {[
-                { size: "S", height: "18-21 inches", type: "Carry-on" },
-                { size: "M", height: "22-25 inches", type: "Medium" },
-                { size: "L", height: "26-29 inches", type: "Large" },
-                { size: "XL", height: "30-32 inches", type: "Extra Large" },
+                { size: "S", height: "45-53 cm", type: "Carry-on" },
+                { size: "M", height: "55-63 cm", type: "Medium" },
+                { size: "L", height: "65-74 cm", type: "Large" },
+                { size: "XL", height: "76-81 cm", type: "Extra Large" },
               ].map((item) => (
                 <div
                   key={item.size}

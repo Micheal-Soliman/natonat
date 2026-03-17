@@ -37,7 +37,7 @@ export function TravelSets() {
               className="group bg-white rounded-2xl overflow-hidden border border-[#0F1A26]/10 hover:border-[#EEBC3F] transition-all hover:shadow-xl flex flex-col h-full"
             >
               {/* Bundle Image */}
-              <Link href={`/product/${bundle.id}`} className="block">
+              <Link href={`/product/${bundle.slug}`} className="block">
                 <div className="relative aspect-[4/3] overflow-hidden">
                   <img 
                     src={bundle.image} 

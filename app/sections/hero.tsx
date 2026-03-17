@@ -40,14 +40,14 @@ export function Hero() {
 
         {/* Big bold headline with logo-matching font */}
         <h1 
-          className={`text-7xl md:text-9xl lg:text-[12rem] font-light leading-none tracking-[0.15em] mb-6 transition-all duration-1000 delay-200 ${loaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`} 
-          style={{ fontFamily: "'Nexa', 'Montserrat', sans-serif", fontWeight: 300 }}
+          className={`text-6xl md:text-8xl lg:text-[10rem] font-bold leading-none tracking-[0.15em] mb-6 transition-all duration-1000 delay-200 ${loaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`} 
+          style={{ fontFamily: "'Arthaus-Bold', sans-serif" }}
         >
           <span className="block text-white">nat<span className="text-[#EEBC3F]">O</span>nat</span>
         </h1>
 
         {/* Tagline */}
-        <p className={`text-xl md:text-2xl text-white/40 font-light tracking-wide mb-12 transition-all duration-1000 delay-400 ${loaded ? 'opacity-100' : 'opacity-0'}`}>
+        <p className={`text-lg md:text-xl text-white/40 font-light tracking-wide mb-12 transition-all duration-1000 delay-400 ${loaded ? 'opacity-100' : 'opacity-0'}`}>
           Pack Smart. Travel Bold.
         </p>
 
