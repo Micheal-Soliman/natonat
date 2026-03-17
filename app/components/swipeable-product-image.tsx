@@ -87,8 +87,8 @@ export function SwipeableProductImage({ product, onAddToCart }: SwipeableProduct
             className="hidden md:block absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-0"
           />
           <img 
-            src={images[1] || product.image} 
-            alt={`${product.name} - view 2`}
+            src={images[3] || product.image} 
+            alt={`${product.name} - view 4`}
             className="hidden md:block absolute inset-0 w-full h-full object-cover transition-opacity duration-500 opacity-0 group-hover:opacity-100"
           />
         </>
