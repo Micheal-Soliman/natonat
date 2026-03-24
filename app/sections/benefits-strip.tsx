@@ -3,6 +3,16 @@
 import { useEffect, useRef, useState } from "react";
 import { Shield, Sparkles, Eye, Briefcase } from "lucide-react";
 
+const arthausFontStyle = `
+  @font-face {
+    font-family: 'Arthaus-Bold';
+    src: url('/Arthaus-Bold.ttf') format('truetype');
+    font-weight: bold;
+    font-style: normal;
+    font-display: swap;
+  }
+`;
+
 export function BenefitsStrip() {
   const [isVisible, setIsVisible] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -65,7 +75,7 @@ export function BenefitsStrip() {
             <div>
               <span className="text-[#EEBC3F] text-xs tracking-[0.3em] uppercase font-medium">Features</span>
               <h2 className="text-4xl md:text-5xl lg:text-6xl font-light text-[#0F1A26] mt-4 tracking-tight">
-                Why <span className="font-medium italic text-[#EEBC3F]">natOnat</span>
+                Why <span className="font-medium text-[#EEBC3F]" style={{ fontFamily: "'Arthaus-Bold', sans-serif" }}>natOnat</span>
               </h2>
             </div>
             <p className="text-[#0F1A26]/50 text-sm max-w-xs text-right hidden md:block leading-relaxed">

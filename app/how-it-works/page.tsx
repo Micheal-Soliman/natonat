@@ -30,10 +30,10 @@ const steps = [
 ];
 
 const sizes = [
-  { size: "S", height: "18-21\"", cm: "46-53cm", type: "Carry-on", icon: "✈️" },
-  { size: "M", height: "22-25\"", cm: "56-64cm", type: "Standard", icon: "🧳" },
-  { size: "L", height: "26-29\"", cm: "66-74cm", type: "Check-in", icon: "🎒" },
-  { size: "XL", height: "30-32\"", cm: "76-81cm", type: "Large", icon: "🏔️" },
+  { size: "S", height: "18-21\"", cm: "46-53cm", type: "Carry-on", icon: "/s.png" },
+  { size: "M", height: "22-25\"", cm: "56-64cm", type: "Standard", icon: "/m.png" },
+  { size: "L", height: "26-29\"", cm: "66-74cm", type: "Check-in", icon: "/l.png" },
+  { size: "XL", height: "30-32\"", cm: "76-81cm", type: "Large", icon: "/xl.png" },
 ];
 
 const benefits = [
@@ -306,11 +306,11 @@ function HowItWorksContent() {
               {sizes.map((item, index) => (
                 <div 
                   key={item.size} 
-                  className="bg-white rounded-2xl p-6 border border-[#0F1A26]/5 hover:border-[#EEBC3F]/30 hover:shadow-lg transition-all duration-300 group"
+                  className="bg-white rounded-2xl p-4 border border-[#0F1A26]/5 hover:border-[#EEBC3F]/30 hover:shadow-lg transition-all duration-300 group"
                 >
                   <div className="flex items-center gap-4 mb-4">
-                    <div className="w-12 h-12 rounded-xl bg-[#F8F6F3] flex items-center justify-center text-2xl group-hover:bg-[#EEBC3F]/10 transition-colors">
-                      {item.icon}
+                    <div className="w-20 h-20 rounded-xl bg-[#F8F6F3] flex items-center justify-center overflow-hidden group-hover:bg-[#EEBC3F]/10 transition-colors">
+                      <img src={item.icon} alt={`Size ${item.size}`} className="w-32 h-32 object-contain" />
                     </div>
                     <div>
                       <span className="text-2xl font-bold text-[#0F1A26]">{item.size}</span>

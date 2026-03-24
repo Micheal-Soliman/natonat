@@ -5,6 +5,17 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowDown } from "lucide-react";
 
+// Local Arthaus-Bold font
+const arthausFontStyle = `
+  @font-face {
+    font-family: 'Arthaus-Bold';
+    src: url('/Arthaus-Bold.ttf') format('truetype');
+    font-weight: bold;
+    font-style: normal;
+    font-display: swap;
+  }
+`;
+
 export function Hero() {
   const [loaded, setLoaded] = useState(false);
 
@@ -15,6 +26,7 @@ export function Hero() {
   return (
     <section className="relative h-screen flex items-center justify-center overflow-hidden bg-[#0a0f14]">
       {/* Video Background */}
+      <style dangerouslySetInnerHTML={{ __html: arthausFontStyle }} />
       <div className="absolute inset-0">
         <video
           autoPlay
@@ -38,7 +50,7 @@ export function Hero() {
           Premium Travel Gear
         </p>
 
-        {/* Big bold headline with logo-matching font */}
+        {/* Big bold headline with local Arthaus-Bold font */}
         <h1 
           className={`text-6xl md:text-8xl lg:text-[10rem] font-bold leading-none tracking-[0.15em] mb-6 transition-all duration-1000 delay-200 ${loaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`} 
           style={{ fontFamily: "'Arthaus-Bold', sans-serif" }}
