@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from 'next-intl';
 import { Shield, Sparkles, Eye, Briefcase } from "lucide-react";
 
 const arthausFontStyle = `
@@ -14,6 +15,7 @@ const arthausFontStyle = `
 `;
 
 export function BenefitsStrip() {
+  const t = useTranslations('benefits');
   const [isVisible, setIsVisible] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
@@ -37,31 +39,31 @@ export function BenefitsStrip() {
 
   const benefits = [
     {
-      number: "01",
+      number: t('items.protection.number'),
       icon: Shield,
-      title: "Protection",
-      subtitle: "From scratches & dirt",
+      title: t('items.protection.title'),
+      subtitle: t('items.protection.subtitle'),
       image: "https://images.unsplash.com/photo-1565026057447-bc90a3dceb87?w=800&q=80",
     },
     {
-      number: "02",
+      number: t('items.durability.number'),
       icon: Sparkles,
-      title: "Durability",
-      subtitle: "Stretchy & washable",
+      title: t('items.durability.title'),
+      subtitle: t('items.durability.subtitle'),
       image: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=800&q=80",
     },
     {
-      number: "03",
+      number: t('items.recognition.number'),
       icon: Eye,
-      title: "Recognition",
-      subtitle: "Easy to spot",
+      title: t('items.recognition.title'),
+      subtitle: t('items.recognition.subtitle'),
       image: "https://images.unsplash.com/photo-1547949003-9792a18a2601?w=800&q=80",
     },
     {
-      number: "04",
+      number: t('items.ecosystem.number'),
       icon: Briefcase,
-      title: "Ecosystem",
-      subtitle: "Complete travel set",
+      title: t('items.ecosystem.title'),
+      subtitle: t('items.ecosystem.subtitle'),
       image: "https://images.unsplash.com/photo-1627123424574-724758594e93?w=800&q=80",
     },
   ];
@@ -73,13 +75,13 @@ export function BenefitsStrip() {
         <div className={`mb-20 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           <div className="flex items-end justify-between">
             <div>
-              <span className="text-[#EEBC3F] text-xs tracking-[0.3em] uppercase font-medium">Features</span>
+              <span className="text-[#EEBC3F] text-xs tracking-[0.3em] uppercase font-medium">{t('sectionLabel')}</span>
               <h2 className="text-4xl md:text-5xl lg:text-6xl font-light text-[#0F1A26] mt-4 tracking-tight">
-                Why <span className="font-medium text-[#EEBC3F]" style={{ fontFamily: "'Arthaus-Bold', sans-serif" }}>natOnat</span>
+                {t('title')} <span className="font-medium text-[#EEBC3F]" style={{ fontFamily: "'Arthaus-Bold', sans-serif" }}>natOnat</span>
               </h2>
             </div>
             <p className="text-[#0F1A26]/50 text-sm max-w-xs text-right hidden md:block leading-relaxed">
-              Premium travel essentials crafted for the modern journey
+              {t('subtitle')}
             </p>
           </div>
           <div className="h-px bg-gradient-to-r from-[#EEBC3F]/50 via-[#0F1A26]/10 to-transparent mt-8" />
@@ -137,7 +139,7 @@ export function BenefitsStrip() {
         <div className={`mt-16 flex items-center justify-center gap-4 transition-all duration-1000 delay-700 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
           <div className="h-px w-16 bg-[#0F1A26]/30" />
           <span className="text-[#0F1A26]/70 text-xs tracking-[0.4em] uppercase font-medium">
-            Est. 2024 — Cairo
+            {t('footer')}
           </span>
           <div className="h-px w-16 bg-[#0F1A26]/30" />
         </div>

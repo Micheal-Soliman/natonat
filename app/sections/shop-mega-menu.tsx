@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/routing";
 import { usePathname, useSearchParams } from "next/navigation";
+import { useTranslations } from 'next-intl';
 import { ChevronDown, ArrowRight, ArrowUpRight } from "lucide-react";
 
 const shopCategories = [
@@ -41,6 +42,8 @@ interface ShopMegaMenuProps {
 }
 
 export function ShopMegaMenu({ scrolled }: ShopMegaMenuProps) {
+  const t = useTranslations('navigation');
+  const tc = useTranslations('collections');
   const [isOpen, setIsOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -48,6 +51,37 @@ export function ShopMegaMenu({ scrolled }: ShopMegaMenuProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const currentCategory = searchParams.get("category") || "all";
+
+  const shopCategories = [
+    {
+      id: "all",
+      name: t('allProducts'),
+      description: "Browse everything",
+      href: "/shop",
+      image: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&q=80",
+    },
+    {
+      id: "luggage-covers",
+      name: t('luggageCovers'),
+      description: "Protective stretchy covers",
+      href: "/shop?category=luggage-covers",
+      image: "https://images.unsplash.com/photo-1565026057447-bc90a3dceb87?w=400&q=80",
+    },
+    {
+      id: "passport-wallets",
+      name: t('passportWallets'),
+      description: "RFID-blocking organizers",
+      href: "/shop?category=passport-wallets",
+      image: "https://images.unsplash.com/photo-1627123424574-724758594e93?w=400&q=80",
+    },
+    {
+      id: "travel-sets",
+      name: t('travelSets'),
+      description: "Curated bundles",
+      href: "/shop?category=travel-sets",
+      image: "https://images.unsplash.com/photo-1504198458649-3128b932f49e?w=400&q=80",
+    },
+  ];
 
   const isActive = (href: string) => {
     if (href === "/shop") {
@@ -100,7 +134,7 @@ export function ShopMegaMenu({ scrolled }: ShopMegaMenuProps) {
               : "text-[#0F1A26]/60 hover:text-[#0F1A26]"
         }`}
       >
-        Shop
+        {t('shop')}
         <ChevronDown 
           className={`w-4 h-4 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`} 
         />
@@ -113,7 +147,7 @@ export function ShopMegaMenu({ scrolled }: ShopMegaMenuProps) {
 
       {/* Mega Menu Dropdown - Wide Horizontal Layout */}
       <div 
-        className={`absolute top-full left-1/2 -translate-x-1/2 mt-4 w-[1000px] max-w-[calc(100vw-2rem)] mx-4 transition-all duration-300 z-[100] ${
+        className={`fixed top-[80px] left-1/2 -translate-x-1/2 w-[95vw] max-w-[1000px] transition-all duration-300 z-[100] ${
           isOpen 
             ? "opacity-100 translate-y-0 pointer-events-auto" 
             : "opacity-0 -translate-y-2 pointer-events-none"
@@ -125,11 +159,11 @@ export function ShopMegaMenu({ scrolled }: ShopMegaMenuProps) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[#EEBC3F] text-[10px] font-semibold tracking-[0.3em] uppercase">
-                  Collections
+                  {tc('sectionLabel')}
                 </p>
-                <h3 className={`text-lg font-medium mt-0.5 ${scrolled ? 'text-white' : 'text-[#0F1A26]'}`}>Shop by Category</h3>
+                <h3 className={`text-lg font-medium mt-0.5 ${scrolled ? 'text-white' : 'text-[#0F1A26]'}`}>{tc('title')}</h3>
               </div>
-              <span className={`text-sm font-medium ${scrolled ? 'text-white/30' : 'text-[#0F1A26]/30'}`}>{shopCategories.length - 1} categories</span>
+              <span className={`text-sm font-medium ${scrolled ? 'text-white/30' : 'text-[#0F1A26]/30'}`}>{shopCategories.length - 1} {t('categories') || 'categories'}</span>
             </div>
           </div>
 
@@ -204,11 +238,11 @@ export function ShopMegaMenu({ scrolled }: ShopMegaMenuProps) {
                   <ArrowRight className="w-4 h-4 text-[#EEBC3F] group-hover:text-white transition-colors" />
                 </div>
                 <div>
-                  <span className={`font-semibold text-sm ${scrolled ? 'text-white' : 'text-[#0F1A26]'}`}>Browse All Products</span>
+                  <span className={`font-semibold text-sm ${scrolled ? 'text-white' : 'text-[#0F1A26]'}`}>{t('browseAll') || 'Browse All Products'}</span>
                 </div>
               </div>
               <div className={`flex items-center gap-2 transition-colors ${scrolled ? 'text-white/30 group-hover:text-[#EEBC3F]' : 'text-[#0F1A26]/30 group-hover:text-[#EEBC3F]'}`}>
-                <span className="text-xs font-medium">View</span>
+                <span className="text-xs font-medium">{t('view') || 'View'}</span>
                 <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
               </div>
             </Link>

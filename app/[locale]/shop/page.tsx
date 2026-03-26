@@ -2,8 +2,9 @@
 
 import { useCart } from "@/app/lib/cart-context";
 import { useState, useEffect, useRef, Suspense } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/routing";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from 'next-intl';
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import { Loading } from "@/app/components/loading";
 import { SwipeableProductImage } from "@/app/components/swipeable-product-image";
 
 function ShopContent() {
+  const t = useTranslations('shop');
   const { addToCart } = useCart();
   const searchParams = useSearchParams();
   const categoryFromUrl = searchParams.get("category") || "all";
@@ -108,23 +110,23 @@ function ShopContent() {
     switch (activeCategory) {
       case "luggage-covers":
         return {
-          title: <>Luggage <span className="text-[#EEBC3F]">Covers</span></>,
-          subtitle: "Stretchy, washable covers that protect your suitcase"
+          title: <>{t('header.luggageCovers.title').split(' ')[0]} <span className="text-[#EEBC3F]">{t('header.luggageCovers.title').split(' ').slice(1).join(' ')}</span></>,
+          subtitle: t('header.luggageCovers.subtitle')
         };
       case "passport-wallets":
         return {
-          title: <>Passport <span className="text-[#EEBC3F]">Wallets</span></>,
-          subtitle: "Premium leather with RFID protection for secure travel"
+          title: <>{t('header.passportWallets.title').split(' ')[0]} <span className="text-[#EEBC3F]">{t('header.passportWallets.title').split(' ').slice(1).join(' ')}</span></>,
+          subtitle: t('header.passportWallets.subtitle')
         };
       case "bundles":
         return {
-          title: <>Bundle <span className="text-[#EEBC3F]">Deals</span></>,
-          subtitle: "Curated bundles at better prices. Save up to 30%."
+          title: <>{t('header.bundles.title').split(' ')[0]} <span className="text-[#EEBC3F]">{t('header.bundles.title').split(' ').slice(1).join(' ')}</span></>,
+          subtitle: t('header.bundles.subtitle')
         };
       default:
         return {
-          title: <>The <span className="text-[#EEBC3F]">Shop</span></>,
-          subtitle: "Premium travel accessories for the modern traveler"
+          title: <>{t('header.default.title').split(' ')[0]} <span className="text-[#EEBC3F]">{t('header.default.title').split(' ').slice(1).join(' ')}</span></>,
+          subtitle: t('header.default.subtitle')
         };
     }
   };
@@ -195,20 +197,20 @@ function ShopContent() {
             <aside className="hidden lg:block w-64 flex-shrink-0">
               <div className="sticky top-28">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="font-semibold text-[#0F1A26]">Filters</h2>
+                  <h2 className="font-semibold text-[#0F1A26]">{t('filters.title')}</h2>
                   {activeFiltersCount > 0 && (
                     <button
                       onClick={clearFilters}
                       className="text-xs text-[#EEBC3F] hover:text-[#0F1A26] transition-colors font-medium"
                     >
-                      Clear {activeFiltersCount}
+                      {t('filters.clear', { count: activeFiltersCount })}
                     </button>
                   )}
                 </div>
 
                 {/* Best Seller Filter - Desktop */}
                 <div className="mb-8">
-                  <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">Best Sellers</h3>
+                  <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">{t('filters.bestSellers.title')}</h3>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <div
                       className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${
@@ -225,7 +227,7 @@ function ShopContent() {
                       )}
                     </div>
                     <span className={`text-sm ${showBestSellers ? "text-[#0F1A26] font-medium" : "text-[#0F1A26]/60"}`}>
-                      Show Best Sellers Only
+                      {t('filters.bestSellers.showOnly')}
                     </span>
                   </label>
                 </div>
@@ -233,7 +235,7 @@ function ShopContent() {
                 {/* Size Filter - Clean */}
                 {(activeCategory === "all" || activeCategory === "luggage-covers") && (
                   <div className="mb-8">
-                    <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">Size</h3>
+                    <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">{t('filters.size.title')}</h3>
                     <div className="grid grid-cols-4 gap-2">
                       {sizes.map((size) => (
                         <button
@@ -249,13 +251,13 @@ function ShopContent() {
                         </button>
                       ))}
                     </div>
-                    <p className="text-[#0F1A26]/40 text-xs mt-2">Height in inches</p>
+                    <p className="text-[#0F1A26]/40 text-xs mt-2">{t('filters.size.note')}</p>
                   </div>
                 )}
 
                 {/* Theme Filter - Clean */}
                 <div className="mb-8">
-                  <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">Theme</h3>
+                  <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">{t('filters.theme.title')}</h3>
                   <div className="space-y-2">
                     {themes.map((theme) => (
                       <label 
@@ -286,7 +288,7 @@ function ShopContent() {
 
                 {/* Size Guide Card - Clean */}
                 <div className="bg-[#0F1A26] rounded-xl p-4">
-                  <h3 className="text-sm font-semibold text-white mb-2">Size Guide</h3>
+                  <h3 className="text-sm font-semibold text-white mb-2">{t('filters.sizeGuide.title')}</h3>
                   <div className="space-y-1.5 text-xs">
                     {sizes.map((size) => (
                       <div key={size.id} className="flex justify-between text-white/60">
@@ -308,7 +310,7 @@ function ShopContent() {
                   className="flex items-center gap-2 px-4 py-3 bg-white border border-[#0F1A26]/10 rounded-full text-[#0F1A26]"
                 >
                   <Filter className="w-4 h-4" />
-                  <span className="text-sm font-medium">Filters</span>
+                  <span className="text-sm font-medium">{t('mobile.filters')}</span>
                   {activeFiltersCount > 0 && (
                     <span className="bg-[#EEBC3F] text-[#0F1A26] text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center ml-2">
                       {activeFiltersCount}
@@ -320,7 +322,7 @@ function ShopContent() {
               {/* Results count - Clean */}
               <div className="flex items-center justify-between mb-6">
                 <p className="text-[#0F1A26]/50 text-sm">
-                  Showing <span className="text-[#0F1A26] font-semibold">{filteredProducts.length}</span> products
+                  {t('results.showing', { count: filteredProducts.length })}
                 </p>
               </div>
 
@@ -359,12 +361,12 @@ function ShopContent() {
 
               {filteredProducts.length === 0 && (
                 <div className="text-center py-16">
-                  <p className="text-[#0F1A26]/50 mb-3">No products found</p>
+                  <p className="text-[#0F1A26]/50 mb-3">{t('noProducts') || 'No products found'}</p>
                   <button 
                     onClick={clearFilters} 
                     className="text-[#EEBC3F] hover:text-[#0F1A26] font-medium transition-colors"
                   >
-                    Clear all filters
+                    {t('clearFilters') || 'Clear all filters'}
                   </button>
                 </div>
               )}
@@ -378,7 +380,7 @@ function ShopContent() {
             <div className="absolute inset-0 bg-black/30" onClick={() => setMobileFiltersOpen(false)} />
             <div className="absolute right-0 top-0 bottom-0 w-80 bg-white p-6 overflow-y-auto">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="font-semibold text-[#0F1A26]">Filters</h2>
+                <h2 className="font-semibold text-[#0F1A26]">{t('filters.title')}</h2>
                 <button onClick={() => setMobileFiltersOpen(false)} className="w-8 h-8 rounded-full bg-[#0F1A26]/5 flex items-center justify-center">
                   <X className="w-4 h-4 text-[#0F1A26]" />
                 </button>
@@ -386,7 +388,7 @@ function ShopContent() {
 
               {/* Mobile Best Seller Filter */}
               <div className="mb-6">
-                <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">Best Sellers</h3>
+                <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">{t('filters.bestSellers.title')}</h3>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <div
                     className={`w-4 h-4 rounded border flex items-center justify-center ${
@@ -401,7 +403,7 @@ function ShopContent() {
                     )}
                   </div>
                   <span className={`text-sm ${showBestSellers ? "text-[#0F1A26] font-medium" : "text-[#0F1A26]/60"}`}>
-                    Show Best Sellers Only
+                    {t('filters.bestSellers.showOnly')}
                   </span>
                 </label>
               </div>
@@ -409,7 +411,7 @@ function ShopContent() {
               {/* Mobile Size Filter - Clean */}
               {(activeCategory === "all" || activeCategory === "luggage-covers") && (
                 <div className="mb-6">
-                  <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">Size</h3>
+                  <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">{t('filters.size.title')}</h3>
                   <div className="grid grid-cols-4 gap-2">
                     {sizes.map((size) => (
                       <button
@@ -430,7 +432,7 @@ function ShopContent() {
 
               {/* Mobile Theme Filter - Clean */}
               <div className="mb-6">
-                <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">Theme</h3>
+                <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">{t('filters.theme.title')}</h3>
                 <div className="space-y-2">
                   {themes.map((theme) => (
                     <label key={theme.id} className="flex items-center gap-2 cursor-pointer">
@@ -458,7 +460,7 @@ function ShopContent() {
                 className="w-full bg-[#0F1A26] text-white rounded-full h-12 font-medium" 
                 onClick={() => setMobileFiltersOpen(false)}
               >
-                Show {filteredProducts.length} Products
+                {t('mobile.showProducts', { count: filteredProducts.length })}
               </Button>
             </div>
           </div>

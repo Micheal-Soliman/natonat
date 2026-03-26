@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/routing";
 import { usePathname } from "next/navigation";
+import { useTranslations } from 'next-intl';
 import { ShoppingBag, Menu, X, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ShopMegaMenu } from "./shop-mega-menu";
 import { useCart } from "@/app/lib/cart-context";
+import { LocaleSwitcher, LocaleSwitcherMobile } from "@/app/components/locale-switcher";
 
 const shopCategories = [
   {
@@ -40,6 +42,7 @@ const shopCategories = [
 ];
 
 export function Navigation() {
+  const t = useTranslations('navigation');
   const { totalItems } = useCart();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileShopOpen, setMobileShopOpen] = useState(false);
@@ -56,12 +59,43 @@ export function Navigation() {
 
   const isActive = (href: string) => pathname === href || pathname?.startsWith(`${href}/`);
 
+  const shopCategories = [
+    {
+      id: "all",
+      name: t('allProducts'),
+      description: "Browse everything",
+      href: "/shop",
+      image: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&q=80",
+    },
+    {
+      id: "luggage-covers",
+      name: t('luggageCovers'),
+      description: "Protective stretchy covers",
+      href: "/shop/luggage-covers",
+      image: "https://images.unsplash.com/photo-1565026057447-bc90a3dceb87?w=400&q=80",
+    },
+    {
+      id: "passport-wallets",
+      name: t('passportWallets'),
+      description: "RFID-blocking organizers",
+      href: "/shop/passport-wallets",
+      image: "https://images.unsplash.com/photo-1627123424574-724758594e93?w=400&q=80",
+    },
+    {
+      id: "travel-sets",
+      name: t('travelSets'),
+      description: "Curated bundles",
+      href: "/shop/travel-sets",
+      image: "https://images.unsplash.com/photo-1504198458649-3128b932f49e?w=400&q=80",
+    },
+  ];
+
   const otherNavLinks = [
-    { href: "/shop?sort=best-sellers", label: "Best Sellers" },
-    { href: "/how-it-works", label: "Size Guide" },
-    { href: "/about", label: "About" },
-    { href: "/faqs", label: "FAQs" },
-    { href: "/contact", label: "Contact" },
+    { href: "/shop?sort=best-sellers", label: t('bestSellers') },
+    { href: "/how-it-works", label: t('sizeGuide') },
+    { href: "/about", label: t('about') },
+    { href: "/faqs", label: t('faqs') },
+    { href: "/contact", label: t('contact') },
   ];
 
   return (
@@ -120,8 +154,9 @@ export function Navigation() {
             ))}
           </div>
 
-          {/* CTA Buttons */}
-          <div className="hidden md:flex items-center gap-4">
+          {/* CTA Buttons with Locale Switcher */}
+          <div className="hidden md:flex items-center gap-3">
+            <LocaleSwitcher scrolled={scrolled} />
             <Link href="/cart" className="relative">
               <button className={`rounded-full flex items-center justify-center transition-all duration-300 cursor-pointer ${
                 scrolled 
@@ -140,7 +175,7 @@ export function Navigation() {
               <Button 
                 className="bg-[#EEBC3F] text-[#0a0f14] hover:bg-white rounded-full px-6 h-11 text-sm font-bold transition-all duration-300 hover:shadow-lg hover:shadow-[#EEBC3F]/30 hover:scale-105"
               >
-                Shop Now
+                {t('shopNow')}
               </Button>
             </Link>
           </div>
@@ -176,6 +211,9 @@ export function Navigation() {
         {mobileMenuOpen && (
           <div className="md:hidden absolute top-full left-4 right-4 mt-3 bg-[#0a0f14]/95 backdrop-blur-xl rounded-2xl p-4 shadow-2xl border border-white/10 animate-in slide-in-from-top-2 duration-300">
             <div className="flex flex-col gap-1">
+              {/* Locale Switcher */}
+              <LocaleSwitcherMobile />
+              
               {/* Shop Dropdown Toggle */}
               <button
                 onClick={() => setMobileShopOpen(!mobileShopOpen)}
@@ -185,7 +223,7 @@ export function Navigation() {
                     : "text-white/70 hover:bg-white/5 hover:text-white"
                 }`}
               >
-                <span>Shop</span>
+                <span>{t('shop')}</span>
                 <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${mobileShopOpen ? "rotate-180" : ""}`} />
               </button>
               
@@ -204,7 +242,7 @@ export function Navigation() {
                       setMobileMenuOpen(false);
                     }}
                   >
-                    All Products
+                    {t('allProducts')}
                   </Link>
                   {shopCategories.filter(c => c.id !== "all").map((category) => (
                     <Link
@@ -242,7 +280,7 @@ export function Navigation() {
               ))}
               <Link href="/shop" onClick={() => setMobileMenuOpen(false)}>
                 <Button className="mt-3 bg-[#EEBC3F] text-[#0a0f14] hover:bg-[#F5D47A] rounded-xl h-12 font-bold w-full">
-                  Shop Now
+                  {t('shopNow')}
                 </Button>
               </Link>
             </div>

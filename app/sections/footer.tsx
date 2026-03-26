@@ -1,30 +1,33 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/i18n/routing";
+import { useTranslations } from 'next-intl';
 import { Instagram, Facebook, MessageCircle, Mail, MapPin, Phone } from "lucide-react";
 
-const footerLinks = {
-  shop: [
-    { label: "Luggage Covers", href: "/shop?category=luggage-covers" },
-    { label: "Passport Wallets", href: "/shop?category=passport-wallets" },
-    { label: "Travel Sets", href: "/shop?category=travel-sets" },
-    { label: "All Products", href: "/shop" },
-  ],
-  company: [
-    { label: "About Us", href: "/about" },
-    { label: "Size Guide", href: "/how-it-works" },
-    { label: "FAQs", href: "/faqs" },
-    { label: "Contact", href: "/contact" },
-  ],
-  legal: [
-    { label: "Privacy Policy", href: "/legal/privacy" },
-    { label: "Terms & Conditions", href: "/legal/terms" },
-    { label: "Shipping & Returns", href: "/legal/shipping" },
-    { label: "Warranty", href: "/legal/warranty" },
-  ],
-};
-
 export function Footer() {
+  const t = useTranslations('footer');
+  const currentYear = new Date().getFullYear();
+
+  const footerLinks = {
+    shop: [
+      { label: t('links.shop.luggageCovers'), href: "/shop?category=luggage-covers" },
+      { label: t('links.shop.passportWallets'), href: "/shop?category=passport-wallets" },
+      { label: t('links.shop.travelSets'), href: "/shop?category=travel-sets" },
+      { label: t('links.shop.allProducts'), href: "/shop" },
+    ],
+    company: [
+      { label: t('links.company.about'), href: "/about" },
+      { label: t('links.company.sizeGuide'), href: "/how-it-works" },
+      { label: t('links.company.faqs'), href: "/faqs" },
+      { label: t('links.company.contact'), href: "/contact" },
+    ],
+    legal: [
+      { label: t('links.legal.privacy'), href: "/legal/privacy" },
+      { label: t('links.legal.terms'), href: "/legal/terms" },
+      { label: t('links.legal.shipping'), href: "/legal/shipping" },
+      { label: t('links.legal.warranty'), href: "/legal/warranty" },
+    ],
+  };
   return (
     <footer className="bg-[#0F1A26] text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -40,7 +43,7 @@ export function Footer() {
               />
             </Link>
             <p className="text-white/60 mt-4 mb-6 max-w-sm text-sm">
-              Pack smart, travel easy. Premium travel accessories that protect your gear and make it stand out.
+              {t('tagline')}
             </p>
             {/* Contact info */}
             <div className="flex flex-col gap-2">
@@ -49,18 +52,18 @@ export function Footer() {
                 className="flex items-center gap-2 text-white/60 hover:text-[#EEBC3F] transition-colors text-sm"
               >
                 <Mail className="w-4 h-4" />
-                <span>info@natonat.com</span>
+                <span>{t('contact.email')}</span>
               </a>
               <a
-                href="tel:+201000000061"
+                href={`tel:${t('contact.phone').replace(/\s/g, '')}`}
                 className="flex items-center gap-2 text-white/60 hover:text-[#EEBC3F] transition-colors text-sm"
               >
                 <Phone className="w-4 h-4" />
-                <span>+20 100 000 0061</span>
+                <span>{t('contact.phone')}</span>
               </a>
               <div className="flex items-center gap-2 text-white/60 text-sm">
                 <MapPin className="w-4 h-4" />
-                <span>Cairo, Egypt</span>
+                <span>{t('contact.location')}</span>
               </div>
             </div>
           </div>
@@ -68,7 +71,7 @@ export function Footer() {
           {/* Shop links */}
           <div>
             <h3 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">
-              Shop
+              {t('links.shop.title')}
             </h3>
             <ul className="space-y-2">
               {footerLinks.shop.map((link) => (
@@ -87,7 +90,7 @@ export function Footer() {
           {/* Company links */}
           <div>
             <h3 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">
-              Company
+              {t('links.company.title')}
             </h3>
             <ul className="space-y-2">
               {footerLinks.company.map((link) => (
@@ -106,7 +109,7 @@ export function Footer() {
           {/* Legal links */}
           <div>
             <h3 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">
-              Legal
+              {t('links.legal.title')}
             </h3>
             <ul className="space-y-2">
               {footerLinks.legal.map((link) => (
@@ -126,15 +129,15 @@ export function Footer() {
         {/* Bottom bar */}
         <div className="border-t border-white/10 mt-12 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-white/40 text-sm">
-            © {new Date().getFullYear()} natOnat. All rights reserved.
+            {t('copyright', { year: currentYear })}
           </p>
           
           {/* Social icons */}
           <div className="flex items-center gap-4">
-            <span className="text-white/40 text-sm">Follow us</span>
+            <span className="text-white/40 text-sm">{t('social.follow')}</span>
             <div className="flex items-center gap-3">
               <a
-                href="https://instagram.com/natonat"
+                href={t('social.instagramUrl')}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:bg-[#EEBC3F] hover:text-[#0F1A26] transition-all"
@@ -142,7 +145,7 @@ export function Footer() {
                 <Instagram className="w-5 h-5" />
               </a>
               <a
-                href="https://facebook.com/natonat"
+                href={t('social.facebookUrl')}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:bg-[#EEBC3F] hover:text-[#0F1A26] transition-all"
@@ -150,7 +153,7 @@ export function Footer() {
                 <Facebook className="w-5 h-5" />
               </a>
               <a
-                href="https://tiktok.com/@natonat"
+                href={t('social.tiktokUrl')}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:bg-[#EEBC3F] hover:text-[#0F1A26] transition-all"
@@ -160,7 +163,7 @@ export function Footer() {
                 </svg>
               </a>
               <a
-                href="https://wa.me/201000000061"
+                href={t('social.whatsappUrl')}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:bg-[#EEBC3F] hover:text-[#0F1A26] transition-all"

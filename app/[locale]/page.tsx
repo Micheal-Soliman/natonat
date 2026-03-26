@@ -1,14 +1,14 @@
 import { Suspense } from "react";
-import { Navigation } from "./sections/navigation";
-import { Hero } from "./sections/hero";
-import { BenefitsStrip } from "./sections/benefits-strip";
-import { FeaturedCollections } from "./sections/featured-collections";
-import { BestSellers } from "./sections/best-sellers";
-import { TravelSets } from "./sections/travel-sets";
-import { HowItWorks } from "./sections/how-it-works";
-import { SocialProof } from "./sections/social-proof";
-import { Footer } from "./sections/footer";
-import { Loading } from "./components/loading";
+import { Navigation } from "@/app/sections/navigation";
+import { Hero } from "@/app/sections/hero";
+import { BenefitsStrip } from "@/app/sections/benefits-strip";
+import { FeaturedCollections } from "@/app/sections/featured-collections";
+import { BestSellers } from "@/app/sections/best-sellers";
+import { TravelSets } from "@/app/sections/travel-sets";
+import { HowItWorks } from "@/app/sections/how-it-works";
+import { SocialProof } from "@/app/sections/social-proof";
+import { Footer } from "@/app/sections/footer";
+import { Loading } from "@/app/components/loading";
 
 export default function Home() {
   return (

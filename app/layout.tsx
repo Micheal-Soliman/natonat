@@ -30,16 +30,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${montserrat.variable} ${quicksand.variable} antialiased font-sans`}
-      >
-        <ToastProvider>
-          <CartProvider>
-            {children}
-          </CartProvider>
-        </ToastProvider>
-      </body>
-    </html>
+    <ToastProvider>
+      <CartProvider>
+        {children}
+      </CartProvider>
+    </ToastProvider>
   );
 }

@@ -2,8 +2,9 @@
 
 import { useCart } from "@/app/lib/cart-context";
 import { useState, useEffect, useRef } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Link } from "@/i18n/routing";
+import { useRouter } from "@/i18n/routing";
+import { useTranslations } from 'next-intl';
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ interface ProductPageContentProps {
 }
 
 export default function ProductPageContent({ product, prevProduct, nextProduct }: ProductPageContentProps) {
+  const t = useTranslations('product');
   const { addToCart } = useCart();
   const router = useRouter();
   const [selectedSize, setSelectedSize] = useState("m");
@@ -77,7 +79,7 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                   <ChevronLeft className="w-5 h-5" />
                 </div>
                 <div className="flex flex-col items-start leading-tight">
-                  <span className="text-xs text-[#0F1A26]/50 group-hover:text-white/70">Previous</span>
+                  <span className="text-xs text-[#0F1A26]/50 group-hover:text-white/70">{t('nav.previous')}</span>
                   <span className="text-sm font-semibold hidden sm:block">{prevProduct.name}</span>
                 </div>
               </Link>
@@ -90,15 +92,15 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                   <ArrowLeft className="w-5 h-5" />
                 </div>
                 <div className="flex flex-col items-start leading-tight">
-                  <span className="text-xs text-[#0F1A26]/50 group-hover:text-white/70">Go back</span>
-                  <span className="text-sm font-semibold">Back to Shop</span>
+                  <span className="text-xs text-[#0F1A26]/50 group-hover:text-white/70">{t('nav.goBack')}</span>
+                  <span className="text-sm font-semibold">{t('nav.backToShop')}</span>
                 </div>
               </Link>
             )}
             
             {/* Center - Product counter */}
             <div className="hidden md:flex flex-col items-center">
-              <span className="text-xs text-[#0F1A26]/40 uppercase tracking-wider">Browsing</span>
+              <span className="text-xs text-[#0F1A26]/40 uppercase tracking-wider">{t('nav.browsing')}</span>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-[#EEBC3F] font-bold">{products.findIndex(p => p.id === product.id) + 1}</span>
                 <span className="text-[#0F1A26]/30">/</span>
@@ -113,7 +115,7 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                 className="flex items-center gap-3 px-4 py-3 bg-white border border-[#0F1A26]/10 rounded-full text-[#0F1A26] hover:border-[#EEBC3F] hover:bg-[#EEBC3F] hover:text-[#1e3a5f] transition-all duration-300 group shadow-sm"
               >
                 <div className="flex flex-col items-end leading-tight">
-                  <span className="text-xs text-[#0F1A26]/50 group-hover:text-white/70">Next</span>
+                  <span className="text-xs text-[#0F1A26]/50 group-hover:text-white/70">{t('nav.next')}</span>
                   <span className="text-sm font-semibold hidden md:block">{nextProduct.name}</span>
                 </div>
                 <div className="w-8 h-8 rounded-full bg-[#0F1A26]/5 group-hover:bg-white/20 flex items-center justify-center transition-all">
@@ -249,17 +251,17 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                 <span className="bg-[#EEBC3F] text-[#0F1A26] text-xs sm:text-sm font-bold px-3 sm:px-4 py-1 sm:py-2 rounded-full shadow-lg">Save {Math.round((1 - product.price / product.originalPrice) * 100)}%</span>
               </div>
 
-              {/* Size Selection - Premium */}
+              {/* Size Selection */}
               {product.size && (
                 <div className="mb-6 sm:mb-8">
                   <div className="flex items-center justify-between mb-3 sm:mb-5">
                     <label className="text-xs sm:text-sm font-bold text-[#0F1A26] tracking-[0.1em] uppercase flex items-center gap-2">
                       <Award className="w-3 h-3 sm:w-4 sm:h-4 text-[#EEBC3F]" />
-                      Select Size
+                      {t('size.select')}
                     </label>
-                    <Link href="/how-it-works" className="text-xs sm:text-sm bg-[#EEBC3F] hover:bg-[#d4a535] text-[#0F1A26] transition-all flex items-center gap-1.5 font-bold px-3 sm:px-4 py-2 sm:py-2 rounded-lg shadow-md hover:shadow-lg hover:scale-105">
+                    <Link href="/how-it-works" className="text-xs sm:text-sm bg-[#EEBC3F] hover:bg-[#d4a535] text-[#0F1A26] transition-all flex items-center gap-1.5 font-bold px-3 sm:px-4 py-2 rounded-lg shadow-md hover:shadow-lg hover:scale-105">
                       <Ruler className="w-3 h-3 sm:w-4 sm:h-4" />
-                      How to Measure?
+                      {t('size.howToMeasure')}
                     </Link>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
@@ -312,7 +314,7 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                   }}
                   className="flex-1 bg-[#0F1A26] text-white hover:bg-[#EEBC3F] hover:text-[#0F1A26] h-14 sm:h-16 rounded-2xl font-bold text-base sm:text-lg transition-all duration-300 hover:shadow-xl hover:shadow-[#EEBC3F]/20 group"
                 >
-                  Add to Cart
+                  {t('addToCart')}
                 </Button>
                 <Button 
                   onClick={() => {
@@ -330,17 +332,17 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                   }}
                   className="flex-1 sm:flex-none bg-gradient-to-r from-[#EEBC3F] to-[#d4a535] text-[#0F1A26] hover:shadow-xl hover:shadow-[#EEBC3F]/30 h-14 sm:h-16 px-4 sm:px-10 rounded-2xl font-bold text-base sm:text-lg transition-all duration-300 group"
                 >
-                  Buy Now
+                  {t('buyNow')}
                 </Button>
               </div>
 
-              {/* Benefits - Premium Grid */}
+              {/* Benefits Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6 sm:mb-8">
                 {[
-                  { icon: Shield, title: "Scratch Protection", desc: "Protects your luggage" },
-                  { icon: Sparkles, title: "Machine Washable", desc: "Easy to clean" },
-                  { icon: Truck, title: "Free Shipping", desc: "On orders over 500 EGP" },
-                  { icon: RotateCcw, title: "30-Day Returns", desc: "Hassle free" },
+                  { icon: Shield, title: t('benefits.protection.title'), desc: t('benefits.protection.desc') },
+                  { icon: Sparkles, title: t('benefits.washable.title'), desc: t('benefits.washable.desc') },
+                  { icon: Truck, title: t('benefits.shipping.title'), desc: t('benefits.shipping.desc') },
+                  { icon: RotateCcw, title: t('benefits.returns.title'), desc: t('benefits.returns.desc') },
                 ].map((benefit, index) => (
                   <div key={index} className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-white rounded-xl sm:rounded-2xl border border-[#0F1A26]/5 hover:border-[#EEBC3F]/20 hover:shadow-lg transition-all duration-300 group">
                     <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-[#EEBC3F]/10 flex items-center justify-center group-hover:bg-[#EEBC3F] transition-colors flex-shrink-0">
@@ -354,19 +356,14 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                 ))}
               </div>
 
-              {/* Description - Premium */}
+              {/* Description */}
               <div className="bg-white rounded-3xl p-6 border border-[#0F1A26]/5">
                 <h3 className="text-sm font-bold text-[#0F1A26] mb-5 tracking-[0.1em] uppercase flex items-center gap-2">
                   <Check className="w-4 h-4 text-[#EEBC3F]" />
-                  Why You&apos;ll Love It
+                  {t('description.title')}
                 </h3>
                 <ul className="space-y-4">
-                  {[
-                    "Protects from scratches, dirt & rough handling",
-                    "Stretchy, washable spandex/polyester fabric",
-                    "Easy access to top & side handles",
-                    "Wheels remain free for easy rolling"
-                  ].map((item, index) => (
+                  {[t('description.1'), t('description.2'), t('description.3'), t('description.4')].map((item, index) => (
                     <li key={index} className="flex items-center gap-3 text-[#0F1A26]/70">
                       <div className="w-8 h-8 rounded-lg bg-[#EEBC3F]/10 flex items-center justify-center flex-shrink-0">
                         <Check className="w-4 h-4 text-[#EEBC3F]" strokeWidth={2} />
@@ -379,15 +376,15 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
             </div>
           </div>
 
-          {/* Related Products - Premium */}
+          {/* Related Products */}
           <div className="mt-24 pt-20 border-t border-[#0F1A26]/10">
             <div className={`flex items-center justify-between mb-10 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
               <div>
-                <span className="text-[#EEBC3F] text-xs font-bold tracking-[0.3em] uppercase">Complete Your Look</span>
-                <h2 className="text-3xl md:text-4xl font-bold text-[#0F1A26] mt-2 tracking-tight">You May Also Like</h2>
+                <span className="text-[#EEBC3F] text-xs font-bold tracking-[0.3em] uppercase">{t('related.subtitle')}</span>
+                <h2 className="text-3xl md:text-4xl font-bold text-[#0F1A26] mt-2 tracking-tight">{t('related.title')}</h2>
               </div>
               <Link href="/shop" className="bg-white text-[#0F1A26] hover:bg-[#EEBC3F] hover:text-[#0F1A26] px-6 py-3 rounded-full font-semibold transition-all duration-300 border border-[#0F1A26]/10 hover:border-[#EEBC3F] flex items-center gap-2 group">
-                View All
+                {t('related.viewAll')}
                 <ArrowUpRight className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" strokeWidth={2} />
               </Link>
             </div>

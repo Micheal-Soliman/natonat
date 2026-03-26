@@ -1,0 +1,407 @@
+{
+  "metadata": {
+    "title": "natOnat | Pack Smart. Travel Easy.",
+    "description": "Premium travel accessories - stretchy, washable luggage covers and smart passport wallets that protect your gear and make it stand out."
+  },
+  "navigation": {
+    "shop": "Shop",
+    "categories": "Categories",
+    "browseAll": "Browse All Products",
+    "view": "View",
+    "allProducts": "All Products",
+    "luggageCovers": "Luggage Covers",
+    "passportWallets": "Passport Wallets",
+    "travelSets": "Travel Sets",
+    "bestSellers": "Best Sellers",
+    "sizeGuide": "Size Guide",
+    "about": "About",
+    "faqs": "FAQs",
+    "contact": "Contact",
+    "cart": "Cart",
+    "shopNow": "Shop Now"
+  },
+  "hero": {
+    "label": "Premium Travel Gear",
+    "title": "natOnat",
+    "tagline": "Pack Smart. Travel Bold.",
+    "cta": "Shop Now"
+  },
+  "benefits": {
+    "sectionLabel": "Features",
+    "title": "Why",
+    "subtitle": "Premium travel essentials crafted for the modern journey",
+    "items": {
+      "protection": {
+        "number": "01",
+        "title": "Protection",
+        "subtitle": "From scratches & dirt"
+      },
+      "durability": {
+        "number": "02",
+        "title": "Durability",
+        "subtitle": "Stretchy & washable"
+      },
+      "recognition": {
+        "number": "03",
+        "title": "Recognition",
+        "subtitle": "Easy to spot"
+      },
+      "ecosystem": {
+        "number": "04",
+        "title": "Ecosystem",
+        "subtitle": "Complete travel set"
+      }
+    },
+    "footer": "Est. 2024 — Cairo"
+  },
+  "collections": {
+    "sectionLabel": "Collections",
+    "title": "Shop by Category",
+    "luggageCovers": {
+      "title": "Luggage Covers",
+      "description": "Protect your suitcase with style",
+      "badge": "Essential"
+    },
+    "passportWallets": {
+      "title": "Passport Wallets",
+      "description": "Smart organization for your documents",
+      "badge": "Premium Leather"
+    },
+    "explore": "Explore Collection"
+  },
+  "bestSellers": {
+    "sectionLabel": "Curated",
+    "title": "Best Sellers",
+    "subtitle": "Our most loved travel accessories",
+    "viewAll": "View All",
+    "new": "New",
+    "bestSeller": "Best Seller",
+    "limited": "Limited",
+    "size": "Size"
+  },
+  "bundles": {
+    "sectionLabel": "Save More",
+    "title": "Travel Smarter with Bundles",
+    "subtitle": "Complete travel sets designed for every type of journey. Save up to 30% when you bundle.",
+    "save": "Save EGP {amount}",
+    "addToCart": "Add to Cart",
+    "viewAll": "View All Bundles"
+  },
+  "howItWorks": {
+    "sectionLabel": "Simple & Easy",
+    "title": "How natOnat Works",
+    "subtitle": "Our patented sizing system makes finding the perfect cover incredibly simple. No more measuring width, depth and height - just one measurement and you're done.",
+    "steps": {
+      "1": {
+        "number": "01",
+        "title": "Choose Your Design",
+        "description": "Browse our collection of unique, eye-catching patterns"
+      },
+      "2": {
+        "number": "02",
+        "title": "Pick Your Size",
+        "description": "Simply measure your suitcase height (without wheels)"
+      },
+      "3": {
+        "number": "03",
+        "title": "Slide On & Travel",
+        "description": "Stretch, secure, and enjoy protected luggage"
+      }
+    },
+    "sizeGuide": {
+      "title": "Size Guide",
+      "note": "* Measure suitcase height only, excluding wheels",
+      "sizes": {
+        "s": { "label": "S", "range": "45-53 cm", "type": "Carry-on" },
+        "m": { "label": "M", "range": "55-63 cm", "type": "Medium" },
+        "l": { "label": "L", "range": "65-74 cm", "type": "Large" },
+        "xl": { "label": "XL", "range": "76-81 cm", "type": "Extra Large" }
+      }
+    },
+    "seeDetails": "See Full Details"
+  },
+  "socialProof": {
+    "sectionLabel": "Trusted by Travelers",
+    "title": "What Our Customers Say",
+    "rating": "4.5/5 from 2,000+ reviews",
+    "marketplaces": "Available on leading marketplaces",
+    "reviews": {
+      "1": {
+        "name": "Ahmed M.",
+        "location": "Cairo, Egypt",
+        "text": "The sizing system is genius! No more guessing. My cover fits perfectly and I've received so many compliments at the airport.",
+        "product": "Geo Print Cover - M"
+      },
+      "2": {
+        "name": "Sarah K.",
+        "location": "Dubai, UAE",
+        "text": "Finally, a brand that understands premium quality at fair prices. The RFID wallet is beautifully crafted and the leather feels amazing.",
+        "product": "Classic Leather Wallet"
+      },
+      "3": {
+        "name": "Mohamed R.",
+        "location": "Riyadh, KSA",
+        "text": "Bought the family bundle for our trip to Europe. Saved money and everyone loved their matching covers. Highly recommended!",
+        "product": "Family Pack Bundle"
+      },
+      "4": {
+        "name": "Layla H.",
+        "location": "Amman, Jordan",
+        "text": "My suitcase looks brand new even after 10+ trips. The washable feature is a game changer for frequent travelers.",
+        "product": "Floral Design Cover - L"
+      }
+    }
+  },
+  "footer": {
+    "tagline": "Pack smart, travel easy. Premium travel accessories that protect your gear and make it stand out.",
+    "contact": {
+      "email": "info@natonat.com",
+      "phone": "+20 10 70004227",
+      "location": "Cairo, Egypt"
+    },
+    "links": {
+      "shop": {
+        "title": "Shop",
+        "luggageCovers": "Luggage Covers",
+        "passportWallets": "Passport Wallets",
+        "travelSets": "Travel Sets",
+        "allProducts": "All Products"
+      },
+      "company": {
+        "title": "Company",
+        "about": "About Us",
+        "sizeGuide": "Size Guide",
+        "faqs": "FAQs",
+        "contact": "Contact"
+      },
+      "legal": {
+        "title": "Legal",
+        "privacy": "Privacy Policy",
+        "terms": "Terms & Conditions",
+        "shipping": "Shipping & Returns",
+        "warranty": "Warranty"
+      }
+    },
+    "social": {
+      "follow": "Follow us",
+      "instagram": "Instagram",
+      "instagramUrl": "https://www.instagram.com/natonatofficial/",
+      "facebook": "Facebook",
+      "facebookUrl": "https://www.facebook.com/natOnatofficial",
+      "tiktok": "TikTok",
+      "tiktokUrl": "https://www.tiktok.com/@natonatofficial",
+      "whatsapp": "WhatsApp",
+      "whatsappUrl": "https://wa.me/201070004227"
+    },
+    "copyright": "© {year} natOnat. All rights reserved."
+  },
+  "shop": {
+    "header": {
+      "default": {
+        "title": "The Shop",
+        "subtitle": "Premium travel accessories for the modern traveler"
+      },
+      "luggageCovers": {
+        "title": "Luggage Covers",
+        "subtitle": "Stretchy, washable covers that protect your suitcase"
+      },
+      "passportWallets": {
+        "title": "Passport Wallets",
+        "subtitle": "Premium leather with RFID protection for secure travel"
+      },
+      "bundles": {
+        "title": "Bundle Deals",
+        "subtitle": "Curated bundles at better prices. Save up to 30%."
+      }
+    },
+    "filters": {
+      "title": "Filters",
+      "clear": "Clear {{count}}",
+      "bestSellers": {
+        "title": "Best Sellers",
+        "showOnly": "Show Best Sellers Only"
+      },
+      "size": {
+        "title": "Size",
+        "note": "Height in cm"
+      },
+      "theme": {
+        "title": "Theme",
+        "minimal": "Minimal",
+        "fun": "Fun & Colorful",
+        "travelIcons": "Travel Icons"
+      },
+      "sizeGuide": {
+        "title": "Size Guide"
+      }
+    },
+    "results": {
+      "showing": "Showing {{count}} products"
+    },
+    "mobile": {
+      "filters": "Filters",
+      "showProducts": "Show {{count}} Products"
+    }
+  },
+  "product": {
+    "badge": "Premium",
+    "rating": {
+      "value": "4.9",
+      "reviews": "127 verified reviews"
+    },
+    "price": {
+      "save": "Save {{percent}}%"
+    },
+    "size": {
+      "title": "Select Size",
+      "howToMeasure": "How to Measure?"
+    },
+    "quantity": "Quantity",
+    "addToCart": "Add to Cart",
+    "buyNow": "Buy Now",
+    "benefits": {
+      "scratchProtection": {
+        "title": "Scratch Protection",
+        "desc": "Protects your luggage"
+      },
+      "washable": {
+        "title": "Machine Washable",
+        "desc": "Easy to clean"
+      },
+      "shipping": {
+        "title": "Free Shipping",
+        "desc": "On orders over 500 EGP"
+      },
+      "returns": {
+        "title": "30-Day Returns",
+        "desc": "Hassle free"
+      }
+    },
+    "features": {
+      "title": "Why You'll Love It",
+      "items": [
+        "Protects from scratches, dirt & rough handling",
+        "Stretchy, washable spandex/polyester fabric",
+        "Easy access to top & side handles",
+        "Wheels remain free for easy rolling"
+      ]
+    },
+    "related": {
+      "sectionLabel": "Complete Your Look",
+      "title": "You May Also Like",
+      "viewAll": "View All"
+    },
+    "navigation": {
+      "previous": "Previous",
+      "next": "Next",
+      "backToShop": "Back to Shop",
+      "browsing": "Browsing"
+    }
+  },
+  "sizeModal": {
+    "title": "Select Size",
+    "subtitle": "What size is your suitcase?",
+    "note": "Measure height only, excluding wheels",
+    "sizes": {
+      "s": { "label": "S", "range": "45-53 cm", "type": "Carry-on" },
+      "m": { "label": "M", "range": "55-63 cm", "type": "Medium" },
+      "l": { "label": "L", "range": "65-74 cm", "type": "Large" },
+      "xl": { "label": "XL", "range": "76-81 cm", "type": "Extra Large" }
+    },
+    "cancel": "Cancel",
+    "confirm": "Add to Cart"
+  },
+  "cart": {
+    "title": "Shopping Cart",
+    "empty": {
+      "title": "Your cart is empty",
+      "subtitle": "Looks like you haven't added anything yet.",
+      "cta": "Continue Shopping"
+    },
+    "item": {
+      "size": "Size",
+      "quantity": "Qty",
+      "remove": "Remove"
+    },
+    "summary": {
+      "title": "Order Summary",
+      "subtotal": "Subtotal",
+      "shipping": "Shipping",
+      "freeShipping": "Free",
+      "total": "Total",
+      "checkout": "Proceed to Checkout",
+      "continueShopping": "Continue Shopping",
+      "note": "Shipping & taxes calculated at checkout"
+    },
+    "savings": "You're saving EGP {{amount}}"
+  },
+  "checkout": {
+    "header": {
+      "title": "Check out",
+      "subtitle": "Complete your order and we'll ship it right away"
+    },
+    "backToCart": "Back to Cart",
+    "success": {
+      "title": "Order Confirmed!",
+      "subtitle": "Thank you for your order. We'll send you a confirmation email shortly.",
+      "orderNumber": "Order Number",
+      "continueShopping": "Continue Shopping"
+    },
+    "form": {
+      "contact": {
+        "title": "Contact Information",
+        "email": "Email",
+        "newsletter": "Subscribe to our newsletter for exclusive offers & updates"
+      },
+      "shipping": {
+        "title": "Shipping Address",
+        "firstName": "First Name",
+        "firstNamePlaceholder": "First",
+        "lastName": "Last Name",
+        "lastNamePlaceholder": "Last",
+        "address": "Address",
+        "addressPlaceholder": "Street address",
+        "city": "City",
+        "cityPlaceholder": "City",
+        "phone": "Phone",
+        "phonePlaceholder": "01xxxxxxxxx"
+      },
+      "payment": {
+        "title": "Payment Method",
+        "cod": {
+          "title": "Cash on Delivery",
+          "subtitle": "Pay when you receive your order"
+        },
+        "card": {
+          "title": "Credit/Debit Card",
+          "subtitle": "Pay securely with your card"
+        }
+      },
+      "processing": "Processing...",
+      "completeOrder": "Complete Order - EGP {{total}}"
+    },
+    "summary": {
+      "title": "Order Summary",
+      "qty": "Qty: {{quantity}}",
+      "subtotal": "Subtotal",
+      "shipping": "Shipping",
+      "free": "Free",
+      "total": "Total"
+    }
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "retry": "Retry",
+    "close": "Close",
+    "save": "Save",
+    "cancel": "Cancel",
+    "continue": "Continue",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit",
+    "edit": "Edit",
+    "delete": "Delete",
+    "view": "View"
+  }
+}

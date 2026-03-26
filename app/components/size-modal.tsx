@@ -1,15 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from 'next-intl';
 import { X, ShoppingBag, Ruler } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-const sizes = [
-  { id: "s", label: "S", range: "18-21 inches" },
-  { id: "m", label: "M", range: "22-25 inches" },
-  { id: "l", label: "L", range: "26-29 inches" },
-  { id: "xl", label: "XL", range: "30-32 inches" },
-];
 
 interface SizeModalProps {
   isOpen: boolean;
@@ -19,7 +13,16 @@ interface SizeModalProps {
 }
 
 export function SizeModal({ isOpen, onClose, onConfirm, productName }: SizeModalProps) {
+  const t = useTranslations('sizeModal');
+  const tg = useTranslations('howItWorks.sizeGuide');
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
+
+  const sizes = [
+    { id: "s", label: tg('sizes.s.label'), range: tg('sizes.s.range') },
+    { id: "m", label: tg('sizes.m.label'), range: tg('sizes.m.range') },
+    { id: "l", label: tg('sizes.l.label'), range: tg('sizes.l.range') },
+    { id: "xl", label: tg('sizes.xl.label'), range: tg('sizes.xl.range') },
+  ];
 
   if (!isOpen) return null;
 
@@ -47,10 +50,10 @@ export function SizeModal({ isOpen, onClose, onConfirm, productName }: SizeModal
             <Ruler className="w-8 h-8 text-[#EEBC3F]" />
           </div>
           <h3 className="text-xl font-bold text-[#0F1A26] mb-2">
-            Select Size
+            {t('title')}
           </h3>
           <p className="text-[#0F1A26]/60 text-sm">
-            Choose the right size for <span className="font-medium text-[#0F1A26]">{productName}</span>
+            {t('subtitle')} <span className="font-medium text-[#0F1A26]">{productName}</span>
           </p>
         </div>
 
@@ -90,9 +93,9 @@ export function SizeModal({ isOpen, onClose, onConfirm, productName }: SizeModal
         {/* Info */}
         <div className="bg-[#F1EBE3] rounded-xl p-3 mb-6">
           <p className="text-xs text-[#0F1A26]/70 text-center">
-            💡 Not sure? Check your suitcase measurements or visit our
+            💡 {t('note')} 
             <a href="/how-it-works" className="text-[#EEBC3F] font-medium hover:underline ml-1">
-              size guide
+              {t('sizeGuide')}
             </a>
           </p>
         </div>
@@ -104,7 +107,7 @@ export function SizeModal({ isOpen, onClose, onConfirm, productName }: SizeModal
             onClick={onClose}
             className="flex-1 border-[#0F1A26]/20 text-[#0F1A26] hover:bg-[#0F1A26]/5 rounded-xl h-12"
           >
-            Cancel
+            {t('cancel')}
           </Button>
           <Button
             onClick={() => selectedSize && onConfirm(selectedSize)}
@@ -112,7 +115,7 @@ export function SizeModal({ isOpen, onClose, onConfirm, productName }: SizeModal
             className="flex-1 bg-[#0F1A26] text-white hover:bg-[#EEBC3F] hover:text-[#0F1A26] rounded-xl h-12 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ShoppingBag className="w-5 h-5 mr-2" />
-            Add to Cart
+            {t('confirm')}
           </Button>
         </div>
       </div>

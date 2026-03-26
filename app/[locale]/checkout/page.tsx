@@ -1,7 +1,8 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/routing";
+import { useTranslations } from 'next-intl';
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ export default function CheckoutPage() {
 }
 
 function CheckoutContent() {
+  const t = useTranslations('checkout');
   const { items, subtotal, clearCart } = useCart();
   const [formData, setFormData] = useState({
     email: "",
@@ -55,17 +57,17 @@ function CheckoutContent() {
               <div className="w-20 h-20 rounded-full bg-[#EEBC3F]/20 flex items-center justify-center mx-auto mb-6">
                 <Check className="w-10 h-10 text-[#EEBC3F]" />
               </div>
-              <h1 className="text-3xl font-bold text-[#0F1A26] mb-2">Order Confirmed!</h1>
+              <h1 className="text-3xl font-bold text-[#0F1A26] mb-2">{t('success.title')}</h1>
               <p className="text-[#0F1A26]/60 mb-6">
-                Thank you for your order. We'll send you a confirmation email shortly.
+                {t('success.subtitle')}
               </p>
               <div className="bg-white rounded-2xl p-6 border border-[#0F1A26]/5 mb-6">
-                <p className="text-sm text-[#0F1A26]/60 mb-1">Order Number</p>
+                <p className="text-sm text-[#0F1A26]/60 mb-1">{t('success.orderNumber')}</p>
                 <p className="text-lg font-semibold text-[#0F1A26]">#NAT-{Math.random().toString(36).substr(2, 9).toUpperCase()}</p>
               </div>
               <Link href="/shop">
                 <Button className="bg-[#0F1A26] text-white hover:bg-[#EEBC3F] hover:text-[#0F1A26] rounded-full px-8 h-12 font-semibold transition-all duration-300">
-                  Continue Shopping
+                  {t('success.continueShopping')}
                 </Button>
               </Link>
             </div>
@@ -84,10 +86,10 @@ function CheckoutContent() {
         <div className="bg-[#0F1A26] pt-32 pb-16 md:pt-40 md:pb-24">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white tracking-tight">
-              Check<span className="text-[#EEBC3F]">out</span>
+              {t('header.title').split(' ')[0]}<span className="text-[#EEBC3F]">{t('header.title').split(' ')[1] || ''}</span>
             </h1>
             <p className="text-white/50 mt-4 max-w-xl mx-auto font-light text-lg">
-              Complete your order and we'll ship it right away
+              {t('header.subtitle')}
             </p>
           </div>
         </div>
@@ -98,7 +100,7 @@ function CheckoutContent() {
             className="text-sm text-[#EEBC3F] hover:text-[#0F1A26] font-medium flex items-center gap-2 transition-colors mb-8"
           >
             <ArrowLeft className="w-4 h-4" />
-            Back to Cart
+            {t('backToCart')}
           </Link>
 
           <div className="flex flex-col lg:flex-row gap-8">
@@ -109,11 +111,11 @@ function CheckoutContent() {
                 <div className="bg-white rounded-2xl p-6 border border-[#0F1A26]/5">
                   <h2 className="text-lg font-semibold text-[#0F1A26] mb-4 flex items-center gap-2">
                     <Mail className="w-5 h-5 text-[#EEBC3F]" />
-                    Contact Information
+                    {t('form.contact.title')}
                   </h2>
                   <div className="space-y-4">
                     <div>
-                      <label className="text-sm text-[#0F1A26]/60 mb-1 block">Email</label>
+                      <label className="text-sm text-[#0F1A26]/60 mb-1 block">{t('form.contact.email')}</label>
                       <input
                         type="email"
                         required
@@ -133,7 +135,7 @@ function CheckoutContent() {
                       />
                       <div className="flex items-center gap-2">
                         <Newspaper className="w-4 h-4 text-[#EEBC3F]" />
-                        <span className="text-sm font-medium text-[#0F1A26]">Subscribe to our newsletter for exclusive offers & updates</span>
+                        <span className="text-sm font-medium text-[#0F1A26]">{t('form.contact.newsletter')}</span>
                       </div>
                     </label>
                   </div>
@@ -143,33 +145,33 @@ function CheckoutContent() {
                 <div className="bg-white rounded-2xl p-6 border border-[#0F1A26]/5">
                   <h2 className="text-lg font-semibold text-[#0F1A26] mb-4 flex items-center gap-2">
                     <Truck className="w-5 h-5 text-[#EEBC3F]" />
-                    Shipping Address
+                    {t('form.shipping.title')}
                   </h2>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm text-[#0F1A26]/60 mb-1 block">First Name</label>
+                      <label className="text-sm text-[#0F1A26]/60 mb-1 block">{t('form.shipping.firstName')}</label>
                       <input
                         type="text"
                         required
                         value={formData.firstName}
                         onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                         className="w-full px-4 py-3 rounded-xl border border-[#0F1A26]/10 focus:border-[#EEBC3F] focus:outline-none transition-colors"
-                        placeholder="First"
+                        placeholder={t('form.shipping.firstNamePlaceholder')}
                       />
                     </div>
                     <div>
-                      <label className="text-sm text-[#0F1A26]/60 mb-1 block">Last Name</label>
+                      <label className="text-sm text-[#0F1A26]/60 mb-1 block">{t('form.shipping.lastName')}</label>
                       <input
                         type="text"
                         required
                         value={formData.lastName}
                         onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                         className="w-full px-4 py-3 rounded-xl border border-[#0F1A26]/10 focus:border-[#EEBC3F] focus:outline-none transition-colors"
-                        placeholder="Last"
+                        placeholder={t('form.shipping.lastNamePlaceholder')}
                       />
                     </div>
                     <div className="col-span-2">
-                      <label className="text-sm text-[#0F1A26]/60 mb-1 block">Address</label>
+                      <label className="text-sm text-[#0F1A26]/60 mb-1 block">{t('form.shipping.address')}</label>
                       <div className="relative">
                         <MapPin className="w-4 h-4 text-[#0F1A26]/40 absolute left-4 top-1/2 -translate-y-1/2" />
                         <input
@@ -178,12 +180,12 @@ function CheckoutContent() {
                           value={formData.address}
                           onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                           className="w-full px-4 py-3 pl-11 rounded-xl border border-[#0F1A26]/10 focus:border-[#EEBC3F] focus:outline-none transition-colors"
-                          placeholder="Street address"
+                          placeholder={t('form.shipping.addressPlaceholder')}
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="text-sm text-[#0F1A26]/60 mb-1 block">City</label>
+                      <label className="text-sm text-[#0F1A26]/60 mb-1 block">{t('form.shipping.city')}</label>
                       <div className="relative">
                         <Building className="w-4 h-4 text-[#0F1A26]/40 absolute left-4 top-1/2 -translate-y-1/2" />
                         <input
@@ -192,12 +194,12 @@ function CheckoutContent() {
                           value={formData.city}
                           onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                           className="w-full px-4 py-3 pl-11 rounded-xl border border-[#0F1A26]/10 focus:border-[#EEBC3F] focus:outline-none transition-colors"
-                          placeholder="City"
+                          placeholder={t('form.shipping.cityPlaceholder')}
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="text-sm text-[#0F1A26]/60 mb-1 block">Phone</label>
+                      <label className="text-sm text-[#0F1A26]/60 mb-1 block">{t('form.shipping.phone')}</label>
                       <div className="relative">
                         <Phone className="w-4 h-4 text-[#0F1A26]/40 absolute left-4 top-1/2 -translate-y-1/2" />
                         <input
@@ -206,7 +208,7 @@ function CheckoutContent() {
                           value={formData.phone}
                           onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                           className="w-full px-4 py-3 pl-11 rounded-xl border border-[#0F1A26]/10 focus:border-[#EEBC3F] focus:outline-none transition-colors"
-                          placeholder="01xxxxxxxxx"
+                          placeholder={t('form.shipping.phonePlaceholder')}
                         />
                       </div>
                     </div>
@@ -217,7 +219,7 @@ function CheckoutContent() {
                 <div className="bg-white rounded-2xl p-6 border border-[#0F1A26]/5">
                   <h2 className="text-lg font-semibold text-[#0F1A26] mb-4 flex items-center gap-2">
                     <CreditCard className="w-5 h-5 text-[#EEBC3F]" />
-                    Payment Method
+                    {t('form.payment.title')}
                   </h2>
                   <div className="space-y-3">
                     <label 
@@ -236,8 +238,8 @@ function CheckoutContent() {
                         className="w-4 h-4 accent-[#EEBC3F]"
                       />
                       <div className="flex-1">
-                        <span className="font-medium text-[#0F1A26]">Cash on Delivery</span>
-                        <p className="text-xs text-[#0F1A26]/50">Pay when you receive your order</p>
+                        <span className="font-medium text-[#0F1A26]">{t('form.payment.cod.title')}</span>
+                        <p className="text-xs text-[#0F1A26]/50">{t('form.payment.cod.subtitle')}</p>
                       </div>
                     </label>
                     <label 
@@ -256,8 +258,8 @@ function CheckoutContent() {
                         className="w-4 h-4 accent-[#EEBC3F]"
                       />
                       <div className="flex-1">
-                        <span className="font-medium text-[#0F1A26]">Credit/Debit Card</span>
-                        <p className="text-xs text-[#0F1A26]/50">Pay securely with your card</p>
+                        <span className="font-medium text-[#0F1A26]">{t('form.payment.card.title')}</span>
+                        <p className="text-xs text-[#0F1A26]/50">{t('form.payment.card.subtitle')}</p>
                       </div>
                     </label>
                   </div>
@@ -268,7 +270,7 @@ function CheckoutContent() {
                   disabled={isSubmitting}
                   className="w-full bg-[#EEBC3F] text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white rounded-full h-14 font-bold text-base transition-all duration-300 disabled:opacity-50"
                 >
-                  {isSubmitting ? "Processing..." : `Complete Order - EGP ${total}`}
+                  {isSubmitting ? t('form.processing') : t('form.completeOrder', { total })}
                 </Button>
               </form>
             </div>
@@ -276,7 +278,7 @@ function CheckoutContent() {
             {/* Order Summary */}
             <div className="lg:w-96">
               <div className="bg-white rounded-2xl p-6 border border-[#0F1A26]/5 sticky top-28">
-                <h2 className="text-lg font-semibold text-[#0F1A26] mb-6">Order Summary</h2>
+                <h2 className="text-lg font-semibold text-[#0F1A26] mb-6">{t('summary.title')}</h2>
                 
                 {/* Items */}
                 <div className="space-y-4 mb-6">
@@ -291,7 +293,7 @@ function CheckoutContent() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h4 className="text-sm font-medium text-[#0F1A26] truncate">{item.name}</h4>
-                        <p className="text-xs text-[#0F1A26]/50">Qty: {item.quantity}</p>
+                        <p className="text-xs text-[#0F1A26]/50">{t('summary.qty', { quantity: item.quantity })}</p>
                       </div>
                       <span className="text-sm font-medium text-[#0F1A26]">
                         EGP {item.price * item.quantity}
@@ -302,18 +304,18 @@ function CheckoutContent() {
 
                 <div className="border-t border-[#0F1A26]/10 pt-4 space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-[#0F1A26]/60">Subtotal</span>
+                    <span className="text-[#0F1A26]/60">{t('summary.subtotal')}</span>
                     <span className="text-[#0F1A26] font-medium">EGP {subtotal}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-[#0F1A26]/60">Shipping</span>
+                    <span className="text-[#0F1A26]/60">{t('summary.shipping')}</span>
                     <span className="text-[#0F1A26] font-medium">
-                      {shipping === 0 ? "Free" : `EGP ${shipping}`}
+                      {shipping === 0 ? t('summary.free') : `EGP ${shipping}`}
                     </span>
                   </div>
                   <div className="border-t border-[#0F1A26]/10 pt-2 mt-2">
                     <div className="flex justify-between">
-                      <span className="text-[#0F1A26] font-semibold">Total</span>
+                      <span className="text-[#0F1A26] font-semibold">{t('summary.total')}</span>
                       <span className="text-[#0F1A26] font-bold text-lg">EGP {total}</span>
                     </div>
                   </div>

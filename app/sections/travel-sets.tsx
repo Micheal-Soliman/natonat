@@ -1,6 +1,7 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/i18n/routing";
+import { useTranslations } from 'next-intl';
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ShoppingBag } from "lucide-react";
@@ -12,6 +13,7 @@ import { SizeModal } from "@/app/components/size-modal";
 const bundles = products.filter(p => p.category === "bundles").slice(0, 4);
 
 export function TravelSets() {
+  const t = useTranslations('bundles');
   const { addToCart } = useCart();
   const [sizeModalOpen, setSizeModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<typeof bundles[0] | null>(null);
@@ -20,13 +22,13 @@ export function TravelSets() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <span className="text-[#EEBC3F] text-sm font-semibold uppercase tracking-wider">
-            Save More
+            {t('sectionLabel')}
           </span>
           <h2 className="text-3xl md:text-4xl font-bold text-[#0F1A26] mt-2 mb-4">
-            Travel Smarter with Bundles
+            {t('title')}
           </h2>
           <p className="text-[#0F1A26]/60 max-w-2xl mx-auto">
-            Complete travel sets designed for every type of journey. Save up to 30% when you bundle.
+            {t('subtitle')}
           </p>
         </div>
 
@@ -47,7 +49,7 @@ export function TravelSets() {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                   <div className="absolute bottom-4 left-4 right-4">
                     <span className="text-[#EEBC3F] text-xs font-bold tracking-wider uppercase bg-[#0F1A26]/80 px-3 py-1 rounded-full">
-                      Save EGP {bundle.originalPrice - bundle.price}
+                      {t('save', { amount: bundle.originalPrice - bundle.price })}
                     </span>
                   </div>
                 </div>
@@ -90,7 +92,7 @@ export function TravelSets() {
                   className="w-full bg-[#0F1A26] text-[#F1EBE3] hover:bg-[#EEBC3F] hover:text-[#0F1A26] transition-all duration-300 mt-auto"
                 >
                   <ShoppingBag className="w-4 h-4 mr-2" />
-                  Add to Cart
+                  {t('addToCart')}
                 </Button>
               </div>
             </div>
@@ -103,7 +105,7 @@ export function TravelSets() {
             variant="outline"
             className="border-[#0F1A26] text-[#0F1A26] hover:bg-[#0F1A26] hover:text-[#F1EBE3]"
           >
-            <Link href="/shop?category=bundles">View All Bundles</Link>
+            <Link href="/shop?category=bundles">{t('viewAll')}</Link>
           </Button>
         </div>
       </div>

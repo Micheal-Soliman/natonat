@@ -1,31 +1,35 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/i18n/routing";
+import { useTranslations } from 'next-intl';
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Ruler, Package, Check } from "lucide-react";
 
-const steps = [
-  {
-    number: "01",
-    title: "Choose Your Design",
-    description: "Browse our collection of unique, eye-catching patterns",
-    icon: Package,
-  },
-  {
-    number: "02",
-    title: "Pick Your Size",
-    description: "Simply measure your suitcase height (without wheels)",
-    icon: Ruler,
-  },
-  {
-    number: "03",
-    title: "Slide On & Travel",
-    description: "Stretch, secure, and enjoy protected luggage",
-    icon: Check,
-  },
-];
-
 export function HowItWorks() {
+  const t = useTranslations('howItWorks');
+  const ts = useTranslations('howItWorks.steps');
+  const tg = useTranslations('howItWorks.sizeGuide');
+
+  const steps = [
+    {
+      number: ts('1.number'),
+      title: ts('1.title'),
+      description: ts('1.description'),
+      icon: Package,
+    },
+    {
+      number: ts('2.number'),
+      title: ts('2.title'),
+      description: ts('2.description'),
+      icon: Ruler,
+    },
+    {
+      number: ts('3.number'),
+      title: ts('3.title'),
+      description: ts('3.description'),
+      icon: Check,
+    },
+  ];
   return (
     <section className="py-20 bg-[#0F1A26]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -33,13 +37,13 @@ export function HowItWorks() {
           {/* Left content */}
           <div>
             <span className="text-[#EEBC3F] text-sm font-semibold uppercase tracking-wider">
-              Simple & Easy
+              {t('sectionLabel')}
             </span>
             <h2 className="text-3xl md:text-4xl font-bold text-white mt-2 mb-4">
-              How natOnat Works
+              {t('title')}
             </h2>
             <p className="text-white/70 mb-8">
-              Our patented sizing system makes finding the perfect cover incredibly simple. No more measuring width, depth, and height - just one measurement and you're done.
+              {t('subtitle')}
             </p>
 
             <div className="space-y-6">
@@ -66,7 +70,7 @@ export function HowItWorks() {
               className="mt-8 bg-[#EEBC3F] text-[#0F1A26] hover:bg-[#EEBC3F]/90"
             >
               <Link href="/how-it-works">
-                See Full Details
+                {t('seeDetails')}
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Link>
             </Button>
@@ -75,14 +79,14 @@ export function HowItWorks() {
           {/* Right - Size Guide Card */}
           <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10">
             <h3 className="text-xl font-bold text-white mb-6">
-              Size Guide
+              {tg('title')}
             </h3>
             <div className="space-y-4">
               {[
-                { size: "S", height: "45-53 cm", type: "Carry-on" },
-                { size: "M", height: "55-63 cm", type: "Medium" },
-                { size: "L", height: "65-74 cm", type: "Large" },
-                { size: "XL", height: "76-81 cm", type: "Extra Large" },
+                { size: tg('sizes.s.label'), height: tg('sizes.s.range'), type: tg('sizes.s.type') },
+                { size: tg('sizes.m.label'), height: tg('sizes.m.range'), type: tg('sizes.m.type') },
+                { size: tg('sizes.l.label'), height: tg('sizes.l.range'), type: tg('sizes.l.type') },
+                { size: tg('sizes.xl.label'), height: tg('sizes.xl.range'), type: tg('sizes.xl.type') },
               ].map((item) => (
                 <div
                   key={item.size}
@@ -101,7 +105,7 @@ export function HowItWorks() {
               ))}
             </div>
             <p className="text-white/50 text-xs mt-6">
-              * Measure suitcase height only, excluding wheels
+              {tg('note')}
             </p>
           </div>
         </div>

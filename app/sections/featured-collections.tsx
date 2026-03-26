@@ -1,31 +1,35 @@
 ﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/routing";
+import { useTranslations } from 'next-intl';
 import { ArrowUpRight } from "lucide-react";
 
-const collections = [
-  {
-    title: "Luggage Covers",
-    description: "Protect your suitcase with style",
-    href: "/shop?category=luggage-covers",
-    bgColor: "from-[#364353] to-[#0F1A26]",
-    accent: "#EEBC3F",
-    image: "https://images.unsplash.com/photo-1565026057447-bc90a3dceb87?w=800&q=80",
-  },
-  {
-    title: "Passport Wallets",
-    description: "Smart organization for your documents",
-    href: "/shop?category=passport-wallets",
-    bgColor: "from-[#7C4C2B] to-[#4B1F1F]",
-    accent: "#D1B897",
-    image: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=800&q=80",
-  },
-];
-
 export function FeaturedCollections() {
+  const t = useTranslations('collections');
   const [isVisible, setIsVisible] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
+  const collections = [
+    {
+      title: t('luggageCovers.title'),
+      description: t('luggageCovers.description'),
+      badge: t('luggageCovers.badge'),
+      href: "/shop/luggage-covers",
+      image: "https://images.unsplash.com/photo-1565026057447-bc90a3dceb87?w=800&q=80",
+      bgColor: "from-[#0F1A26] to-[#364353]",
+      accent: "#EEBC3F",
+    },
+    {
+      title: t('passportWallets.title'),
+      description: t('passportWallets.description'),
+      badge: t('passportWallets.badge'),
+      href: "/shop/passport-wallets",
+      image: "https://images.unsplash.com/photo-1627123424574-724758594e93?w=800&q=80",
+      bgColor: "from-[#364353] to-[#0F1A26]",
+      accent: "#EEBC3F",
+    },
+  ];
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -48,9 +52,9 @@ export function FeaturedCollections() {
     <section ref={ref} className="py-24 bg-[#F1EBE3]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className={`text-center mb-16 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-          <span className="text-[#EEBC3F] text-xs font-semibold tracking-[0.2em] uppercase">Collections</span>
+          <span className="text-[#EEBC3F] text-xs font-semibold tracking-[0.2em] uppercase">{t('sectionLabel')}</span>
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-semibold text-[#0F1A26] mt-4 tracking-tight">
-            Shop by Category
+            {t('title')}
           </h2>
         </div>
 
@@ -80,7 +84,7 @@ export function FeaturedCollections() {
                   className="text-xs font-medium tracking-[0.2em] uppercase mb-3 transition-colors duration-300"
                   style={{ color: collection.accent }}
                 >
-                  {index === 0 ? 'Essential' : 'Premium Leather'}
+                  {collection.badge}
                 </span>
                 <h3 className="text-2xl md:text-3xl lg:text-4xl font-semibold text-white tracking-tight mb-2 md:mb-3">
                   {collection.title}
@@ -89,7 +93,7 @@ export function FeaturedCollections() {
                   {collection.description}
                 </p>
                 <span className="inline-flex items-center gap-2 text-white font-medium group-hover:gap-3 transition-all duration-300 text-sm md:text-base">
-                  Explore Collection
+                  {t('explore')}
                   <ArrowUpRight className="w-4 h-4 md:w-5 md:h-5 transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-1" />
                 </span>
               </div>

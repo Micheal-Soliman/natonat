@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/routing";
+import { useTranslations } from 'next-intl';
 import { Button } from "@/components/ui/button";
 import { ShoppingBag, ArrowRight } from "lucide-react";
 import {
@@ -19,6 +20,7 @@ import { SizeModal } from "@/app/components/size-modal";
 const bestSellers = products.filter(p => p.tag === "Best Seller" || p.tag === "New").slice(0, 6);
 
 export function BestSellers() {
+  const t = useTranslations('bestSellers');
   const { addToCart } = useCart();
   const [sizeModalOpen, setSizeModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<typeof bestSellers[0] | null>(null);
@@ -47,19 +49,19 @@ export function BestSellers() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className={`flex items-end justify-between mb-12 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           <div>
-            <span className="text-[#EEBC3F] text-xs font-semibold tracking-[0.2em] uppercase">Curated</span>
+            <span className="text-[#EEBC3F] text-xs font-semibold tracking-[0.2em] uppercase">{t('sectionLabel')}</span>
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-semibold text-white mt-3 tracking-tight">
-              Best Sellers
+              {t('title')}
             </h2>
             <p className="text-white/50 mt-2 font-light">
-              Our most loved travel accessories
+              {t('subtitle')}
             </p>
           </div>
           <Button
             variant="outline"
             className="hidden md:flex border-white/20 text-white hover:bg-white hover:text-[#0F1A26] rounded-full px-6 h-11 transition-all duration-300"
           >
-            View All
+            {t('viewAll')}
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </div>
@@ -94,7 +96,9 @@ export function BestSellers() {
                         product.tag === 'Limited' ? 'bg-[#4B1F1F] text-[#F1EBE3]' :
                         'bg-[#EEBC3F]/20 text-[#EEBC3F] border border-[#EEBC3F]/30'
                       }`}>
-                        {product.tag}
+                        {product.tag === 'Best Seller' ? t('bestSeller') : 
+                         product.tag === 'New' ? t('new') : 
+                         product.tag === 'Limited' ? t('limited') : product.tag}
                       </span>
                     )}
                     
@@ -135,7 +139,7 @@ export function BestSellers() {
                       {product.size && (
                         <>
                           <span className="text-white/20">·</span>
-                          <span className="text-white/40 text-[10px]">Size {product.size}</span>
+                          <span className="text-white/40 text-[10px]">{t('size')} {product.size}</span>
                         </>
                       )}
                     </div>
@@ -161,7 +165,7 @@ export function BestSellers() {
             variant="outline"
             className="border-white/20 text-white hover:bg-white hover:text-[#0F1A26] rounded-full"
           >
-            View All Products
+            {t('viewAll')}
           </Button>
         </div>
       </div>

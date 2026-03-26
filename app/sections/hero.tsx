@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
 import { ArrowDown } from "lucide-react";
+import { useTranslations } from 'next-intl';
 
 // Local Arthaus-Bold font
 const arthausFontStyle = `
@@ -17,6 +18,7 @@ const arthausFontStyle = `
 `;
 
 export function Hero() {
+  const t = useTranslations('hero');
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -47,7 +49,7 @@ export function Hero() {
       <div className="relative z-10 text-center px-4">
         {/* Small label */}
         <p className={`text-[#EEBC3F] text-xs tracking-[0.3em] uppercase mb-8 transition-all duration-1000 ${loaded ? 'opacity-100' : 'opacity-0'}`}>
-          Premium Travel Gear
+          {t('label')}
         </p>
 
         {/* Big bold headline with local Arthaus-Bold font */}
@@ -60,7 +62,7 @@ export function Hero() {
 
         {/* Tagline */}
         <p className={`text-lg md:text-xl text-white/40 font-light tracking-wide mb-12 transition-all duration-1000 delay-400 ${loaded ? 'opacity-100' : 'opacity-0'}`}>
-          Pack Smart. Travel Bold.
+          {t('tagline')}
         </p>
 
         {/* Single CTA */}
@@ -71,7 +73,7 @@ export function Hero() {
             className="bg-[#EEBC3F] text-[#0a0f14] hover:bg-white rounded-full text-sm font-bold px-12 h-14 transition-all duration-500 hover:scale-105"
           >
             <Link href="/shop">
-              Shop Now
+              {t('cta')}
             </Link>
           </Button>
         </div>
