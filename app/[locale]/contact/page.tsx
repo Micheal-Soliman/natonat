@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
-import { Mail, Phone, MapPin, MessageCircle, Send, Check, Clock, ArrowRight, Sparkles } from "lucide-react";
+import { Mail, Phone, MapPin, MessageCircle, Send, Check, Clock, ArrowRight, Sparkles, Instagram, Facebook } from "lucide-react";
 import { Loading } from "@/app/components/loading";
 
 export default function ContactPage() {
@@ -95,13 +95,13 @@ function ContactContent() {
                     </div>
                   </a>
 
-                  <a href="https://wa.me/201000000061" target="_blank" className="flex items-start gap-4 group">
+                  <a href="https://wa.me/201070004227" target="_blank" rel="noopener noreferrer" className="flex items-start gap-4 group">
                     <div className="w-14 h-14 rounded-2xl bg-[#EEBC3F]/10 flex items-center justify-center group-hover:bg-[#EEBC3F] transition-all duration-300">
                       <MessageCircle className="w-6 h-6 text-[#EEBC3F] group-hover:text-[#0F1A26] transition-colors" strokeWidth={1.5} />
                     </div>
                     <div>
                       <p className="font-semibold text-[#0F1A26]">WhatsApp</p>
-                      <p className="text-[#0F1A26]/60 mt-1">+20 100 000 0061</p>
+                      <p className="text-[#0F1A26]/60 mt-1">+20 10 70004227</p>
                     </div>
                   </a>
 
@@ -111,7 +111,7 @@ function ContactContent() {
                     </div>
                     <div>
                       <p className="font-semibold text-[#0F1A26]">Phone</p>
-                      <p className="text-[#0F1A26]/60 mt-1">+20 100 000 0061</p>
+                      <p className="text-[#0F1A26]/60 mt-1">+20 10 70004227</p>
                       <div className="flex items-center gap-1 text-[#EEBC3F] text-xs mt-2">
                         <Clock className="w-3 h-3" />
                         Sun-Thu, 9am-5pm EET
@@ -129,6 +129,46 @@ function ContactContent() {
                       <p className="text-[#0F1A26]/40 text-xs mt-2">Online-first brand</p>
                     </div>
                   </div>
+                </div>
+              </div>
+
+              {/* Social Media Links */}
+              <div className={`bg-white rounded-3xl p-8 border border-[#0F1A26]/5 shadow-lg shadow-[#0F1A26]/5 transition-all duration-700 delay-150 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+                <span className="text-[#EEBC3F] text-xs font-semibold tracking-[0.2em] uppercase">Social</span>
+                <h2 className="text-2xl font-bold text-[#0F1A26] mt-3 mb-8 tracking-tight">Follow Us</h2>
+                
+                <div className="grid grid-cols-3 gap-4">
+                  <a 
+                    href="https://www.facebook.com/natOnatofficial" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex flex-col items-center gap-3 p-4 rounded-2xl bg-[#1877F2]/10 hover:bg-[#1877F2] group transition-all duration-300"
+                  >
+                    <Facebook className="w-8 h-8 text-[#1877F2] group-hover:text-white transition-colors" strokeWidth={1.5} />
+                    <span className="text-sm font-medium text-[#0F1A26]/70 group-hover:text-white transition-colors">Facebook</span>
+                  </a>
+                  
+                  <a 
+                    href="https://www.instagram.com/natonatofficial/" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex flex-col items-center gap-3 p-4 rounded-2xl bg-gradient-to-br from-[#833AB4]/10 via-[#E1306C]/10 to-[#F77737]/10 hover:from-[#833AB4] hover:via-[#E1306C] hover:to-[#F77737] group transition-all duration-300"
+                  >
+                    <Instagram className="w-8 h-8 text-[#E1306C] group-hover:text-white transition-colors" strokeWidth={1.5} />
+                    <span className="text-sm font-medium text-[#0F1A26]/70 group-hover:text-white transition-colors">Instagram</span>
+                  </a>
+                  
+                  <a 
+                    href="https://www.tiktok.com/@natonatofficial" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex flex-col items-center gap-3 p-4 rounded-2xl bg-black/5 hover:bg-black group transition-all duration-300"
+                  >
+                    <svg className="w-8 h-8 text-[#0F1A26] group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+                    </svg>
+                    <span className="text-sm font-medium text-[#0F1A26]/70 group-hover:text-white transition-colors">TikTok</span>
+                  </a>
                 </div>
               </div>
 
