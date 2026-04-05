@@ -13,6 +13,7 @@ import { Loading } from "@/app/components/loading";
 
 interface GroupedItem {
   id: number;
+  slug: string;
   name: string;
   type: string;
   price: number;
@@ -32,6 +33,7 @@ function groupCartItems(items: ReturnType<typeof useCart>['items']): GroupedItem
     if (!grouped.has(item.id)) {
       grouped.set(item.id, {
         id: item.id,
+        slug: item.slug,
         name: item.name,
         type: item.type,
         price: item.price,
@@ -163,15 +165,15 @@ function CartContent() {
                       className="bg-white rounded-2xl p-4 border border-[#0F1A26]/5 flex gap-4"
                     >
                       {/* Image */}
-                      <div className="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 bg-[#F8F6F3] relative">
+                      <Link href={`/product/${item.slug}`} className="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 bg-[#F8F6F3] relative group">
                         <Image 
                           src={item.image} 
                           alt={item.name}
                           fill
                           sizes="96px"
-                          className="object-cover"
+                          className="object-cover group-hover:scale-105 transition-transform"
                         />
-                      </div>
+                      </Link>
 
                       {/* Details */}
                       <div className="flex-1 flex flex-col justify-between">
@@ -181,7 +183,9 @@ function CartContent() {
                               <span className="text-[#EEBC3F] text-xs font-semibold tracking-wider uppercase">
                                 {item.type}
                               </span>
-                              <h3 className="text-[#0F1A26] font-medium mt-0.5">{item.name}</h3>
+                              <Link href={`/product/${item.slug}`}>
+                                <h3 className="text-[#0F1A26] font-medium mt-0.5 hover:text-[#EEBC3F] transition-colors cursor-pointer">{item.name}</h3>
+                              </Link>
                             </div>
                             <button 
                               onClick={() => removeFromCart(item.id)}
