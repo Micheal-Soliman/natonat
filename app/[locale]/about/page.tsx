@@ -2,33 +2,25 @@
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from 'next-intl';
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Award, Globe, Users, Target, TrendingUp, Check, Star, MapPin, Package, Heart } from "lucide-react";
+import { ArrowRight, Award, Globe, Users, Target, TrendingUp, Check } from "lucide-react";
 import { Loading } from "@/app/components/loading";
 
 const milestones = [
-  { year: "2019", title: "The Beginning", description: "natOnat launched on Amazon with a simple mission: protect luggage in style." },
-  { year: "2020", title: "First 10K Customers", description: "Reached our first milestone of 10,000 happy travelers." },
-  { year: "2021", title: "Noon Partnership", description: "Expanded to Noon marketplace, reaching customers across the GCC." },
-  { year: "2022", title: "Brand Evolution", description: "Launched our D2C website and began building the natOnat brand identity." },
-  { year: "2023", title: "Passport Wallets", description: "Introduced our first complementary product - premium RFID passport wallets." },
-  { year: "2024", title: "Full Ecosystem", description: "Launched travel sets and began expanding into a complete travel accessories brand." },
+  { year: "2019", key: "2019" },
+  { year: "2022", key: "2022" },
+  { year: "2023", key: "2023" },
+  { year: "2025", key: "2025" },
 ];
 
 const values = [
-  { icon: Award, title: "Quality First", description: "We never compromise on materials or craftsmanship. Every product is built to last." },
-  { icon: Target, title: "Smart Design", description: "Simple solutions to real travel problems. Our sizing system proves it." },
-  { icon: Globe, title: "Accessible Luxury", description: "Premium quality at fair prices. Better value than competitors." },
-  { icon: Users, title: "Customer Obsessed", description: "Every decision starts with the traveler in mind." },
-];
-
-const stats = [
-  { value: "50K+", label: "Happy Travelers", icon: Heart },
-  { value: "4.8", label: "Average Rating", icon: Star },
-  { value: "3", label: "Marketplaces", icon: Package },
-  { value: "5", label: "Years Strong", icon: MapPin },
+  { icon: Award, key: "quality" },
+  { icon: Target, key: "design" },
+  { icon: Globe, key: "luxury" },
+  { icon: Users, key: "customer" },
 ];
 
 export default function AboutPage() {
@@ -40,10 +32,9 @@ export default function AboutPage() {
 }
 
 function AboutContent() {
+  const t = useTranslations('about');
   const [isVisible, setIsVisible] = useState(false);
-  const [statsVisible, setStatsVisible] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const statsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -55,22 +46,9 @@ function AboutContent() {
       { threshold: 0.1 }
     );
 
-    const statsObserver = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setStatsVisible(true);
-        }
-      },
-      { threshold: 0.3 }
-    );
-
     if (ref.current) observer.observe(ref.current);
-    if (statsRef.current) statsObserver.observe(statsRef.current);
 
-    return () => {
-      observer.disconnect();
-      statsObserver.disconnect();
-    };
+    return () => observer.disconnect();
   }, []);
 
   return (
@@ -78,16 +56,16 @@ function AboutContent() {
       <Navigation />
       <main className="min-h-screen bg-[#F1EBE3]">
         {/* Hero - Premium */}
-        <div className="bg-[#0F1A26] pt-32 pb-20 md:pt-44 md:pb-32">
+        <div className="bg-[#0F1A26] pt-28 pb-16 md:pt-44 md:pb-32">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <span className="text-[#EEBC3F] text-xs font-semibold tracking-[0.3em] uppercase mb-6 block">
-              Our Story
+            <span className="text-[#EEBC3F] text-xs font-semibold tracking-[0.3em] uppercase mb-4 md:mb-6 block">
+              {t('hero.label')}
             </span>
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold text-white mb-8 tracking-tight">
-              About <span className="text-[#EEBC3F]">natOnat</span>
+            <h1 className="text-3xl sm:text-5xl md:text-7xl lg:text-8xl font-bold text-white mb-6 md:mb-8 tracking-tight">
+              {t('hero.title').split(' ')[0]} <span className="text-[#EEBC3F]">{t('hero.title').split(' ').slice(1).join(' ')}</span>
             </h1>
-            <p className="text-xl md:text-2xl text-white/50 max-w-3xl mx-auto font-light leading-relaxed">
-              Born on Amazon in 2019, grown into a complete travel accessories brand trusted by thousands across the Middle East.
+            <p className="text-lg md:text-xl md:text-2xl text-white/50 max-w-3xl mx-auto font-light leading-relaxed">
+              {t('hero.subtitle')}
             </p>
           </div>
         </div>
@@ -117,23 +95,15 @@ function AboutContent() {
         <div ref={ref} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div className={`transition-all duration-1000 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'}`}>
-              <span className="text-[#EEBC3F] text-xs font-semibold tracking-[0.3em] uppercase">The Journey</span>
+              <span className="text-[#EEBC3F] text-xs font-semibold tracking-[0.3em] uppercase">{t('journey.label')}</span>
               <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-[#0F1A26] mt-4 mb-8 tracking-tight">
-                From Amazon Startup to Travel Brand
+                {t('journey.title')}
               </h2>
               <div className="space-y-5 text-[#0F1A26]/70 leading-relaxed text-lg">
-                <p>
-                  natOnat started with a simple observation: travelers invest in expensive suitcases, then watch them get scratched and dirty at airports. There had to be a better way.
-                </p>
-                <p>
-                  We launched in 2019 on Amazon with a simple mission: create luggage covers that actually work. Covers that fit properly, protect effectively, and look great doing it.
-                </p>
-                <p>
-                  The response was immediate. Travelers loved our simple sizing system, quality materials, and unique designs that made luggage stand out on any carousel.
-                </p>
-                <p>
-                  Today, natOnat is evolving into a complete travel accessories ecosystem. But our mission remains: protect your gear and make every journey easier, safer, and more stylish.
-                </p>
+                <p>{t('journey.paragraph1')}</p>
+                <p>{t('journey.paragraph2')}</p>
+                <p>{t('journey.paragraph3')}</p>
+                <p>{t('journey.paragraph4')}</p>
               </div>
             </div>
             <div className={`relative transition-all duration-1000 delay-200 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'}`}>
@@ -155,24 +125,24 @@ function AboutContent() {
         </div>
 
         {/* Values - Grid */}
-        <div className="bg-white py-24">
+        <div className="bg-white py-16 md:py-24">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <span className="text-[#EEBC3F] text-xs font-semibold tracking-[0.3em] uppercase">Principles</span>
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-[#0F1A26] mt-4 tracking-tight">What We Stand For</h2>
+            <div className="text-center mb-12 md:mb-16">
+              <span className="text-[#EEBC3F] text-xs font-semibold tracking-[0.3em] uppercase">{t('values.title')}</span>
+              <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold text-[#0F1A26] mt-4 tracking-tight">{t('values.title')}</h2>
             </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
               {values.map((value, index) => (
                 <div 
                   key={index} 
-                  className={`group bg-[#F8F6F3] rounded-3xl p-8 transition-all duration-700 hover:bg-[#0F1A26] ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+                  className={`group bg-[#F8F6F3] rounded-2xl md:rounded-3xl p-6 md:p-8 transition-all duration-700 hover:bg-[#0F1A26] ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
                   style={{ transitionDelay: `${300 + index * 100}ms` }}
                 >
-                  <div className="w-16 h-16 rounded-2xl bg-[#EEBC3F]/10 flex items-center justify-center mb-6 group-hover:bg-[#EEBC3F] transition-colors duration-300">
-                    <value.icon className="w-8 h-8 text-[#EEBC3F] group-hover:text-[#0F1A26] transition-colors" strokeWidth={1.5} />
+                  <div className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-[#EEBC3F]/10 flex items-center justify-center mb-4 md:mb-6 group-hover:bg-[#EEBC3F] transition-colors duration-300">
+                    <value.icon className="w-6 h-6 md:w-8 md:h-8 text-[#EEBC3F] group-hover:text-[#0F1A26] transition-colors" strokeWidth={1.5} />
                   </div>
-                  <h3 className="text-xl font-bold text-[#0F1A26] mb-3 tracking-tight group-hover:text-white transition-colors">{value.title}</h3>
-                  <p className="text-[#0F1A26]/60 group-hover:text-white/70 transition-colors leading-relaxed">{value.description}</p>
+                  <h3 className="text-lg md:text-xl font-bold text-[#0F1A26] mb-2 md:mb-3 tracking-tight group-hover:text-white transition-colors">{t(`values.${value.key}.title`)}</h3>
+                  <p className="text-sm md:text-base text-[#0F1A26]/60 group-hover:text-white/70 transition-colors leading-relaxed">{t(`values.${value.key}.description`)}</p>
                 </div>
               ))}
             </div>
@@ -180,10 +150,10 @@ function AboutContent() {
         </div>
 
         {/* Timeline */}
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
-          <div className="text-center mb-16">
-            <span className="text-[#EEBC3F] text-xs font-semibold tracking-[0.3em] uppercase">Timeline</span>
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-[#0F1A26] mt-4 tracking-tight">Our Journey</h2>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
+          <div className="text-center mb-12 md:mb-16">
+            <span className="text-[#EEBC3F] text-xs font-semibold tracking-[0.3em] uppercase">{t('milestones.label')}</span>
+            <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold text-[#0F1A26] mt-4 tracking-tight">{t('milestones.title')}</h2>
           </div>
           <div className="relative">
             {/* Center line */}
@@ -207,8 +177,8 @@ function AboutContent() {
                   {/* Content - Right on desktop */}
                   <div className={`md:w-1/2 ${index % 2 === 0 ? '' : 'md:order-1 md:text-right'}`}>
                     <div className="bg-white rounded-2xl p-6 shadow-lg shadow-[#0F1A26]/5 border border-[#0F1A26]/5 hover:shadow-xl transition-shadow">
-                      <h3 className="text-xl font-bold text-[#0F1A26] mb-2 tracking-tight">{milestone.title}</h3>
-                      <p className="text-[#0F1A26]/60 leading-relaxed">{milestone.description}</p>
+                      <h3 className="text-xl font-bold text-[#0F1A26] mb-2 tracking-tight">{t(`milestones.${milestone.key}.title`)}</h3>
+                      <p className="text-[#0F1A26]/60 leading-relaxed">{t(`milestones.${milestone.key}.description`)}</p>
                     </div>
                   </div>
                 </div>
@@ -218,23 +188,18 @@ function AboutContent() {
         </div>
 
         {/* Mission */}
-        <div className="bg-[#0F1A26] py-24">
+        <div className="bg-[#0F1A26] py-16 md:py-24">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <span className="text-[#EEBC3F] text-xs font-semibold tracking-[0.3em] uppercase mb-6 block">Purpose</span>
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-8 tracking-tight">Our Mission</h2>
-            <p className="text-2xl md:text-3xl text-white/50 mb-12 font-light leading-relaxed max-w-4xl mx-auto">
-              "To create a smarter, more stylish travel accessories ecosystem that protects your gear and makes every journey easier — all at a fair price."
+            <span className="text-[#EEBC3F] text-xs font-semibold tracking-[0.3em] uppercase mb-4 md:mb-6 block">{t('mission.label')}</span>
+            <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold text-white mb-6 md:mb-8 tracking-tight">{t('mission.title')}</h2>
+            <p className="text-lg md:text-2xl md:text-3xl text-white/50 mb-8 md:mb-12 font-light leading-relaxed max-w-4xl mx-auto">
+              {t('mission.quote')}
             </p>
-            <div className="flex flex-wrap justify-center gap-4">
-              {[
-                "Better quality than competitors",
-                "Smarter designs",
-                "Fair pricing",
-                "Customer first"
-              ].map((item, index) => (
-                <span key={index} className="flex items-center gap-2 text-white/60 bg-white/5 backdrop-blur-sm rounded-full px-6 py-3 border border-white/10">
-                  <Check className="w-4 h-4 text-[#EEBC3F]" />
-                  {item}
+            <div className="flex flex-wrap justify-center gap-2 md:gap-4">
+              {['quality', 'design', 'pricing', 'customer'].map((key, index) => (
+                <span key={index} className="flex items-center gap-2 text-white/60 bg-white/5 backdrop-blur-sm rounded-full px-4 md:px-6 py-2 md:py-3 border border-white/10 text-sm md:text-base">
+                  <Check className="w-3 h-3 md:w-4 md:h-4 text-[#EEBC3F]" />
+                  {t(`mission.points.${key}`)}
                 </span>
               ))}
             </div>
@@ -242,34 +207,29 @@ function AboutContent() {
         </div>
 
         {/* What's Next */}
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
-          <div className="bg-gradient-to-br from-white to-[#F8F6F3] rounded-3xl p-10 md:p-14 shadow-xl shadow-[#0F1A26]/5 border border-[#0F1A26]/5">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-14 h-14 rounded-2xl bg-[#EEBC3F]/10 flex items-center justify-center">
-                <TrendingUp className="w-7 h-7 text-[#EEBC3F]" strokeWidth={1.5} />
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
+          <div className="bg-gradient-to-br from-white to-[#F8F6F3] rounded-2xl md:rounded-3xl p-6 md:p-10 lg:p-14 shadow-xl shadow-[#0F1A26]/5 border border-[#0F1A26]/5">
+            <div className="flex items-center gap-3 md:gap-4 mb-6">
+              <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-[#EEBC3F]/10 flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 md:w-7 md:h-7 text-[#EEBC3F]" strokeWidth={1.5} />
               </div>
-              <span className="text-[#EEBC3F] text-xs font-semibold tracking-[0.3em] uppercase">Future</span>
+              <span className="text-[#EEBC3F] text-xs font-semibold tracking-[0.3em] uppercase">{t('future.label')}</span>
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-[#0F1A26] mb-4 tracking-tight">What's Next</h2>
-            <p className="text-[#0F1A26]/60 mb-8 leading-relaxed text-lg">
-              We're building the future of travel accessories. Here's what's coming:
+            <h2 className="text-2xl md:text-4xl font-bold text-[#0F1A26] mb-4 tracking-tight">{t('future.title')}</h2>
+            <p className="text-[#0F1A26]/60 mb-6 md:mb-8 leading-relaxed text-base md:text-lg">
+              {t('future.description')}
             </p>
-            <div className="grid md:grid-cols-2 gap-4 mb-10">
-              {[
-                "Garment bags for wrinkle-free travel",
-                "Tech organizers and cable management",
-                "Packing cubes and organizers",
-                "Regional expansion across MENA"
-              ].map((item, index) => (
-                <div key={index} className="flex items-center gap-4 p-4 bg-white rounded-xl border border-[#0F1A26]/5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mb-6 md:mb-10">
+              {['garmentBags', 'techOrganizers', 'packingCubes', 'expansion'].map((key, index) => (
+                <div key={index} className="flex items-center gap-3 md:gap-4 p-3 md:p-4 bg-white rounded-xl border border-[#0F1A26]/5">
                   <div className="w-2 h-2 rounded-full bg-[#EEBC3F] flex-shrink-0" />
-                  <span className="text-[#0F1A26]/70">{item}</span>
+                  <span className="text-[#0F1A26]/70 text-sm md:text-base">{t(`future.items.${key}`)}</span>
                 </div>
               ))}
             </div>
-            <Button asChild className="bg-[#0F1A26] text-white hover:bg-[#EEBC3F] hover:text-[#0F1A26] rounded-full px-8 h-14 font-semibold text-lg transition-all duration-300">
+            <Button asChild className="bg-[#0F1A26] text-white hover:bg-[#EEBC3F] hover:text-[#0F1A26] rounded-full px-6 md:px-8 h-12 md:h-14 font-semibold text-base md:text-lg transition-all duration-300">
               <Link href="/contact" className="inline-flex items-center gap-2">
-                Partner With Us
+                {t('future.cta')}
                 <ArrowRight className="w-5 h-5" />
               </Link>
             </Button>

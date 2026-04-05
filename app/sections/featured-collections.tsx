@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { Link } from "@/i18n/routing";
 import { useTranslations } from 'next-intl';
 import { ArrowUpRight } from "lucide-react";
@@ -15,8 +16,8 @@ export function FeaturedCollections() {
       title: t('luggageCovers.title'),
       description: t('luggageCovers.description'),
       badge: t('luggageCovers.badge'),
-      href: "/shop/luggage-covers",
-      image: "https://images.unsplash.com/photo-1565026057447-bc90a3dceb87?w=800&q=80",
+      href: "/shop?category=luggage-covers",
+      image: "/octopus photo/Anara/1.webp",
       bgColor: "from-[#0F1A26] to-[#364353]",
       accent: "#EEBC3F",
     },
@@ -24,8 +25,8 @@ export function FeaturedCollections() {
       title: t('passportWallets.title'),
       description: t('passportWallets.description'),
       badge: t('passportWallets.badge'),
-      href: "/shop/passport-wallets",
-      image: "https://images.unsplash.com/photo-1627123424574-724758594e93?w=800&q=80",
+      href: "/shop?category=passport-wallets",
+      image: "/octopus photo/Ascend/1.webp",
       bgColor: "from-[#364353] to-[#0F1A26]",
       accent: "#EEBC3F",
     },
@@ -69,9 +70,13 @@ export function FeaturedCollections() {
               style={{ transitionDelay: `${(index + 1) * 150}ms` }}
             >
               {/* Background Image */}
-              <div
-                className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-                style={{ backgroundImage: `url(${collection.image})` }}
+              <Image
+                src={collection.image}
+                alt={collection.title}
+                fill
+                sizes="(max-width: 768px) 100vw, 50vw"
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                loading="lazy"
               />
 
               {/* Overlay gradient */}

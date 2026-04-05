@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { useTranslations } from 'next-intl';
 import { Shield, Sparkles, Eye, Briefcase } from "lucide-react";
 
@@ -43,28 +44,28 @@ export function BenefitsStrip() {
       icon: Shield,
       title: t('items.protection.title'),
       subtitle: t('items.protection.subtitle'),
-      image: "https://images.unsplash.com/photo-1565026057447-bc90a3dceb87?w=800&q=80",
+      image: "/octopus photo/Black/1.webp",
     },
     {
       number: t('items.durability.number'),
       icon: Sparkles,
       title: t('items.durability.title'),
       subtitle: t('items.durability.subtitle'),
-      image: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=800&q=80",
+      image: "/octopus photo/Dubai/1.webp",
     },
     {
       number: t('items.recognition.number'),
       icon: Eye,
       title: t('items.recognition.title'),
       subtitle: t('items.recognition.subtitle'),
-      image: "https://images.unsplash.com/photo-1547949003-9792a18a2601?w=800&q=80",
+      image: "/octopus photo/Egypt Skyline/1.webp",
     },
     {
       number: t('items.ecosystem.number'),
       icon: Briefcase,
       title: t('items.ecosystem.title'),
       subtitle: t('items.ecosystem.subtitle'),
-      image: "https://images.unsplash.com/photo-1627123424574-724758594e93?w=800&q=80",
+      image: "/octopus photo/Egyptian Queen/1.webp",
     },
   ];
 
@@ -92,17 +93,20 @@ export function BenefitsStrip() {
           {benefits.map((benefit, index) => (
             <div
               key={index}
-              className={`group relative bg-white rounded-2xl overflow-hidden cursor-pointer transition-all duration-700 shadow-lg shadow-[#0F1A26]/5 hover:shadow-xl hover:shadow-[#0F1A26]/10 ${
+              className={`group relative bg-white rounded-2xl overflow-hidden transition-all duration-700 shadow-lg shadow-[#0F1A26]/5 hover:shadow-xl hover:shadow-[#0F1A26]/10 ${
                 isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
               }`}
               style={{ transitionDelay: `${index * 150}ms` }}
             >
               {/* Image Layer */}
               <div className="absolute inset-0">
-                <img
+                <Image
                   src={benefit.image}
                   alt={benefit.title}
+                  fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                   className="w-full h-full object-cover opacity-90 transition-all duration-700 group-hover:opacity-100 group-hover:scale-105"
+                  loading="lazy"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
               </div>

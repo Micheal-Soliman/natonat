@@ -1,22 +1,16 @@
 "use client";
 
+import Image from "next/image";
 import { Link } from "@/i18n/routing";
 import { useTranslations } from 'next-intl';
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ShoppingBag } from "lucide-react";
 import { products } from "@/lib/products";
-import { useCart } from "@/app/lib/cart-context";
-import { SizeModal } from "@/app/components/size-modal";
 
 // Get bundle products from lib/products
-const bundles = products.filter(p => p.category === "bundles").slice(0, 4);
+const bundles = products.filter(p => p.category === "bundles").slice(0, 3);
 
 export function TravelSets() {
   const t = useTranslations('bundles');
-  const { addToCart } = useCart();
-  const [sizeModalOpen, setSizeModalOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<typeof bundles[0] | null>(null);
   return (
     <section className="py-20 bg-[#F1EBE3]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -32,22 +26,25 @@ export function TravelSets() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {bundles.map((bundle) => (
             <div
               key={bundle.id}
               className="group bg-white rounded-2xl overflow-hidden border border-[#0F1A26]/10 hover:border-[#EEBC3F] transition-all hover:shadow-xl flex flex-col h-full"
             >
-              {/* Bundle Image */}
+              {/* Bundle Image - Full height, no cropping */}
               <Link href={`/product/${bundle.slug}`} className="block">
-                <div className="relative aspect-[4/3] overflow-hidden">
-                  <img 
+                <div className="relative overflow-hidden">
+                  <Image 
                     src={bundle.image} 
                     alt={bundle.name}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    width={600}
+                    height={600}
+                    className="w-full h-auto object-contain transition-transform duration-700 group-hover:scale-105"
+                    loading="lazy"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                  <div className="absolute bottom-4 left-4 right-4">
+                  <div className="absolute bottom-4 left-4 right-4 z-10">
                     <span className="text-[#EEBC3F] text-xs font-bold tracking-wider uppercase bg-[#0F1A26]/80 px-3 py-1 rounded-full">
                       {t('save', { amount: bundle.originalPrice - bundle.price })}
                     </span>
@@ -73,26 +70,10 @@ export function TravelSets() {
                 </div>
 
                 <Button
-                  onClick={() => {
-                    if (bundle.category === "luggage-covers") {
-                      setSelectedProduct(bundle);
-                      setSizeModalOpen(true);
-                    } else {
-                      addToCart({
-                        id: bundle.id,
-                        name: bundle.name,
-                        type: bundle.type,
-                        price: bundle.price,
-                        originalPrice: bundle.originalPrice,
-                        image: bundle.image,
-                        quantity: 1,
-                      });
-                    }
-                  }}
+                  asChild
                   className="w-full bg-[#0F1A26] text-[#F1EBE3] hover:bg-[#EEBC3F] hover:text-[#0F1A26] transition-all duration-300 mt-auto"
                 >
-                  <ShoppingBag className="w-4 h-4 mr-2" />
-                  {t('addToCart')}
+                  <Link href={`/product/${bundle.slug}`}>{t('viewProduct')}</Link>
                 </Button>
               </div>
             </div>
@@ -109,32 +90,6 @@ export function TravelSets() {
           </Button>
         </div>
       </div>
-
-      {/* Size Selection Modal */}
-      <SizeModal
-        isOpen={sizeModalOpen}
-        onClose={() => {
-          setSizeModalOpen(false);
-          setSelectedProduct(null);
-        }}
-        onConfirm={(size) => {
-          if (selectedProduct) {
-            addToCart({
-              id: selectedProduct.id,
-              name: selectedProduct.name,
-              type: selectedProduct.type,
-              price: selectedProduct.price,
-              originalPrice: selectedProduct.originalPrice,
-              image: selectedProduct.image,
-              size: size,
-              quantity: 1,
-            });
-          }
-          setSizeModalOpen(false);
-          setSelectedProduct(null);
-        }}
-        productName={selectedProduct?.name || ""}
-      />
     </section>
   );
 }

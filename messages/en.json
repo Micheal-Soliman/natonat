@@ -9,22 +9,30 @@
     "browseAll": "Browse All Products",
     "view": "View",
     "allProducts": "All Products",
+    "allProductsDesc": "Browse everything",
     "luggageCovers": "Luggage Covers",
+    "luggageCoversDesc": "Protective stretchy covers",
     "passportWallets": "Passport Wallets",
+    "passportWalletsDesc": "RFID-blocking organizers",
     "travelSets": "Travel Sets",
+    "travelSetsDesc": "Curated bundles",
     "bestSellers": "Best Sellers",
     "sizeGuide": "Size Guide",
+    "howItWorks": "How It Works",
     "about": "About",
     "faqs": "FAQs",
+    "blog": "Blog",
     "contact": "Contact",
     "cart": "Cart",
     "shopNow": "Shop Now"
   },
   "hero": {
-    "label": "Premium Travel Gear",
+    "label": "Premium Luggage Covers",
     "title": "natOnat",
     "tagline": "Pack Smart. Travel Bold.",
-    "cta": "Shop Now"
+    "cta": "Shop Now",
+    "freeShipping": "Free shipping on orders over 1000 EGP",
+    "egyptOnly": "Egypt Only"
   },
   "benefits": {
     "sectionLabel": "Features",
@@ -77,7 +85,8 @@
     "new": "New",
     "bestSeller": "Best Seller",
     "limited": "Limited",
-    "size": "Size"
+    "size": "Size",
+    "viewProduct": "View Product"
   },
   "bundles": {
     "sectionLabel": "Save More",
@@ -85,12 +94,18 @@
     "subtitle": "Complete travel sets designed for every type of journey. Save up to 30% when you bundle.",
     "save": "Save EGP {amount}",
     "addToCart": "Add to Cart",
-    "viewAll": "View All Bundles"
+    "viewAll": "View All Bundles",
+    "viewProduct": "View Product"
   },
   "howItWorks": {
     "sectionLabel": "Simple & Easy",
     "title": "How natOnat Works",
     "subtitle": "Our patented sizing system makes finding the perfect cover incredibly simple. No more measuring width, depth and height - just one measurement and you're done.",
+    "hero": {
+      "label": "Simple Process",
+      "title": "How It Works",
+      "subtitle": "Three simple steps to protect your luggage. Measure once, choose your design, travel with confidence."
+    },
     "steps": {
       "1": {
         "number": "01",
@@ -106,11 +121,29 @@
         "number": "03",
         "title": "Slide On & Travel",
         "description": "Stretch, secure, and enjoy protected luggage"
+      },
+      "measure": {
+        "title": "Measure",
+        "description": "Simply measure the height of your suitcase from floor to top (excluding wheels).",
+        "tip": "Just one measurement needed"
+      },
+      "choose": {
+        "title": "Choose",
+        "description": "Browse our collection of unique patterns. Find your style.",
+        "tip": "All designs available in all sizes"
+      },
+      "travel": {
+        "title": "Travel",
+        "description": "Slide the cover on from the top and secure. Takes 30 seconds.",
+        "tip": "Handles and wheels stay accessible"
       }
     },
     "sizeGuide": {
       "title": "Size Guide",
       "note": "* Measure suitcase height only, excluding wheels",
+      "label": "Size Guide",
+      "subtitle": "Our patented sizing system needs just one measurement - height (without wheels).",
+      "heightOnly": "height only, no wheels",
       "sizes": {
         "s": { "label": "S", "range": "45-53 cm", "type": "Carry-on" },
         "m": { "label": "M", "range": "55-63 cm", "type": "Medium" },
@@ -118,13 +151,91 @@
         "xl": { "label": "XL", "range": "76-81 cm", "type": "Extra Large" }
       }
     },
-    "seeDetails": "See Full Details"
+    "sizes": {
+      "s": { "type": "Carry-on" },
+      "m": { "type": "Medium" },
+      "l": { "type": "Large" },
+      "xl": { "type": "Extra Large" }
+    },
+    "seeDetails": "See Full Details",
+    "calculator": {
+      "title": "Size Calculator",
+      "subtitle": "Find your perfect fit in seconds",
+      "placeholderInches": "Enter height in inches",
+      "placeholderCm": "Enter height in cm",
+      "inches": "Inches",
+      "cm": "CM",
+      "button": "Find My Size",
+      "calculating": "Calculating...",
+      "result": "Recommended Size",
+      "shop": "Shop",
+      "outOfRange": "Height out of range. Please measure between 18-32 inches (46-81cm)."
+    },
+    "video": {
+      "label": "Video Guide",
+      "title": "Watch How to Measure",
+      "subtitle": "See exactly how to measure your suitcase with our step-by-step video guide",
+      "comingSoon": "Video Coming Soon",
+      "description": "Watch a demonstration of how to properly measure your suitcase height (excluding wheels)",
+      "tip1": "Measure in cm or inches",
+      "tip2": "Exclude wheels & handles"
+    },
+    "conversionChart": {
+      "title": "Size Conversion Chart"
+    },
+    "benefits": {
+      "label": "Benefits",
+      "title": "Why Use Our Covers?",
+      "protection": {
+        "title": "Real Protection",
+        "description": "Protects from scratches, dirt, and rough airport handling. Your luggage arrives pristine."
+      },
+      "care": {
+        "title": "Easy Care",
+        "description": "Machine washable at 30°C. Maintains shape and color wash after wash."
+      },
+      "recognition": {
+        "title": "Instant Recognition",
+        "description": "Bold, unique designs make your luggage unmistakable on any baggage claim."
+      }
+    },
+    "faq": {
+      "label": "FAQ",
+      "title": "Common Questions",
+      "viewAll": "View All FAQs",
+      "questions": {
+        "sizeCover": {
+          "question": "How do I choose the right size cover?",
+          "answer": "Simply measure your suitcase height from the floor to the top (excluding wheels). S = 18-21 inches (46-53cm), M = 22-25 inches (56-64cm), L = 26-29 inches (66-74cm), XL = 30-32 inches (76-81cm). Check our detailed Size Guide for more information."
+        },
+        "hardShell": {
+          "question": "Does the cover fit hard-shell suitcases?",
+          "answer": "Yes! Our covers are specifically designed for hard-shell suitcases. The stretchy spandex fabric with elastic bottom ensures a snug, secure fit on hard-shell luggage."
+        },
+        "dualZippers": {
+          "question": "What are the dual zipper openings for?",
+          "answer": "Our covers feature dual zipper openings at the top for easy access to both the top carry handle and the telescopic handle. This allows you to use your suitcase normally without removing the cover."
+        },
+        "washCover": {
+          "question": "Can I wash the luggage cover?",
+          "answer": "Yes, all our covers are machine washable at 30°C (86°F). Use a gentle cycle with similar colors. Do not tumble dry, iron, or bleach. Air dry for best results."
+        }
+      }
+    },
+    "cta": {
+      "title": "Ready to Travel Smart?",
+      "subtitle": "Browse our collection and find the perfect cover for your next adventure.",
+      "button": "Shop Luggage Covers"
+    }
   },
   "socialProof": {
     "sectionLabel": "Trusted by Travelers",
     "title": "What Our Customers Say",
     "rating": "4.5/5 from 2,000+ reviews",
     "marketplaces": "Available on leading marketplaces",
+    "viewAllReviews": "View All Reviews",
+    "backToHome": "Back to Home",
+    "shopNow": "Shop Now",
     "reviews": {
       "1": {
         "name": "Ahmed M.",
@@ -216,7 +327,7 @@
     },
     "filters": {
       "title": "Filters",
-      "clear": "Clear {{count}}",
+      "clear": "Clear {count}",
       "bestSellers": {
         "title": "Best Sellers",
         "showOnly": "Show Best Sellers Only"
@@ -236,15 +347,24 @@
       }
     },
     "results": {
-      "showing": "Showing {{count}} products"
+      "showing": "Showing {count} products"
     },
+    "noProducts": "No products found",
+    "clearFilters": "Clear all filters",
     "mobile": {
       "filters": "Filters",
-      "showProducts": "Show {{count}} Products"
+      "showProducts": "Show {count} Products"
     }
   },
   "product": {
     "badge": "Premium",
+    "sale": "SALE",
+    "notFound": "Product Not Found",
+    "aria": {
+      "previousImage": "Previous image",
+      "nextImage": "Next image",
+      "goToImage": "Go to image {number}"
+    },
     "rating": {
       "value": "4.9",
       "reviews": "127 verified reviews"
@@ -253,6 +373,7 @@
       "save": "Save {{percent}}%"
     },
     "size": {
+      "select": "Select Size",
       "title": "Select Size",
       "howToMeasure": "How to Measure?"
     },
@@ -260,7 +381,7 @@
     "addToCart": "Add to Cart",
     "buyNow": "Buy Now",
     "benefits": {
-      "scratchProtection": {
+      "protection": {
         "title": "Scratch Protection",
         "desc": "Protects your luggage"
       },
@@ -270,12 +391,23 @@
       },
       "shipping": {
         "title": "Free Shipping",
-        "desc": "On orders over 500 EGP"
+        "desc": "On orders over 1000 EGP"
       },
       "returns": {
         "title": "30-Day Returns",
         "desc": "Hassle free"
+      },
+      "scratchProtection": {
+        "title": "Scratch Protection",
+        "desc": "Protects your luggage"
       }
+    },
+    "description": {
+      "title": "Why You'll Love It",
+      "1": "Protects from scratches, dirt & rough handling",
+      "2": "Stretchy, washable spandex/polyester fabric",
+      "3": "Easy access to top & side handles",
+      "4": "Wheels remain free for easy rolling"
     },
     "features": {
       "title": "Why You'll Love It",
@@ -287,53 +419,82 @@
       ]
     },
     "related": {
+      "subtitle": "Complete Your Look",
       "sectionLabel": "Complete Your Look",
       "title": "You May Also Like",
       "viewAll": "View All"
+    },
+    "nav": {
+      "previous": "Previous",
+      "next": "Next",
+      "goBack": "Go Back",
+      "backToShop": "Back to Shop",
+      "browsing": "Browsing"
     },
     "navigation": {
       "previous": "Previous",
       "next": "Next",
       "backToShop": "Back to Shop",
       "browsing": "Browsing"
-    }
+    },
+    "faq": {
+      "title": "Frequently Asked Questions"
+    },
+    "linkCopied": "Link copied to clipboard!"
   },
   "sizeModal": {
     "title": "Select Size",
-    "subtitle": "What size is your suitcase?",
+    "subtitle": "Which size is your luggage?",
     "note": "Measure height only, excluding wheels",
-    "sizes": {
-      "s": { "label": "S", "range": "45-53 cm", "type": "Carry-on" },
-      "m": { "label": "M", "range": "55-63 cm", "type": "Medium" },
-      "l": { "label": "L", "range": "65-74 cm", "type": "Large" },
-      "xl": { "label": "XL", "range": "76-81 cm", "type": "Extra Large" }
+    "sizeGuideDetails": {
+      "title": "Size Guide",
+      "note": "Measure height only, excluding wheels and handles",
+      "heightOnly": "height only, no wheels",
+      "sizes": {
+        "s": { "label": "S", "range": "18-21\" / 45-53cm", "type": "Carry-on" },
+        "m": { "label": "M", "range": "22-25\" / 55-63cm", "type": "Medium" },
+        "l": { "label": "L", "range": "26-29\" / 65-73cm", "type": "Large" },
+        "xl": { "label": "XL", "range": "30-32\" / 75-80cm", "type": "Extra Large" }
+      }
     },
+    "sizeGuide": "Size Guide",
     "cancel": "Cancel",
     "confirm": "Add to Cart"
   },
   "cart": {
     "title": "Shopping Cart",
+    "header": {
+      "title": "Shopping Cart",
+      "subtitle": "Review your items and proceed to checkout"
+    },
+    "cartItems": "{count, plural, =0 {No items} =1 {1 item} other {# items}}",
+    "continueShopping": "Continue Shopping",
     "empty": {
       "title": "Your cart is empty",
       "subtitle": "Looks like you haven't added anything yet.",
-      "cta": "Continue Shopping"
+      "cta": "Continue Shopping",
+      "continueShopping": "Continue Shopping"
     },
     "item": {
       "size": "Size",
-      "quantity": "Qty",
+      "quantity": "Quantity",
       "remove": "Remove"
     },
+    "size": "Size",
     "summary": {
       "title": "Order Summary",
       "subtotal": "Subtotal",
       "shipping": "Shipping",
+      "free": "Free",
       "freeShipping": "Free",
       "total": "Total",
       "checkout": "Proceed to Checkout",
+      "proceedToCheckout": "Proceed to Checkout",
       "continueShopping": "Continue Shopping",
-      "note": "Shipping & taxes calculated at checkout"
+      "note": "Shipping and taxes calculated at checkout",
+      "egyptOnly": "🚚 Egypt delivery only"
     },
-    "savings": "You're saving EGP {{amount}}"
+    "savings": "You're saving EGP {amount}"
   },
   "checkout": {
     "header": {
@@ -355,6 +516,7 @@
       },
       "shipping": {
         "title": "Shipping Address",
+        "egyptOnly": "🚚 Delivery to all Egyptian governorates only",
         "firstName": "First Name",
         "firstNamePlaceholder": "First",
         "lastName": "Last Name",
@@ -366,6 +528,23 @@
         "phone": "Phone",
         "phonePlaceholder": "01xxxxxxxxx"
       },
+      "location": {
+        "detect": "Detect Location",
+        "error": "Unable to get your location. Please allow location access.",
+        "notSupported": "Geolocation is not supported by your browser."
+      },
+      "banks": {
+        "nbe": "National Bank of Egypt",
+        "cib": "CIB",
+        "qnb": "QNB",
+        "banqueMisr": "Banque Misr",
+        "alexBank": "AlexBank",
+        "adib": "ADIB"
+      },
+      "instapayAccount": {
+        "name": "natOnat",
+        "number": "01234567890"
+      },
       "payment": {
         "title": "Payment Method",
         "cod": {
@@ -374,15 +553,24 @@
         },
         "card": {
           "title": "Credit/Debit Card",
-          "subtitle": "Pay securely with your card"
+          "subtitle": "Pay securely with your card",
+          "selectBank": "Select your bank"
+        },
+        "instapay": {
+          "title": "InstaPay",
+          "subtitle": "Pay via InstaPay transfer",
+          "transferDetails": "Transfer Details",
+          "accountName": "Account Name",
+          "accountNumber": "Account Number",
+          "instruction": "Please transfer the total amount and use your order number as reference"
         }
       },
       "processing": "Processing...",
-      "completeOrder": "Complete Order - EGP {{total}}"
+      "completeOrder": "Complete Order - EGP {total}"
     },
     "summary": {
       "title": "Order Summary",
-      "qty": "Qty: {{quantity}}",
+      "qty": "Qty: {quantity}",
       "subtotal": "Subtotal",
       "shipping": "Shipping",
       "free": "Free",
@@ -403,5 +591,536 @@
     "edit": "Edit",
     "delete": "Delete",
     "view": "View"
+  },
+  "wishlist": {
+    "label": "Favorites",
+    "title": "My Wishlist",
+    "titleCount": "My Wishlist ({count})",
+    "empty": {
+      "title": "Your Wishlist is Empty",
+      "subtitle": "Save your favorite items here and come back to them anytime"
+    },
+    "clearAll": "Clear All",
+    "discoverMore": "Discover More Products",
+    "continueShopping": "Continue Shopping"
+  },
+  "contact": {
+    "hero": {
+      "label": "Support",
+      "title": "Contact Us",
+      "subtitle": "We're here to help. Reach out through any channel below and we'll get back to you within 24 hours."
+    },
+    "info": {
+      "label": "Contact",
+      "title": "Get in Touch",
+      "email": "Email",
+      "whatsapp": "WhatsApp",
+      "phone": "Phone",
+      "location": "Location",
+      "hours": "Sun-Thu, 9am-5pm EET",
+      "address": "Cairo, Egypt",
+      "onlineFirst": "Online-first brand"
+    },
+    "social": {
+      "label": "Social",
+      "title": "Follow Us",
+      "facebook": "Facebook",
+      "instagram": "Instagram",
+      "tiktok": "TikTok"
+    },
+    "help": {
+      "label": "Help",
+      "title": "Quick Links",
+      "faq": "Frequently Asked Questions",
+      "sizeGuide": "How to Choose Your Size",
+      "shipping": "Shipping Information",
+      "returns": "Returns & Exchanges"
+    },
+    "form": {
+      "label": "Message",
+      "title": "Send us a Message",
+      "subtitle": "Fill out the form below and we'll get back to you within 24 hours.",
+      "success": {
+        "title": "Message Sent!",
+        "subtitle": "We'll get back to you as soon as possible."
+      },
+      "name": "Name",
+      "namePlaceholder": "Your full name",
+      "email": "Email",
+      "emailPlaceholder": "your@email.com",
+      "orderNumber": "Order Number (optional)",
+      "orderPlaceholder": "e.g. NAT-12345",
+      "subject": "Subject",
+      "selectSubject": "Select a subject",
+      "subjects": {
+        "order": "Order Inquiry",
+        "product": "Product Question",
+        "size": "Size Help",
+        "return": "Return/Exchange",
+        "wholesale": "Wholesale/B2B",
+        "other": "Other"
+      },
+      "message": "Message",
+      "messagePlaceholder": "How can we help you?",
+      "send": "Send Message"
+    }
+  },
+  "articles": {
+    "label": "From The Journal",
+    "sectionLabel": "From The Journal",
+    "title": "Travel Tips & Guides",
+    "titleHighlight": "Guides",
+    "subtitle": "Tips, guides, and stories for the modern traveler",
+    "viewAll": "View All Articles",
+    "readMore": "Read More",
+    "categories": "Categories",
+    "allArticles": "All Articles",
+    "featured": "Featured",
+    "latest": "Latest Articles",
+    "readTime": "min read",
+    "share": "Share This Article",
+    "related": "More Articles",
+    "backToArticles": "Back to Articles"
+  },
+  "about": {
+    "hero": {
+      "label": "Our Story",
+      "title": "About natOnat",
+      "subtitle": "Born on Amazon in 2019, grown into a complete travel accessories brand trusted by thousands across the Middle East."
+    },
+    "journey": {
+      "label": "The Journey",
+      "title": "From Amazon Startup to Travel Brand",
+      "paragraph1": "natOnat started with a simple observation: travelers invest in expensive suitcases, then watch them get scratched and dirty at airports. There had to be a better way.",
+      "paragraph2": "We launched in 2019 on Amazon with a simple mission: create luggage covers that actually work. Covers that fit properly, protect effectively, and look great doing it.",
+      "paragraph3": "The response was immediate. Travelers loved our simple sizing system, quality materials, and unique designs that made luggage stand out on any carousel.",
+      "paragraph4": "Today, natOnat is evolving into a complete travel accessories ecosystem. But our mission remains: protect your gear and make every journey easier, safer, and more stylish."
+    },
+    "milestones": {
+      "label": "Timeline",
+      "title": "Our Journey",
+      "2019": { "title": "The Beginning", "description": "natOnat launched on Amazon with a simple mission: protect luggage in style." },
+      "2022": { "title": "First 10K Customers", "description": "Reached our first milestone of 10,000 happy travelers." },
+      "2023": { "title": "Brand Evolution", "description": "Launched our D2C website and began building the natOnat brand identity." },
+      "2025": { "title": "Passport Wallets & Full Ecosystem", "description": "Introduced premium RFID passport wallets and launched travel sets, expanding into a complete travel accessories brand." }
+    },
+    "values": {
+      "title": "Our Values",
+      "quality": { "title": "Quality First", "description": "We never compromise on materials or craftsmanship. Every product is built to last." },
+      "design": { "title": "Smart Design", "description": "Simple solutions to real travel problems. Our sizing system proves it." },
+      "luxury": { "title": "Accessible Luxury", "description": "Premium quality at fair prices. Better value than competitors." },
+      "customer": { "title": "Customer Obsessed", "description": "Every decision starts with the traveler in mind." }
+    },
+    "mission": {
+      "label": "Purpose",
+      "title": "Our Mission",
+      "quote": "To create a smarter, more stylish travel accessories ecosystem that protects your gear and makes every journey easier — all at a fair price.",
+      "points": {
+        "quality": "Better quality than competitors",
+        "design": "Smarter designs",
+        "pricing": "Fair pricing",
+        "customer": "Customer first"
+      }
+    },
+    "future": {
+      "label": "Future",
+      "title": "What's Next",
+      "description": "We're building the future of travel accessories. Here's what's coming:",
+      "items": {
+        "garmentBags": "Garment bags for wrinkle-free travel",
+        "techOrganizers": "Tech organizers and cable management",
+        "packingCubes": "Packing cubes and organizers",
+        "expansion": "Regional expansion across MENA"
+      },
+      "cta": "Partner With Us"
+    }
+  },
+  "faqs": {
+    "hero": {
+      "label": "FAQ",
+      "title": "FAQs",
+      "subtitle": "Find answers to common questions about our products, shipping, and returns"
+    },
+    "categories": {
+      "all": "All Questions",
+      "covers": "Luggage Covers",
+      "wallets": "Passport Wallets",
+      "orders": "Orders & Shipping",
+      "returns": "Returns & Warranty"
+    },
+    "questions": {
+      "sizeCover": {
+        "question": "How do I choose the right size cover?",
+        "answer": "Simply measure your suitcase height from the floor to the top (excluding wheels). S = 18-21 inches (46-53cm), M = 22-25 inches (56-64cm), L = 26-29 inches (66-74cm), XL = 30-32 inches (76-81cm). Check our detailed Size Guide for more information."
+      },
+      "hardShell": {
+        "question": "Does the cover fit hard-shell suitcases?",
+        "answer": "Yes! Our covers are specifically designed for hard-shell suitcases. The stretchy spandex fabric with elastic bottom ensures a snug, secure fit on hard-shell luggage."
+      },
+      "dualZippers": {
+        "question": "What are the dual zipper openings for?",
+        "answer": "Our covers feature dual zipper openings at the top for easy access to both the top carry handle and the telescopic handle. This allows you to use your suitcase normally without removing the cover."
+      },
+      "washCover": {
+        "question": "Can I wash the luggage cover?",
+        "answer": "Yes, all our covers are machine washable at 30°C (86°F). Use a gentle cycle with similar colors. Do not tumble dry, iron, or bleach. Air dry for best results."
+      },
+      "security": {
+        "question": "Will airport security ask me to remove the cover?",
+        "answer": "In most cases, no. The cover is thin and doesn't obstruct X-ray scanning. However, security officers reserve the right to ask for removal if they need to inspect the contents more closely."
+      },
+      "handles": {
+        "question": "Do I still have access to handles and wheels?",
+        "answer": "Absolutely! Our covers are designed with openings for top and side handles, and the wheels remain completely free so you can roll your suitcase normally."
+      },
+      "rfid": {
+        "question": "What is RFID protection?",
+        "answer": "RFID (Radio-Frequency Identification) protection blocks unauthorized wireless scanning of your cards and passport. This prevents electronic pickpocketing in crowded places like airports and tourist areas."
+      },
+      "cards": {
+        "question": "How many cards can the wallet hold?",
+        "answer": "Depending on the model, our wallets hold between 3-6 credit cards, plus your passport, boarding passes, cash, and even a SIM card. Check individual product descriptions for exact capacity."
+      },
+      "leather": {
+        "question": "Is the leather genuine?",
+        "answer": "Yes, all our passport wallets use full-grain genuine leather that develops a beautiful patina over time. We source high-quality leather that is both durable and elegant."
+      },
+      "pocket": {
+        "question": "Will the wallet fit in my pocket?",
+        "answer": "Our wallets are designed to be compact yet functional. They fit comfortably in most jacket pockets, handbags, and carry-on bags while holding all your essential travel documents.",
+        "linkText": "View our passport wallets collection"
+      },
+      "shipping": {
+        "question": "Where do you ship to?",
+        "answer": "We currently ship across Egypt only. We are working on expanding to other countries soon. All orders are delivered to all Egyptian governorates."
+      },
+      "shippingTime": {
+        "question": "How long does shipping take?",
+        "answer": "Egypt: 1-2 business days to all governorates. Express delivery available for Cairo and Giza."
+      },
+      "track": {
+        "question": "How can I track my order?",
+        "answer": "Once your order ships, you'll receive an email with a tracking number. You can also track your order through your account on our website or contact us for assistance."
+      },
+      "freeShip": {
+        "question": "Do you offer free shipping?",
+        "answer": "Yes! We offer free standard shipping on all orders over EGP 1000 within Egypt. For orders below this amount, shipping is a flat rate of EGP 75."
+      },
+      "returnPolicy": {
+        "question": "What is your return policy?",
+        "answer": "We offer a 30-day return policy for unused items in original packaging. We also provide 6 months warranty against manufacturing defects. If you're not satisfied with your purchase, contact us to initiate a return. Refunds are processed within 5-7 business days after we receive the item."
+      },
+      "exchange": {
+        "question": "Do you offer exchanges?",
+        "answer": "Yes, we offer free size exchanges within 30 days. If your cover doesn't fit, contact us and we'll send you the correct size with free return shipping for the original item."
+      }
+    },
+    "empty": {
+      "title": "No questions found",
+      "cta": "View all questions"
+    },
+    "contactSubtitle": "Need help with something else? Our team is here to assist you.",
+    "whatsappCta": "WhatsApp Us",
+    "needHelp": "Still have questions?",
+    "contactCta": "Contact Us"
+  },
+  "legal": {
+    "shipping": {
+      "hero": {
+        "label": "Customer Service",
+        "title": "Shipping & Returns",
+        "subtitle": "Everything you need to know about delivery and returns"
+      },
+      "shippingTitle": "Shipping Information",
+      "shippingSubtitle": "Flat rate 75 EGP delivery across Egypt",
+      "processing": {
+        "title": "Delivery Time",
+        "description": "Cairo & Giza: 1-2 business days. Other governorates: 5-7 business days. Orders are processed within 1 business day."
+      },
+      "tracking": {
+        "title": "Order Tracking",
+        "description": "Once your order ships, you'll receive an email with a tracking number. You can track your shipment through the courier's website."
+      },
+      "delays": {
+        "title": "Delays",
+        "description": "Delivery times are estimates. Delays may occur during peak seasons, holidays, or due to customs processing for international orders."
+      },
+      "rates": {
+        "region": "Region",
+        "standard": "Standard",
+        "express": "Express",
+        "deliveryTime": "Delivery Time",
+        "cairoGiza": "Cairo & Giza",
+        "otherGovs": "Other Governorates",
+        "cairoTime": "1-2 business days",
+        "govsTime": "5-7 business days",
+        "freeShippingHint": "FREE shipping on orders over 1000 EGP"
+      },
+      "returns": {
+        "title": "Returns & Exchanges",
+        "subtitle": "Easy 30-day return policy",
+        "policyTitle": "Return Policy",
+        "howToReturn": "How to Return",
+        "nonReturnable": "Non-Returnable Items",
+        "returns30": "Returns accepted within 30 days of delivery",
+        "unused": "Items must be unused and in original packaging",
+        "freeExchanges": "Free size exchanges within 30 days",
+        "refunds57": "Refunds processed within 5-7 business days",
+        "used": "Items that have been used or washed",
+        "noPackaging": "Items without original packaging",
+        "damaged": "Items damaged due to improper use",
+        "giftCards": "Gift cards and promotional items",
+        "step1": "Contact us at info@natonat.com or WhatsApp +20 10 70004227 to initiate a return",
+        "step2": "Pack the item securely in its original packaging with all tags attached",
+        "step3": "Ship the package to our return address (provided in return instructions)",
+        "step4": "Once received and inspected, your refund will be processed"
+      },
+      "contact": {
+        "title": "Questions?",
+        "subtitle": "Need help with shipping or returns? Contact our support team."
+      }
+    },
+    "terms": {
+      "hero": {
+        "label": "Legal",
+        "title": "Terms & Conditions",
+        "subtitle": "The rules and guidelines for using our website and services"
+      },
+      "lastUpdated": "Last Updated",
+      "date": "March 2024",
+      "sections": {
+        "agreement": {
+          "title": "Agreement to Terms",
+          "content": "By accessing or using the natOnat website and purchasing our products, you agree to be bound by these Terms & Conditions. If you disagree with any part of these terms, you may not access our website or purchase our products."
+        },
+        "products": {
+          "title": "Products and Pricing",
+          "content": "All products are subject to availability. We reserve the right to discontinue any product at any time. Prices are subject to change without notice. All prices are listed in Egyptian Pounds (EGP) and include applicable taxes unless otherwise stated."
+        },
+        "payment": {
+          "title": "Orders and Payment",
+          "content": "By placing an order, you warrant that you are legally capable of entering into binding contracts. We reserve the right to refuse or cancel orders at our discretion. Payment must be received in full before products are shipped."
+        },
+        "shipping": {
+          "title": "Shipping and Delivery",
+          "content": "Delivery times are estimates and not guaranteed. We are not responsible for delays caused by shipping carriers, customs, or other circumstances beyond our control. Risk of loss and title for items pass to you upon delivery."
+        },
+        "returns": {
+          "title": "Returns and Refunds",
+          "content": "Returns are accepted within 30 days of purchase for unused items in original packaging. Refunds will be processed within 5-7 business days after we receive the returned item. Shipping costs for returns are the customer's responsibility unless the item was defective."
+        },
+        "intellectual": {
+          "title": "Intellectual Property",
+          "content": "All content on this website, including text, graphics, logos, images, and software, is the property of natOnat and protected by copyright and other intellectual property laws. You may not reproduce, distribute, or create derivative works without our express permission."
+        },
+        "accounts": {
+          "title": "User Accounts",
+          "content": "When you create an account, you must provide accurate and complete information. You are responsible for maintaining the confidentiality of your account password and for all activities that occur under your account."
+        },
+        "liability": {
+          "title": "Limitation of Liability",
+          "content": "natOnat shall not be liable for any indirect, incidental, special, consequential, or punitive damages resulting from your use of our products or website. Our total liability shall not exceed the amount you paid for the product giving rise to the liability."
+        },
+        "governing": {
+          "title": "Governing Law",
+          "content": "These terms shall be governed by and construed in accordance with the laws of the Arab Republic of Egypt. Any disputes shall be resolved in the courts of Cairo, Egypt."
+        },
+        "changes": {
+          "title": "Changes to Terms",
+          "content": "We reserve the right to modify these terms at any time. Changes will be effective immediately upon posting to the website. Your continued use of the website after changes constitutes acceptance of the new terms."
+        }
+      },
+      "contact": {
+        "title": "Questions?",
+        "subtitle": "If you have any questions about these Terms & Conditions, please contact us:"
+      }
+    },
+    "privacy": {
+      "hero": {
+        "label": "Legal",
+        "title": "Privacy Policy",
+        "subtitle": "How we collect, use, and protect your personal information"
+      },
+      "lastUpdated": "Last Updated",
+      "date": "March 2024",
+      "introduction": {
+        "title": "Introduction",
+        "content": "natOnat respects your privacy and is committed to protecting your personal data. This privacy policy explains how we collect, use, and safeguard your information when you visit our website or make a purchase. By using our services, you agree to the practices described in this policy."
+      },
+      "information": {
+        "title": "Information We Collect",
+        "subtitle": "We collect the following types of information:",
+        "personal": {
+          "title": "Personal Information",
+          "desc": "Name, email, phone number, shipping and billing addresses"
+        },
+        "payment": {
+          "title": "Payment Information",
+          "desc": "We don't store credit card details. Payments processed securely through partners."
+        },
+        "order": {
+          "title": "Order Information",
+          "desc": "Products purchased, order history, and preferences"
+        },
+        "technical": {
+          "title": "Technical Data",
+          "desc": "IP address, browser type, device information, and cookies"
+        }
+      },
+      "usage": {
+        "title": "How We Use Your Information",
+        "items": [
+          "Process and fulfill your orders",
+          "Communicate about your order status",
+          "Provide customer support",
+          "Send promotional emails (with your consent)",
+          "Improve our website and products",
+          "Comply with legal obligations"
+        ]
+      },
+      "sharing": {
+        "title": "Data Sharing",
+        "subtitle": "We do not sell your personal information. We only share your data with:",
+        "serviceProviders": {
+          "title": "Service Providers",
+          "desc": "Shipping companies, payment processors, and IT services who help us operate our business."
+        },
+        "legal": {
+          "title": "Legal Requirements",
+          "desc": "When required by law or to protect our rights and safety."
+        }
+      },
+      "rights": {
+        "title": "Your Rights",
+        "subtitle": "You have the right to:",
+        "access": {
+          "title": "Access",
+          "desc": "Request a copy of your personal data"
+        },
+        "correction": {
+          "title": "Correction",
+          "desc": "Correct inaccurate or incomplete data"
+        },
+        "deletion": {
+          "title": "Deletion",
+          "desc": "Request deletion of your data"
+        },
+        "optout": {
+          "title": "Opt-out",
+          "desc": "Unsubscribe from marketing communications"
+        },
+        "portability": {
+          "title": "Portability",
+          "desc": "Request your data in a portable format"
+        },
+        "restriction": {
+          "title": "Restriction",
+          "desc": "Limit how we use your data"
+        }
+      },
+      "cookies": {
+        "title": "Cookies",
+        "content": "We use cookies to enhance your browsing experience, analyze site traffic, and personalize content. You can control cookies through your browser settings at any time."
+      },
+      "security": {
+        "title": "Security",
+        "content": "We implement appropriate technical and organizational measures to protect your personal data against unauthorized access, alteration, disclosure, or destruction."
+      },
+      "contact": {
+        "title": "Contact Us",
+        "subtitle": "If you have any questions about this privacy policy or our data practices, please contact us:"
+      }
+    },
+    "warranty": {
+      "hero": {
+        "label": "Support",
+        "title": "Warranty Information",
+        "subtitle": "Our commitment to quality and customer satisfaction",
+        "warrantyText": "Warranty"
+      },
+      "badge": {
+        "label": "Limited Warranty",
+        "duration": "6 Months"
+      },
+      "coverage": {
+        "title": "What's Covered",
+        "description": "All natOnat products come with a",
+        "warrantyPeriod": "6-month limited warranty",
+        "againstDefects": "against manufacturing defects from the date of purchase.",
+        "covered": {
+          "title": "Covered Defects",
+          "items": [
+            "Broken or failed stitching",
+            "Elastic failure or breakage",
+            "Zipper defects",
+            "Material defects (holes, tears)",
+            "Hardware defects (buckles, clips)"
+          ]
+        },
+        "notCovered": {
+          "title": "Not Covered",
+          "items": [
+            "Normal wear and tear",
+            "Damage from misuse or abuse",
+            "Accidental damage",
+            "Color fading from sun exposure",
+            "Damage from improper washing",
+            "Damage from airline handling"
+          ]
+        }
+      },
+      "productSpecific": {
+        "title": "Product-Specific Warranty",
+        "luggageCovers": {
+          "title": "Luggage Covers",
+          "items": [
+            "Elastic band and bottom closure: 6 months",
+            "Fabric integrity: 6 months",
+            "Print quality: 6 months (against fading or peeling)"
+          ]
+        },
+        "passportWallets": {
+          "title": "Passport Wallets",
+          "items": [
+            "Leather and stitching: 6 months",
+            "RFID blocking function: 6 months",
+            "Zippers and hardware: 6 months"
+          ]
+        }
+      },
+      "howToClaim": {
+        "title": "How to Make a Warranty Claim"
+      },
+      "steps": {
+        "contact": {
+          "title": "Contact Us",
+          "desc": "Email info@natonat.com or WhatsApp +20 10 70004227 with your order number and description of the issue."
+        },
+        "evidence": {
+          "title": "Provide Evidence",
+          "desc": "Send clear photos showing the defect. For manufacturing issues, we may request the item be returned for inspection."
+        },
+        "resolution": {
+          "title": "Resolution",
+          "desc": "Once approved, we'll send a replacement or issue a refund. We cover shipping costs for warranty replacements."
+        }
+      },
+      "importantNotes": {
+        "title": "Important Notes",
+        "period": {
+          "title": "Warranty Period",
+          "desc": "Warranty claims must be made within 6 months of purchase date. Keep your order confirmation as proof of purchase."
+        },
+        "airline": {
+          "title": "Airline Damage",
+          "desc": "Our warranty does not cover damage caused by airline baggage handling. For such damage, please contact the airline directly."
+        }
+      },
+      "cta": {
+        "title": "Need to Make a Claim?",
+        "subtitle": "Have a warranty question or need to make a claim? Our support team is here to help.",
+        "button": "Contact Support"
+      }
+    }
   }
 }

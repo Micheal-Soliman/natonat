@@ -1,14 +1,18 @@
 "use client";
 
 import { useCart } from "@/app/lib/cart-context";
-import { useState, useEffect, useRef } from "react";
+import { useWishlist } from "@/app/lib/wishlist-context";
+import { useState, useEffect, useRef, useCallback } from "react";
+import Image from "next/image";
 import { Link } from "@/i18n/routing";
 import { useRouter } from "@/i18n/routing";
 import { useTranslations } from 'next-intl';
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
-import { ShoppingBag, ChevronRight, Shield, Sparkles, Ruler, Heart, Share2, Check, Star, Truck, RotateCcw, ArrowUpRight, Crown, Zap, Award, ArrowLeft, ChevronLeft, ChevronRight as ChevronRightIcon } from "lucide-react";
+import { ShoppingBag, ChevronRight, Shield, Sparkles, Ruler, Heart, Share2, Check, Star, Truck, RotateCcw, ArrowUpRight, Award, ArrowLeft, ChevronLeft, ChevronRight as ChevronRightIcon } from "lucide-react";
+import { FAQSection } from "@/app/components/faq-section";
+import { SwipeableProductImage } from "@/app/components/swipeable-product-image";
 import { type Product, products } from "@/lib/products";
 
 interface ProductPageContentProps {
@@ -19,19 +23,23 @@ interface ProductPageContentProps {
 
 export default function ProductPageContent({ product, prevProduct, nextProduct }: ProductPageContentProps) {
   const t = useTranslations('product');
-  const { addToCart } = useCart();
+  const { addToCart, setBuyNowItem } = useCart();
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const router = useRouter();
   const [selectedSize, setSelectedSize] = useState("m");
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
+  const [showShareToast, setShowShareToast] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
+  const [loadedThumbnails, setLoadedThumbnails] = useState<Set<number>>(new Set());
+
   const sizes = [
-    { id: "s", label: "S", range: "45-53 cm" },
-    { id: "m", label: "M", range: "55-63 cm" },
-    { id: "l", label: "L", range: "65-74 cm" },
-    { id: "xl", label: "XL", range: "76-81 cm" },
+    { id: "s", label: "S", range: "48-53 cm" },
+    { id: "m", label: "M", range: "58-63 cm" },
+    { id: "l", label: "L", range: "65-70 cm" },
+    { id: "xl", label: "XL", range: "72-80 cm" },
   ];
 
   const productImages = [
@@ -44,6 +52,19 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
   const relatedProducts = products
     .filter(p => p.theme === product.theme && p.id !== product.id)
     .slice(0, 3);
+
+  // Lazy load thumbnails when they come into view
+  const handleThumbnailInView = useCallback((idx: number) => {
+    setLoadedThumbnails(prev => new Set([...prev, idx]));
+  }, []);
+
+  useEffect(() => {
+    // Preload current image and adjacent ones
+    const imagesToPreload = [activeImage, activeImage - 1, activeImage + 1].filter(
+      i => i >= 0 && i < (product.images?.length || 1)
+    );
+    imagesToPreload.forEach(idx => handleThumbnailInView(idx));
+  }, [activeImage, product.images, handleThumbnailInView]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -65,6 +86,15 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
   return (
     <>
       <Navigation />
+      
+      {/* Share Toast Notification */}
+      {showShareToast && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-[#0F1A26] text-white px-6 py-3 rounded-full shadow-xl flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
+          <Check className="w-5 h-5 text-[#EEBC3F]" />
+          <span className="font-medium">{t('linkCopied')}</span>
+        </div>
+      )}
+      
       <main className="min-h-screen bg-[#F1EBE3] overflow-x-hidden" ref={ref}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12">
           {/* Product Navigation - Top */}
@@ -127,95 +157,104 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
             )}
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-16 items-start">
-            {/* Images - Premium Gallery */}
-            <div className={`space-y-6 lg:sticky lg:top-28 transition-all duration-700 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'}`}>
+          {/* Section 1 & 2: Gallery + Info Grid */}
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-start">
+            {/* Section 1: Gallery */}
+            <div className={`space-y-4 sm:space-y-6 lg:sticky lg:top-28 transition-all duration-700 w-full max-w-full overflow-hidden ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'}`}>
               {/* Main Image - Premium with Navigation Arrows */}
-              <div className="aspect-square bg-white/50 backdrop-blur-sm rounded-3xl flex items-center justify-center relative overflow-hidden border border-[#0F1A26]/10 shadow-2xl shadow-[#0F1A26]/10">
+              <div className="relative aspect-square bg-white/50 backdrop-blur-sm rounded-2xl sm:rounded-3xl flex items-center justify-center overflow-hidden border border-[#0F1A26]/10 shadow-2xl shadow-[#0F1A26]/10">
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(238,188,63,0.15),transparent_60%)]" />
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(255,255,255,0.05),transparent_50%)]" />
-                <img 
-                  src={product.images?.[activeImage] || product.image} 
-                  alt={product.name}
-                  className="absolute inset-0 w-full h-full object-contain p-4"
-                />
+                <div className="absolute inset-0 sm:p-4">
+                  <Image 
+                    src={product.images?.[activeImage] || product.image} 
+                    alt={product.name}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="object-contain p-2 sm:p-4"
+                    priority
+                  />
+                </div>
 
                 {/* Premium Tag */}
-                <div className="absolute top-6 left-6">
-                  <div className="bg-[#EEBC3F] rounded-full px-4 py-2 border border-[#EEBC3F] shadow-lg">
-                    <span className="text-[#0F1A26] text-xs font-bold tracking-wider">PREMIUM</span>
+                <div className="absolute top-3 left-3 sm:top-6 sm:left-6">
+                  <div className="bg-[#EEBC3F] rounded-full px-2 py-1 sm:px-4 sm:py-2 border border-[#EEBC3F] shadow-lg">
+                    <span className="text-[#0F1A26] text-[10px] sm:text-xs font-bold tracking-wider">{t('badge')}</span>
                   </div>
                 </div>
 
                 {/* Previous/Next Arrows */}
                 <button
                   onClick={() => setActiveImage((prev) => (prev === 0 ? (product.images?.length || 1) - 1 : prev - 1))}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/90 hover:bg-[#EEBC3F] text-[#0F1A26] rounded-full flex items-center justify-center transition-all duration-300 shadow-lg hover:scale-110"
-                  aria-label="Previous image"
+                  className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-12 sm:h-12 bg-white/90 hover:bg-[#EEBC3F] text-[#0F1A26] rounded-full flex items-center justify-center transition-all duration-300 shadow-lg hover:scale-110 active:scale-95"
+                  aria-label={t('aria.previousImage')}
                 >
-                  <ChevronLeft className="w-6 h-6" />
+                  <ChevronLeft className="w-4 h-4 sm:w-6 sm:h-6" />
                 </button>
                 <button
                   onClick={() => setActiveImage((prev) => (prev === (product.images?.length || 1) - 1 ? 0 : prev + 1))}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/90 hover:bg-[#EEBC3F] text-[#0F1A26] rounded-full flex items-center justify-center transition-all duration-300 shadow-lg hover:scale-110"
-                  aria-label="Next image"
+                  className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-12 sm:h-12 bg-white/90 hover:bg-[#EEBC3F] text-[#0F1A26] rounded-full flex items-center justify-center transition-all duration-300 shadow-lg hover:scale-110 active:scale-95"
+                  aria-label={t('aria.nextImage')}
                 >
-                  <ChevronRightIcon className="w-6 h-6" />
+                  <ChevronRightIcon className="w-4 h-4 sm:w-6 sm:h-6" />
                 </button>
               </div>
 
               {/* Thumbnails - Horizontal Scrollable with Index */}
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3 w-full max-w-full overflow-hidden">
                 {/* Thumbnails Row */}
-                <div className="flex gap-3 overflow-x-auto pb-3 px-1 scrollbar-thin scrollbar-thumb-[#EEBC3F]/40 scrollbar-track-transparent hover:scrollbar-thumb-[#EEBC3F]">
+                <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 sm:pb-3 px-1 scrollbar-thin scrollbar-thumb-[#EEBC3F]/40 scrollbar-track-transparent hover:scrollbar-thumb-[#EEBC3F] max-w-full">
                   {(product.images || [product.image]).map((img, idx) => (
                     <button
                       key={idx}
                       onClick={() => setActiveImage(idx)}
-                      className={`flex-shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-white/80 flex items-center justify-center transition-all duration-300 border-2 overflow-hidden ${activeImage === idx
+                      className={`flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-lg sm:rounded-xl bg-white/80 flex items-center justify-center transition-all duration-300 border-2 overflow-hidden ${activeImage === idx
                           ? "border-[#EEBC3F] shadow-lg shadow-[#EEBC3F]/20"
                           : "border-transparent opacity-80 hover:opacity-100"
                         }`}
                     >
-                      <img 
+                      <Image 
                         src={img} 
                         alt={`${product.name} view ${idx + 1}`}
+                        width={96}
+                        height={96}
                         className="w-full h-full object-contain p-1"
+                        loading="lazy"
                       />
                     </button>
                   ))}
                 </div>
                 
                 {/* Index Indicator with Dots */}
-                <div className="flex items-center justify-center gap-4">
-                  <span className="text-sm font-bold text-[#EEBC3F] min-w-[20px]">
+                <div className="flex items-center justify-center gap-2 sm:gap-4 max-w-full">
+                  <span className="text-xs sm:text-sm font-bold text-[#EEBC3F] min-w-[16px] sm:min-w-[20px]">
                     {String(activeImage + 1).padStart(2, '0')}
                   </span>
                   
                   {/* Dots */}
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto max-w-[180px] sm:max-w-[280px] px-1">
                     {(product.images || [product.image]).map((_, idx) => (
                       <button
                         key={idx}
                         onClick={() => setActiveImage(idx)}
-                        className={`h-1.5 rounded-full transition-all duration-300 ${
+                        className={`h-1 sm:h-1.5 rounded-full transition-all duration-300 ${
                           activeImage === idx 
-                            ? "w-6 bg-[#EEBC3F]" 
-                            : "w-1.5 bg-[#0F1A26]/20 hover:bg-[#0F1A26]/40"
+                            ? "w-4 sm:w-6 bg-[#EEBC3F]" 
+                            : "w-1.5 sm:w-1.5 bg-[#0F1A26]/20 hover:bg-[#0F1A26]/40"
                         }`}
-                        aria-label={`Go to image ${idx + 1}`}
+                        aria-label={t('aria.goToImage', { number: idx + 1 })}
                       />
                     ))}
                   </div>
                   
-                  <span className="text-sm text-[#0F1A26]/60 min-w-[20px]">
+                  <span className="text-xs sm:text-sm text-[#0F1A26]/60 min-w-[16px] sm:min-w-[20px]">
                     {String(product.images?.length || 1).padStart(2, '0')}
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Product Info - Premium */}
+            {/* Section 2: Product Info */}
             <div className={`lg:pl-8 transition-all duration-700 delay-100 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'}`}>
               {/* Category & Actions */}
               <div className="flex items-start justify-between mb-4 sm:mb-6">
@@ -224,10 +263,30 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                   <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#0F1A26] mt-1 sm:mt-2 tracking-tight">{product.name}</h1>
                 </div>
                 <div className="flex gap-2 sm:gap-3 ml-4">
-                  <button className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white border border-[#0F1A26]/10 flex items-center justify-center text-[#0F1A26]/40 hover:text-[#EEBC3F] hover:border-[#EEBC3F] transition-all duration-300 hover:shadow-lg hover:scale-110">
-                    <Heart className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={1.5} />
+                  <button 
+                    onClick={() => {
+                      if (isInWishlist(product.id)) {
+                        removeFromWishlist(product.id);
+                      } else {
+                        addToWishlist(product);
+                      }
+                    }}
+                    className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white border border-[#0F1A26]/10 flex items-center justify-center transition-all duration-300 hover:shadow-lg hover:scale-110 ${
+                      isInWishlist(product.id) 
+                        ? 'text-[#EEBC3F] border-[#EEBC3F]' 
+                        : 'text-[#0F1A26]/40 hover:text-[#EEBC3F] hover:border-[#EEBC3F]'
+                    }`}
+                  >
+                    <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${isInWishlist(product.id) ? 'fill-[#EEBC3F]' : ''}`} strokeWidth={1.5} />
                   </button>
-                  <button className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white border border-[#0F1A26]/10 flex items-center justify-center text-[#0F1A26]/40 hover:text-[#EEBC3F] hover:border-[#EEBC3F] transition-all duration-300 hover:shadow-lg hover:scale-110">
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText(window.location.href);
+                      setShowShareToast(true);
+                      setTimeout(() => setShowShareToast(false), 2000);
+                    }}
+                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white border border-[#0F1A26]/10 flex items-center justify-center text-[#0F1A26]/40 hover:text-[#EEBC3F] hover:border-[#EEBC3F] transition-all duration-300 hover:shadow-lg hover:scale-110"
+                  >
                     <Share2 className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={1.5} />
                   </button>
                 </div>
@@ -304,6 +363,7 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                     addToCart({
                       id: product.id,
                       name: product.name,
+                      slug: product.slug,
                       type: product.type,
                       price: product.price,
                       originalPrice: product.originalPrice,
@@ -318,9 +378,10 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                 </Button>
                 <Button 
                   onClick={() => {
-                    addToCart({
+                    setBuyNowItem({
                       id: product.id,
                       name: product.name,
+                      slug: product.slug,
                       type: product.type,
                       price: product.price,
                       originalPrice: product.originalPrice,
@@ -337,7 +398,7 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
               </div>
 
               {/* Benefits Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6 sm:mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 {[
                   { icon: Shield, title: t('benefits.protection.title'), desc: t('benefits.protection.desc') },
                   { icon: Sparkles, title: t('benefits.washable.title'), desc: t('benefits.washable.desc') },
@@ -355,29 +416,63 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
 
-              {/* Description */}
-              <div className="bg-white rounded-3xl p-6 border border-[#0F1A26]/5">
-                <h3 className="text-sm font-bold text-[#0F1A26] mb-5 tracking-[0.1em] uppercase flex items-center gap-2">
-                  <Check className="w-4 h-4 text-[#EEBC3F]" />
-                  {t('description.title')}
-                </h3>
-                <ul className="space-y-4">
-                  {[t('description.1'), t('description.2'), t('description.3'), t('description.4')].map((item, index) => (
-                    <li key={index} className="flex items-center gap-3 text-[#0F1A26]/70">
-                      <div className="w-8 h-8 rounded-lg bg-[#EEBC3F]/10 flex items-center justify-center flex-shrink-0">
-                        <Check className="w-4 h-4 text-[#EEBC3F]" strokeWidth={2} />
-                      </div>
-                      {item}
-                    </li>
-                  ))}
-                </ul>
+          {/* Sections 3 & 4: Why You'll Love It + FAQs - Side by Side */}
+          <div className="mt-16 lg:mt-24">
+            <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
+              {/* Section 3: Why You'll Love It (We Love) */}
+              <div className={`transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+                <div className="bg-white rounded-3xl p-6 md:p-8 border border-[#0F1A26]/5 shadow-lg h-full">
+                  <h3 className="text-base font-bold text-[#0F1A26] mb-5 tracking-[0.1em] uppercase flex items-center gap-3">
+                    <Check className="w-5 h-5 text-[#EEBC3F]" />
+                    {t('description.title')}
+                  </h3>
+                  <ul className="space-y-3">
+                    {[t('description.1'), t('description.2'), t('description.3'), t('description.4')].map((item, index) => (
+                      <li key={index} className="flex items-center gap-3 text-[#0F1A26]/70 p-3 bg-[#F1EBE3] rounded-xl">
+                        <div className="w-8 h-8 rounded-lg bg-[#EEBC3F]/10 flex items-center justify-center flex-shrink-0">
+                          <Check className="w-4 h-4 text-[#EEBC3F]" strokeWidth={2} />
+                        </div>
+                        <span className="font-medium text-sm">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              {/* Section 4: FAQs */}
+              <div className={`transition-all duration-700 delay-100 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+                <div className="h-full">
+                  <FAQSection
+                    title={t('faq.title')}
+                    translationNamespace="faqs"
+                    faqs={
+                      product.category === "luggage-covers" ? [
+                        { questionKey: "questions.sizeCover.question", answerKey: "questions.sizeCover.answer" },
+                        { questionKey: "questions.washCover.question", answerKey: "questions.washCover.answer" },
+                        { questionKey: "questions.security.question", answerKey: "questions.security.answer" },
+                        { questionKey: "questions.handles.question", answerKey: "questions.handles.answer" },
+                      ] : product.category === "passport-wallets" ? [
+                        { questionKey: "questions.rfid.question", answerKey: "questions.rfid.answer" },
+                        { questionKey: "questions.cards.question", answerKey: "questions.cards.answer" },
+                        { questionKey: "questions.leather.question", answerKey: "questions.leather.answer" },
+                        { questionKey: "questions.pocket.question", answerKey: "questions.pocket.answer" },
+                      ] : [
+                        { questionKey: "questions.returnPolicy.question", answerKey: "questions.returnPolicy.answer" },
+                        { questionKey: "questions.exchange.question", answerKey: "questions.exchange.answer" },
+                        { questionKey: "questions.freeShip.question", answerKey: "questions.freeShip.answer" },
+                      ]
+                    }
+                  />
+                </div>
               </div>
             </div>
           </div>
 
           {/* Related Products */}
-          <div className="mt-24 pt-20 border-t border-[#0F1A26]/10">
+          <div className="mt-12 pt-12 lg:mt-24 lg:pt-20 border-t border-[#0F1A26]/10">
             <div className={`flex items-center justify-between mb-10 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
               <div>
                 <span className="text-[#EEBC3F] text-xs font-bold tracking-[0.3em] uppercase">{t('related.subtitle')}</span>
@@ -388,56 +483,20 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                 <ArrowUpRight className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" strokeWidth={2} />
               </Link>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-              {relatedProducts.map((product, index) => (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+              {relatedProducts.map((relatedProduct, index) => (
                 <Link
-                  key={product.id}
-                  href={`/product/${product.slug}`}
+                  key={relatedProduct.id}
+                  href={`/product/${relatedProduct.slug}`}
                   className={`group transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
                   style={{ transitionDelay: `${index * 100 + 200}ms` }}
                 >
-                  <div className="relative aspect-[3/4] bg-gradient-to-br from-[#0F1A26] to-[#364353] rounded-2xl sm:rounded-3xl overflow-hidden mb-3 sm:mb-4 border border-[#0F1A26]/10 shadow-lg shadow-[#0F1A26]/5">
-                    <img 
-                      src={products.find(p => p.slug === product.slug)?.image || product.image} 
-                      alt={product.name}
-                      className="absolute inset-0 w-full h-full object-cover"
-                    />
-
-                    {/* Hover overlay */}
-                    <div className="absolute inset-0 bg-[#0F1A26]/60 opacity-0 group-hover:opacity-100 transition-all duration-500 flex items-center justify-center">
-                      <button
-                        className="w-14 h-14 bg-[#EEBC3F] rounded-full flex items-center justify-center transform scale-0 group-hover:scale-100 transition-all duration-500 hover:scale-110 shadow-lg shadow-[#EEBC3F]/30"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          console.log('Adding related product to cart:', product.name);
-                          addToCart({
-                            id: product.id,
-                            name: product.name,
-                            type: "Luggage Cover",
-                            price: product.price,
-                            originalPrice: product.originalPrice,
-                            image: "https://images.unsplash.com/photo-1565026057447-bc90a3dceb87?w=400&q=80",
-                            quantity: 1,
-                          });
-                        }}
-                      >
-                        <ShoppingBag className="w-6 h-6 text-[#0F1A26]" strokeWidth={1.5} />
-                      </button>
-                    </div>
-
-                    {/* Sale Badge */}
-                    {product.originalPrice > product.price && (
-                      <div className="absolute top-2 left-2 sm:top-4 sm:left-4 bg-[#EEBC3F] text-[#0F1A26] text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-1 sm:py-1.5 rounded-full">
-                        SALE
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="text-[#0F1A26] font-bold group-hover:text-[#EEBC3F] transition-colors duration-300 text-sm sm:text-lg line-clamp-1">{product.name}</h3>
+                  <SwipeableProductImage product={relatedProduct} />
+                  <div className="mt-3">
+                    <h3 className="text-[#0F1A26] font-bold group-hover:text-[#EEBC3F] transition-colors duration-300 text-sm sm:text-lg line-clamp-1">{relatedProduct.name}</h3>
                     <div className="flex items-baseline gap-2 sm:gap-3 mt-1 sm:mt-2">
-                      <span className="text-[#0F1A26] font-bold text-sm sm:text-lg">EGP {product.price}</span>
-                      <span className="text-[#0F1A26]/30 text-xs sm:text-sm line-through">EGP {product.originalPrice}</span>
+                      <span className="text-[#0F1A26] font-bold text-sm sm:text-lg">EGP {relatedProduct.price}</span>
+                      <span className="text-[#0F1A26]/30 text-xs sm:text-sm line-through">EGP {relatedProduct.originalPrice}</span>
                     </div>
                   </div>
                 </Link>

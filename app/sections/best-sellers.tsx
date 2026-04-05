@@ -1,31 +1,30 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { Link } from "@/i18n/routing";
 import { useTranslations } from 'next-intl';
 import { Button } from "@/components/ui/button";
-import { ShoppingBag, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import {
   Carousel,
   CarouselContent,
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
+  type CarouselApi,
 } from "@/components/ui/carousel";
 import { products } from "@/lib/products";
-import { useCart } from "@/app/lib/cart-context";
-import { SizeModal } from "@/app/components/size-modal";
 
 // Filter best seller products from lib/products
 const bestSellers = products.filter(p => p.tag === "Best Seller" || p.tag === "New").slice(0, 6);
 
 export function BestSellers() {
   const t = useTranslations('bestSellers');
-  const { addToCart } = useCart();
-  const [sizeModalOpen, setSizeModalOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<typeof bestSellers[0] | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const [api, setApi] = useState<CarouselApi>();
+  const [current, setCurrent] = useState(0);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -44,8 +43,18 @@ export function BestSellers() {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    if (!api) return;
+
+    setCurrent(api.selectedScrollSnap());
+
+    api.on("select", () => {
+      setCurrent(api.selectedScrollSnap());
+    });
+  }, [api]);
+
   return (
-    <section ref={ref} className="py-24 bg-[#0F1A26] overflow-hidden">
+    <section ref={ref} className="py-24 bg-[#0F1A26]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className={`flex items-end justify-between mb-12 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           <div>
@@ -67,30 +76,40 @@ export function BestSellers() {
         </div>
 
         <Carousel
+          setApi={setApi}
           opts={{
             align: "start",
             loop: true,
+            dragFree: true,
           }}
-          className={`w-full transition-all duration-700 delay-200 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+          className="w-full overflow-visible"
         >
-          <CarouselContent className="-ml-5">
+          <CarouselContent className="-ml-3 sm:-ml-5">
             {bestSellers.map((product, index) => (
               <CarouselItem
                 key={product.id}
-                className="pl-5 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4"
+                className="pl-3 sm:pl-5 basis-[85%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4 flex-shrink-0"
               >
-                <Link href={`/product/${product.slug}`} className="group cursor-pointer block">
+                <Link 
+                  href={`/product/${product.slug}`} 
+                  className="group cursor-pointer block select-none"
+                  draggable={false}
+                >
                   {/* Product Image */}
-                  <div className="relative aspect-[3/4] rounded-2xl overflow-hidden mb-4 border border-white/5">
-                    <img 
+                  <div className="relative aspect-[3/4] rounded-xl sm:rounded-2xl overflow-hidden mb-3 sm:mb-4 border border-white/5">
+                    <Image 
                       src={product.image} 
                       alt={product.name}
-                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      fill
+                      sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 pointer-events-none"
+                      loading="lazy"
+                      draggable={false}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
                     
                     {product.tag && (
-                      <span className={`absolute top-4 left-4 z-10 text-[10px] font-semibold tracking-wider uppercase px-3 py-1.5 rounded-full ${
+                      <span className={`absolute top-2 left-2 sm:top-4 sm:left-4 z-10 text-[9px] sm:text-[10px] font-semibold tracking-wider uppercase px-2 sm:px-3 py-1 sm:py-1.5 rounded-full ${
                         product.tag === 'Best Seller' ? 'bg-[#EEBC3F] text-[#0F1A26]' :
                         product.tag === 'New' ? 'bg-white text-[#0F1A26]' :
                         product.tag === 'Limited' ? 'bg-[#4B1F1F] text-[#F1EBE3]' :
@@ -102,48 +121,28 @@ export function BestSellers() {
                       </span>
                     )}
                     
-                    {/* Hover overlay */}
+                    {/* Hover overlay - View Product */}
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-500 flex items-center justify-center">
-                      <button 
-                        className="w-14 h-14 bg-[#EEBC3F] rounded-full flex items-center justify-center transform scale-0 group-hover:scale-100 transition-all duration-500 hover:scale-110 hover:shadow-xl hover:shadow-[#EEBC3F]/30"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          if (product.category === "luggage-covers") {
-                            setSelectedProduct(product);
-                            setSizeModalOpen(true);
-                          } else {
-                            addToCart({
-                              id: product.id,
-                              name: product.name,
-                              type: product.type,
-                              price: product.price,
-                              originalPrice: product.originalPrice,
-                              image: product.image,
-                              quantity: 1,
-                            });
-                          }
-                        }}
-                      >
-                        <ShoppingBag className="w-6 h-6 text-[#0F1A26]" />
-                      </button>
+                      <span className="text-white font-semibold text-xs sm:text-sm tracking-wider uppercase">
+                        {t('viewProduct')}
+                      </span>
                     </div>
                   </div>
 
                   {/* Product Info */}
                   <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-[#EEBC3F]/80 text-[10px] font-semibold tracking-[0.15em] uppercase">
+                    <div className="flex items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
+                      <span className="text-[#EEBC3F]/80 text-[9px] sm:text-[10px] font-semibold tracking-[0.15em] uppercase">
                         {product.type}
                       </span>
-                      {product.size && (
+                      {/* {product.size && (
                         <>
                           <span className="text-white/20">·</span>
-                          <span className="text-white/40 text-[10px]">{t('size')} {product.size}</span>
+                          <span className="text-white/40 text-[9px] sm:text-[10px]">{t('size')} {product.size}</span>
                         </>
-                      )}
+                      )} */}
                     </div>
-                    <h3 className="text-white font-medium text-lg mb-2 tracking-tight group-hover:text-[#EEBC3F] transition-colors duration-300">
+                    <h3 className="text-white font-medium text-sm sm:text-lg mb-1 sm:mb-2 tracking-tight group-hover:text-[#EEBC3F] transition-colors duration-300 line-clamp-1">
                       {product.name}
                     </h3>
                   </div>
@@ -159,6 +158,22 @@ export function BestSellers() {
           </div>
         </Carousel>
 
+        {/* Mobile Swipe Dots Indicator */}
+        <div className="flex md:hidden items-center justify-center gap-1.5 mt-4">
+          {bestSellers.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => api?.scrollTo(idx)}
+              className={`h-1.5 rounded-full transition-all duration-300 ${
+                current === idx 
+                  ? "w-4 bg-[#EEBC3F]" 
+                  : "w-1.5 bg-white/30"
+              }`}
+              aria-label={`Go to slide ${idx + 1}`}
+            />
+          ))}
+        </div>
+
         {/* Mobile CTA */}
         <div className="mt-8 text-center md:hidden">
           <Button
@@ -169,31 +184,6 @@ export function BestSellers() {
           </Button>
         </div>
       </div>
-      {/* Size Selection Modal */}
-      <SizeModal
-        isOpen={sizeModalOpen}
-        onClose={() => {
-          setSizeModalOpen(false);
-          setSelectedProduct(null);
-        }}
-        onConfirm={(size) => {
-          if (selectedProduct) {
-            addToCart({
-              id: selectedProduct.id,
-              name: selectedProduct.name,
-              type: selectedProduct.type,
-              price: selectedProduct.price,
-              originalPrice: selectedProduct.originalPrice,
-              image: selectedProduct.image,
-              size: size,
-              quantity: 1,
-            });
-          }
-          setSizeModalOpen(false);
-          setSelectedProduct(null);
-        }}
-        productName={selectedProduct?.name || ""}
-      />
     </section>
   );
 }

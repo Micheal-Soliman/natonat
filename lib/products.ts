@@ -37,9 +37,9 @@ export const products: Product[] = [
     originalPrice: 750, 
     type: "Luggage Cover", 
     tag: null, 
-    image: "/octopus%20photo/ACCORD/1.webp",
+    image: "/octopus%20photo/ACCORD/1.png",
     images: [
-      "/octopus%20photo/ACCORD/1.webp",
+      "/octopus%20photo/ACCORD/1.png",
       "/octopus%20photo/ACCORD/2.webp",
       "/octopus%20photo/ACCORD/3.webp",
       "/octopus%20photo/ACCORD/4.webp",
@@ -59,9 +59,9 @@ export const products: Product[] = [
     originalPrice: 800, 
     type: "Luggage Cover", 
     tag: "New", 
-    image: "/octopus%20photo/Anara/1.webp",
+    image: "/octopus%20photo/Anara/1.png",
     images: [
-      "/octopus%20photo/Anara/1.webp",
+      "/octopus%20photo/Anara/1.png",
       "/octopus%20photo/Anara/2.webp",
       "/octopus%20photo/Anara/3.webp",
       "/octopus%20photo/Anara/4.webp",
@@ -81,9 +81,9 @@ export const products: Product[] = [
     originalPrice: 850, 
     type: "Luggage Cover", 
     tag: "Best Seller", 
-    image: "/octopus%20photo/Ascend/1.webp",
+    image: "/octopus%20photo/Ascend/1.png",
     images: [
-      "/octopus%20photo/Ascend/1.webp",
+      "/octopus%20photo/Ascend/1.png",
       "/octopus%20photo/Ascend/2.webp",
       "/octopus%20photo/Ascend/3.webp",
       "/octopus%20photo/Ascend/4.webp",
@@ -103,9 +103,9 @@ export const products: Product[] = [
     originalPrice: 900, 
     type: "Luggage Cover", 
     tag: null, 
-    image: "/octopus%20photo/Dubai/1.webp",
+    image: "/octopus%20photo/Dubai/1.png",
     images: [
-      "/octopus%20photo/Dubai/1.webp",
+      "/octopus%20photo/Dubai/1.png",
       "/octopus%20photo/Dubai/2.webp",
       "/octopus%20photo/Dubai/3.webp",
       "/octopus%20photo/Dubai/4.webp",
@@ -125,9 +125,9 @@ export const products: Product[] = [
     originalPrice: 800, 
     type: "Luggage Cover", 
     tag: null, 
-    image: "/octopus%20photo/Egypt%20Skyline/1.webp",
+    image: "/octopus%20photo/Egypt%20Skyline/1.png",
     images: [
-      "/octopus%20photo/Egypt%20Skyline/1.webp",
+      "/octopus%20photo/Egypt%20Skyline/1.png",
       "/octopus%20photo/Egypt%20Skyline/2.webp",
       "/octopus%20photo/Egypt%20Skyline/3.webp",
       "/octopus%20photo/Egypt%20Skyline/4.webp",
@@ -147,9 +147,9 @@ export const products: Product[] = [
     originalPrice: 750, 
     type: "Luggage Cover", 
     tag: null, 
-    image: "/octopus%20photo/Egyptian%20Queen/1.webp",
+    image: "/octopus%20photo/Egyptian%20Queen/1.png",
     images: [
-      "/octopus%20photo/Egyptian%20Queen/1.webp",
+      "/octopus%20photo/Egyptian%20Queen/1.png",
       "/octopus%20photo/Egyptian%20Queen/2.webp",
       "/octopus%20photo/Egyptian%20Queen/3.webp",
       "/octopus%20photo/Egyptian%20Queen/4.webp",
@@ -169,9 +169,9 @@ export const products: Product[] = [
     originalPrice: 850, 
     type: "Luggage Cover", 
     tag: null, 
-    image: "/octopus%20photo/Eternal%20Egypt/1.webp",
+    image: "/octopus%20photo/Eternal%20Egypt/1.png",
     images: [
-      "/octopus%20photo/Eternal%20Egypt/1.webp",
+      "/octopus%20photo/Eternal%20Egypt/1.png",
       "/octopus%20photo/Eternal%20Egypt/2.webp",
       "/octopus%20photo/Eternal%20Egypt/3.webp",
       "/octopus%20photo/Eternal%20Egypt/4.webp",
@@ -191,9 +191,9 @@ export const products: Product[] = [
     originalPrice: 800, 
     type: "Luggage Cover", 
     tag: null, 
-    image: "/octopus%20photo/Festival/1.webp",
+    image: "/octopus%20photo/Festival/1.png",
     images: [
-      "/octopus%20photo/Festival/1.webp",
+      "/octopus%20photo/Festival/1.png",
       "/octopus%20photo/Festival/2.webp",
       "/octopus%20photo/Festival/3.webp",
       "/octopus%20photo/Festival/4.webp",
@@ -213,9 +213,9 @@ export const products: Product[] = [
     originalPrice: 750, 
     type: "Luggage Cover", 
     tag: null, 
-    image: "/octopus%20photo/Lotus/1.webp",
+    image: "/octopus%20photo/Lotus/1.png",
     images: [
-      "/octopus%20photo/Lotus/1.webp",
+      "/octopus%20photo/Lotus/1.png",
       "/octopus%20photo/Lotus/2.webp",
       "/octopus%20photo/Lotus/3.webp",
       "/octopus%20photo/Lotus/4.webp",
@@ -235,9 +235,9 @@ export const products: Product[] = [
     originalPrice: 850, 
     type: "Luggage Cover", 
     tag: null, 
-    image: "/octopus%20photo/Lunara/1.webp",
+    image: "/octopus%20photo/Lunara/1.png",
     images: [
-      "/octopus%20photo/Lunara/1.webp",
+      "/octopus%20photo/Lunara/1.png",
       "/octopus%20photo/Lunara/2.webp",
       "/octopus%20photo/Lunara/3.webp",
       "/octopus%20photo/Lunara/4.webp",
@@ -257,9 +257,9 @@ export const products: Product[] = [
     originalPrice: 800, 
     type: "Luggage Cover", 
     tag: null, 
-    image: "/octopus%20photo/New%20York/1.webp",
+    image: "/octopus%20photo/New%20York/1.png",
     images: [
-      "/octopus%20photo/New%20York/1.webp",
+      "/octopus%20photo/New%20York/1.png",
       "/octopus%20photo/New%20York/2.webp",
       "/octopus%20photo/New%20York/3.webp",
       "/octopus%20photo/New%20York/4.webp",
@@ -279,9 +279,9 @@ export const products: Product[] = [
     originalPrice: 900, 
     type: "Luggage Cover", 
     tag: null, 
-    image: "/octopus%20photo/Optical%20Illusion/1.webp",
+    image: "/octopus%20photo/Optical%20Illusion/1.png",
     images: [
-      "/octopus%20photo/Optical%20Illusion/1.webp",
+      "/octopus%20photo/Optical%20Illusion/1.png",
       "/octopus%20photo/Optical%20Illusion/2.webp",
       "/octopus%20photo/Optical%20Illusion/3.webp",
       "/octopus%20photo/Optical%20Illusion/4.webp",
@@ -301,9 +301,9 @@ export const products: Product[] = [
     originalPrice: 800, 
     type: "Luggage Cover", 
     tag: null, 
-    image: "/octopus%20photo/Solora/1.webp",
+    image: "/octopus%20photo/Solora/1.png",
     images: [
-      "/octopus%20photo/Solora/1.webp",
+      "/octopus%20photo/Solora/1.png",
       "/octopus%20photo/Solora/2.webp",
       "/octopus%20photo/Solora/3.webp",
       "/octopus%20photo/Solora/4.webp",
@@ -323,9 +323,9 @@ export const products: Product[] = [
     originalPrice: 850, 
     type: "Luggage Cover", 
     tag: null, 
-    image: "/octopus%20photo/Travel%20Mosaic/1.webp",
+    image: "/octopus%20photo/Travel%20Mosaic/1.png",
     images: [
-      "/octopus%20photo/Travel%20Mosaic/1.webp",
+      "/octopus%20photo/Travel%20Mosaic/1.png",
       "/octopus%20photo/Travel%20Mosaic/2.webp",
       "/octopus%20photo/Travel%20Mosaic/3.webp",
       "/octopus%20photo/Travel%20Mosaic/4.webp",
@@ -345,9 +345,9 @@ export const products: Product[] = [
     originalPrice: 800, 
     type: "Luggage Cover", 
     tag: null, 
-    image: "/octopus%20photo/king%20Tut/1.webp",
+    image: "/octopus%20photo/king%20Tut/1.png",
     images: [
-      "/octopus%20photo/king%20Tut/1.webp",
+      "/octopus%20photo/king%20Tut/1.png",
       "/octopus%20photo/king%20Tut/2.webp",
       "/octopus%20photo/king%20Tut/3.webp",
       "/octopus%20photo/king%20Tut/4.webp",
@@ -367,9 +367,9 @@ export const products: Product[] = [
     originalPrice: 750, 
     type: "Luggage Cover", 
     tag: null, 
-    image: "/octopus%20photo/Black/1.webp",
+    image: "/octopus%20photo/Black/1.png",
     images: [
-      "/octopus%20photo/Black/1.webp",
+      "/octopus%20photo/Black/1.png",
       "/octopus%20photo/Black/2.webp",
       "/octopus%20photo/Black/3.webp",
       "/octopus%20photo/Black/4.webp",
@@ -389,9 +389,9 @@ export const products: Product[] = [
     originalPrice: 850, 
     type: "Luggage Cover", 
     tag: "New", 
-    image: "/octopus%20photo/Explore/1.webp",
+    image: "/octopus%20photo/Explore/1.png",
     images: [
-      "/octopus%20photo/Explore/1.webp",
+      "/octopus%20photo/Explore/1.png",
       "/octopus%20photo/Explore/2.webp",
       "/octopus%20photo/Explore/3.webp",
       "/octopus%20photo/Explore/4.webp",
@@ -411,9 +411,9 @@ export const products: Product[] = [
     originalPrice: 700, 
     type: "Luggage Cover", 
     tag: null, 
-    image: "/octopus%20photo/Outdoor/1.webp",
+    image: "/octopus%20photo/Outdoor/1.png",
     images: [
-      "/octopus%20photo/Outdoor/1.webp",
+      "/octopus%20photo/Outdoor/1.png",
       "/octopus%20photo/Outdoor/2.webp",
       "/octopus%20photo/Outdoor/3.webp",
       "/octopus%20photo/Outdoor/4.webp",
@@ -433,9 +433,9 @@ export const products: Product[] = [
     originalPrice: 800, 
     type: "Luggage Cover", 
     tag: null, 
-    image: "/octopus%20photo/Travel%20Stickers/1.webp",
+    image: "/octopus%20photo/Travel%20Stickers/1.png",
     images: [
-      "/octopus%20photo/Travel%20Stickers/1.webp",
+      "/octopus%20photo/Travel%20Stickers/1.png",
       "/octopus%20photo/Travel%20Stickers/2.webp",
       "/octopus%20photo/Travel%20Stickers/3.webp",
       "/octopus%20photo/Travel%20Stickers/4.webp",
@@ -455,9 +455,9 @@ export const products: Product[] = [
     originalPrice: 850, 
     type: "Luggage Cover", 
     tag: "Best Seller", 
-    image: "/octopus%20photo/Urban%20Vibes/1.webp",
+    image: "/octopus%20photo/Urban%20Vibes/1.png",
     images: [
-      "/octopus%20photo/Urban%20Vibes/1.webp",
+      "/octopus%20photo/Urban%20Vibes/1.png",
       "/octopus%20photo/Urban%20Vibes/2.webp",
       "/octopus%20photo/Urban%20Vibes/3.webp",
       "/octopus%20photo/Urban%20Vibes/4.webp",
@@ -477,9 +477,9 @@ export const products: Product[] = [
     originalPrice: 800, 
     type: "Luggage Cover", 
     tag: null, 
-    image: "/octopus%20photo/Valoria/1.webp",
+    image: "/octopus%20photo/Valoria/1.png",
     images: [
-      "/octopus%20photo/Valoria/1.webp",
+      "/octopus%20photo/Valoria/1.png",
       "/octopus%20photo/Valoria/2.webp",
       "/octopus%20photo/Valoria/3.webp",
       "/octopus%20photo/Valoria/4.webp",
@@ -499,9 +499,9 @@ export const products: Product[] = [
     originalPrice: 800, 
     type: "Luggage Cover", 
     tag: "New", 
-    image: "/octopus%20photo/Barcelona/1.webp",
+    image: "/octopus%20photo/Barcelona/1.png",
     images: [
-      "/octopus%20photo/Barcelona/1.webp",
+      "/octopus%20photo/Barcelona/1.png",
       "/octopus%20photo/Barcelona/2.webp",
       "/octopus%20photo/Barcelona/3.webp",
       "/octopus%20photo/Barcelona/4.webp",
@@ -521,9 +521,9 @@ export const products: Product[] = [
     originalPrice: 850, 
     type: "Luggage Cover", 
     tag: null, 
-    image: "/octopus%20photo/Madrid/1.webp",
+    image: "/octopus%20photo/Madrid/1.png",
     images: [
-      "/octopus%20photo/Madrid/1.webp",
+      "/octopus%20photo/Madrid/1.png",
       "/octopus%20photo/Madrid/2.webp",
       "/octopus%20photo/Madrid/3.webp",
       "/octopus%20photo/Madrid/4.webp",
@@ -543,9 +543,9 @@ export const products: Product[] = [
     originalPrice: 850, 
     type: "Luggage Cover", 
     tag: "New", 
-    image: "/octopus%20photo/Peacock/1.webp",
+    image: "/octopus%20photo/Peacock/1.png",
     images: [
-      "/octopus%20photo/Peacock/1.webp",
+      "/octopus%20photo/Peacock/1.png",
       "/octopus%20photo/Peacock/2.webp",
       "/octopus%20photo/Peacock/3.webp",
       "/octopus%20photo/Peacock/4.webp",
@@ -565,9 +565,9 @@ export const products: Product[] = [
     originalPrice: 850, 
     type: "Luggage Cover", 
     tag: "Best Seller", 
-    image: "/octopus%20photo/Pyramids/1.webp",
+    image: "/octopus%20photo/Pyramids/1.png",
     images: [
-      "/octopus%20photo/Pyramids/1.webp",
+      "/octopus%20photo/Pyramids/1.png",
       "/octopus%20photo/Pyramids/2.webp",
       "/octopus%20photo/Pyramids/3.webp",
       "/octopus%20photo/Pyramids/4.webp",
@@ -587,9 +587,9 @@ export const products: Product[] = [
     originalPrice: 900, 
     type: "Luggage Cover", 
     tag: "New", 
-    image: "/octopus%20photo/Tech%20Explorer/1.webp",
+    image: "/octopus%20photo/Tech%20Explorer/1.png",
     images: [
-      "/octopus%20photo/Tech%20Explorer/1.webp",
+      "/octopus%20photo/Tech%20Explorer/1.png",
       "/octopus%20photo/Tech%20Explorer/2.webp",
       "/octopus%20photo/Tech%20Explorer/3.webp",
       "/octopus%20photo/Tech%20Explorer/4.webp",
@@ -609,9 +609,9 @@ export const products: Product[] = [
     originalPrice: 750, 
     type: "Luggage Cover", 
     tag: null, 
-    image: "/octopus%20photo/Wildfern/1.webp",
+    image: "/octopus%20photo/Wildfern/1.png",
     images: [
-      "/octopus%20photo/Wildfern/1.webp",
+      "/octopus%20photo/Wildfern/1.png",
       "/octopus%20photo/Wildfern/2.webp",
       "/octopus%20photo/Wildfern/3.webp",
       "/octopus%20photo/Wildfern/4.webp",
@@ -631,9 +631,9 @@ export const products: Product[] = [
     originalPrice: 800, 
     type: "Luggage Cover", 
     tag: "New", 
-    image: "/octopus%20photo/Vibra/1.webp",
+    image: "/octopus%20photo/Vibra/1.png",
     images: [
-      "/octopus%20photo/Vibra/1.webp",
+      "/octopus%20photo/Vibra/1.png",
       "/octopus%20photo/Vibra/2.webp",
       "/octopus%20photo/Vibra/3.webp",
       "/octopus%20photo/Vibra/4.webp",
@@ -642,108 +642,177 @@ export const products: Product[] = [
     ],
     description: "Vibrant energy design for dynamic travelers"
   },
-  // Bundles
+  // BackOnat Backpack (Product ID 50) - Placeholder image until real photos arrive
+  { 
+    id: 50, 
+    slug: "backonat",
+    name: "BackOnat", 
+    category: "backpacks", 
+    size: null, 
+    theme: "minimal", 
+    price: 799, 
+    originalPrice: 999, 
+    type: "Backpack", 
+    tag: "New", 
+    image: "/octopus%20photo/ACCORD/1.png",
+    images: [
+      "/octopus%20photo/ACCORD/1.png"
+    ],
+    description: "Stylish travel backpack perfect for your journey"
+  },
+  
+  // Bundles - Updated with new discount structure
+  // 1. Three Sizes Bundle - 15% off
   {
     id: 101,
-    slug: "egypt-collection-bundle",
-    name: "Egypt Collection Bundle",
+    slug: "three-sizes-bundle",
+    name: "Three Sizes Bundle",
     category: "bundles",
     size: null,
-    theme: "travel-icons",
-    price: 1499,
-    originalPrice: 2047,
+    theme: "mixed",
+    price: 1650,
+    originalPrice: 1947,
     type: "Bundle",
-    tag: null,
-    image: "/octopus%20photo/Egyptian%20Queen/1.webp",
+    tag: "Best Value",
+    image: "/octopus%20photo/Wildfern/1.png",
     images: [
-      "/octopus%20photo/Egyptian%20Queen/1.webp",
-      "/octopus%20photo/Egypt%20Skyline/1.webp",
-      "/octopus%20photo/king%20Tut/1.webp"
+      "/octopus%20photo/Wildfern/1.png",
+      "/octopus%20photo/Anara/1.png",
+      "/octopus%20photo/Ascend/1.png"
     ],
-    description: "Complete Egypt collection with 3 premium luggage covers",
+    description: "Complete set with S, M, and L size covers for all your luggage",
     isBundle: true,
     bundleItems: [
-      { productId: 6, quantity: 1 },
-      { productId: 5, quantity: 1 },
-      { productId: 15, quantity: 1 }
+      { productId: 27, quantity: 1 }, // Wildfern S
+      { productId: 2, quantity: 1 },  // Anara M
+      { productId: 3, quantity: 1 }   // Ascend L
     ],
-    features: ["3 Egyptian-themed covers", "Mix of sizes", "Save 27%", "Free gift box"]
+    features: ["3 Different sizes (S, M, L)", "Save 15%", "Perfect for families", "Complete luggage protection"]
   },
+  // 2. All Set Bundle - 18% off (Passport + Cover + BackOnat)
   {
     id: 102,
-    slug: "travel-duo-bundle",
-    name: "Travel Duo Bundle",
+    slug: "all-set-bundle",
+    name: "All Set Bundle",
+    category: "bundles",
+    size: null,
+    theme: "mixed",
+    price: 1649,
+    originalPrice: 2012,
+    type: "Bundle",
+    tag: "Popular",
+    image: "/octopus%20photo/ACCORD/1.png",
+    images: [
+      "/octopus%20photo/ACCORD/1.png",
+      "/octopus%20photo/Anara/1.png"
+    ],
+    description: "Everything you need - luggage cover, backpack, and passport wallet",
+    isBundle: true,
+    bundleItems: [
+      { productId: 1, quantity: 1 },   // ACCORD Cover
+      { productId: 50, quantity: 1 }, // BackOnat
+      { productId: 29, quantity: 1 }  // Bon Voyage Passport
+    ],
+    features: ["Cover + Backpack + Passport", "Save 18%", "Complete travel kit", "Ready to go"]
+  },
+  // 3. BackOnat with Cover - 12% off
+  {
+    id: 103,
+    slug: "backonat-cover-bundle",
+    name: "BackOnat + Cover",
     category: "bundles",
     size: null,
     theme: "minimal",
-    price: 1099,
-    originalPrice: 1348,
+    price: 1275,
+    originalPrice: 1448,
     type: "Bundle",
     tag: "New",
-    image: "/octopus%20photo/ACCORD/1.webp",
+    image: "/octopus%20photo/ACCORD/1.png",
     images: [
-      "/octopus%20photo/ACCORD/1.webp",
-      "/octopus%20photo/Solora/1.webp"
+      "/octopus%20photo/ACCORD/1.png",
+      "/octopus%20photo/ACCORD/2.webp"
     ],
-    description: "Perfect pair for couples - 2 modern minimal covers",
+    description: "Travel in style with backpack and matching cover",
     isBundle: true,
     bundleItems: [
-      { productId: 1, quantity: 1 },
-      { productId: 13, quantity: 1 }
+      { productId: 50, quantity: 1 }, // BackOnat
+      { productId: 1, quantity: 1 }   // ACCORD Cover
     ],
-    features: ["2 Minimal designs", "Perfect for couples", "Save 18%", "Matching set"]
+    features: ["Backpack + Cover combo", "Save 12%", "Modern design", "Travel essentials"]
   },
-  {
-    id: 103,
-    slug: "world-traveler-bundle",
-    name: "World Traveler Bundle",
-    category: "bundles",
-    size: null,
-    theme: "travel-icons",
-    price: 1799,
-    originalPrice: 2396,
-    type: "Bundle",
-    tag: null,
-    image: "/octopus%20photo/Dubai/1.webp",
-    images: [
-      "/octopus%20photo/Dubai/1.webp",
-      "/octopus%20photo/New%20York/1.webp",
-      "/octopus%20photo/Travel%20Mosaic/1.webp"
-    ],
-    description: "Explore the world with city-themed covers",
-    isBundle: true,
-    bundleItems: [
-      { productId: 4, quantity: 1 },
-      { productId: 11, quantity: 1 },
-      { productId: 14, quantity: 1 }
-    ],
-    features: ["3 City designs", "Dubai, New York & Mosaic", "Save 25%", "Travel in style"]
-  },
+  // 4. 2 Covers + BackOnat - 15% off
   {
     id: 104,
-    slug: "family-fun-bundle",
-    name: "Family Fun Bundle",
+    slug: "double-cover-backonat-bundle",
+    name: "2 Covers + BackOnat",
     category: "bundles",
     size: null,
-    theme: "fun",
-    price: 1699,
-    originalPrice: 2146,
+    theme: "mixed",
+    price: 1799,
+    originalPrice: 2117,
     type: "Bundle",
-    tag: null,
-    image: "/octopus%20photo/Festival/1.webp",
+    tag: "Best Seller",
+    image: "/octopus%20photo/Anara/1.png",
     images: [
-      "/octopus%20photo/Festival/1.webp",
-      "/octopus%20photo/Lunara/1.webp",
-      "/octopus%20photo/Optical%20Illusion/1.webp"
+      "/octopus%20photo/Anara/1.png",
+      "/octopus%20photo/Solora/1.png"
     ],
-    description: "Colorful and fun collection for the whole family",
+    description: "Perfect for couples - two covers and a shared backpack",
     isBundle: true,
     bundleItems: [
-      { productId: 8, quantity: 1 },
-      { productId: 10, quantity: 1 },
-      { productId: 12, quantity: 1 }
+      { productId: 2, quantity: 1 },   // Anara Cover
+      { productId: 13, quantity: 1 }, // Solora Cover
+      { productId: 50, quantity: 1 }  // BackOnat
     ],
-    features: ["3 Fun colorful designs", "Different sizes", "Save 21%", "Family vacation ready"]
+    features: ["2 Covers + Backpack", "Save 15%", "Perfect for couples", "Travel together"]
+  },
+  // 5. 2 BackOnat - 12% off
+  {
+    id: 105,
+    slug: "double-backonat-bundle",
+    name: "2 BackOnat Bundle",
+    category: "bundles",
+    size: null,
+    theme: "minimal",
+    price: 1399,
+    originalPrice: 1598,
+    type: "Bundle",
+    tag: "New",
+    image: "/octopus%20photo/ACCORD/1.png",
+    images: [
+      "/octopus%20photo/ACCORD/1.png"
+    ],
+    description: "Double the style - two BackOnat backpacks",
+    isBundle: true,
+    bundleItems: [
+      { productId: 50, quantity: 2 }  // 2x BackOnat
+    ],
+    features: ["2 BackOnat backpacks", "Save 12%", "His & Hers", "Matching set"]
+  },
+  // 6. Passport + Any Item - 15% off (Passport + Cover combo)
+  {
+    id: 106,
+    slug: "passport-cover-bundle",
+    name: "Passport + Cover",
+    category: "bundles",
+    size: null,
+    theme: "mixed",
+    price: 999,
+    originalPrice: 1173,
+    type: "Bundle",
+    tag: "Essential",
+    image: "/octopus%20photo/Anara/1.png",
+    images: [
+      "/octopus%20photo/Anara/1.png",
+      "/octopus%20photo/ACCORD/1.png"
+    ],
+    description: "Essential travel combo - passport wallet and luggage cover",
+    isBundle: true,
+    bundleItems: [
+      { productId: 29, quantity: 1 }, // Bon Voyage Passport
+      { productId: 1, quantity: 1 }   // ACCORD Cover
+    ],
+    features: ["Passport + Cover combo", "Save 15%", "Travel ready", "Perfect pair"]
   },
 ];
 
@@ -772,6 +841,10 @@ export const getBundles = (): Product[] => {
   return products.filter(p => p.category === "bundles");
 };
 
+export const getBackpacks = (): Product[] => {
+  return products.filter(p => p.category === "backpacks");
+};
+
 // Product metadata
 export const sizes = [
   { id: "s", label: "S", range: "45-53 cm", height: "Carry-on" },
@@ -791,4 +864,5 @@ export const categories = [
   { id: "bundles", label: "Bundles & Sets" },
   { id: "luggage-covers", label: "Luggage Covers" },
   { id: "passport-wallets", label: "Passport Wallets" },
+  { id: "backpacks", label: "Backpacks" },
 ];

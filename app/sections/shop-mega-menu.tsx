@@ -1,41 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Image from "next/image";
 import { Link } from "@/i18n/routing";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useTranslations } from 'next-intl';
 import { ChevronDown, ArrowRight, ArrowUpRight } from "lucide-react";
-
-const shopCategories = [
-  {
-    id: "all",
-    name: "All Products",
-    description: "Browse everything",
-    href: "/shop",
-    image: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&q=80",
-  },
-  {
-    id: "luggage-covers",
-    name: "Luggage Covers",
-    description: "Protective stretchy covers",
-    href: "/shop?category=luggage-covers",
-    image: "https://images.unsplash.com/photo-1565026057447-bc90a3dceb87?w=400&q=80",
-  },
-  {
-    id: "passport-wallets",
-    name: "Passport Wallets",
-    description: "RFID-blocking organizers",
-    href: "/shop?category=passport-wallets",
-    image: "https://images.unsplash.com/photo-1627123424574-724758594e93?w=400&q=80",
-  },
-  {
-    id: "travel-sets",
-    name: "Travel Sets",
-    description: "Curated bundles",
-    href: "/shop?category=travel-sets",
-    image: "https://images.unsplash.com/photo-1504198458649-3128b932f49e?w=400&q=80",
-  },
-];
 
 interface ShopMegaMenuProps {
   scrolled: boolean;
@@ -56,30 +26,30 @@ export function ShopMegaMenu({ scrolled }: ShopMegaMenuProps) {
     {
       id: "all",
       name: t('allProducts'),
-      description: "Browse everything",
+      description: t('allProductsDesc'),
       href: "/shop",
-      image: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&q=80",
+      image: "/octopus photo/ACCORD/1.webp",
     },
     {
       id: "luggage-covers",
       name: t('luggageCovers'),
-      description: "Protective stretchy covers",
+      description: t('luggageCoversDesc'),
       href: "/shop?category=luggage-covers",
-      image: "https://images.unsplash.com/photo-1565026057447-bc90a3dceb87?w=400&q=80",
+      image: "/octopus photo/Anara/1.webp",
     },
     {
       id: "passport-wallets",
       name: t('passportWallets'),
-      description: "RFID-blocking organizers",
+      description: t('passportWalletsDesc'),
       href: "/shop?category=passport-wallets",
-      image: "https://images.unsplash.com/photo-1627123424574-724758594e93?w=400&q=80",
+      image: "/octopus photo/Ascend/1.webp",
     },
     {
       id: "travel-sets",
       name: t('travelSets'),
-      description: "Curated bundles",
+      description: t('travelSetsDesc'),
       href: "/shop?category=travel-sets",
-      image: "https://images.unsplash.com/photo-1504198458649-3128b932f49e?w=400&q=80",
+      image: "/octopus photo/Barcelona/1.webp",
     },
   ];
 
@@ -147,7 +117,7 @@ export function ShopMegaMenu({ scrolled }: ShopMegaMenuProps) {
 
       {/* Mega Menu Dropdown - Wide Horizontal Layout */}
       <div 
-        className={`fixed top-[80px] left-1/2 -translate-x-1/2 w-[95vw] max-w-[1000px] transition-all duration-300 z-[100] ${
+        className={`fixed top-[80px] left-1/2 -translate-x-1/2 w-[95vw] max-w-[1000px] transition-all duration-300 z-[50] ${
           isOpen 
             ? "opacity-100 translate-y-0 pointer-events-auto" 
             : "opacity-0 -translate-y-2 pointer-events-none"
@@ -185,10 +155,13 @@ export function ShopMegaMenu({ scrolled }: ShopMegaMenuProps) {
                 >
                   {/* Image Container */}
                   <div className="relative h-50 overflow-hidden">
-                    <img
+                    <Image
                       src={category.image}
                       alt={category.name}
+                      fill
+                      sizes="250px"
                       className="absolute inset-0 w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
+                      loading="lazy"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#0F1A26]/60 via-[#0F1A26]/20 to-transparent" />
                     

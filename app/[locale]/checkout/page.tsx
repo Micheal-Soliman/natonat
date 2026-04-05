@@ -1,14 +1,19 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useId } from "react";
+import Image from "next/image";
 import { Link } from "@/i18n/routing";
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, CreditCard, Truck, Shield, Check, MapPin, Phone, Mail, Building, Newspaper } from "lucide-react";
 import { useCart } from "@/app/lib/cart-context";
 import { Loading } from "@/app/components/loading";
+
+function generateOrderId() {
+  return Math.random().toString(36).substring(2, 9).toUpperCase();
+}
 
 export default function CheckoutPage() {
   return (
@@ -20,7 +25,14 @@ export default function CheckoutPage() {
 
 function CheckoutContent() {
   const t = useTranslations('checkout');
-  const { items, subtotal, clearCart } = useCart();
+  const locale = useLocale();
+  const { items, subtotal, clearCart, buyNowItem, setBuyNowItem } = useCart();
+  
+  // Use buyNowItem if exists (direct purchase), otherwise use cart items
+  const checkoutItems = buyNowItem ? [buyNowItem] : items;
+  const checkoutSubtotal = buyNowItem 
+    ? buyNowItem.price * buyNowItem.quantity 
+    : subtotal;
   const [formData, setFormData] = useState({
     email: "",
     firstName: "",
@@ -32,22 +44,26 @@ function CheckoutContent() {
   });
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [orderComplete, setOrderComplete] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [orderId, setOrderId] = useState<string>("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     // Simulate order processing
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsSubmitting(false);
-    setOrderComplete(true);
-    clearCart(); // Clear cart after successful order
+    await new Promise(resolve => setTimeout(() => {
+      setIsSubmitting(false);
+      setOrderId(generateOrderId());
+      setIsSuccess(true);
+      clearCart(); // Clear cart after successful order
+      setBuyNowItem(null); // Clear buyNowItem after successful order
+    }, 1500));
   };
 
-  const shipping = subtotal > 1000 ? 0 : 50;
-  const total = subtotal + shipping;
+  const shipping = checkoutSubtotal > 1000 ? 0 : 75;
+  const total = checkoutSubtotal + shipping;
 
-  if (orderComplete) {
+  if (isSuccess) {
     return (
       <>
         <Navigation />
@@ -63,7 +79,7 @@ function CheckoutContent() {
               </p>
               <div className="bg-white rounded-2xl p-6 border border-[#0F1A26]/5 mb-6">
                 <p className="text-sm text-[#0F1A26]/60 mb-1">{t('success.orderNumber')}</p>
-                <p className="text-lg font-semibold text-[#0F1A26]">#NAT-{Math.random().toString(36).substr(2, 9).toUpperCase()}</p>
+                <p className="text-lg font-semibold text-[#0F1A26]">#NAT-{orderId}</p>
               </div>
               <Link href="/shop">
                 <Button className="bg-[#0F1A26] text-white hover:bg-[#EEBC3F] hover:text-[#0F1A26] rounded-full px-8 h-12 font-semibold transition-all duration-300">
@@ -83,12 +99,12 @@ function CheckoutContent() {
       <Navigation />
       <main className="min-h-screen bg-[#F1EBE3]">
         {/* Header - Clean */}
-        <div className="bg-[#0F1A26] pt-32 pb-16 md:pt-40 md:pb-24">
+        <div className="bg-[#0F1A26] pt-28 pb-16 md:pt-40 md:pb-24">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white tracking-tight">
+            <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold text-white tracking-tight">
               {t('header.title').split(' ')[0]}<span className="text-[#EEBC3F]">{t('header.title').split(' ')[1] || ''}</span>
             </h1>
-            <p className="text-white/50 mt-4 max-w-xl mx-auto font-light text-lg">
+            <p className="text-white/50 mt-4 max-w-xl mx-auto font-light text-base md:text-lg">
               {t('header.subtitle')}
             </p>
           </div>
@@ -147,6 +163,9 @@ function CheckoutContent() {
                     <Truck className="w-5 h-5 text-[#EEBC3F]" />
                     {t('form.shipping.title')}
                   </h2>
+                  <p className="text-sm text-[#EEBC3F] mb-4 font-medium">
+                    {t('form.shipping.egyptOnly')}
+                  </p>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm text-[#0F1A26]/60 mb-1 block">{t('form.shipping.firstName')}</label>
@@ -172,16 +191,43 @@ function CheckoutContent() {
                     </div>
                     <div className="col-span-2">
                       <label className="text-sm text-[#0F1A26]/60 mb-1 block">{t('form.shipping.address')}</label>
-                      <div className="relative">
-                        <MapPin className="w-4 h-4 text-[#0F1A26]/40 absolute left-4 top-1/2 -translate-y-1/2" />
-                        <input
-                          type="text"
-                          required
-                          value={formData.address}
-                          onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                          className="w-full px-4 py-3 pl-11 rounded-xl border border-[#0F1A26]/10 focus:border-[#EEBC3F] focus:outline-none transition-colors"
-                          placeholder={t('form.shipping.addressPlaceholder')}
-                        />
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <MapPin className="w-4 h-4 text-[#0F1A26]/40 absolute left-4 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            required
+                            value={formData.address}
+                            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                            className="w-full px-4 py-3 pl-11 rounded-xl border border-[#0F1A26]/10 focus:border-[#EEBC3F] focus:outline-none transition-colors"
+                            placeholder={t('form.shipping.addressPlaceholder')}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (navigator.geolocation) {
+                              navigator.geolocation.getCurrentPosition(
+                                (position) => {
+                                  setFormData({ 
+                                    ...formData, 
+                                    address: `Lat: ${position.coords.latitude.toFixed(6)}, Lng: ${position.coords.longitude.toFixed(6)}` 
+                                  });
+                                },
+                                (error) => {
+                                  console.error('Error getting location:', error);
+                                  alert(t('form.location.error'));
+                                }
+                              );
+                            } else {
+                              alert(t('form.location.notSupported'));
+                            }
+                          }}
+                          className="px-4 py-3 rounded-xl border-2 border-[#EEBC3F]/30 bg-[#EEBC3F]/5 hover:bg-[#EEBC3F]/10 hover:border-[#EEBC3F] transition-all flex items-center gap-2 whitespace-nowrap"
+                        >
+                          <MapPin className="w-4 h-4 text-[#EEBC3F]" />
+                          <span className="text-sm font-medium text-[#0F1A26]">{t('form.location.detect')}</span>
+                        </button>
                       </div>
                     </div>
                     <div>
@@ -262,6 +308,79 @@ function CheckoutContent() {
                         <p className="text-xs text-[#0F1A26]/50">{t('form.payment.card.subtitle')}</p>
                       </div>
                     </label>
+                    
+                    {/* Credit Card Banks Dropdown */}
+                    {paymentMethod === "card" && (
+                      <div className="mx-2 p-5 bg-gradient-to-br from-[#F8F6F3] to-white rounded-2xl border border-[#EEBC3F]/20 shadow-sm animate-in slide-in-from-top-2 duration-300">
+                        <div className="flex items-center gap-2 mb-4">
+                          <div className="w-8 h-8 rounded-xl bg-[#EEBC3F] flex items-center justify-center">
+                            <Building className="w-4 h-4 text-white" />
+                          </div>
+                          <p className="text-sm font-semibold text-[#0F1A26]">{t('form.payment.card.selectBank')}</p>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {[
+                            { key: 'nbe', name: t('form.banks.nbe') },
+                            { key: 'cib', name: t('form.banks.cib') },
+                            { key: 'qnb', name: t('form.banks.qnb') },
+                            { key: 'banqueMisr', name: t('form.banks.banqueMisr') },
+                            { key: 'alexBank', name: t('form.banks.alexBank') },
+                            { key: 'adib', name: t('form.banks.adib') }
+                          ].map((bank) => (
+                            <label key={bank.name} className="flex items-center gap-3 p-3 bg-white rounded-xl border border-[#0F1A26]/5 hover:border-[#EEBC3F]/50 hover:shadow-md cursor-pointer transition-all duration-200 group">
+                              <input type="radio" name="bank" className="w-4 h-4 accent-[#EEBC3F]" />
+                              <span className="text-sm font-medium text-[#0F1A26] group-hover:text-[#EEBC3F] transition-colors">{bank.name}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <label 
+                      className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                        paymentMethod === "instapay" 
+                          ? "border-[#EEBC3F] bg-[#EEBC3F]/5" 
+                          : "border-[#0F1A26]/10"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="payment"
+                        value="instapay"
+                        checked={paymentMethod === "instapay"}
+                        onChange={(e) => setPaymentMethod(e.target.value)}
+                        className="w-4 h-4 accent-[#EEBC3F]"
+                      />
+                      <div className="flex-1">
+                        <span className="font-medium text-[#0F1A26]">{t('form.payment.instapay.title')}</span>
+                        <p className="text-xs text-[#0F1A26]/50">{t('form.payment.instapay.subtitle')}</p>
+                      </div>
+                    </label>
+
+                    {/* InstaPay Account Details Dropdown */}
+                    {paymentMethod === "instapay" && (
+                      <div className="mx-4 md:ml-7 p-3 md:p-4 bg-[#EEBC3F]/10 rounded-xl border border-[#EEBC3F]/30 animate-in slide-in-from-top-2 duration-200">
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="w-8 h-8 rounded-full bg-[#EEBC3F] flex items-center justify-center">
+                            <span className="text-white text-sm font-bold">i</span>
+                          </div>
+                          <p className="text-sm font-semibold text-[#0F1A26]">{t('form.payment.instapay.transferDetails')}</p>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center p-3 bg-white rounded-lg">
+                            <span className="text-sm text-[#0F1A26]/60">{t('form.payment.instapay.accountName')}</span>
+                            <span className="text-sm font-medium text-[#0F1A26]">{t('form.instapayAccount.name')}</span>
+                          </div>
+                          <div className="flex justify-between items-center p-3 bg-white rounded-lg">
+                            <span className="text-sm text-[#0F1A26]/60">{t('form.payment.instapay.accountNumber')}</span>
+                            <span className="text-sm font-medium text-[#0F1A26] dir-ltr">{t('form.instapayAccount.number')}</span>
+                          </div>
+                        </div>
+                        <p className="text-xs text-[#0F1A26]/60 mt-3 text-center">
+                          {t('form.payment.instapay.instruction')}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -270,42 +389,48 @@ function CheckoutContent() {
                   disabled={isSubmitting}
                   className="w-full bg-[#EEBC3F] text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white rounded-full h-14 font-bold text-base transition-all duration-300 disabled:opacity-50"
                 >
-                  {isSubmitting ? t('form.processing') : t('form.completeOrder', { total })}
+                  {isSubmitting ? t('form.processing') : t('form.completeOrder', { total: total.toString() })}
                 </Button>
               </form>
             </div>
 
             {/* Order Summary */}
-            <div className="lg:w-96">
-              <div className="bg-white rounded-2xl p-6 border border-[#0F1A26]/5 sticky top-28">
+            <div className="lg:w-96 order-first lg:order-last">
+              <div className="bg-white rounded-2xl p-6 border border-[#0F1A26]/5 lg:sticky lg:top-28">
                 <h2 className="text-lg font-semibold text-[#0F1A26] mb-6">{t('summary.title')}</h2>
                 
                 {/* Items */}
                 <div className="space-y-4 mb-6">
-                  {items.map((item) => (
-                    <div key={item.id} className="flex gap-3">
-                      <div className="w-16 h-16 rounded-lg overflow-hidden bg-[#F8F6F3] flex-shrink-0">
-                        <img 
+                  {checkoutItems.map((item) => (
+                    <Link
+                      key={item.id}
+                      href={`/product/${item.slug}`}
+                      className="flex gap-3 group cursor-pointer"
+                    >
+                      <div className="w-24 h-24 rounded-lg overflow-hidden bg-[#F8F6F3] flex-shrink-0 relative">
+                        <Image 
                           src={item.image} 
                           alt={item.name}
-                          className="w-full h-full object-cover"
+                          fill
+                          sizes="64px"
+                          className="object-contain"
                         />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-medium text-[#0F1A26] truncate">{item.name}</h4>
+                        <h4 className="text-sm font-medium text-[#0F1A26] truncate group-hover:text-[#EEBC3F] transition-colors">{item.name}</h4>
                         <p className="text-xs text-[#0F1A26]/50">{t('summary.qty', { quantity: item.quantity })}</p>
                       </div>
                       <span className="text-sm font-medium text-[#0F1A26]">
                         EGP {item.price * item.quantity}
                       </span>
-                    </div>
+                    </Link>
                   ))}
                 </div>
 
                 <div className="border-t border-[#0F1A26]/10 pt-4 space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-[#0F1A26]/60">{t('summary.subtotal')}</span>
-                    <span className="text-[#0F1A26] font-medium">EGP {subtotal}</span>
+                    <span className="text-[#0F1A26] font-medium">EGP {checkoutSubtotal}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-[#0F1A26]/60">{t('summary.shipping')}</span>

@@ -7,6 +7,7 @@ import { BestSellers } from "@/app/sections/best-sellers";
 import { TravelSets } from "@/app/sections/travel-sets";
 import { HowItWorks } from "@/app/sections/how-it-works";
 import { SocialProof } from "@/app/sections/social-proof";
+import { ArticlesSection } from "@/app/sections/articles-section";
 import { Footer } from "@/app/sections/footer";
 import { Loading } from "@/app/components/loading";
 
@@ -24,15 +25,12 @@ function HomeContent() {
       <Navigation />
       <main>
         <Hero />
-        
-        {/* Spacer between Hero and Benefits */}
-        <div className="h-8 md:h-12 bg-[#0a0f14]" />
-        
         <BenefitsStrip />
         <FeaturedCollections />
         <BestSellers />
         <TravelSets />
         <HowItWorks />
+        <ArticlesSection />
         <SocialProof />
       </main>
       <Footer />

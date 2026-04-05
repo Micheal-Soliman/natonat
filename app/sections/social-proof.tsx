@@ -1,11 +1,31 @@
 "use client";
 
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { Star, Quote } from "lucide-react";
+import { Star, Quote, ArrowRight } from "lucide-react";
+import Link from "next/link";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselApi,
+} from "@/components/ui/carousel";
 
 export function SocialProof() {
   const t = useTranslations('socialProof');
   const tr = useTranslations('socialProof.reviews');
+  const [api, setApi] = useState<CarouselApi>();
+  const [current, setCurrent] = useState(0);
+
+  useEffect(() => {
+    if (!api) return;
+
+    setCurrent(api.selectedScrollSnap());
+
+    api.on("select", () => {
+      setCurrent(api.selectedScrollSnap());
+    });
+  }, [api]);
 
   const reviews = [
     {
@@ -66,35 +86,74 @@ export function SocialProof() {
           </div>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {reviews.map((review) => (
-            <div
-              key={review.id}
-              className="bg-white rounded-xl p-6 border border-[#0F1A26]/10 hover:shadow-lg transition-shadow"
-            >
-              <div className="flex items-center gap-1 mb-4">
-                {[...Array(review.rating)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className="w-4 h-4 fill-[#EEBC3F] text-[#EEBC3F]"
-                  />
-                ))}
-              </div>
+        {/* Reviews Carousel */}
+        <Carousel
+          setApi={setApi}
+          opts={{
+            align: "start",
+            loop: true,
+            dragFree: true,
+          }}
+          className="w-full"
+        >
+          <CarouselContent className="-ml-4">
+            {reviews.map((review) => (
+              <CarouselItem
+                key={review.id}
+                className="pl-4 basis-full sm:basis-1/2 lg:basis-1/4"
+              >
+                <div className="bg-white rounded-xl p-6 border border-[#0F1A26]/10 h-full">
+                  <div className="flex items-center gap-1 mb-4">
+                    {[...Array(review.rating)].map((_, i) => (
+                      <Star
+                        key={i}
+                        className="w-4 h-4 fill-[#EEBC3F] text-[#EEBC3F]"
+                      />
+                    ))}
+                  </div>
 
-              <div className="relative mb-4">
-                <Quote className="absolute -top-2 -left-2 w-6 h-6 text-[#EEBC3F]/30" />
-                <p className="text-[#0F1A26]/80 text-sm leading-relaxed relative z-10">
-                  "{review.text}"
-                </p>
-              </div>
+                  <div className="relative mb-4">
+                    <Quote className="absolute -top-2 -left-2 w-6 h-6 text-[#EEBC3F]/30" />
+                    <p className="text-[#0F1A26]/80 text-sm leading-relaxed relative z-10">
+                      &ldquo;{review.text}&rdquo;
+                    </p>
+                  </div>
 
-              <div className="border-t border-[#0F1A26]/10 pt-4 mt-4">
-                <p className="text-[#0F1A26] font-medium text-sm">{review.name}</p>
-                <p className="text-[#0F1A26]/50 text-xs">{review.location}</p>
-                <p className="text-[#EEBC3F] text-xs mt-1">{review.product}</p>
-              </div>
-            </div>
+                  <div className="border-t border-[#0F1A26]/10 pt-4 mt-4">
+                    <p className="text-[#0F1A26] font-medium text-sm">{review.name}</p>
+                    <p className="text-[#0F1A26]/50 text-xs">{review.location}</p>
+                    <p className="text-[#EEBC3F] text-xs mt-1">{review.product}</p>
+                  </div>
+                </div>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+        </Carousel>
+
+        {/* Mobile Swipe Dots Indicator */}
+        <div className="flex md:hidden items-center justify-center gap-1.5 mt-4">
+          {reviews.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => api?.scrollTo(idx)}
+              className={`h-1.5 rounded-full transition-all duration-300 ${
+                current === idx 
+                  ? "w-4 bg-[#EEBC3F]" 
+                  : "w-1.5 bg-[#0F1A26]/20"
+              }`}
+              aria-label={`Go to slide ${idx + 1}`}
+            />
           ))}
+        </div>
+        
+        <div className="mt-10 text-center">
+          <Link
+            href="/reviews"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-[#0F1A26] text-white rounded-full font-semibold hover:bg-[#EEBC3F] hover:text-[#0F1A26] transition-colors group"
+          >
+            {t('viewAllReviews')}
+            <ArrowRight className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" />
+          </Link>
         </div>
 
         {/* Platform badges */}

@@ -66,17 +66,19 @@ export function LocaleSwitcherMobile() {
   };
 
   return (
-    <div className="flex items-center gap-3 px-4 py-4">
+    <div className="flex items-center gap-3 px-4 py-4" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
       <div className="flex items-center gap-2">
         <Globe className="w-5 h-5 text-[#EEBC3F]" />
-        <span className="text-white/80 text-sm font-medium">Language / اللغة</span>
+        <span className="text-white/80 text-sm font-medium">
+          {locale === 'ar' ? 'اللغة / Language' : 'Language / اللغة'}
+        </span>
       </div>
       
-      <div className="relative flex items-center p-1 rounded-full bg-white/10 backdrop-blur-sm ml-auto">
+      <div className="relative flex items-center p-1 rounded-full bg-white/10 backdrop-blur-sm ms-auto">
         {/* Sliding background pill */}
         <div 
           className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-full bg-[#EEBC3F] transition-all duration-300 ease-out ${
-            locale === 'en' ? 'left-1' : 'left-[calc(50%+2px)]'
+            locale === 'en' ? 'start-1' : 'end-1'
           }`}
         />
         

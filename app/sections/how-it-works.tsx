@@ -2,6 +2,7 @@
 
 import { Link } from "@/i18n/routing";
 import { useTranslations } from 'next-intl';
+import NextImage from "next/image";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Ruler, Package, Check } from "lucide-react";
 
@@ -81,30 +82,50 @@ export function HowItWorks() {
             <h3 className="text-xl font-bold text-white mb-6">
               {tg('title')}
             </h3>
-            <div className="space-y-4">
+
+            {/* Visual Size Cards Grid */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
               {[
-                { size: tg('sizes.s.label'), height: tg('sizes.s.range'), type: tg('sizes.s.type') },
-                { size: tg('sizes.m.label'), height: tg('sizes.m.range'), type: tg('sizes.m.type') },
-                { size: tg('sizes.l.label'), height: tg('sizes.l.range'), type: tg('sizes.l.type') },
-                { size: tg('sizes.xl.label'), height: tg('sizes.xl.range'), type: tg('sizes.xl.type') },
+                { size: "S", cm: "45-53", inch: "18-21", type: tg('sizes.s.type'), icon: "/s.png" },
+                { size: "M", cm: "55-63", inch: "22-25", type: tg('sizes.m.type'), icon: "/m.png" },
+                { size: "L", cm: "65-73", inch: "26-29", type: tg('sizes.l.type'), icon: "/l.png" },
+                { size: "XL", cm: "75-80", inch: "30-32", type: tg('sizes.xl.type'), icon: "/xl.png" },
               ].map((item) => (
                 <div
                   key={item.size}
-                  className="flex items-center justify-between py-3 border-b border-white/10 last:border-0"
+                  className="bg-white/10 rounded-xl p-4 border border-white/10 hover:border-[#EEBC3F]/30 transition-all duration-300 text-center"
                 >
-                  <div className="flex items-center gap-4">
-                    <span className="w-10 h-10 rounded-lg bg-[#EEBC3F]/20 flex items-center justify-center text-[#EEBC3F] font-bold">
-                      {item.size}
-                    </span>
-                    <div>
-                      <p className="text-white font-medium">{item.type}</p>
-                      <p className="text-white/50 text-sm">{item.height}</p>
-                    </div>
+                  {/* Size Image */}
+                  <div className="w-full h-20 flex items-center justify-center">
+                    <NextImage
+                      src={item.icon}
+                      alt={`Size ${item.size}`}
+                      width={80}
+                      height={80}
+                      className="object-contain"
+                    />
+                  </div>
+
+                  {/* Size Label */}
+                  <span className="text-[#EEBC3F] font-bold text-2xl">{item.size}</span>
+
+                  {/* Type */}
+                  <p className="text-white font-semibold text-sm mt-1">{item.type}</p>
+
+                  {/* Measurements - CM primary */}
+                  <div className="mt-2 space-y-1">
+                    <p className="text-[#EEBC3F] font-bold text-base">
+                      {item.cm} <span className="text-white/60 text-sm font-normal">cm</span>
+                    </p>
+                    <p className="text-white/50 text-xs">
+                      {item.inch}" <span className="text-white/30">({tg('heightOnly')})</span>
+                    </p>
                   </div>
                 </div>
               ))}
             </div>
-            <p className="text-white/50 text-xs mt-6">
+
+            <p className="text-white/70 text-xs text-center font-medium">
               {tg('note')}
             </p>
           </div>

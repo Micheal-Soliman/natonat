@@ -1,6 +1,5 @@
 "use client";
 
-import { useCart } from "@/app/lib/cart-context";
 import { useState, useEffect, useRef, Suspense } from "react";
 import { Link } from "@/i18n/routing";
 import { useSearchParams } from "next/navigation";
@@ -8,30 +7,43 @@ import { useTranslations } from 'next-intl';
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
-import { ShoppingBag, Filter, X } from "lucide-react";
+import { Filter, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { products, categories, sizes, themes } from "@/lib/products";
-import { SizeModal } from "@/app/components/size-modal";
 import { Loading } from "@/app/components/loading";
 import { SwipeableProductImage } from "@/app/components/swipeable-product-image";
 
 function ShopContent() {
   const t = useTranslations('shop');
-  const { addToCart } = useCart();
   const searchParams = useSearchParams();
   const categoryFromUrl = searchParams.get("category") || "all";
   const sizeFromUrl = searchParams.get("size");
   const sortFromUrl = searchParams.get("sort");
+  const searchFromUrl = searchParams.get("search");
   const [activeCategory, setActiveCategory] = useState(categoryFromUrl);
   const [selectedSizes, setSelectedSizes] = useState<string[]>(sizeFromUrl ? [sizeFromUrl] : []);
   const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
   const [showBestSellers, setShowBestSellers] = useState(sortFromUrl === "best-sellers");
+  const [searchQuery, setSearchQuery] = useState(searchFromUrl || "");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-  const [isVisible, setIsVisible] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
   const [hideNav, setHideNav] = useState(false);
-  const [sizeModalOpen, setSizeModalOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<typeof products[0] | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PRODUCTS_PER_PAGE = 12;
   const ref = useRef<HTMLDivElement>(null);
   const categoryTabsRef = useRef<HTMLDivElement>(null);
+
+  // Load page from localStorage on mount
+  useEffect(() => {
+    const savedPage = localStorage.getItem('shopCurrentPage');
+    if (savedPage) {
+      setCurrentPage(parseInt(savedPage, 10));
+    }
+  }, []);
+
+  // Save page to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('shopCurrentPage', currentPage.toString());
+  }, [currentPage]);
 
   // Update activeCategory when URL changes
   useEffect(() => {
@@ -43,6 +55,11 @@ function ShopContent() {
     setShowBestSellers(sortFromUrl === "best-sellers");
   }, [sortFromUrl]);
 
+  // Update search query when URL changes
+  useEffect(() => {
+    setSearchQuery(searchFromUrl || "");
+  }, [searchFromUrl]);
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -50,7 +67,7 @@ function ShopContent() {
           setIsVisible(true);
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1, rootMargin: "100px" }
     );
 
     if (ref.current) {
@@ -74,12 +91,32 @@ function ShopContent() {
   }, []);
 
   const filteredProducts = products.filter((product) => {
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      const matches = 
+        product.name.toLowerCase().includes(query) ||
+        product.category.toLowerCase().includes(query) ||
+        product.type.toLowerCase().includes(query);
+      if (!matches) return false;
+    }
     if (showBestSellers && product.tag !== "Best Seller") return false;
     if (activeCategory !== "all" && product.category !== activeCategory) return false;
     if (selectedSizes.length > 0 && product.size && !selectedSizes.includes(product.size)) return false;
     if (selectedThemes.length > 0 && !selectedThemes.includes(product.theme)) return false;
     return true;
   });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE);
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * PRODUCTS_PER_PAGE,
+    currentPage * PRODUCTS_PER_PAGE
+  );
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeCategory, selectedSizes, selectedThemes, showBestSellers, searchQuery]);
 
   const toggleSize = (sizeId: string) => {
     setSelectedSizes((prev) =>
@@ -101,6 +138,7 @@ function ShopContent() {
     setSelectedSizes([]);
     setSelectedThemes([]);
     setShowBestSellers(false);
+    setCurrentPage(1);
   };
 
   const activeFiltersCount = selectedSizes.length + selectedThemes.length + (showBestSellers ? 1 : 0);
@@ -133,35 +171,16 @@ function ShopContent() {
 
   const headerContent = getHeaderContent();
 
-  const handleAddToCart = (e: React.MouseEvent, product: typeof products[0]) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (product.category === "luggage-covers") {
-      setSelectedProduct(product);
-      setSizeModalOpen(true);
-    } else {
-      addToCart({
-        id: product.id,
-        name: product.name,
-        type: product.type,
-        price: product.price,
-        originalPrice: product.originalPrice,
-        image: product.image,
-        quantity: 1,
-      });
-    }
-  };
-
   return (
     <>
-      <div className={`fixed top-0 left-0 right-0 z-50 transition-transform duration-300 ${hideNav ? '-translate-y-full' : 'translate-y-0'}`}>
+      <div className={`fixed top-0 left-0 right-0 z-[70] transition-transform duration-300 ${hideNav ? '-translate-y-full' : 'translate-y-0'}`}>
         <Navigation />
       </div>
       <main className="min-h-screen bg-[#F1EBE3]">
         {/* Header - Clean */}
         <div className="bg-[#0F1A26] pt-32 pb-16 md:pt-40 md:pb-24">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white tracking-tight">
+            <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold text-white tracking-tight">
               {headerContent.title}
             </h1>
             <p className="text-white/50 mt-4 max-w-xl mx-auto font-light text-lg">
@@ -293,7 +312,7 @@ function ShopContent() {
                     {sizes.map((size) => (
                       <div key={size.id} className="flex justify-between text-white/60">
                         <span>{size.label}</span>
-                        <span>{size.range}"</span>
+                        <span>{size.range}&quot;</span>
                       </div>
                     ))}
                   </div>
@@ -327,37 +346,73 @@ function ShopContent() {
               </div>
 
               {/* Grid - Clean */}
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-5">
-                {filteredProducts.map((product, index) => (
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
+                {paginatedProducts.map((product, index) => (
                   <Link
                     key={product.id}
                     href={`/product/${product.slug}`}
-                    className={`group transition-all duration-500 hover:-translate-y-2 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+                    className={`group transition-all duration-500 hover:-translate-y-1 sm:hover:-translate-y-2 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
                     style={{ transitionDelay: `${index * 50}ms` }}
                   >
                     <SwipeableProductImage 
                       product={product}
-                      onAddToCart={handleAddToCart}
                     />
 
                     {/* Product Info - Clean */}
-                    <div>
-                      <span className="text-[#EEBC3F] text-[10px] font-semibold tracking-wider uppercase">
+                    <div className="px-1">
+                      <span className="text-[#EEBC3F] text-[9px] sm:text-[10px] font-semibold tracking-wider uppercase">
                         {product.type}
                       </span>
-                      <h3 className="text-[#0F1A26] font-medium text-sm mt-1 mb-1 group-hover:text-[#EEBC3F] transition-colors">
+                      <h3 className="text-[#0F1A26] font-medium text-xs sm:text-sm mt-0.5 mb-0.5 sm:mt-1 sm:mb-1 group-hover:text-[#EEBC3F] transition-colors line-clamp-1">
                         {product.name}
                       </h3>
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-[#0F1A26] font-bold text-lg">EGP {product.price}</span>
-                          <span className="text-[#0F1A26]/50 text-sm line-through font-medium">EGP {product.originalPrice}</span>
+                      <div className="flex flex-col gap-0.5 sm:gap-1">
+                        <div className="flex items-baseline gap-1 sm:gap-2">
+                          <span className="text-[#0F1A26] font-bold text-sm sm:text-lg">EGP {product.price}</span>
+                          <span className="text-[#0F1A26]/50 text-xs sm:text-sm line-through font-medium">EGP {product.originalPrice}</span>
                         </div>
                       </div>
                     </div>
                   </Link>
                 ))}
               </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 mt-8">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className="p-2 rounded-full bg-[#0F1A26] text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#EEBC3F] hover:text-[#0F1A26] transition-colors"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`w-10 h-10 rounded-full text-sm font-medium transition-colors ${
+                          currentPage === page
+                            ? 'bg-[#EEBC3F] text-[#0F1A26]'
+                            : 'bg-[#0F1A26]/10 text-[#0F1A26] hover:bg-[#0F1A26]/20'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                    className="p-2 rounded-full bg-[#0F1A26] text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#EEBC3F] hover:text-[#0F1A26] transition-colors"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
 
               {filteredProducts.length === 0 && (
                 <div className="text-center py-16">
@@ -466,31 +521,6 @@ function ShopContent() {
           </div>
         )}
       </main>
-      {/* Size Selection Modal */}
-      <SizeModal
-        isOpen={sizeModalOpen}
-        onClose={() => {
-          setSizeModalOpen(false);
-          setSelectedProduct(null);
-        }}
-        onConfirm={(size) => {
-          if (selectedProduct) {
-            addToCart({
-              id: selectedProduct.id,
-              name: selectedProduct.name,
-              type: selectedProduct.type,
-              price: selectedProduct.price,
-              originalPrice: selectedProduct.originalPrice,
-              image: selectedProduct.image,
-              size: size,
-              quantity: 1,
-            });
-          }
-          setSizeModalOpen(false);
-          setSelectedProduct(null);
-        }}
-        productName={selectedProduct?.name || ""}
-      />
 
       <Footer />
     </>

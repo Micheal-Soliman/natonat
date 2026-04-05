@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { useTranslations } from 'next-intl';
+import NextImage from "next/image";
 import { X, ShoppingBag, Ruler } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "@/i18n/routing";
 
 interface SizeModalProps {
   isOpen: boolean;
@@ -14,14 +16,14 @@ interface SizeModalProps {
 
 export function SizeModal({ isOpen, onClose, onConfirm, productName }: SizeModalProps) {
   const t = useTranslations('sizeModal');
-  const tg = useTranslations('howItWorks.sizeGuide');
+  const tg = useTranslations('sizeModal.sizeGuideDetails');
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
 
   const sizes = [
-    { id: "s", label: tg('sizes.s.label'), range: tg('sizes.s.range') },
-    { id: "m", label: tg('sizes.m.label'), range: tg('sizes.m.range') },
-    { id: "l", label: tg('sizes.l.label'), range: tg('sizes.l.range') },
-    { id: "xl", label: tg('sizes.xl.label'), range: tg('sizes.xl.range') },
+    { id: "s", label: tg('sizes.s.label'), cm: "46-53", inch: "18-21", type: tg('sizes.s.type'), icon: "/s.png" },
+    { id: "m", label: tg('sizes.m.label'), cm: "56-64", inch: "22-25", type: tg('sizes.m.type'), icon: "/m.png" },
+    { id: "l", label: tg('sizes.l.label'), cm: "66-74", inch: "26-29", type: tg('sizes.l.type'), icon: "/l.png" },
+    { id: "xl", label: tg('sizes.xl.label'), cm: "76-81", inch: "30-32", type: tg('sizes.xl.type'), icon: "/xl.png" },
   ];
 
   if (!isOpen) return null;
@@ -57,35 +59,66 @@ export function SizeModal({ isOpen, onClose, onConfirm, productName }: SizeModal
           </p>
         </div>
 
-        {/* Size Options */}
+        {/* Size Options - Visual Cards */}
         <div className="grid grid-cols-2 gap-3 mb-6">
           {sizes.map((size) => (
             <button
               key={size.id}
               onClick={() => setSelectedSize(size.id)}
-              className={`p-4 rounded-xl border-2 text-left transition-all duration-200 ${
+              className={`relative p-4 rounded-xl border-2 text-left transition-all duration-200 ${
                 selectedSize === size.id
                   ? "border-[#EEBC3F] bg-[#EEBC3F]/10"
                   : "border-[#0F1A26]/10 hover:border-[#0F1A26]/20 hover:bg-[#0F1A26]/5"
               }`}
             >
-              <div className="flex items-center justify-between mb-1">
-                <span className={`text-2xl font-bold ${
-                  selectedSize === size.id ? "text-[#EEBC3F]" : "text-[#0F1A26]"
-                }`}>
-                  {size.label}
-                </span>
-                {selectedSize === size.id && (
-                  <div className="w-5 h-5 rounded-full bg-[#EEBC3F] flex items-center justify-center">
-                    <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                )}
+              {/* Size Image */}
+              <div className={`w-full h-16 rounded-lg mb-2 flex items-center justify-center overflow-hidden ${
+                selectedSize === size.id ? "bg-[#EEBC3F]/30" : "bg-[#EEBC3F]/20"
+              }`}>
+                <NextImage 
+                  src={size.icon} 
+                  alt={`Size ${size.label}`}
+                  width={64}
+                  height={64}
+                  className="object-contain"
+                />
               </div>
-              <p className="text-xs text-[#0F1A26]/50">
-                {size.range}
+
+              {/* Size Label */}
+              <p className={`text-lg font-bold text-center mb-1 ${
+                selectedSize === size.id ? "text-[#EEBC3F]" : "text-[#0F1A26]/80"
+              }`}>
+                {size.label}
               </p>
+
+              {/* Type */}
+              <p className={`text-sm font-semibold mb-1 ${
+                selectedSize === size.id ? "text-[#0F1A26]" : "text-[#0F1A26]/80"
+              }`}>
+                {size.type}
+              </p>
+
+              {/* Measurements */}
+              <div className="space-y-0.5 text-center">
+                <p className={`font-bold text-sm ${
+                  selectedSize === size.id ? "text-[#EEBC3F]" : "text-[#0F1A26]/70"
+                }`}>
+                  {size.cm} <span className="text-xs font-normal text-[#0F1A26]/50">cm</span>
+                </p>
+                <p className="text-xs text-[#0F1A26]/40">
+                  {size.inch}"
+                </p>
+                <p className="text-[#0F1A26]/30 text-[10px] italic">({tg('heightOnly')})</p>
+              </div>
+
+              {/* Selection indicator */}
+              {selectedSize === size.id && (
+                <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#EEBC3F] flex items-center justify-center">
+                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+              )}
             </button>
           ))}
         </div>
@@ -94,9 +127,9 @@ export function SizeModal({ isOpen, onClose, onConfirm, productName }: SizeModal
         <div className="bg-[#F1EBE3] rounded-xl p-3 mb-6">
           <p className="text-xs text-[#0F1A26]/70 text-center">
             💡 {t('note')} 
-            <a href="/how-it-works" className="text-[#EEBC3F] font-medium hover:underline ml-1">
+            <Link href="/how-it-works" className="text-[#EEBC3F] font-medium hover:underline ml-1">
               {t('sizeGuide')}
-            </a>
+            </Link>
           </p>
         </div>
 

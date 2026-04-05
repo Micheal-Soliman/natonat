@@ -1,6 +1,7 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useState, useEffect } from "react";
+import Image from "next/image";
 import { Link } from "@/i18n/routing";
 import { useTranslations } from 'next-intl';
 import { Navigation } from "@/app/sections/navigation";
@@ -69,22 +70,56 @@ export default function CartPage() {
 
 function CartContent() {
   const t = useTranslations('cart');
-  const { items, removeFromCart, updateQuantity, subtotal } = useCart();
+  const { items, removeFromCart, updateQuantity, subtotal, setBuyNowItem } = useCart();
   const groupedItems = groupCartItems(items);
-  const shipping = subtotal > 1000 ? 0 : 50;
+  const shipping = subtotal > 1000 ? 0 : 75;
   const total = subtotal + shipping;
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    // Clear buyNowItem when viewing cart - user is using cart checkout flow
+    setBuyNowItem(null);
+  }, [setBuyNowItem]);
+
+  // Prevent hydration mismatch - render loading state until mounted
+  if (!mounted) {
+    return (
+      <>
+        <Navigation />
+        <main className="min-h-screen bg-[#F1EBE3]">
+          <div className="bg-[#0F1A26] pt-32 pb-16 md:pt-40 md:pb-24">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white tracking-tight">
+                {t('header.title').split(' ')[0]} <span className="text-[#EEBC3F]">{t('header.title').split(' ').slice(1).join(' ')}</span>
+              </h1>
+              <p className="text-white/50 mt-4 max-w-xl mx-auto font-light text-lg">
+                {t('header.subtitle')}
+              </p>
+            </div>
+          </div>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div className="animate-pulse">
+              <div className="h-96 bg-[#0F1A26]/5 rounded-2xl"></div>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </>
+    );
+  }
 
   return (
     <>
       <Navigation />
       <main className="min-h-screen bg-[#F1EBE3]">
         {/* Header - Clean */}
-        <div className="bg-[#0F1A26] pt-32 pb-16 md:pt-40 md:pb-24">
+        <div className="bg-[#0F1A26] pt-28 pb-16 md:pt-40 md:pb-24">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white tracking-tight">
+            <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold text-white tracking-tight">
               {t('header.title').split(' ')[0]} <span className="text-[#EEBC3F]">{t('header.title').split(' ').slice(1).join(' ')}</span>
             </h1>
-            <p className="text-white/50 mt-4 max-w-xl mx-auto font-light text-lg">
+            <p className="text-white/50 mt-4 max-w-xl mx-auto font-light text-base md:text-lg">
               {t('header.subtitle')}
             </p>
           </div>
@@ -128,11 +163,13 @@ function CartContent() {
                       className="bg-white rounded-2xl p-4 border border-[#0F1A26]/5 flex gap-4"
                     >
                       {/* Image */}
-                      <div className="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 bg-[#F8F6F3]">
-                        <img 
+                      <div className="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 bg-[#F8F6F3] relative">
+                        <Image 
                           src={item.image} 
                           alt={item.name}
-                          className="w-full h-full object-cover"
+                          fill
+                          sizes="96px"
+                          className="object-cover"
                         />
                       </div>
 
@@ -230,9 +267,13 @@ function CartContent() {
               </div>
 
               {/* Order Summary */}
-              <div className="lg:w-96">
-                <div className="bg-white rounded-2xl p-6 border border-[#0F1A26]/5 sticky top-28">
+              <div className="lg:w-96 order-first lg:order-last">
+                <div className="bg-white rounded-2xl p-6 border border-[#0F1A26]/5 lg:sticky lg:top-28">
                   <h2 className="text-lg font-semibold text-[#0F1A26] mb-6">{t('summary.title')}</h2>
+                  
+                  <p className="text-xs text-[#EEBC3F] font-medium mb-4 text-center">
+                    {t('summary.egyptOnly')}
+                  </p>
                   
                   <div className="space-y-3 mb-6">
                     <div className="flex justify-between text-sm">

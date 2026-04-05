@@ -3,7 +3,10 @@ import { Montserrat, Quicksand, Noto_Sans_Arabic } from "next/font/google";
 import {notFound} from 'next/navigation';
 import "../globals.css";
 import { CartProvider } from "../lib/cart-context";
+import { WishlistProvider } from "../lib/wishlist-context";
 import { ToastProvider } from "../components/toast-provider";
+import { FloatingContact } from "../components/floating-contact";
+import { CartSliderWrapper } from "../components/cart-slider-wrapper";
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
 import {routing} from '@/i18n/routing';
@@ -43,7 +46,7 @@ export default async function LocaleLayout({
 }) {
   const {locale} = await params;
   // Ensure that the incoming `locale` is valid
-  if (!routing.locales.includes(locale as any)) {
+  if (!locale || !routing.locales.includes(locale as "en" | "ar")) {
     notFound();
   }
 
@@ -62,7 +65,11 @@ export default async function LocaleLayout({
         <NextIntlClientProvider messages={messages}>
           <ToastProvider>
             <CartProvider>
-              {children}
+              <WishlistProvider>
+                {children}
+                <FloatingContact />
+                <CartSliderWrapper />
+              </WishlistProvider>
             </CartProvider>
           </ToastProvider>
         </NextIntlClientProvider>

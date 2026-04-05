@@ -1,11 +1,11 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, ReactNode } from "react";
-import { useToast } from "../components/toast-provider";
+import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from "react";
 
 export interface CartItem {
   id: number;
   name: string;
+  slug: string;
   type: string;
   price: number;
   originalPrice?: number;
@@ -21,15 +21,35 @@ interface CartContextType {
   removeFromCart: (id: number) => void;
   updateQuantity: (id: number, delta: number) => void;
   clearCart: () => void;
+  buyNowItem: CartItem | null;
+  setBuyNowItem: (item: CartItem | null) => void;
   totalItems: number;
   subtotal: number;
+  isOpen: boolean;
+  openCart: () => void;
+  closeCart: () => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([]);
-  const { showToast } = useToast();
+  const [items, setItems] = useState<CartItem[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('cart');
+      return saved ? JSON.parse(saved) : [];
+    }
+    return [];
+  });
+  const [isOpen, setIsOpen] = useState(false);
+
+  const openCart = useCallback(() => setIsOpen(true), []);
+  const closeCart = useCallback(() => setIsOpen(false), []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cart', JSON.stringify(items));
+    }
+  }, [items]);
 
   const addToCart = useCallback((newItem: Omit<CartItem, "quantity"> & { quantity?: number }) => {
     const qty = newItem.quantity || 1;
@@ -50,22 +70,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return [...currentItems, { ...newItem, quantity: qty }];
     });
 
-    showToast({
-      title: newItem.name,
-      description: `Qty: ${qty}${newItem.size ? ` • Size: ${newItem.size.toUpperCase()}` : ""}`,
-      action: {
-        label: "View Cart",
-        onClick: () => {
-          window.location.href = "/cart";
-        },
-      },
-      cancel: {
-        label: "Size Guide",
-        onClick: () => {
-          window.location.href = "/how-it-works";
-        },
-      },
-    });
+    setIsOpen(true);
   }, []);
 
   const removeFromCart = useCallback((id: number) => {
@@ -86,6 +91,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems([]);
   }, []);
 
+  const [buyNowItem, setBuyNowItem] = useState<CartItem | null>(null);
+
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
@@ -97,8 +104,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
         removeFromCart,
         updateQuantity,
         clearCart,
+        buyNowItem,
+        setBuyNowItem,
         totalItems,
         subtotal,
+        isOpen,
+        openCart,
+        closeCart,
       }}
     >
       {children}

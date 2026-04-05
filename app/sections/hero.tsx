@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Link } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
-import { ArrowDown } from "lucide-react";
+import { ArrowDown, Truck } from "lucide-react";
 import { useTranslations } from 'next-intl';
 
 // Local Arthaus-Bold font
@@ -15,16 +14,21 @@ const arthausFontStyle = `
     font-style: normal;
     font-display: swap;
   }
+
+  /* Marquee animation */
+  @keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  
+  .animate-marquee {
+    animation: marquee 20s linear infinite;
+  }
 `;
 
 export function Hero() {
   const t = useTranslations('hero');
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    setLoaded(true);
-  }, []);
-
+  const loaded = true;
   return (
     <section className="relative h-screen flex items-center justify-center overflow-hidden bg-[#0a0f14]">
       {/* Video Background */}
@@ -48,20 +52,20 @@ export function Hero() {
       {/* Main content - minimal */}
       <div className="relative z-10 text-center px-4">
         {/* Small label */}
-        <p className={`text-[#EEBC3F] text-xs tracking-[0.3em] uppercase mb-8 transition-all duration-1000 ${loaded ? 'opacity-100' : 'opacity-0'}`}>
+        <p className={`text-[#EEBC3F] text-[10px] sm:text-xs tracking-[0.3em] uppercase mb-4 sm:mb-8 transition-all duration-1000 ${loaded ? 'opacity-100' : 'opacity-0'}`}>
           {t('label')}
         </p>
 
         {/* Big bold headline with local Arthaus-Bold font */}
         <h1 
-          className={`text-6xl md:text-8xl lg:text-[10rem] font-bold leading-none tracking-[0.15em] mb-6 transition-all duration-1000 delay-200 ${loaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`} 
+          className={`text-4xl sm:text-6xl md:text-8xl lg:text-[10rem] font-bold leading-none tracking-[0.15em] mb-6 transition-all duration-1000 delay-200 ${loaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`} 
           style={{ fontFamily: "'Arthaus-Bold', sans-serif" }}
         >
           <span className="block text-white">nat<span className="text-[#EEBC3F]">O</span>nat</span>
         </h1>
 
         {/* Tagline */}
-        <p className={`text-lg md:text-xl text-white/40 font-light tracking-wide mb-12 transition-all duration-1000 delay-400 ${loaded ? 'opacity-100' : 'opacity-0'}`}>
+        <p className={`text-base sm:text-lg md:text-xl text-white/40 font-light tracking-wide mb-8 sm:mb-12 transition-all duration-1000 delay-400 ${loaded ? 'opacity-100' : 'opacity-0'}`}>
           {t('tagline')}
         </p>
 
@@ -70,7 +74,7 @@ export function Hero() {
           <Button
             asChild
             size="lg"
-            className="bg-[#EEBC3F] text-[#0a0f14] hover:bg-white rounded-full text-sm font-bold px-12 h-14 transition-all duration-500 hover:scale-105"
+            className="bg-[#EEBC3F] text-[#0a0f14] hover:bg-white rounded-full text-xs sm:text-sm font-bold px-6 sm:px-12 h-10 sm:h-14 transition-all duration-500 hover:scale-105"
           >
             <Link href="/shop">
               {t('cta')}
@@ -79,9 +83,20 @@ export function Hero() {
         </div>
       </div>
 
-      {/* Scroll indicator */}
-      <div className={`absolute bottom-12 left-1/2 -translate-x-1/2 transition-all duration-1000 delay-1000 ${loaded ? 'opacity-100' : 'opacity-0'}`}>
-        <ArrowDown className="w-5 h-5 text-white/30 animate-bounce" />
+
+
+      {/* Free Shipping Marquee Banner */}
+      <div className="absolute bottom-0 left-0 right-0 bg-[#EEBC3F] py-3 overflow-hidden z-20">
+        <div className="animate-marquee flex whitespace-nowrap">
+          {[...Array(10)].map((_, i) => (
+            <div key={i} className="flex items-center mx-8">
+              <span className="text-[#0F1A26] font-semibold text-sm tracking-wide uppercase">
+                {t('freeShipping')} - {t('egyptOnly')}
+              </span>
+              <span className="mx-4 text-[#0F1A26]/30">|</span>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );

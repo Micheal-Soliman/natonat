@@ -4,7 +4,10 @@ import Link from "next/link";
 import { products, getProductBySlug } from "@/lib/products";
 import ProductPageContent from "./product-content";
 
+import { getTranslations } from 'next-intl/server';
+
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
+  const t = await getTranslations('product');
   const { slug } = await params;
   const product = getProductBySlug(slug);
   
@@ -15,9 +18,9 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         <Navigation />
         <main className="min-h-screen bg-[#F1EBE3] pt-24 pb-12">
           <div className="max-w-7xl mx-auto px-4 text-center">
-            <h1 className="text-2xl font-bold text-[#0F1A26] mb-4">Product Not Found</h1>
+            <h1 className="text-2xl font-bold text-[#0F1A26] mb-4">{t('notFound')}</h1>
             <Link href="/shop" className="text-[#EEBC3F] hover:underline">
-              Back to Shop
+              {t('nav.backToShop')}
             </Link>
           </div>
         </main>
