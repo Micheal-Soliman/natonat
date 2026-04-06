@@ -26,21 +26,21 @@ export function TravelSets() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 items-stretch">
           {bundles.map((bundle) => (
             <div
               key={bundle.id}
               className="group bg-white rounded-2xl overflow-hidden border border-[#0F1A26]/10 hover:border-[#EEBC3F] transition-all hover:shadow-xl flex flex-col h-full"
             >
-              {/* Bundle Image - Full height, no cropping */}
+              {/* Bundle Image - Smaller aspect ratio */}
               <Link href={`/product/${bundle.slug}`} className="block">
-                <div className="relative overflow-hidden">
+                <div className="relative overflow-hidden aspect-square">
                   <Image 
                     src={bundle.image} 
                     alt={bundle.name}
-                    width={600}
-                    height={600}
-                    className="w-full h-auto object-contain transition-transform duration-700 group-hover:scale-105"
+                    fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    className="object-contain transition-transform duration-700 group-hover:scale-105"
                     loading="lazy"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
@@ -52,16 +52,16 @@ export function TravelSets() {
                 </div>
               </Link>
 
-              <div className="p-6 flex flex-col flex-grow">
-                <h3 className="text-lg font-bold text-[#0F1A26] mb-2 line-clamp-1">
+              <div className="p-5 flex flex-col flex-grow">
+                <h3 className="text-base font-bold text-[#0F1A26] mb-2 line-clamp-1">
                   {bundle.name}
                 </h3>
-                <p className="text-[#0F1A26]/60 text-sm mb-4 line-clamp-2 flex-grow">
+                <p className="text-[#0F1A26]/60 text-sm mb-3 line-clamp-2 min-h-[40px]">
                   {bundle.description}
                 </p>
 
                 <div className="flex items-baseline gap-2 mb-4">
-                  <span className="text-2xl font-bold text-[#0F1A26]">
+                  <span className="text-xl font-bold text-[#0F1A26]">
                     EGP {bundle.price}
                   </span>
                   <span className="text-sm text-[#0F1A26]/40 line-through">
@@ -71,7 +71,7 @@ export function TravelSets() {
 
                 <Button
                   asChild
-                  className="w-full bg-[#0F1A26] text-[#F1EBE3] hover:bg-[#EEBC3F] hover:text-[#0F1A26] transition-all duration-300 mt-auto"
+                  className="w-full bg-[#0F1A26] text-[#F1EBE3] hover:bg-[#EEBC3F] hover:text-[#0F1A26] transition-all duration-300 mt-auto h-10 text-sm"
                 >
                   <Link href={`/product/${bundle.slug}`}>{t('viewProduct')}</Link>
                 </Button>
