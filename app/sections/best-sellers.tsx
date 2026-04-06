@@ -102,7 +102,7 @@ export function BestSellers() {
                       alt={product.name}
                       fill
                       sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 pointer-events-none"
+                      className="absolute inset-0 w-full h-full object-contain transition-transform duration-700 group-hover:scale-110 pointer-events-none"
                       loading="lazy"
                       draggable={false}
                     />
