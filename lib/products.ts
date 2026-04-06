@@ -640,7 +640,7 @@ export const products: Product[] = [
       "/octopus%20photo/Vibra/5.webp",
       "/octopus%20photo/Vibra/6.webp"
     ],
-    description: "Vibrant energy design for dynamic travelers"
+    description: "غطاء شنط مستوحى من الطاقة الموسيقية والنيون. تصميم عصري جريء بخطوط لامعة وتفاصيل ناعمة بيعكس روح الإيقاع والحركة. مثالي للمسافرين اللي بيحبوا الطاقة والتميز."
   },
   // BackOnat Backpack (Product ID 50) - Placeholder image until real photos arrive
   { 

@@ -23,6 +23,7 @@ interface ProductPageContentProps {
 
 export default function ProductPageContent({ product, prevProduct, nextProduct }: ProductPageContentProps) {
   const t = useTranslations('product');
+  const tp = useTranslations('products');
   const { addToCart, setBuyNowItem } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const router = useRouter();
@@ -418,6 +419,120 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
               </div>
             </div>
           </div>
+
+          {/* Detailed Product Description - Full width BELOW the main grid */}
+          {product.slug === 'vibra' && (
+            <div className="mt-8 lg:mt-12 space-y-6">
+              {/* Intro - Full width */}
+              <div className="p-6 bg-white rounded-2xl border border-[#0F1A26]/5 shadow-lg">
+                <p className="text-[#0F1A26]/80 text-sm leading-relaxed">
+                  {tp('vibra.intro')}
+                </p>
+              </div>
+
+              {/* Design Inspiration + Target Audience - Side by side */}
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="p-6 bg-white rounded-2xl border border-[#0F1A26]/5 shadow-lg">
+                  <h4 className="font-bold text-[#0F1A26] mb-3 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-[#EEBC3F]" />
+                    {tp('vibra.designInspiration.title')}
+                  </h4>
+                  <p className="text-[#0F1A26]/70 text-sm mb-3">{tp('vibra.designInspiration.content')}</p>
+                  <ul className="space-y-2">
+                    {tp.raw('vibra.designInspiration.perfectFor').map((item: string, idx: number) => (
+                      <li key={idx} className="flex items-center gap-2 text-[#0F1A26]/70 text-sm">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#EEBC3F]" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-[#0F1A26]/60 text-xs mt-3 italic">{tp('vibra.designInspiration.tagline')}</p>
+                </div>
+
+                <div className="p-6 bg-white rounded-2xl border border-[#0F1A26]/5 shadow-lg">
+                  <h4 className="font-bold text-[#0F1A26] mb-3">{tp('vibra.targetAudience.title')}</h4>
+                  <ul className="space-y-2">
+                    {tp.raw('vibra.targetAudience.items').map((item: string, idx: number) => (
+                      <li key={idx} className="flex items-center gap-2 text-[#0F1A26]/70 text-sm">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#EEBC3F]" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              {/* Why Choose - Full width with grid for features */}
+              <div className="p-6 bg-white rounded-2xl border border-[#0F1A26]/5 shadow-lg">
+                <h4 className="font-bold text-[#0F1A26] mb-3 flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-[#EEBC3F]" />
+                  {tp('vibra.whyChoose.title')}
+                </h4>
+                <p className="text-[#0F1A26]/70 text-sm mb-4">{tp('vibra.whyChoose.intro')}</p>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {tp.raw('vibra.whyChoose.features').map((feature: { title: string; desc: string }, idx: number) => (
+                    <div key={idx} className="flex items-start gap-3 p-3 bg-[#F1EBE3] rounded-xl">
+                      <span className="w-5 h-5 rounded-full bg-[#EEBC3F] text-white text-xs flex items-center justify-center flex-shrink-0">✓</span>
+                      <div>
+                        <span className="font-bold text-[#0F1A26] text-sm">{feature.title}</span>
+                        <p className="text-[#0F1A26]/60 text-xs">{feature.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Size Guide + About - Side by side */}
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="p-6 bg-white rounded-2xl border border-[#0F1A26]/5 shadow-lg">
+                  <h4 className="font-bold text-[#0F1A26] mb-3 flex items-center gap-2">
+                    <Ruler className="w-4 h-4 text-[#EEBC3F]" />
+                    {tp('vibra.sizeGuide.title')}
+                  </h4>
+                  <p className="text-[#0F1A26]/70 text-sm mb-2">{tp('vibra.sizeGuide.subtitle')}</p>
+                  <p className="text-[#0F1A26]/60 text-xs mb-3">{tp('vibra.sizeGuide.tip')}</p>
+                  <ul className="space-y-1 mb-3">
+                    {tp.raw('vibra.sizeGuide.sizes').map((size: string, idx: number) => (
+                      <li key={idx} className="flex items-center gap-2 text-[#0F1A26]/70 text-sm">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#EEBC3F]" />
+                        {size}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-[#0F1A26]/60 text-xs italic">{tp('vibra.sizeGuide.proTip')}</p>
+                </div>
+
+                <div className="p-6 bg-[#0F1A26] rounded-2xl text-white">
+                  <h4 className="font-bold mb-2">{tp('vibra.about.title')}</h4>
+                  <p className="text-white/80 text-sm">{tp('vibra.about.content')}</p>
+                </div>
+              </div>
+
+              {/* CTA - Full width */}
+              <div className="p-6 bg-gradient-to-r from-[#EEBC3F]/20 to-[#EEBC3F]/5 rounded-2xl border border-[#EEBC3F]/30 text-center">
+                <h4 className="font-bold text-[#0F1A26] mb-2">{tp('vibra.cta.title')}</h4>
+                <p className="text-[#0F1A26]/70 text-sm mb-4">{tp('vibra.cta.content')}</p>
+                <Button 
+                  onClick={() => {
+                    addToCart({
+                      id: product.id,
+                      name: product.name,
+                      slug: product.slug,
+                      type: product.type,
+                      price: product.price,
+                      originalPrice: product.originalPrice,
+                      image: product.image,
+                      size: product.size ? selectedSize : undefined,
+                      quantity: quantity,
+                    });
+                  }}
+                  className="bg-[#EEBC3F] text-[#0F1A26] hover:bg-[#d4a535] h-12 px-8 rounded-xl font-bold"
+                >
+                  {t('addToCart')}
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Sections 3 & 4: Why You'll Love It + FAQs - Side by Side */}
           <div className="mt-16 lg:mt-24">

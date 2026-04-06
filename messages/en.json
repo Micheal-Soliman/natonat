@@ -1122,5 +1122,78 @@
         "button": "Contact Support"
       }
     }
+  },
+  "products": {
+    "vibra": {
+      "title": "Vibra Luggage Cover | Premium Music-Inspired Neon Suitcase Protector",
+      "headline": "Feel the rhythm. Travel with energy. Express your vibe.",
+      "intro": "The natOnat Vibra Luggage Cover is inspired by music, rhythm, and modern digital energy. Featuring a bold neon-style design with flowing lines and a futuristic aesthetic, this cover transforms your suitcase into a vibrant expression of personality and movement. Perfect for travelers who live loud, think creatively, and carry their vibe everywhere.",
+      "designInspiration": {
+        "title": "Design Inspiration – Vibra",
+        "content": "The Vibra design captures the essence of music, motion, and energy, blending neon visuals with smooth artistic lines to create a modern, eye-catching look.",
+        "perfectFor": [
+          "Music lovers & headphone culture fans",
+          "Creatives & modern lifestyle enthusiasts",
+          "Travelers who love bold, vibrant designs",
+          "Anyone who wants a standout, energetic suitcase"
+        ],
+        "tagline": "At baggage claim, your luggage won't just stand out — it will glow with personality."
+      },
+      "whyChoose": {
+        "title": "Why Choose natOnat Luggage Covers in Egypt?",
+        "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
+        "features": [
+          {
+            "title": "Ultimate Suitcase Protection",
+            "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling."
+          },
+          {
+            "title": "Premium Elastic Fabric",
+            "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure."
+          },
+          {
+            "title": "Smart Access Design",
+            "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly."
+          },
+          {
+            "title": "Ultra-Secure Fit",
+            "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey."
+          },
+          {
+            "title": "Eco-Friendly & Washable",
+            "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers."
+          }
+        ]
+      },
+      "sizeGuide": {
+        "title": "Size Guide – Simple & Accurate",
+        "subtitle": "Choosing the right size is easy:",
+        "tip": "Just measure your suitcase height (without wheels). That's all you need.",
+        "sizes": [
+          "S → Cabin size (carry-on)",
+          "M → Medium suitcase",
+          "L → Large suitcase",
+          "XL → Extra large luggage"
+        ],
+        "proTip": "If you're between sizes, choose the larger size for a smoother fit."
+      },
+      "targetAudience": {
+        "title": "Designed for Music Lovers & Bold Personalities",
+        "items": [
+          "Music lovers & creative minds",
+          "Travelers who love bold, modern designs",
+          "Digital lifestyle enthusiasts",
+          "Anyone who wants a vibrant, expressive suitcase"
+        ]
+      },
+      "about": {
+        "title": "About natOnat",
+        "content": "natOnat is a premium Egyptian travel brand focused on smart design, quality materials, and modern lifestyle needs. We create products that make your travel easier, safer, and more stylish."
+      },
+      "cta": {
+        "title": "Upgrade Your Travel Experience",
+        "content": "Order your Vibra luggage cover today and travel with energy, style, and your own unique rhythm."
+      }
+    }
   }
 }
