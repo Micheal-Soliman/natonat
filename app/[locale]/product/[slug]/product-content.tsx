@@ -2,7 +2,7 @@
 
 import { useCart } from "@/app/lib/cart-context";
 import { useWishlist } from "@/app/lib/wishlist-context";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Image from "next/image";
 import { Link } from "@/i18n/routing";
 import { useRouter } from "@/i18n/routing";
@@ -10,10 +10,242 @@ import { useTranslations } from 'next-intl';
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
-import { ShoppingBag, ChevronRight, Shield, Sparkles, Ruler, Heart, Share2, Check, Star, Truck, RotateCcw, ArrowUpRight, Award, ArrowLeft, ChevronLeft, ChevronRight as ChevronRightIcon } from "lucide-react";
+import { ShoppingBag, ChevronRight, Shield, Sparkles, Ruler, Heart, Share2, Check, Star, Truck, RotateCcw, ArrowUpRight, Award, ArrowLeft, ChevronLeft, ChevronRight as ChevronRightIcon, ChevronDown } from "lucide-react";
 import { FAQSection } from "@/app/components/faq-section";
 import { SwipeableProductImage } from "@/app/components/swipeable-product-image";
 import { type Product, products } from "@/lib/products";
+
+// Separate component for detailed product description
+interface ProductDetailedDescriptionProps {
+  product: Product;
+  selectedSize: string;
+  quantity: number;
+  t: (key: string) => string;
+  addToCart: (item: {
+    id: number;
+    name: string;
+    slug: string;
+    type: string;
+    price: number;
+    originalPrice: number;
+    image: string;
+    size?: string;
+    quantity: number;
+  }) => void;
+}
+
+interface ProductDetailedDescriptionIntroProps {
+  product: Product;
+  onExpand: () => void;
+}
+
+// Component for showing just the intro (partially open)
+function ProductDetailedDescriptionIntro({ product, onExpand }: ProductDetailedDescriptionIntroProps) {
+  const tp = useTranslations('products');
+  const t = useTranslations('product');
+  
+  // Check if this product has detailed description data
+  const hasDetailedDescription = () => {
+    try {
+      const intro = tp(`${product.slug}.intro`);
+      return intro && intro !== `${product.slug}.intro`;
+    } catch {
+      return false;
+    }
+  };
+
+  if (!hasDetailedDescription()) {
+    return null;
+  }
+
+  return (
+    <button
+      onClick={onExpand}
+      className="w-full text-left p-5 bg-white rounded-xl border border-[#0F1A26]/5 shadow-md hover:shadow-lg hover:border-[#EEBC3F]/30 transition-all duration-300 cursor-pointer group"
+    >
+      <p className="text-[#0F1A26]/80 text-sm leading-relaxed">
+        {tp(`${product.slug}.intro`)}
+      </p>
+      {/* Clickable indicator showing there's more content */}
+      <div className="flex items-center justify-center gap-2 mt-4 pt-3 border-t border-[#0F1A26]/10 text-[#EEBC3F] group-hover:text-[#0F1A26] transition-colors">
+        <span className="text-xs font-medium">{t('readMore.moreAvailable')}</span>
+        <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
+      </div>
+    </button>
+  );
+}
+
+// Component for showing intro text only (no button) when expanded
+function ProductDetailedDescriptionTextOnly({ product }: { product: Product }) {
+  const tp = useTranslations('products');
+  
+  // Check if this product has detailed description data
+  const hasDetailedDescription = () => {
+    try {
+      const intro = tp(`${product.slug}.intro`);
+      return intro && intro !== `${product.slug}.intro`;
+    } catch {
+      return false;
+    }
+  };
+
+  if (!hasDetailedDescription()) {
+    return null;
+  }
+
+  return (
+    <div className="p-5 bg-white rounded-xl border border-[#0F1A26]/5 shadow-md">
+      <p className="text-[#0F1A26]/80 text-sm leading-relaxed">
+        {tp(`${product.slug}.intro`)}
+      </p>
+    </div>
+  );
+}
+
+// Component for showing full content when expanded
+function ProductDetailedDescriptionFull({ product, selectedSize, quantity, t, addToCart }: ProductDetailedDescriptionProps) {
+  const tp = useTranslations('products');
+  
+  // Helper to safely get array data
+  const getArray = (path: string): string[] => {
+    try {
+      const raw = tp.raw(`${product.slug}.${path}`);
+      return Array.isArray(raw) ? raw : [];
+    } catch {
+      return [];
+    }
+  };
+
+  // Helper to safely get features array
+  const getFeatures = (): { title: string; desc: string }[] => {
+    try {
+      const raw = tp.raw(`${product.slug}.whyChoose.features`);
+      return Array.isArray(raw) ? raw : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const perfectFor = getArray('designInspiration.perfectFor');
+  const targetAudience = getArray('targetAudience.items');
+  const sizes = getArray('sizeGuide.sizes');
+  const features = getFeatures();
+
+  return (
+    <div className="space-y-4">
+      {/* 2-Column Layout for side-by-side content */}
+      <div className="grid lg:grid-cols-2 gap-4">
+        {/* Design Inspiration */}
+        {perfectFor.length > 0 && (
+          <div className="p-5 bg-white rounded-xl border border-[#0F1A26]/5 shadow-md">
+            <h4 className="font-bold text-[#0F1A26] mb-2 flex items-center gap-2 text-sm">
+              <Sparkles className="w-4 h-4 text-[#EEBC3F]" />
+              {tp(`${product.slug}.designInspiration.title`)}
+            </h4>
+            <p className="text-[#0F1A26]/70 text-sm mb-3">{tp(`${product.slug}.designInspiration.content`)}</p>
+            <ul className="space-y-1.5">
+              {perfectFor.map((item: string, idx: number) => (
+                <li key={idx} className="flex items-center gap-2 text-[#0F1A26]/70 text-sm">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#EEBC3F]" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+            <p className="text-[#0F1A26]/60 text-xs mt-3 italic">{tp(`${product.slug}.designInspiration.tagline`)}</p>
+          </div>
+        )}
+
+        {/* Target Audience */}
+        {targetAudience.length > 0 && (
+          <div className="p-5 bg-white rounded-xl border border-[#0F1A26]/5 shadow-md">
+            <h4 className="font-bold text-[#0F1A26] mb-2 text-sm">{tp(`${product.slug}.targetAudience.title`)}</h4>
+            <ul className="space-y-1.5">
+              {targetAudience.map((item: string, idx: number) => (
+                <li key={idx} className="flex items-center gap-2 text-[#0F1A26]/70 text-sm">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#EEBC3F]" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Size Guide */}
+        {sizes.length > 0 && (
+          <div className="p-5 bg-white rounded-xl border border-[#0F1A26]/5 shadow-md">
+            <h4 className="font-bold text-[#0F1A26] mb-2 flex items-center gap-2 text-sm">
+              <Ruler className="w-4 h-4 text-[#EEBC3F]" />
+              {tp(`${product.slug}.sizeGuide.title`)}
+            </h4>
+            <p className="text-[#0F1A26]/70 text-sm mb-1">{tp(`${product.slug}.sizeGuide.subtitle`)}</p>
+            <p className="text-[#0F1A26]/60 text-xs mb-2">{tp(`${product.slug}.sizeGuide.tip`)}</p>
+            <ul className="space-y-1 mb-2">
+              {sizes.map((size: string, idx: number) => (
+                <li key={idx} className="flex items-center gap-2 text-[#0F1A26]/70 text-sm">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#EEBC3F]" />
+                  {size}
+                </li>
+              ))}
+            </ul>
+            <p className="text-[#0F1A26]/60 text-xs italic">{tp(`${product.slug}.sizeGuide.proTip`)}</p>
+          </div>
+        )}
+
+        {/* About natOnat */}
+        <div className="p-5 bg-[#0F1A26] rounded-xl text-white">
+          <h4 className="font-bold mb-2 text-sm">{tp(`${product.slug}.about.title`)}</h4>
+          <p className="text-white/80 text-sm">{tp(`${product.slug}.about.content`)}</p>
+        </div>
+      </div>
+
+      {/* Why Choose - Full width */}
+      {features.length > 0 && (
+        <div className="p-5 bg-white rounded-xl border border-[#0F1A26]/5 shadow-md">
+          <h4 className="font-bold text-[#0F1A26] mb-2 flex items-center gap-2 text-sm">
+            <Shield className="w-4 h-4 text-[#EEBC3F]" />
+            {tp(`${product.slug}.whyChoose.title`)}
+          </h4>
+          <p className="text-[#0F1A26]/70 text-sm mb-3">{tp(`${product.slug}.whyChoose.intro`)}</p>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-2">
+            {features.map((feature: { title: string; desc: string }, idx: number) => (
+              <div key={idx} className="flex items-start gap-2 p-2.5 bg-[#F1EBE3] rounded-lg">
+                <span className="w-4 h-4 rounded-full bg-[#EEBC3F] text-white text-[10px] flex items-center justify-center flex-shrink-0 mt-0.5">✓</span>
+                <div>
+                  <span className="font-bold text-[#0F1A26] text-xs block">{feature.title}</span>
+                  <p className="text-[#0F1A26]/60 text-[11px] leading-tight">{feature.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* CTA - Full width */}
+      <div className="p-5 bg-gradient-to-r from-[#EEBC3F]/20 to-[#EEBC3F]/5 rounded-xl border border-[#EEBC3F]/30 text-center">
+        <h4 className="font-bold text-[#0F1A26] mb-1 text-sm">{tp(`${product.slug}.cta.title`)}</h4>
+        <p className="text-[#0F1A26]/70 text-sm mb-3">{tp(`${product.slug}.cta.content`)}</p>
+        <Button 
+          onClick={() => {
+            addToCart({
+              id: Number(product.id),
+              name: product.name,
+              slug: product.slug,
+              type: product.type,
+              price: product.price,
+              originalPrice: product.originalPrice,
+              image: product.image,
+              size: product.size ? selectedSize : undefined,
+              quantity: quantity,
+            });
+          }}
+          className="bg-[#EEBC3F] text-[#0F1A26] hover:bg-[#d4a535] h-10 px-6 rounded-lg font-bold text-sm"
+        >
+          {t('addToCart')}
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 interface ProductPageContentProps {
   product: Product;
@@ -23,12 +255,37 @@ interface ProductPageContentProps {
 
 export default function ProductPageContent({ product, prevProduct, nextProduct }: ProductPageContentProps) {
   const t = useTranslations('product');
-  const tp = useTranslations('products');
   const { addToCart, setBuyNowItem } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const router = useRouter();
   const [selectedSize, setSelectedSize] = useState("m");
+  const [selectedColor, setSelectedColor] = useState<string | null>(product.colors?.[0]?.id || null);
   const [quantity, setQuantity] = useState(1);
+  const [showDetails, setShowDetails] = useState(true); // Partially open - shows intro only
+  const [detailsExpanded, setDetailsExpanded] = useState(false); // Controls full expansion
+  const [showInfo, setShowInfo] = useState(true); // Fully open by default
+
+  // Helper function to get price based on selected size
+  const getPriceBySize = (sizeId: string) => {
+    if (product.sizePrices && product.sizePrices[sizeId as keyof typeof product.sizePrices]) {
+      return product.sizePrices[sizeId as keyof typeof product.sizePrices];
+    }
+    return { price: product.price, originalPrice: product.originalPrice };
+  };
+
+  const currentPrice = getPriceBySize(selectedSize);
+  
+  // Filter images based on selected color - memoized to prevent infinite loops
+  const colorImages = useMemo(() => {
+    if (!product.colors || !selectedColor) return product.images || [product.image];
+    const colorIndex = product.colors.findIndex(c => c.id === selectedColor);
+    if (colorIndex === -1) return product.images || [product.image];
+    // Each color has 3 images, get the slice for selected color
+    const startIdx = colorIndex * 3;
+    const endIdx = startIdx + 3;
+    return product.images?.slice(startIdx, endIdx) || [product.image];
+  }, [product.colors, product.images, product.image, selectedColor]);
+  
   const [activeImage, setActiveImage] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
   const [showShareToast, setShowShareToast] = useState(false);
@@ -59,13 +316,18 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
     setLoadedThumbnails(prev => new Set([...prev, idx]));
   }, []);
 
+  // Reset active image when color changes
+  useEffect(() => {
+    setActiveImage(0);
+  }, [selectedColor]);
+
   useEffect(() => {
     // Preload current image and adjacent ones
     const imagesToPreload = [activeImage, activeImage - 1, activeImage + 1].filter(
-      i => i >= 0 && i < (product.images?.length || 1)
+      i => i >= 0 && i < (colorImages.length || 1)
     );
     imagesToPreload.forEach(idx => handleThumbnailInView(idx));
-  }, [activeImage, product.images, handleThumbnailInView]);
+  }, [activeImage, colorImages, handleThumbnailInView]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -96,7 +358,7 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
         </div>
       )}
       
-      <main className="min-h-screen bg-[#F1EBE3] overflow-x-hidden" ref={ref}>
+      <main className="min-h-screen bg-[#F1EBE3] overflow-x-hidden pb-20 lg:pb-0" ref={ref}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12">
           {/* Product Navigation - Top */}
           <div className="flex items-center justify-between mb-8">
@@ -161,14 +423,33 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
           {/* Section 1 & 2: Gallery + Info Grid */}
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-start">
             {/* Section 1: Gallery */}
-            <div className={`space-y-4 sm:space-y-6 lg:sticky lg:top-28 transition-all duration-700 w-full max-w-full overflow-hidden ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'}`}>
-              {/* Main Image - Premium with Navigation Arrows */}
-              <div className="relative aspect-square bg-white/50 backdrop-blur-sm rounded-2xl sm:rounded-3xl flex items-center justify-center overflow-hidden border border-[#0F1A26]/10 shadow-2xl shadow-[#0F1A26]/10">
+            <div className={`space-y-4 sm:space-y-6 transition-all duration-700 w-full max-w-full overflow-hidden ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'}`}>
+              {/* Main Image - Premium with Navigation Arrows + Swipe Support */}
+              <div 
+                className="relative aspect-square bg-white/50 backdrop-blur-sm rounded-2xl sm:rounded-3xl flex items-center justify-center overflow-hidden border border-[#0F1A26]/10 shadow-2xl shadow-[#0F1A26]/10 touch-pan-y"
+                onTouchStart={(e) => {
+                  const touch = e.touches[0];
+                  (e.currentTarget as any).touchStartX = touch.clientX;
+                }}
+                onTouchEnd={(e) => {
+                  const touch = e.changedTouches[0];
+                  const startX = (e.currentTarget as any).touchStartX;
+                  const diff = startX - touch.clientX;
+                  const threshold = 50;
+                  if (Math.abs(diff) > threshold) {
+                    if (diff > 0) {
+                      setActiveImage((prev) => (prev === (colorImages.length || 1) - 1 ? 0 : prev + 1));
+                    } else {
+                      setActiveImage((prev) => (prev === 0 ? (colorImages.length || 1) - 1 : prev - 1));
+                    }
+                  }
+                }}
+              >
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(238,188,63,0.15),transparent_60%)]" />
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(255,255,255,0.05),transparent_50%)]" />
                 <div className="absolute inset-0 sm:p-4">
                   <Image 
-                    src={product.images?.[activeImage] || product.image} 
+                    src={colorImages[activeImage] || product.image} 
                     alt={product.name}
                     fill
                     sizes="(max-width: 768px) 100vw, 50vw"
@@ -205,7 +486,7 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
               <div className="space-y-2 sm:space-y-3 w-full max-w-full overflow-hidden">
                 {/* Thumbnails Row */}
                 <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 sm:pb-3 px-1 scrollbar-thin scrollbar-thumb-[#EEBC3F]/40 scrollbar-track-transparent hover:scrollbar-thumb-[#EEBC3F] max-w-full">
-                  {(product.images || [product.image]).map((img, idx) => (
+                  {(colorImages || [product.image]).map((img, idx) => (
                     <button
                       key={idx}
                       onClick={() => setActiveImage(idx)}
@@ -234,7 +515,7 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                   
                   {/* Dots */}
                   <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto max-w-[180px] sm:max-w-[280px] px-1">
-                    {(product.images || [product.image]).map((_, idx) => (
+                    {(colorImages || [product.image]).map((_, idx) => (
                       <button
                         key={idx}
                         onClick={() => setActiveImage(idx)}
@@ -249,7 +530,7 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                   </div>
                   
                   <span className="text-xs sm:text-sm text-[#0F1A26]/60 min-w-[16px] sm:min-w-[20px]">
-                    {String(product.images?.length || 1).padStart(2, '0')}
+                    {String(colorImages.length || 1).padStart(2, '0')}
                   </span>
                 </div>
               </div>
@@ -257,6 +538,8 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
 
             {/* Section 2: Product Info */}
             <div className={`lg:pl-8 transition-all duration-700 delay-100 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'}`}>
+              {/* Buy Box - Price + Size + Add to Cart */}
+              <div className="space-y-4">
               {/* Category & Actions */}
               <div className="flex items-start justify-between mb-4 sm:mb-6">
                 <div className="flex-1 min-w-0">
@@ -306,15 +589,15 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
 
               {/* Price - Premium */}
               <div className="flex flex-wrap items-baseline gap-2 sm:gap-4 mb-6 sm:mb-8 p-3 sm:p-6 bg-gradient-to-r from-[#EEBC3F]/20 to-[#EEBC3F]/5 rounded-xl sm:rounded-2xl border-2 border-[#EEBC3F]/30">
-                <span className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#0F1A26] tracking-tight">EGP {product.price}</span>
-                <span className="text-lg sm:text-xl md:text-2xl text-[#0F1A26]/50 line-through font-medium">EGP {product.originalPrice}</span>
-                <span className="bg-[#EEBC3F] text-[#0F1A26] text-xs sm:text-sm font-bold px-3 sm:px-4 py-1 sm:py-2 rounded-full shadow-lg">Save {Math.round((1 - product.price / product.originalPrice) * 100)}%</span>
+                <span className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#0F1A26] tracking-tight">EGP {currentPrice.price}</span>
+                <span className="text-lg sm:text-xl md:text-2xl text-[#0F1A26]/50 line-through font-medium">EGP {currentPrice.originalPrice}</span>
+                <span className="bg-[#EEBC3F] text-[#0F1A26] text-xs sm:text-sm font-bold px-3 sm:px-4 py-1 sm:py-2 rounded-full shadow-lg">Save {Math.round((1 - currentPrice.price / currentPrice.originalPrice) * 100)}%</span>
               </div>
 
               {/* Size Selection */}
               {product.size && (
                 <div className="mb-6 sm:mb-8">
-                  <div className="flex items-center justify-between mb-3 sm:mb-5">
+                  <div className="flex items-center justify-between mb-2 sm:mb-3">
                     <label className="text-xs sm:text-sm font-bold text-[#0F1A26] tracking-[0.1em] uppercase flex items-center gap-2">
                       <Award className="w-3 h-3 sm:w-4 sm:h-4 text-[#EEBC3F]" />
                       {t('size.select')}
@@ -323,6 +606,10 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                       <Ruler className="w-3 h-3 sm:w-4 sm:h-4" />
                       {t('size.howToMeasure')}
                     </Link>
+                  </div>
+                  <div className="flex items-center gap-2 mb-3 sm:mb-4 bg-[#EEBC3F]/10 rounded-lg px-3 py-2">
+                    <Ruler className="w-4 h-4 text-[#EEBC3F] flex-shrink-0" />
+                    <p className="text-[#0F1A26] text-xs font-semibold">{t('size.heightNote')}</p>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
                     {sizes.map((size) => (
@@ -335,7 +622,47 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                           }`}
                       >
                         <span className={`block font-bold text-base sm:text-lg ${selectedSize === size.id ? "text-white" : "text-[#0F1A26]"}`}>{size.label}</span>
-                        <span className={`block text-xs mt-1 ${selectedSize === size.id ? "text-white/70" : "text-[#0F1A26]/50"}`}>{size.range}</span>
+                        <span className={`block text-[10px] uppercase tracking-wider mt-0.5 ${selectedSize === size.id ? "text-white/60" : "text-[#0F1A26]/40"}`}>{t('size.heightLabel')}</span>
+                        <span className={`block text-xs mt-0.5 ${selectedSize === size.id ? "text-white/70" : "text-[#0F1A26]/50"}`}>{size.range}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Color Selection */}
+              {product.colors && product.colors.length > 0 && (
+                <div className="mb-4 sm:mb-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <label className="text-[#0F1A26] font-semibold text-sm sm:text-base flex items-center gap-2">
+                      {t('color.select') || 'Select Color'}
+                      <span className="text-[#EEBC3F]">·</span>
+                      <span className="text-[#0F1A26]/60 font-normal">{product.colors.find(c => c.id === selectedColor)?.name}</span>
+                    </label>
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    {product.colors.map((color) => (
+                      <button
+                        key={color.id}
+                        onClick={() => {
+                          setSelectedColor(color.id);
+                          setActiveImage(0); // Reset to first image of new color
+                        }}
+                        className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl border-2 overflow-hidden transition-all duration-300 ${selectedColor === color.id
+                            ? "border-[#EEBC3F] shadow-lg shadow-[#EEBC3F]/30 scale-105 ring-2 ring-[#EEBC3F]/20"
+                            : "border-[#0F1A26]/10 hover:border-[#EEBC3F]/50 hover:shadow-md"
+                          }`}
+                      >
+                        <img
+                          src={color.image}
+                          alt={color.name}
+                          className="w-full h-full object-cover"
+                        />
+                        {selectedColor === color.id && (
+                          <div className="absolute inset-0 bg-[#EEBC3F]/20 flex items-center justify-center">
+                            <Check className="w-5 h-5 sm:w-6 sm:h-6 text-[#0F1A26] bg-white rounded-full p-1" />
+                          </div>
+                        )}
                       </button>
                     ))}
                   </div>
@@ -366,10 +693,13 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                       name: product.name,
                       slug: product.slug,
                       type: product.type,
-                      price: product.price,
-                      originalPrice: product.originalPrice,
-                      image: product.image,
+                      price: currentPrice.price,
+                      originalPrice: currentPrice.originalPrice,
+                      image: product.colors && selectedColor 
+                        ? product.colors.find(c => c.id === selectedColor)?.image || product.image 
+                        : product.image,
                       size: product.size ? selectedSize : undefined,
+                      color: product.colors && selectedColor ? selectedColor : undefined,
                       quantity: quantity,
                     });
                   }}
@@ -384,10 +714,13 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                       name: product.name,
                       slug: product.slug,
                       type: product.type,
-                      price: product.price,
-                      originalPrice: product.originalPrice,
-                      image: product.image,
+                      price: currentPrice.price,
+                      originalPrice: currentPrice.originalPrice,
+                      image: product.colors && selectedColor 
+                        ? product.colors.find(c => c.id === selectedColor)?.image || product.image 
+                        : product.image,
                       size: product.size ? selectedSize : undefined,
+                      color: product.colors && selectedColor ? selectedColor : undefined,
                       quantity: quantity,
                     });
                     router.push("/checkout");
@@ -397,6 +730,7 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                   {t('buyNow')}
                 </Button>
               </div>
+              </div>{/* End Sticky Buy Box */}
 
               {/* Benefits Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
@@ -420,170 +754,103 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
             </div>
           </div>
 
-          {/* Detailed Product Description - Full width BELOW the main grid */}
-          {product.slug === 'vibra' && (
-            <div className="mt-8 lg:mt-12 space-y-6">
-              {/* Intro - Full width */}
-              <div className="p-6 bg-white rounded-2xl border border-[#0F1A26]/5 shadow-lg">
-                <p className="text-[#0F1A26]/80 text-sm leading-relaxed">
-                  {tp('vibra.intro')}
-                </p>
+          {/* Detailed Product Description - Partially open (intro only) */}
+          <div className="mt-6 lg:mt-8">
+            <button
+              onClick={() => setDetailsExpanded(!detailsExpanded)}
+              className="w-full flex items-center justify-between p-4 bg-white rounded-xl border border-[#0F1A26]/5 shadow-sm hover:shadow-md transition-all duration-300 group"
+            >
+              <span className="font-bold text-[#0F1A26] text-sm">{t('readMore.detailsTitle')}</span>
+              <div className={`w-8 h-8 rounded-full bg-[#EEBC3F]/10 flex items-center justify-center group-hover:bg-[#EEBC3F] transition-all ${detailsExpanded ? 'rotate-180' : ''}`}>
+                <ChevronDown className="w-5 h-5 text-[#EEBC3F] group-hover:text-white" />
               </div>
-
-              {/* Design Inspiration + Target Audience - Side by side */}
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="p-6 bg-white rounded-2xl border border-[#0F1A26]/5 shadow-lg">
-                  <h4 className="font-bold text-[#0F1A26] mb-3 flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-[#EEBC3F]" />
-                    {tp('vibra.designInspiration.title')}
-                  </h4>
-                  <p className="text-[#0F1A26]/70 text-sm mb-3">{tp('vibra.designInspiration.content')}</p>
-                  <ul className="space-y-2">
-                    {tp.raw('vibra.designInspiration.perfectFor').map((item: string, idx: number) => (
-                      <li key={idx} className="flex items-center gap-2 text-[#0F1A26]/70 text-sm">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#EEBC3F]" />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="text-[#0F1A26]/60 text-xs mt-3 italic">{tp('vibra.designInspiration.tagline')}</p>
-                </div>
-
-                <div className="p-6 bg-white rounded-2xl border border-[#0F1A26]/5 shadow-lg">
-                  <h4 className="font-bold text-[#0F1A26] mb-3">{tp('vibra.targetAudience.title')}</h4>
-                  <ul className="space-y-2">
-                    {tp.raw('vibra.targetAudience.items').map((item: string, idx: number) => (
-                      <li key={idx} className="flex items-center gap-2 text-[#0F1A26]/70 text-sm">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#EEBC3F]" />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+            </button>
+            {/* Show intro card with click button when collapsed */}
+            {!detailsExpanded && (
+              <div className="mt-4">
+                <ProductDetailedDescriptionIntro product={product} onExpand={() => setDetailsExpanded(true)} />
               </div>
-
-              {/* Why Choose - Full width with grid for features */}
-              <div className="p-6 bg-white rounded-2xl border border-[#0F1A26]/5 shadow-lg">
-                <h4 className="font-bold text-[#0F1A26] mb-3 flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-[#EEBC3F]" />
-                  {tp('vibra.whyChoose.title')}
-                </h4>
-                <p className="text-[#0F1A26]/70 text-sm mb-4">{tp('vibra.whyChoose.intro')}</p>
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {tp.raw('vibra.whyChoose.features').map((feature: { title: string; desc: string }, idx: number) => (
-                    <div key={idx} className="flex items-start gap-3 p-3 bg-[#F1EBE3] rounded-xl">
-                      <span className="w-5 h-5 rounded-full bg-[#EEBC3F] text-white text-xs flex items-center justify-center flex-shrink-0">✓</span>
-                      <div>
-                        <span className="font-bold text-[#0F1A26] text-sm">{feature.title}</span>
-                        <p className="text-[#0F1A26]/60 text-xs">{feature.desc}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Size Guide + About - Side by side */}
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="p-6 bg-white rounded-2xl border border-[#0F1A26]/5 shadow-lg">
-                  <h4 className="font-bold text-[#0F1A26] mb-3 flex items-center gap-2">
-                    <Ruler className="w-4 h-4 text-[#EEBC3F]" />
-                    {tp('vibra.sizeGuide.title')}
-                  </h4>
-                  <p className="text-[#0F1A26]/70 text-sm mb-2">{tp('vibra.sizeGuide.subtitle')}</p>
-                  <p className="text-[#0F1A26]/60 text-xs mb-3">{tp('vibra.sizeGuide.tip')}</p>
-                  <ul className="space-y-1 mb-3">
-                    {tp.raw('vibra.sizeGuide.sizes').map((size: string, idx: number) => (
-                      <li key={idx} className="flex items-center gap-2 text-[#0F1A26]/70 text-sm">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#EEBC3F]" />
-                        {size}
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="text-[#0F1A26]/60 text-xs italic">{tp('vibra.sizeGuide.proTip')}</p>
-                </div>
-
-                <div className="p-6 bg-[#0F1A26] rounded-2xl text-white">
-                  <h4 className="font-bold mb-2">{tp('vibra.about.title')}</h4>
-                  <p className="text-white/80 text-sm">{tp('vibra.about.content')}</p>
-                </div>
-              </div>
-
-              {/* CTA - Full width */}
-              <div className="p-6 bg-gradient-to-r from-[#EEBC3F]/20 to-[#EEBC3F]/5 rounded-2xl border border-[#EEBC3F]/30 text-center">
-                <h4 className="font-bold text-[#0F1A26] mb-2">{tp('vibra.cta.title')}</h4>
-                <p className="text-[#0F1A26]/70 text-sm mb-4">{tp('vibra.cta.content')}</p>
-                <Button 
-                  onClick={() => {
-                    addToCart({
-                      id: product.id,
-                      name: product.name,
-                      slug: product.slug,
-                      type: product.type,
-                      price: product.price,
-                      originalPrice: product.originalPrice,
-                      image: product.image,
-                      size: product.size ? selectedSize : undefined,
-                      quantity: quantity,
-                    });
-                  }}
-                  className="bg-[#EEBC3F] text-[#0F1A26] hover:bg-[#d4a535] h-12 px-8 rounded-xl font-bold"
-                >
-                  {t('addToCart')}
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Sections 3 & 4: Why You'll Love It + FAQs - Side by Side */}
-          <div className="mt-16 lg:mt-24">
-            <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
-              {/* Section 3: Why You'll Love It (We Love) */}
-              <div className={`transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-                <div className="bg-white rounded-3xl p-6 md:p-8 border border-[#0F1A26]/5 shadow-lg h-full">
-                  <h3 className="text-base font-bold text-[#0F1A26] mb-5 tracking-[0.1em] uppercase flex items-center gap-3">
-                    <Check className="w-5 h-5 text-[#EEBC3F]" />
-                    {t('description.title')}
-                  </h3>
-                  <ul className="space-y-3">
-                    {[t('description.1'), t('description.2'), t('description.3'), t('description.4')].map((item, index) => (
-                      <li key={index} className="flex items-center gap-3 text-[#0F1A26]/70 p-3 bg-[#F1EBE3] rounded-xl">
-                        <div className="w-8 h-8 rounded-lg bg-[#EEBC3F]/10 flex items-center justify-center flex-shrink-0">
-                          <Check className="w-4 h-4 text-[#EEBC3F]" strokeWidth={2} />
-                        </div>
-                        <span className="font-medium text-sm">{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-
-              {/* Section 4: FAQs */}
-              <div className={`transition-all duration-700 delay-100 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-                <div className="h-full">
-                  <FAQSection
-                    title={t('faq.title')}
-                    translationNamespace="faqs"
-                    faqs={
-                      product.category === "luggage-covers" ? [
-                        { questionKey: "questions.sizeCover.question", answerKey: "questions.sizeCover.answer" },
-                        { questionKey: "questions.washCover.question", answerKey: "questions.washCover.answer" },
-                        { questionKey: "questions.security.question", answerKey: "questions.security.answer" },
-                        { questionKey: "questions.handles.question", answerKey: "questions.handles.answer" },
-                      ] : product.category === "passport-wallets" ? [
-                        { questionKey: "questions.rfid.question", answerKey: "questions.rfid.answer" },
-                        { questionKey: "questions.cards.question", answerKey: "questions.cards.answer" },
-                        { questionKey: "questions.leather.question", answerKey: "questions.leather.answer" },
-                        { questionKey: "questions.pocket.question", answerKey: "questions.pocket.answer" },
-                      ] : [
-                        { questionKey: "questions.returnPolicy.question", answerKey: "questions.returnPolicy.answer" },
-                        { questionKey: "questions.exchange.question", answerKey: "questions.exchange.answer" },
-                        { questionKey: "questions.freeShip.question", answerKey: "questions.freeShip.answer" },
-                      ]
-                    }
+            )}
+            {/* Show intro text (no button) + full content when expanded */}
+            {detailsExpanded && (
+              <div className="mt-4 space-y-4">
+                <ProductDetailedDescriptionTextOnly product={product} />
+                <div className="animate-in slide-in-from-top-2 duration-300">
+                  <ProductDetailedDescriptionFull 
+                    product={product} 
+                    selectedSize={selectedSize} 
+                    quantity={quantity} 
+                    t={t}
+                    addToCart={addToCart}
                   />
                 </div>
               </div>
-            </div>
+            )}
+          </div>
+
+          {/* Sections 3 & 4: Why You'll Love It + FAQs - Fully open by default */}
+          <div className="mt-6 lg:mt-8">
+            <button
+              onClick={() => setShowInfo(!showInfo)}
+              className="w-full flex items-center justify-between p-4 bg-white rounded-xl border border-[#0F1A26]/5 shadow-sm hover:shadow-md transition-all duration-300 group"
+            >
+              <span className="font-bold text-[#0F1A26] text-sm">{t('readMore.infoTitle')}</span>
+              <div className={`w-8 h-8 rounded-full bg-[#EEBC3F]/10 flex items-center justify-center group-hover:bg-[#EEBC3F] transition-all ${showInfo ? 'rotate-180' : ''}`}>
+                <ChevronDown className="w-5 h-5 text-[#EEBC3F] group-hover:text-white" />
+              </div>
+            </button>
+            {showInfo && (
+              <div className="mt-4 animate-in slide-in-from-top-2 duration-300">
+                <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
+                  {/* Section 3: Why You'll Love It (We Love) */}
+                  <div className={`transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+                    <div className="bg-white rounded-3xl p-6 md:p-8 border border-[#0F1A26]/5 shadow-lg h-full">
+                      <h3 className="text-base font-bold text-[#0F1A26] mb-5 tracking-[0.1em] uppercase flex items-center gap-3">
+                        <Check className="w-5 h-5 text-[#EEBC3F]" />
+                        {t('description.title')}
+                      </h3>
+                      <ul className="space-y-3">
+                        {[t('description.1'), t('description.2'), t('description.3'), t('description.4')].map((item, index) => (
+                          <li key={index} className="flex items-center gap-3 text-[#0F1A26]/70 p-3 bg-[#F1EBE3] rounded-xl">
+                            <div className="w-8 h-8 rounded-lg bg-[#EEBC3F]/10 flex items-center justify-center flex-shrink-0">
+                              <Check className="w-4 h-4 text-[#EEBC3F]" strokeWidth={2} />
+                            </div>
+                            <span className="font-medium text-sm">{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  {/* Section 4: FAQs */}
+                  <div className={`transition-all duration-700 delay-100 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+                    <div className="h-full">
+                      <FAQSection
+                        title={t('faq.title')}
+                        translationNamespace="faqs"
+                        faqs={
+                          product.category === "luggage-covers" ? [
+                            { questionKey: "questions.sizeCover.question", answerKey: "questions.sizeCover.answer" },
+                            { questionKey: "questions.washCover.question", answerKey: "questions.washCover.answer" },
+                            { questionKey: "questions.security.question", answerKey: "questions.security.answer" },
+                            { questionKey: "questions.handles.question", answerKey: "questions.handles.answer" },
+                          ] : product.category === "passport-wallets" ? [
+                            { questionKey: "questions.rfid.question", answerKey: "questions.rfid.answer" },
+                            { questionKey: "questions.cards.question", answerKey: "questions.cards.answer" },
+                            { questionKey: "questions.leather.question", answerKey: "questions.leather.answer" },
+                            { questionKey: "questions.pocket.question", answerKey: "questions.pocket.answer" },
+                          ] : [
+                            { questionKey: "questions.returnPolicy.question", answerKey: "questions.returnPolicy.answer" },
+                            { questionKey: "questions.exchange.question", answerKey: "questions.exchange.answer" },
+                            { questionKey: "questions.freeShip.question", answerKey: "questions.freeShip.answer" },
+                          ]
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Related Products */}
@@ -617,6 +884,37 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                 </Link>
               ))}
             </div>
+          </div>
+        </div>
+
+        {/* Mobile Sticky Buy Bar */}
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#0F1A26]/10 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] z-50 px-4 py-3">
+          <div className="flex items-center gap-3">
+            <div className="flex-1 min-w-0">
+              <h3 className="text-[#0F1A26] font-bold text-sm truncate">{product.name}</h3>
+              <div className="flex items-baseline gap-2">
+                <span className="text-[#0F1A26] font-bold text-base">EGP {currentPrice.price}</span>
+                <span className="text-[#0F1A26]/40 text-xs line-through">EGP {currentPrice.originalPrice}</span>
+              </div>
+            </div>
+            <Button 
+              onClick={() => {
+                addToCart({
+                  id: product.id,
+                  name: product.name,
+                  slug: product.slug,
+                  type: product.type,
+                  price: currentPrice.price,
+                  originalPrice: currentPrice.originalPrice,
+                  image: product.image,
+                  size: product.size ? selectedSize : undefined,
+                  quantity: quantity,
+                });
+              }}
+              className="bg-[#0F1A26] text-white hover:bg-[#EEBC3F] hover:text-[#0F1A26] h-12 px-6 rounded-xl font-bold text-sm transition-all duration-300 flex-shrink-0"
+            >
+              {t('addToCart')}
+            </Button>
           </div>
         </div>
       </main>

@@ -80,7 +80,7 @@ export default function WishlistPage() {
                     alt={item.name}
                     fill
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                    className="object-contain transition-transform duration-500 group-hover:scale-105"
                   />
                   {/* Sale Badge */}
                   {item.originalPrice > item.price && (

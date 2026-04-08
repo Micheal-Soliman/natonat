@@ -44,28 +44,28 @@ export function BenefitsStrip() {
       icon: Shield,
       title: t('items.protection.title'),
       subtitle: t('items.protection.subtitle'),
-      image: "/octopus photo/Black/1.webp",
+      image: "/octopus photo/Black/1.png",
     },
     {
       number: t('items.durability.number'),
       icon: Sparkles,
       title: t('items.durability.title'),
       subtitle: t('items.durability.subtitle'),
-      image: "/octopus photo/Dubai/1.webp",
+      image: "/octopus photo/Dubai/1.png",
     },
     {
       number: t('items.recognition.number'),
       icon: Eye,
       title: t('items.recognition.title'),
       subtitle: t('items.recognition.subtitle'),
-      image: "/octopus photo/Egypt Skyline/1.webp",
+      image: "/octopus photo/Egypt Skyline/1.png",
     },
     {
       number: t('items.ecosystem.number'),
       icon: Briefcase,
       title: t('items.ecosystem.title'),
       subtitle: t('items.ecosystem.subtitle'),
-      image: "/octopus photo/Egyptian Queen/1.webp",
+      image: "/octopus photo/Egyptian Queen/1.png",
     },
   ];
 
@@ -105,7 +105,7 @@ export function BenefitsStrip() {
                   alt={benefit.title}
                   fill
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                  className="w-full h-full object-cover opacity-90 transition-all duration-700 group-hover:opacity-100 group-hover:scale-105"
+                  className="w-full h-full object-contain opacity-90 transition-all duration-700 group-hover:opacity-100 group-hover:scale-105"
                   loading="lazy"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />

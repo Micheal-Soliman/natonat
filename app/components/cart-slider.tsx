@@ -17,6 +17,7 @@ export function CartSlider() {
     isOpen,
     closeCart,
     totalItems,
+    setBuyNowItem,
   } = useCart();
 
   const shipping = subtotal > 1000 ? 0 : 75;
@@ -102,14 +103,18 @@ export function CartSlider() {
                           {item.name}
                         </h3>
                         {(item.size || item.color) && (
-                          <p className="text-xs text-[#0F1A26]/60 mt-0.5">
+                          <div className="flex flex-wrap gap-1.5 mt-1.5">
                             {item.size && (
-                              <span className="bg-[#EEBC3F]/20 px-2 py-0.5 rounded text-[#0F1A26]">
+                              <span className="bg-[#EEBC3F]/20 px-2 py-0.5 rounded text-[#0F1A26] text-xs font-medium">
                                 {t("size")} {item.size.toUpperCase()}
                               </span>
                             )}
-                            {item.color && ` • ${item.color}`}
-                          </p>
+                            {item.color && (
+                              <span className="bg-[#EEBC3F]/20 px-2 py-0.5 rounded text-[#0F1A26] text-xs font-medium capitalize">
+                                {t("color")} {item.color}
+                              </span>
+                            )}
+                          </div>
                         )}
                       </div>
                       <button
@@ -178,7 +183,13 @@ export function CartSlider() {
               </div>
             </div>
 
-            <Link href="/checkout" onClick={closeCart}>
+            <Link 
+              href="/checkout" 
+              onClick={() => {
+                setBuyNowItem(null); // Clear buyNowItem to show all cart items
+                closeCart();
+              }}
+            >
               <Button className="w-full bg-[#EEBC3F] text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white rounded-full h-14 font-bold text-base transition-all duration-300 mb-3">
                 {t("summary.proceedToCheckout")}
               </Button>

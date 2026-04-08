@@ -187,13 +187,13 @@ export default function HowItWorksPage() {
 
 function HowItWorksContent() {
   const t = useTranslations('howItWorks');
+  const tp = useTranslations('products');
   const [isVisible, setIsVisible] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   const steps = getSteps(t);
   const sizes = getSizes(t);
-  const benefits = getBenefits(t);
   const faqs = getFaqs(t);
 
   useEffect(() => {
@@ -376,23 +376,24 @@ function HowItWorksContent() {
           </div>
         </div>
 
-        {/* Benefits */}
+        {/* Why Choose - Using Product Features */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
           <div className="text-center mb-8 md:mb-12">
             <span className="text-[#EEBC3F] text-xs font-semibold tracking-[0.3em] uppercase">{t('benefits.label')}</span>
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-[#0F1A26] mt-2 md:mt-3">{t('benefits.title')}</h2>
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-[#0F1A26] mt-2 md:mt-3">{tp('vibra.whyChoose.title')}</h2>
+            <p className="text-[#0F1A26]/70 mt-4 max-w-2xl mx-auto">{tp('vibra.whyChoose.intro')}</p>
           </div>
-          <div className="grid md:grid-cols-3 gap-6 md:gap-8">
-            {benefits.map((benefit, index) => (
+          <div className="grid md:grid-cols-3 gap-4 md:gap-6">
+            {[0, 1, 2, 3, 4].map((index) => (
               <div 
                 key={index} 
-                className="text-center group"
+                className="text-center group bg-white p-5 rounded-xl border border-[#0F1A26]/5 shadow-sm hover:shadow-md transition-all"
               >
-                <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl md:rounded-3xl bg-gradient-to-br from-[#EEBC3F]/20 to-[#EEBC3F]/5 flex items-center justify-center mx-auto mb-4 md:mb-6 group-hover:from-[#EEBC3F] group-hover:to-[#EEBC3F] transition-all duration-300">
-                  <benefit.icon className="w-8 h-8 md:w-10 md:h-10 text-[#EEBC3F] group-hover:text-[#0F1A26] transition-colors" />
+                <div className="w-12 h-12 rounded-full bg-[#EEBC3F]/10 flex items-center justify-center mx-auto mb-3">
+                  <Check className="w-6 h-6 text-[#EEBC3F]" />
                 </div>
-                <h3 className="text-lg md:text-xl font-bold text-[#0F1A26] mb-2 md:mb-3">{t(`benefits.${benefit.key}.title`)}</h3>
-                <p className="text-[#0F1A26]/60 leading-relaxed text-sm md:text-base">{t(`benefits.${benefit.key}.description`)}</p>
+                <h3 className="text-base font-bold text-[#0F1A26] mb-2">{tp(`vibra.whyChoose.features.${index}.title`)}</h3>
+                <p className="text-[#0F1A26]/60 leading-relaxed text-sm">{tp(`vibra.whyChoose.features.${index}.desc`)}</p>
               </div>
             ))}
           </div>

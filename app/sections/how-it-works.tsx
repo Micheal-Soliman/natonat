@@ -78,54 +78,47 @@ export function HowItWorks() {
           </div>
 
           {/* Right - Size Guide Card */}
-          <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10">
-            <h3 className="text-xl font-bold text-white mb-6">
+          <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+            <h3 className="text-xl font-bold text-white mb-4">
               {tg('title')}
             </h3>
 
-            {/* Visual Size Cards Grid */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
+            {/* Size Guide Grid */}
+            <div className="grid grid-cols-2 gap-3">
               {[
-                { size: "S", cm: "45-53", inch: "18-21", type: tg('sizes.s.type'), icon: "/s.png" },
-                { size: "M", cm: "55-63", inch: "22-25", type: tg('sizes.m.type'), icon: "/m.png" },
-                { size: "L", cm: "65-73", inch: "26-29", type: tg('sizes.l.type'), icon: "/l.png" },
-                { size: "XL", cm: "75-80", inch: "30-32", type: tg('sizes.xl.type'), icon: "/xl.png" },
+                { size: "S", cm: "45-53", inch: "18-21", type: tg('sizes.s.type') },
+                { size: "M", cm: "55-63", inch: "22-25", type: tg('sizes.m.type') },
+                { size: "L", cm: "65-73", inch: "26-29", type: tg('sizes.l.type') },
+                { size: "XL", cm: "75-80", inch: "30-32", type: tg('sizes.xl.type') },
               ].map((item) => (
                 <div
                   key={item.size}
                   className="bg-white/10 rounded-xl p-4 border border-white/10 hover:border-[#EEBC3F]/30 transition-all duration-300 text-center"
                 >
-                  {/* Size Image */}
-                  <div className="w-full h-20 flex items-center justify-center">
-                    <NextImage
-                      src={item.icon}
-                      alt={`Size ${item.size}`}
-                      width={80}
-                      height={80}
-                      className="object-contain"
-                    />
-                  </div>
-
-                  {/* Size Label */}
-                  <span className="text-[#EEBC3F] font-bold text-2xl">{item.size}</span>
+                  {/* Size Letter */}
+                  <span className="text-[#EEBC3F] font-bold text-3xl">{item.size}</span>
 
                   {/* Type */}
-                  <p className="text-white font-semibold text-sm mt-1">{item.type}</p>
+                  <p className="text-white font-medium text-sm mt-1">{item.type}</p>
 
-                  {/* Measurements - CM primary */}
-                  <div className="mt-2 space-y-1">
-                    <p className="text-[#EEBC3F] font-bold text-base">
+                  {/* Main Measurement */}
+                  <div className="mt-2">
+                    <p className="text-[#EEBC3F] font-bold text-lg">
                       {item.cm} <span className="text-white/60 text-sm font-normal">cm</span>
                     </p>
-                    <p className="text-white/50 text-xs">
-                      {item.inch}" <span className="text-white/30">({tg('heightOnly')})</span>
-                    </p>
+                    <p className="text-white/50 text-xs">{item.inch}" inches</p>
+                  </div>
+
+                  {/* Height Only - Without Wheels */}
+                  <div className="mt-3 pt-3 border-t border-white/20">
+                    <p className="text-white/60 text-xs">{tg('heightOnly')}</p>
+                    <p className="text-white/80 text-xs font-medium">({item.cm} cm)</p>
                   </div>
                 </div>
               ))}
             </div>
 
-            <p className="text-white/70 text-xs text-center font-medium">
+            <p className="text-white/70 text-xs text-center font-medium mt-4">
               {tg('note')}
             </p>
           </div>

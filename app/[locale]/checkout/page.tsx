@@ -7,7 +7,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, CreditCard, Truck, Shield, Check, MapPin, Phone, Mail, Building, Newspaper } from "lucide-react";
+import { ArrowLeft, CreditCard, Truck, Shield, Check, MapPin, Phone, Mail, Building, Newspaper, Store, Package } from "lucide-react";
 import { useCart } from "@/app/lib/cart-context";
 import { Loading } from "@/app/components/loading";
 
@@ -43,6 +43,7 @@ function CheckoutContent() {
     newsletter: false,
   });
   const [paymentMethod, setPaymentMethod] = useState("cod");
+  const [deliveryMethod, setDeliveryMethod] = useState("delivery");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [orderId, setOrderId] = useState<string>("");
@@ -157,109 +158,192 @@ function CheckoutContent() {
                   </div>
                 </div>
 
-                {/* Shipping */}
+                {/* Delivery Method */}
                 <div className="bg-white rounded-2xl p-6 border border-[#0F1A26]/5">
                   <h2 className="text-lg font-semibold text-[#0F1A26] mb-4 flex items-center gap-2">
-                    <Truck className="w-5 h-5 text-[#EEBC3F]" />
-                    {t('form.shipping.title')}
+                    <Package className="w-5 h-5 text-[#EEBC3F]" />
+                    {t('form.delivery.title')}
                   </h2>
-                  <p className="text-sm text-[#EEBC3F] mb-4 font-medium">
-                    {t('form.shipping.egyptOnly')}
-                  </p>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm text-[#0F1A26]/60 mb-1 block">{t('form.shipping.firstName')}</label>
+                  <div className="space-y-3">
+                    <label 
+                      className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                        deliveryMethod === "delivery" 
+                          ? "border-[#EEBC3F] bg-[#EEBC3F]/5" 
+                          : "border-[#0F1A26]/10"
+                      }`}
+                    >
                       <input
-                        type="text"
-                        required
-                        value={formData.firstName}
-                        onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                        className="w-full px-4 py-3 rounded-xl border border-[#0F1A26]/10 focus:border-[#EEBC3F] focus:outline-none transition-colors"
-                        placeholder={t('form.shipping.firstNamePlaceholder')}
+                        type="radio"
+                        name="delivery"
+                        value="delivery"
+                        checked={deliveryMethod === "delivery"}
+                        onChange={(e) => setDeliveryMethod(e.target.value)}
+                        className="w-4 h-4 accent-[#EEBC3F]"
                       />
-                    </div>
-                    <div>
-                      <label className="text-sm text-[#0F1A26]/60 mb-1 block">{t('form.shipping.lastName')}</label>
+                      <div className="flex-1">
+                        <span className="font-medium text-[#0F1A26]">{t('form.delivery.deliveryOption.title')}</span>
+                        <p className="text-xs text-[#0F1A26]/50">{t('form.delivery.deliveryOption.subtitle')}</p>
+                      </div>
+                    </label>
+                    <label 
+                      className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                        deliveryMethod === "pickup" 
+                          ? "border-[#EEBC3F] bg-[#EEBC3F]/5" 
+                          : "border-[#0F1A26]/10"
+                      }`}
+                    >
                       <input
-                        type="text"
-                        required
-                        value={formData.lastName}
-                        onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                        className="w-full px-4 py-3 rounded-xl border border-[#0F1A26]/10 focus:border-[#EEBC3F] focus:outline-none transition-colors"
-                        placeholder={t('form.shipping.lastNamePlaceholder')}
+                        type="radio"
+                        name="delivery"
+                        value="pickup"
+                        checked={deliveryMethod === "pickup"}
+                        onChange={(e) => setDeliveryMethod(e.target.value)}
+                        className="w-4 h-4 accent-[#EEBC3F]"
                       />
-                    </div>
-                    <div className="col-span-2">
-                      <label className="text-sm text-[#0F1A26]/60 mb-1 block">{t('form.shipping.address')}</label>
-                      <div className="flex gap-2">
-                        <div className="relative flex-1">
-                          <MapPin className="w-4 h-4 text-[#0F1A26]/40 absolute left-4 top-1/2 -translate-y-1/2" />
-                          <input
-                            type="text"
-                            required
-                            value={formData.address}
-                            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                            className="w-full px-4 py-3 pl-11 rounded-xl border border-[#0F1A26]/10 focus:border-[#EEBC3F] focus:outline-none transition-colors"
-                            placeholder={t('form.shipping.addressPlaceholder')}
-                          />
+                      <div className="flex-1">
+                        <span className="font-medium text-[#0F1A26]">{t('form.delivery.pickupOption.title')}</span>
+                        <p className="text-xs text-[#0F1A26]/50">{t('form.delivery.pickupOption.subtitle')}</p>
+                      </div>
+                    </label>
+
+                    {/* Pickup Location Details */}
+                    {deliveryMethod === "pickup" && (
+                      <div className="mx-4 md:ml-7 p-3 md:p-4 bg-[#EEBC3F]/10 rounded-xl border border-[#EEBC3F]/30 animate-in slide-in-from-top-2 duration-200">
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="w-8 h-8 rounded-full bg-[#EEBC3F] flex items-center justify-center">
+                            <Store className="w-4 h-4 text-white" />
+                          </div>
+                          <p className="text-sm font-semibold text-[#0F1A26]">{t('form.delivery.pickupLocation.title')}</p>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (navigator.geolocation) {
-                              navigator.geolocation.getCurrentPosition(
-                                (position) => {
-                                  setFormData({ 
-                                    ...formData, 
-                                    address: `Lat: ${position.coords.latitude.toFixed(6)}, Lng: ${position.coords.longitude.toFixed(6)}` 
-                                  });
-                                },
-                                (error) => {
-                                  console.error('Error getting location:', error);
-                                  alert(t('form.location.error'));
-                                }
-                              );
-                            } else {
-                              alert(t('form.location.notSupported'));
-                            }
-                          }}
-                          className="px-4 py-3 rounded-xl border-2 border-[#EEBC3F]/30 bg-[#EEBC3F]/5 hover:bg-[#EEBC3F]/10 hover:border-[#EEBC3F] transition-all flex items-center gap-2 whitespace-nowrap"
+                        <div className="space-y-2">
+                          <div className="flex flex-col p-3 bg-white rounded-lg">
+                            <span className="text-sm text-[#0F1A26]/60 mb-1">{t('form.delivery.pickupLocation.addressLabel')}</span>
+                            <span className="text-sm font-medium text-[#0F1A26]">{t('form.pickupLocation.name')}</span>
+                            <span className="text-sm font-medium text-[#0F1A26]">{t('form.pickupLocation.address')}</span>
+                          </div>
+                        </div>
+                        <a 
+                          href={t('form.pickupLocation.mapUrl')} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-2 mt-3 p-2 bg-white rounded-lg text-sm font-medium text-[#0F1A26] hover:bg-[#EEBC3F]/20 transition-colors"
                         >
                           <MapPin className="w-4 h-4 text-[#EEBC3F]" />
-                          <span className="text-sm font-medium text-[#0F1A26]">{t('form.location.detect')}</span>
-                        </button>
+                          {t('form.delivery.pickupLocation.viewOnMap')}
+                        </a>
+                        <p className="text-xs text-[#0F1A26]/60 mt-3 text-center">
+                          {t('form.delivery.pickupLocation.instruction')}
+                        </p>
                       </div>
-                    </div>
-                    <div>
-                      <label className="text-sm text-[#0F1A26]/60 mb-1 block">{t('form.shipping.city')}</label>
-                      <div className="relative">
-                        <Building className="w-4 h-4 text-[#0F1A26]/40 absolute left-4 top-1/2 -translate-y-1/2" />
+                    )}
+                  </div>
+                </div>
+
+                {/* Shipping - only show when delivery is selected */}
+                {deliveryMethod === "delivery" && (
+                  <div className="bg-white rounded-2xl p-6 border border-[#0F1A26]/5">
+                    <h2 className="text-lg font-semibold text-[#0F1A26] mb-4 flex items-center gap-2">
+                      <Truck className="w-5 h-5 text-[#EEBC3F]" />
+                      {t('form.shipping.title')}
+                    </h2>
+                    <p className="text-sm text-[#EEBC3F] mb-4 font-medium">
+                      {t('form.shipping.egyptOnly')}
+                    </p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm text-[#0F1A26]/60 mb-1 block">{t('form.shipping.firstName')}</label>
                         <input
                           type="text"
                           required
-                          value={formData.city}
-                          onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                          className="w-full px-4 py-3 pl-11 rounded-xl border border-[#0F1A26]/10 focus:border-[#EEBC3F] focus:outline-none transition-colors"
-                          placeholder={t('form.shipping.cityPlaceholder')}
+                          value={formData.firstName}
+                          onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                          className="w-full px-4 py-3 rounded-xl border border-[#0F1A26]/10 focus:border-[#EEBC3F] focus:outline-none transition-colors"
+                          placeholder={t('form.shipping.firstNamePlaceholder')}
                         />
                       </div>
-                    </div>
-                    <div>
-                      <label className="text-sm text-[#0F1A26]/60 mb-1 block">{t('form.shipping.phone')}</label>
-                      <div className="relative">
-                        <Phone className="w-4 h-4 text-[#0F1A26]/40 absolute left-4 top-1/2 -translate-y-1/2" />
+                      <div>
+                        <label className="text-sm text-[#0F1A26]/60 mb-1 block">{t('form.shipping.lastName')}</label>
                         <input
-                          type="tel"
+                          type="text"
                           required
-                          value={formData.phone}
-                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                          className="w-full px-4 py-3 pl-11 rounded-xl border border-[#0F1A26]/10 focus:border-[#EEBC3F] focus:outline-none transition-colors"
-                          placeholder={t('form.shipping.phonePlaceholder')}
+                          value={formData.lastName}
+                          onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                          className="w-full px-4 py-3 rounded-xl border border-[#0F1A26]/10 focus:border-[#EEBC3F] focus:outline-none transition-colors"
+                          placeholder={t('form.shipping.lastNamePlaceholder')}
                         />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="text-sm text-[#0F1A26]/60 mb-1 block">{t('form.shipping.address')}</label>
+                        <div className="flex gap-2">
+                          <div className="relative flex-1">
+                            <MapPin className="w-4 h-4 text-[#0F1A26]/40 absolute left-4 top-1/2 -translate-y-1/2" />
+                            <input
+                              type="text"
+                              required
+                              value={formData.address}
+                              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                              className="w-full px-4 py-3 pl-11 rounded-xl border border-[#0F1A26]/10 focus:border-[#EEBC3F] focus:outline-none transition-colors"
+                              placeholder={t('form.shipping.addressPlaceholder')}
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (navigator.geolocation) {
+                                navigator.geolocation.getCurrentPosition(
+                                  (position) => {
+                                    setFormData({ 
+                                      ...formData, 
+                                      address: `Lat: ${position.coords.latitude.toFixed(6)}, Lng: ${position.coords.longitude.toFixed(6)}` 
+                                    });
+                                  },
+                                  (error) => {
+                                    console.error('Error getting location:', error);
+                                    alert(t('form.location.error'));
+                                  }
+                                );
+                              } else {
+                                alert(t('form.location.notSupported'));
+                              }
+                            }}
+                            className="px-4 py-3 rounded-xl border-2 border-[#EEBC3F]/30 bg-[#EEBC3F]/5 hover:bg-[#EEBC3F]/10 hover:border-[#EEBC3F] transition-all flex items-center gap-2 whitespace-nowrap"
+                          >
+                            <MapPin className="w-4 h-4 text-[#EEBC3F]" />
+                            <span className="text-sm font-medium text-[#0F1A26]">{t('form.location.detect')}</span>
+                          </button>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-sm text-[#0F1A26]/60 mb-1 block">{t('form.shipping.city')}</label>
+                        <div className="relative">
+                          <Building className="w-4 h-4 text-[#0F1A26]/40 absolute left-4 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            required
+                            value={formData.city}
+                            onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                            className="w-full px-4 py-3 pl-11 rounded-xl border border-[#0F1A26]/10 focus:border-[#EEBC3F] focus:outline-none transition-colors"
+                            placeholder={t('form.shipping.cityPlaceholder')}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-sm text-[#0F1A26]/60 mb-1 block">{t('form.shipping.phone')}</label>
+                        <div className="relative">
+                          <Phone className="w-4 h-4 text-[#0F1A26]/40 absolute left-4 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="tel"
+                            required
+                            value={formData.phone}
+                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                            className="w-full px-4 py-3 pl-11 rounded-xl border border-[#0F1A26]/10 focus:border-[#EEBC3F] focus:outline-none transition-colors"
+                            placeholder={t('form.shipping.phonePlaceholder')}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 {/* Payment */}
                 <div className="bg-white rounded-2xl p-6 border border-[#0F1A26]/5">
@@ -418,7 +502,20 @@ function CheckoutContent() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h4 className="text-sm font-medium text-[#0F1A26] truncate group-hover:text-[#EEBC3F] transition-colors">{item.name}</h4>
-                        <p className="text-xs text-[#0F1A26]/50">{t('summary.qty', { quantity: item.quantity })}</p>
+                        {/* Show size for covers, color for passport wallets */}
+                        <div className="flex flex-wrap gap-1 mt-0.5">
+                          {item.size && (
+                            <span className="text-[10px] bg-[#EEBC3F]/10 text-[#0F1A26]/70 px-1.5 py-0.5 rounded">
+                              {t('summary.size') || 'Size'}: {item.size.toUpperCase()}
+                            </span>
+                          )}
+                          {item.color && (
+                            <span className="text-[10px] bg-[#EEBC3F]/10 text-[#0F1A26]/70 px-1.5 py-0.5 rounded capitalize">
+                              {t('summary.color') || 'Color'}: {item.color}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-[#0F1A26]/50 mt-0.5">{t('summary.qty', { quantity: item.quantity })}</p>
                       </div>
                       <span className="text-sm font-medium text-[#0F1A26]">
                         EGP {item.price * item.quantity}

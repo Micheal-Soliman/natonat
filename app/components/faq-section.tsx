@@ -68,9 +68,10 @@ export function FAQSection({
             </button>
             {openItems.includes(index) && (
               <div className="animate-in slide-in-from-top-2 duration-200">
-                <p className="text-[#0F1A26]/60 text-sm leading-relaxed pt-2 pb-1 pl-0">
-                  {t(faq.answerKey)}
-                </p>
+                <div 
+                  className="text-[#0F1A26]/60 text-sm leading-relaxed pt-2 pb-1 pl-0"
+                  dangerouslySetInnerHTML={{ __html: t.raw(faq.answerKey) }}
+                />
               </div>
             )}
           </div>

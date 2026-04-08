@@ -22,21 +22,32 @@ export interface Product {
     productId: number;
     quantity: number;
   }[];
+  sizePrices?: {
+    s: { price: number; originalPrice: number };
+    m: { price: number; originalPrice: number };
+    l: { price: number; originalPrice: number };
+    xl: { price: number; originalPrice: number };
+  };
+  colors?: {
+    id: string;
+    name: string;
+    image: string;
+  }[];
 }
 
 export const products: Product[] = [
   // Real Products from octopus-photo folder
-  { 
-    id: 1, 
+  {
+    id: 1,
     slug: "accord",
-    name: "ACCORD", 
-    category: "luggage-covers", 
-    size: "m", 
-    theme: "minimal", 
-    price: 599, 
-    originalPrice: 750, 
-    type: "Luggage Cover", 
-    tag: null, 
+    name: "ACCORD",
+    category: "luggage-covers",
+    size: "m",
+    theme: "minimal",
+    price: 599,
+    originalPrice: 750,
+    type: "Luggage Cover",
+    tag: null,
     image: "/octopus%20photo/ACCORD/1.png",
     images: [
       "/octopus%20photo/ACCORD/1.png",
@@ -46,7 +57,13 @@ export const products: Product[] = [
       "/octopus%20photo/ACCORD/5.webp",
       "/octopus%20photo/ACCORD/6.webp"
     ],
-    description: "Modern geometric design for the stylish traveler"
+    description: "Modern geometric design for the stylish traveler",
+    sizePrices: {
+      s: { price: 549, originalPrice: 700 },
+      m: { price: 599, originalPrice: 750 },
+      l: { price: 649, originalPrice: 800 },
+      xl: { price: 699, originalPrice: 850 }
+    }
   },
   { 
     id: 2, 
@@ -58,7 +75,7 @@ export const products: Product[] = [
     price: 649, 
     originalPrice: 800, 
     type: "Luggage Cover", 
-    tag: "New", 
+    tag: null, 
     image: "/octopus%20photo/Anara/1.png",
     images: [
       "/octopus%20photo/Anara/1.png",
@@ -68,7 +85,13 @@ export const products: Product[] = [
       "/octopus%20photo/Anara/5.webp",
       "/octopus%20photo/Anara/6.webp"
     ],
-    description: "Beautiful floral pattern to brighten your journey"
+    description: "Beautiful floral pattern to brighten your journey",
+    sizePrices: {
+      s: { price: 599, originalPrice: 750 },
+      m: { price: 649, originalPrice: 800 },
+      l: { price: 699, originalPrice: 850 },
+      xl: { price: 749, originalPrice: 900 }
+    }
   },
   { 
     id: 3, 
@@ -80,7 +103,7 @@ export const products: Product[] = [
     price: 699, 
     originalPrice: 850, 
     type: "Luggage Cover", 
-    tag: "Best Seller", 
+    tag: null, 
     image: "/octopus%20photo/Ascend/1.png",
     images: [
       "/octopus%20photo/Ascend/1.png",
@@ -90,7 +113,13 @@ export const products: Product[] = [
       "/octopus%20photo/Ascend/5.webp",
       "/octopus%20photo/Ascend/6.webp"
     ],
-    description: "Bold abstract design for artistic souls"
+    description: "Bold abstract design for artistic souls",
+    sizePrices: {
+      s: { price: 649, originalPrice: 800 },
+      m: { price: 699, originalPrice: 850 },
+      l: { price: 749, originalPrice: 900 },
+      xl: { price: 799, originalPrice: 950 }
+    }
   },
   { 
     id: 4, 
@@ -112,7 +141,13 @@ export const products: Product[] = [
       "/octopus%20photo/Dubai/5.webp",
       "/octopus%20photo/Dubai/6.webp"
     ],
-    description: "Inspired by the magnificent city of Dubai"
+    description: "Inspired by the magnificent city of Dubai",
+    sizePrices: {
+      s: { price: 699, originalPrice: 850 },
+      m: { price: 749, originalPrice: 900 },
+      l: { price: 799, originalPrice: 950 },
+      xl: { price: 849, originalPrice: 1000 }
+    }
   },
   { 
     id: 5, 
@@ -134,7 +169,13 @@ export const products: Product[] = [
       "/octopus%20photo/Egypt%20Skyline/5.webp",
       "/octopus%20photo/Egypt%20Skyline/6.webp"
     ],
-    description: "Celebrating Egypt's iconic landmarks"
+    description: "Celebrating Egypt's iconic landmarks",
+    sizePrices: {
+      s: { price: 599, originalPrice: 750 },
+      m: { price: 649, originalPrice: 800 },
+      l: { price: 699, originalPrice: 850 },
+      xl: { price: 749, originalPrice: 900 }
+    }
   },
   { 
     id: 6, 
@@ -156,7 +197,13 @@ export const products: Product[] = [
       "/octopus%20photo/Egyptian%20Queen/5.webp",
       "/octopus%20photo/Egyptian%20Queen/6.webp"
     ],
-    description: "Royal Egyptian design for majestic travelers"
+    description: "Royal Egyptian design for majestic travelers",
+    sizePrices: {
+      s: { price: 549, originalPrice: 700 },
+      m: { price: 599, originalPrice: 750 },
+      l: { price: 649, originalPrice: 800 },
+      xl: { price: 699, originalPrice: 850 }
+    }
   },
   { 
     id: 7, 
@@ -178,7 +225,13 @@ export const products: Product[] = [
       "/octopus%20photo/Eternal%20Egypt/5.webp",
       "/octopus%20photo/Eternal%20Egypt/6.webp"
     ],
-    description: "Timeless Egyptian heritage design"
+    description: "Timeless Egyptian heritage design",
+    sizePrices: {
+      s: { price: 649, originalPrice: 800 },
+      m: { price: 699, originalPrice: 850 },
+      l: { price: 749, originalPrice: 900 },
+      xl: { price: 799, originalPrice: 950 }
+    }
   },
   { 
     id: 8, 
@@ -200,7 +253,13 @@ export const products: Product[] = [
       "/octopus%20photo/Festival/5.webp",
       "/octopus%20photo/Festival/6.webp"
     ],
-    description: "Vibrant festival colors for joyful travelers"
+    description: "Vibrant festival colors for joyful travelers",
+    sizePrices: {
+      s: { price: 599, originalPrice: 750 },
+      m: { price: 649, originalPrice: 800 },
+      l: { price: 699, originalPrice: 850 },
+      xl: { price: 749, originalPrice: 900 }
+    }
   },
   { 
     id: 9, 
@@ -222,7 +281,13 @@ export const products: Product[] = [
       "/octopus%20photo/Lotus/5.webp",
       "/octopus%20photo/Lotus/6.webp"
     ],
-    description: "Elegant lotus flower design"
+    description: "Elegant lotus flower design",
+    sizePrices: {
+      s: { price: 549, originalPrice: 700 },
+      m: { price: 599, originalPrice: 750 },
+      l: { price: 649, originalPrice: 800 },
+      xl: { price: 699, originalPrice: 850 }
+    }
   },
   { 
     id: 10, 
@@ -244,7 +309,13 @@ export const products: Product[] = [
       "/octopus%20photo/Lunara/5.webp",
       "/octopus%20photo/Lunara/6.webp"
     ],
-    description: "Mystical lunar-inspired design"
+    description: "Mystical lunar-inspired design",
+    sizePrices: {
+      s: { price: 649, originalPrice: 800 },
+      m: { price: 699, originalPrice: 850 },
+      l: { price: 749, originalPrice: 900 },
+      xl: { price: 799, originalPrice: 950 }
+    }
   },
   { 
     id: 11, 
@@ -266,7 +337,13 @@ export const products: Product[] = [
       "/octopus%20photo/New%20York/5.webp",
       "/octopus%20photo/New%20York/6.webp"
     ],
-    description: "The city that never sleeps design"
+    description: "The city that never sleeps design",
+    sizePrices: {
+      s: { price: 599, originalPrice: 750 },
+      m: { price: 649, originalPrice: 800 },
+      l: { price: 699, originalPrice: 850 },
+      xl: { price: 749, originalPrice: 900 }
+    }
   },
   { 
     id: 12, 
@@ -288,7 +365,13 @@ export const products: Product[] = [
       "/octopus%20photo/Optical%20Illusion/5.webp",
       "/octopus%20photo/Optical%20Illusion/6.webp"
     ],
-    description: "Mind-bending optical art design"
+    description: "Mind-bending optical art design",
+    sizePrices: {
+      s: { price: 699, originalPrice: 850 },
+      m: { price: 749, originalPrice: 900 },
+      l: { price: 799, originalPrice: 950 },
+      xl: { price: 849, originalPrice: 1000 }
+    }
   },
   { 
     id: 13, 
@@ -310,7 +393,13 @@ export const products: Product[] = [
       "/octopus%20photo/Solora/5.webp",
       "/octopus%20photo/Solora/6.webp"
     ],
-    description: "Solar-inspired radiant design"
+    description: "Solar-inspired radiant design",
+    sizePrices: {
+      s: { price: 599, originalPrice: 750 },
+      m: { price: 649, originalPrice: 800 },
+      l: { price: 699, originalPrice: 850 },
+      xl: { price: 749, originalPrice: 900 }
+    }
   },
   { 
     id: 14, 
@@ -332,7 +421,13 @@ export const products: Product[] = [
       "/octopus%20photo/Travel%20Mosaic/5.webp",
       "/octopus%20photo/Travel%20Mosaic/6.webp"
     ],
-    description: "Colorful mosaic of travel memories"
+    description: "Colorful mosaic of travel memories",
+    sizePrices: {
+      s: { price: 649, originalPrice: 800 },
+      m: { price: 699, originalPrice: 850 },
+      l: { price: 749, originalPrice: 900 },
+      xl: { price: 799, originalPrice: 950 }
+    }
   },
   { 
     id: 15, 
@@ -354,7 +449,13 @@ export const products: Product[] = [
       "/octopus%20photo/king%20Tut/5.webp",
       "/octopus%20photo/king%20Tut/6.webp"
     ],
-    description: "Ancient Egyptian pharaoh inspired design"
+    description: "Ancient Egyptian pharaoh inspired design",
+    sizePrices: {
+      s: { price: 599, originalPrice: 750 },
+      m: { price: 649, originalPrice: 800 },
+      l: { price: 699, originalPrice: 850 },
+      xl: { price: 749, originalPrice: 900 }
+    }
   },
   { 
     id: 16, 
@@ -376,7 +477,13 @@ export const products: Product[] = [
       "/octopus%20photo/Black/5.webp",
       "/octopus%20photo/Black/6.webp"
     ],
-    description: "Classic black design for sophisticated travelers"
+    description: "Classic black design for sophisticated travelers",
+    sizePrices: {
+      s: { price: 549, originalPrice: 700 },
+      m: { price: 599, originalPrice: 750 },
+      l: { price: 649, originalPrice: 800 },
+      xl: { price: 699, originalPrice: 850 }
+    }
   },
   { 
     id: 17, 
@@ -388,7 +495,7 @@ export const products: Product[] = [
     price: 699, 
     originalPrice: 850, 
     type: "Luggage Cover", 
-    tag: "New", 
+    tag: null, 
     image: "/octopus%20photo/Explore/1.png",
     images: [
       "/octopus%20photo/Explore/1.png",
@@ -398,7 +505,13 @@ export const products: Product[] = [
       "/octopus%20photo/Explore/5.webp",
       "/octopus%20photo/Explore/6.webp"
     ],
-    description: "Adventure awaits with this exploration-inspired design"
+    description: "Adventure awaits with this exploration-inspired design",
+    sizePrices: {
+      s: { price: 649, originalPrice: 800 },
+      m: { price: 699, originalPrice: 850 },
+      l: { price: 749, originalPrice: 900 },
+      xl: { price: 799, originalPrice: 950 }
+    }
   },
   { 
     id: 18, 
@@ -420,7 +533,13 @@ export const products: Product[] = [
       "/octopus%20photo/Outdoor/5.webp",
       "/octopus%20photo/Outdoor/6.webp"
     ],
-    description: "Nature-inspired design for outdoor enthusiasts"
+    description: "Nature-inspired design for outdoor enthusiasts",
+    sizePrices: {
+      s: { price: 499, originalPrice: 650 },
+      m: { price: 549, originalPrice: 700 },
+      l: { price: 599, originalPrice: 750 },
+      xl: { price: 649, originalPrice: 800 }
+    }
   },
   { 
     id: 19, 
@@ -442,7 +561,13 @@ export const products: Product[] = [
       "/octopus%20photo/Travel%20Stickers/5.webp",
       "/octopus%20photo/Travel%20Stickers/6.webp"
     ],
-    description: "Colorful travel stickers design for wanderlust souls"
+    description: "Colorful travel stickers design for wanderlust souls",
+    sizePrices: {
+      s: { price: 599, originalPrice: 750 },
+      m: { price: 649, originalPrice: 800 },
+      l: { price: 699, originalPrice: 850 },
+      xl: { price: 749, originalPrice: 900 }
+    }
   },
   { 
     id: 20, 
@@ -464,7 +589,13 @@ export const products: Product[] = [
       "/octopus%20photo/Urban%20Vibes/5.webp",
       "/octopus%20photo/Urban%20Vibes/6.webp"
     ],
-    description: "Modern urban aesthetic for city travelers"
+    description: "Modern urban aesthetic for city travelers",
+    sizePrices: {
+      s: { price: 649, originalPrice: 800 },
+      m: { price: 699, originalPrice: 850 },
+      l: { price: 749, originalPrice: 900 },
+      xl: { price: 799, originalPrice: 950 }
+    }
   },
   { 
     id: 21, 
@@ -486,7 +617,13 @@ export const products: Product[] = [
       "/octopus%20photo/Valoria/5.webp",
       "/octopus%20photo/Valoria/6.webp"
     ],
-    description: "Bold and vibrant design for confident travelers"
+    description: "Bold and vibrant design for confident travelers",
+    sizePrices: {
+      s: { price: 599, originalPrice: 750 },
+      m: { price: 649, originalPrice: 800 },
+      l: { price: 699, originalPrice: 850 },
+      xl: { price: 749, originalPrice: 900 }
+    }
   },
   { 
     id: 22, 
@@ -508,7 +645,13 @@ export const products: Product[] = [
       "/octopus%20photo/Barcelona/5.webp",
       "/octopus%20photo/Barcelona/6.webp"
     ],
-    description: "Vibrant Barcelona-inspired design for passionate travelers"
+    description: "Vibrant Barcelona-inspired design for passionate travelers",
+    sizePrices: {
+      s: { price: 599, originalPrice: 750 },
+      m: { price: 649, originalPrice: 800 },
+      l: { price: 699, originalPrice: 850 },
+      xl: { price: 749, originalPrice: 900 }
+    }
   },
   { 
     id: 23, 
@@ -530,7 +673,13 @@ export const products: Product[] = [
       "/octopus%20photo/Madrid/5.webp",
       "/octopus%20photo/Madrid/6.webp"
     ],
-    description: "Elegant Madrid design celebrating Spanish culture"
+    description: "Elegant Madrid design celebrating Spanish culture",
+    sizePrices: {
+      s: { price: 649, originalPrice: 800 },
+      m: { price: 699, originalPrice: 850 },
+      l: { price: 749, originalPrice: 900 },
+      xl: { price: 799, originalPrice: 950 }
+    }
   },
   { 
     id: 24, 
@@ -552,7 +701,13 @@ export const products: Product[] = [
       "/octopus%20photo/Peacock/5.webp",
       "/octopus%20photo/Peacock/6.webp"
     ],
-    description: "Stunning peacock feather design for elegant travelers"
+    description: "Stunning peacock feather design for elegant travelers",
+    sizePrices: {
+      s: { price: 649, originalPrice: 800 },
+      m: { price: 699, originalPrice: 850 },
+      l: { price: 749, originalPrice: 900 },
+      xl: { price: 799, originalPrice: 950 }
+    }
   },
   { 
     id: 25, 
@@ -574,7 +729,13 @@ export const products: Product[] = [
       "/octopus%20photo/Pyramids/5.webp",
       "/octopus%20photo/Pyramids/6.webp"
     ],
-    description: "Ancient pyramids design honoring Egypt's wonders"
+    description: "Ancient pyramids design honoring Egypt's wonders",
+    sizePrices: {
+      s: { price: 649, originalPrice: 800 },
+      m: { price: 699, originalPrice: 850 },
+      l: { price: 749, originalPrice: 900 },
+      xl: { price: 799, originalPrice: 950 }
+    }
   },
   { 
     id: 26, 
@@ -586,7 +747,7 @@ export const products: Product[] = [
     price: 749, 
     originalPrice: 900, 
     type: "Luggage Cover", 
-    tag: "New", 
+    tag: null, 
     image: "/octopus%20photo/Tech%20Explorer/1.png",
     images: [
       "/octopus%20photo/Tech%20Explorer/1.png",
@@ -596,7 +757,13 @@ export const products: Product[] = [
       "/octopus%20photo/Tech%20Explorer/5.webp",
       "/octopus%20photo/Tech%20Explorer/6.webp"
     ],
-    description: "Futuristic tech design for modern adventurers"
+    description: "Futuristic tech design for modern adventurers",
+    sizePrices: {
+      s: { price: 699, originalPrice: 850 },
+      m: { price: 749, originalPrice: 900 },
+      l: { price: 799, originalPrice: 950 },
+      xl: { price: 849, originalPrice: 1000 }
+    }
   },
   { 
     id: 27, 
@@ -618,7 +785,13 @@ export const products: Product[] = [
       "/octopus%20photo/Wildfern/5.webp",
       "/octopus%20photo/Wildfern/6.webp"
     ],
-    description: "Lush wild fern design for nature lovers"
+    description: "Lush wild fern design for nature lovers",
+    sizePrices: {
+      s: { price: 549, originalPrice: 700 },
+      m: { price: 599, originalPrice: 750 },
+      l: { price: 649, originalPrice: 800 },
+      xl: { price: 699, originalPrice: 850 }
+    }
   },
   { 
     id: 28, 
@@ -630,7 +803,7 @@ export const products: Product[] = [
     price: 649, 
     originalPrice: 800, 
     type: "Luggage Cover", 
-    tag: "New", 
+    tag: null, 
     image: "/octopus%20photo/Vibra/1.png",
     images: [
       "/octopus%20photo/Vibra/1.png",
@@ -640,7 +813,13 @@ export const products: Product[] = [
       "/octopus%20photo/Vibra/5.webp",
       "/octopus%20photo/Vibra/6.webp"
     ],
-    description: "غطاء شنط مستوحى من الطاقة الموسيقية والنيون. تصميم عصري جريء بخطوط لامعة وتفاصيل ناعمة بيعكس روح الإيقاع والحركة. مثالي للمسافرين اللي بيحبوا الطاقة والتميز."
+    description: "غطاء شنط مستوحى من الطاقة الموسيقية والنيون. تصميم عصري جريء بخطوط لامعة وتفاصيل ناعمة بيعكس روح الإيقاع والحركة. مثالي للمسافرين اللي بيحبوا الطاقة والتميز.",
+    sizePrices: {
+      s: { price: 599, originalPrice: 750 },
+      m: { price: 649, originalPrice: 800 },
+      l: { price: 699, originalPrice: 850 },
+      xl: { price: 749, originalPrice: 900 }
+    }
   },
   // BackOnat Backpack (Product ID 50) - Placeholder image until real photos arrive
   { 
@@ -653,7 +832,7 @@ export const products: Product[] = [
     price: 799, 
     originalPrice: 999, 
     type: "Backpack", 
-    tag: "New", 
+    tag: null, 
     image: "/octopus%20photo/ACCORD/1.png",
     images: [
       "/octopus%20photo/ACCORD/1.png"
@@ -726,7 +905,7 @@ export const products: Product[] = [
     price: 1275,
     originalPrice: 1448,
     type: "Bundle",
-    tag: "New",
+    tag: null,
     image: "/octopus%20photo/ACCORD/1.png",
     images: [
       "/octopus%20photo/ACCORD/1.png",
@@ -777,7 +956,7 @@ export const products: Product[] = [
     price: 1399,
     originalPrice: 1598,
     type: "Bundle",
-    tag: "New",
+    tag: null,
     image: "/octopus%20photo/ACCORD/1.png",
     images: [
       "/octopus%20photo/ACCORD/1.png"
@@ -813,6 +992,38 @@ export const products: Product[] = [
       { productId: 1, quantity: 1 }   // ACCORD Cover
     ],
     features: ["Passport + Cover combo", "Save 15%", "Travel ready", "Perfect pair"]
+  },
+  // Eoehro Passport Holder - 1 Product with 3 Colors
+  {
+    id: 107,
+    slug: "eoehro-passport-holder",
+    name: "Eoehro Passport Holder",
+    category: "passport-wallets",
+    size: null,
+    theme: "minimal",
+    price: 299,
+    originalPrice: 450,
+    type: "Passport Wallet",
+    tag: "New",
+    image: "/passport%20wallet/1/1.png",
+    images: [
+      "/passport%20wallet/1/1.png",
+      "/passport%20wallet/1/2.png",
+      "/passport%20wallet/1/3.png",
+      "/passport%20wallet/2/1.png",
+      "/passport%20wallet/2/2.png",
+      "/passport%20wallet/2/3.png",
+      "/passport%20wallet/3/1.png",
+      "/passport%20wallet/3/2.png",
+      "/passport%20wallet/3/3.png"
+    ],
+    description: "RFID Protected faux leather passport holder with magnetic clasp, vaccine card slot, and 5 pockets for cards, tickets, and SIM cards. Available in 3 colors: Brown, Black, and Tan.",
+    features: ["RFID Blocking", "Magnetic Clasp", "Vaccine Card Slot", "5 Card Pockets", "Faux Leather", "3 Colors Available"],
+    colors: [
+      { id: "brown", name: "Brown", image: "/passport%20wallet/1/1.png" },
+      { id: "tan", name: "Tan", image: "/passport%20wallet/2/1.png" },
+      { id: "black", name: "Black", image: "/passport%20wallet/3/1.png" }
+    ]
   },
 ];
 

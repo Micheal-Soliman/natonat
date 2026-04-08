@@ -54,24 +54,23 @@ export function ArticlesSection() {
         </div>
 
         {/* Articles Grid */}
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid md:grid-cols-3 gap-8 items-stretch">
           {articles.map((article, index) => (
             <Link
               key={article.id}
               href={`/articles/${article.slug}`}
-              className={`group bg-white rounded-3xl overflow-hidden border border-[#0F1A26]/5 shadow-lg shadow-[#0F1A26]/5 hover:shadow-xl hover:shadow-[#0F1A26]/10 transition-all duration-500 ${
+              className={`group bg-white rounded-3xl overflow-hidden border border-[#0F1A26]/5 shadow-lg shadow-[#0F1A26]/5 hover:shadow-xl hover:shadow-[#0F1A26]/10 transition-all duration-500 h-full flex flex-col ${
                 isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
               }`}
               style={{ transitionDelay: `${(index + 1) * 100}ms` }}
             >
-              <div className="relative overflow-hidden">
+              <div className="relative overflow-hidden flex-shrink-0 h-40 sm:h-48">
                 <Image
                   src={article.image}
                   alt={article.title}
-                  width={600}
-                  height={400}
+                  fill
                   sizes="(max-width: 768px) 100vw, 33vw"
-                  className="w-full h-auto object-contain transition-transform duration-700 group-hover:scale-105"
+                  className="object-cover transition-transform duration-700 group-hover:scale-105"
                   loading="lazy"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0F1A26]/60 via-[#0F1A26]/20 to-transparent" />
@@ -81,7 +80,7 @@ export function ArticlesSection() {
                   </span>
                 </div>
               </div>
-              <div className="p-6">
+              <div className="p-6 flex flex-col flex-grow">
                 <div className="flex items-center gap-4 text-xs text-[#0F1A26]/40 mb-3">
                   <span className="flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
@@ -95,10 +94,10 @@ export function ArticlesSection() {
                 <h3 className="text-lg font-bold text-[#0F1A26] mb-2 group-hover:text-[#EEBC3F] transition-colors line-clamp-2">
                   {article.title}
                 </h3>
-                <p className="text-[#0F1A26]/60 text-sm line-clamp-2 mb-4">
+                <p className="text-[#0F1A26]/60 text-sm line-clamp-2 mb-4 flex-grow">
                   {article.excerpt}
                 </p>
-                <span className="text-[#EEBC3F] text-sm font-medium flex items-center gap-1 group-hover:gap-2 transition-all">
+                <span className="text-[#EEBC3F] text-sm font-medium flex items-center gap-1 group-hover:gap-2 transition-all mt-auto">
                   {t('readMore')} <ArrowRight className="w-4 h-4" />
                 </span>
               </div>

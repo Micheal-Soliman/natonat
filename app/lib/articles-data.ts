@@ -47,7 +47,7 @@ Unlike traditional methods that require measuring width, depth, and height, our 
 
 With the right size cover, your luggage stays protected from scratches, dirt, and rough handling throughout your journey.
     `,
-    image: "/octopus photo/Anara/1.webp",
+    image: "/octopus photo/Anara/1.png",
     category: "Travel Tips",
     author: "natOnat Team",
     date: "2024-03-15",
@@ -77,7 +77,7 @@ The stretchy material adapts to different suitcase shapes, ensuring a snug fit e
 ### 5. Affordable Protection
 Why buy expensive hard-shell luggage when you can protect your existing suitcase for a fraction of the cost?
     `,
-    image: "/octopus photo/ACCORD/1.webp",
+    image: "/octopus photo/ACCORD/1.png",
     category: "Product Guide",
     author: "natOnat Team",
     date: "2024-03-10",
@@ -111,7 +111,7 @@ Our premium leather passport wallets feature:
 
 Protect your identity and travel documents with our RFID-blocking passport wallets. It's a small investment for peace of mind.
     `,
-    image: "/octopus photo/Ascend/1.webp",
+    image: "/octopus photo/Ascend/1.png",
     category: "Travel Security",
     author: "natOnat Team",
     date: "2024-03-05",
@@ -143,7 +143,7 @@ Save luggage space by wearing your bulkiest shoes and jacket on the plane.
 
 Protect your investment! A quality luggage cover keeps your suitcase looking new trip after trip.
     `,
-    image: "/octopus photo/Barcelona/1.webp",
+    image: "/octopus photo/Barcelona/1.png",
     category: "Travel Tips",
     author: "natOnat Team",
     date: "2024-02-28",
@@ -182,7 +182,7 @@ While Cairo is cosmopolitan, modest dress is appreciated, especially when visiti
 
 With the right gear and knowledge, your Cairo adventure will be unforgettable.
     `,
-    image: "/octopus photo/Black/1.webp",
+    image: "/octopus photo/Black/1.png",
     category: "Destinations",
     author: "natOnat Team",
     date: "2024-02-20",
@@ -219,7 +219,7 @@ Use passport wallets to keep everyone's documents in one place. Our family bundl
 
 Travel is about experiences. Take photos, try new foods, and enjoy the journey together.
     `,
-    image: "/octopus photo/Dubai/1.webp",
+    image: "/octopus photo/Dubai/1.png",
     category: "Family Travel",
     author: "natOnat Team",
     date: "2024-02-15",
@@ -262,7 +262,7 @@ export const articlesAr: Article[] = [
 
 مع الغطاء المناسب، تظل أمتعتك محمية من الخدوش والأوساخ والتعامل الخشن طوال رحلتك.
     `,
-    image: "/octopus photo/Anara/1.webp",
+    image: "/octopus photo/Anara/1.png",
     category: "نصائح السفر",
     author: "فريق نت أونات",
     date: "2024-03-15",
@@ -292,7 +292,7 @@ export const articlesAr: Article[] = [
 ### ٥. حماية بأسعار معقولة
 لماذا تشتري حقائب صلبة باهظة الثمن عندما يمكنك حماية حقيبتك الحالية بجزء بسيط من التكلفة؟
     `,
-    image: "/octopus photo/ACCORD/1.webp",
+    image: "/octopus photo/ACCORD/1.png",
     category: "دليل المنتجات",
     author: "فريق نت أونات",
     date: "2024-03-10",
@@ -326,7 +326,7 @@ export const articlesAr: Article[] = [
 
 احمِ هويتك ووثائق السفر بمحافظ جوازات السفر الجلدية مع حماية RFID. استثمار بسيط لراحة البال.
     `,
-    image: "/octopus photo/Ascend/1.webp",
+    image: "/octopus photo/Ascend/1.png",
     category: "أمان السفر",
     author: "فريق نت أونات",
     date: "2024-03-05",
@@ -358,7 +358,7 @@ export const articlesAr: Article[] = [
 
 احمِ استثمارك! غطاء أمتعة عالي الجودة يحافظ على حقيبتك جديدة في كل رحلة.
     `,
-    image: "/octopus photo/Barcelona/1.webp",
+    image: "/octopus photo/Barcelona/1.png",
     category: "نصائح السفر",
     author: "فريق نت أونات",
     date: "2024-02-28",
@@ -397,7 +397,7 @@ export const articlesAr: Article[] = [
 
 مع المعدات والمعرفة الصحيحة، ستكون مغامرتك في القاهرة لا تُنسى.
     `,
-    image: "/octopus photo/Black/1.webp",
+    image: "/octopus photo/Black/1.png",
     category: "وجهات",
     author: "فريق نت أونات",
     date: "2024-02-20",
@@ -434,7 +434,7 @@ export const articlesAr: Article[] = [
 
 السفر يتعلق بالتجارب. التقط صوراً، جرب أطعمة جديدة، واستمتع بالرحلة معاً.
     `,
-    image: "/octopus photo/Dubai/1.webp",
+    image: "/octopus photo/Dubai/1.png",
     category: "سفر عائلي",
     author: "فريق نت أونات",
     date: "2024-02-15",

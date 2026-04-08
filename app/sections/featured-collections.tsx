@@ -17,7 +17,7 @@ export function FeaturedCollections() {
       description: t('luggageCovers.description'),
       badge: t('luggageCovers.badge'),
       href: "/shop?category=luggage-covers",
-      image: "/octopus photo/Anara/1.webp",
+      image: "/octopus photo/Anara/1.png",
       bgColor: "from-[#0F1A26] to-[#364353]",
       accent: "#EEBC3F",
     },
@@ -26,7 +26,7 @@ export function FeaturedCollections() {
       description: t('passportWallets.description'),
       badge: t('passportWallets.badge'),
       href: "/shop?category=passport-wallets",
-      image: "/octopus photo/Ascend/1.webp",
+      image: "/octopus photo/Ascend/1.png",
       bgColor: "from-[#364353] to-[#0F1A26]",
       accent: "#EEBC3F",
     },
@@ -75,7 +75,7 @@ export function FeaturedCollections() {
                 alt={collection.title}
                 fill
                 sizes="(max-width: 768px) 100vw, 50vw"
-                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                className="absolute inset-0 w-full h-full object-contain transition-transform duration-700 group-hover:scale-110"
                 loading="lazy"
               />
 

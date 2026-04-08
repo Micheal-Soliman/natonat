@@ -28,28 +28,28 @@ export function ShopMegaMenu({ scrolled }: ShopMegaMenuProps) {
       name: t('allProducts'),
       description: t('allProductsDesc'),
       href: "/shop",
-      image: "/octopus photo/ACCORD/1.webp",
+      image: "/octopus photo/ACCORD/1.png",
     },
     {
       id: "luggage-covers",
       name: t('luggageCovers'),
       description: t('luggageCoversDesc'),
       href: "/shop?category=luggage-covers",
-      image: "/octopus photo/Anara/1.webp",
+      image: "/octopus photo/Anara/1.png",
     },
     {
       id: "passport-wallets",
       name: t('passportWallets'),
       description: t('passportWalletsDesc'),
       href: "/shop?category=passport-wallets",
-      image: "/octopus photo/Ascend/1.webp",
+      image: "/passport wallet/1/2.png",
     },
     {
       id: "travel-sets",
       name: t('travelSets'),
       description: t('travelSetsDesc'),
       href: "/shop?category=travel-sets",
-      image: "/octopus photo/Barcelona/1.webp",
+      image: "/octopus photo/Barcelona/1.png",
     },
   ];
 
@@ -160,7 +160,7 @@ export function ShopMegaMenu({ scrolled }: ShopMegaMenuProps) {
                       alt={category.name}
                       fill
                       sizes="250px"
-                      className="absolute inset-0 w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
+                      className="absolute inset-0 w-full h-full object-contain transition-all duration-700 group-hover:scale-110"
                       loading="lazy"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#0F1A26]/60 via-[#0F1A26]/20 to-transparent" />

@@ -18,7 +18,7 @@
     "travelSetsDesc": "Curated bundles",
     "bestSellers": "Best Sellers",
     "sizeGuide": "Size Guide",
-    "howItWorks": "How It Works",
+    "howItWorks": "Size Guide",
     "about": "About",
     "faqs": "FAQs",
     "blog": "Blog",
@@ -206,7 +206,7 @@
       "questions": {
         "sizeCover": {
           "question": "How do I choose the right size cover?",
-          "answer": "Simply measure your suitcase height from the floor to the top (excluding wheels). S = 18-21 inches (46-53cm), M = 22-25 inches (56-64cm), L = 26-29 inches (66-74cm), XL = 30-32 inches (76-81cm). Check our detailed Size Guide for more information."
+          "answer": "Simply measure your suitcase height from the floor to the top (excluding wheels).<br/><br/><strong>S</strong> = 18-21 inches (46-53cm)<br/><strong>M</strong> = 22-25 inches (56-64cm)<br/><strong>L</strong> = 26-29 inches (66-74cm)<br/><strong>XL</strong> = 30-32 inches (76-81cm)<br/><br/><a href=\"/how-it-works\" class=\"text-[#EEBC3F] hover:text-[#0F1A26] font-medium transition-colors\">Check our detailed Size Guide for more information →</a>"
         },
         "hardShell": {
           "question": "Does the cover fit hard-shell suitcases?",
@@ -375,7 +375,12 @@
     "size": {
       "select": "Select Size",
       "title": "Select Size",
-      "howToMeasure": "How to Measure?"
+      "howToMeasure": "How to Measure?",
+      "heightNote": "* Height without wheels",
+      "heightLabel": "Height"
+    },
+    "color": {
+      "select": "Select Color"
     },
     "quantity": "Quantity",
     "addToCart": "Add to Cart",
@@ -440,7 +445,12 @@
     "faq": {
       "title": "Frequently Asked Questions"
     },
-    "linkCopied": "Link copied to clipboard!"
+    "linkCopied": "Link copied to clipboard!",
+    "readMore": {
+      "detailsTitle": "Product Details & Specifications",
+      "infoTitle": "Why You'll Love It & FAQs",
+      "moreAvailable": "Click to read full description"
+    }
   },
   "sizeModal": {
     "title": "Select Size",
@@ -477,10 +487,12 @@
     },
     "item": {
       "size": "Size",
+      "color": "Color",
       "quantity": "Quantity",
       "remove": "Remove"
     },
     "size": "Size",
+    "color": "Color",
     "summary": {
       "title": "Order Summary",
       "subtotal": "Subtotal",
@@ -533,6 +545,28 @@
         "error": "Unable to get your location. Please allow location access.",
         "notSupported": "Geolocation is not supported by your browser."
       },
+      "delivery": {
+        "title": "Delivery Method",
+        "deliveryOption": {
+          "title": "Delivery to Address",
+          "subtitle": "We'll deliver to your doorstep"
+        },
+        "pickupOption": {
+          "title": "Pickup from Location",
+          "subtitle": "Collect your order from our pickup point"
+        },
+        "pickupLocation": {
+          "title": "Pickup Location",
+          "addressLabel": "Address:",
+          "viewOnMap": "View on Google Maps",
+          "instruction": "Please collect your order within 3 business days. Bring your order number."
+        }
+      },
+      "pickupLocation": {
+        "name": "Sahafiyeen Mall",
+        "address": "North Investors, New Cairo",
+        "mapUrl": "https://maps.app.goo.gl/ieHkDWbGaTQDcy8e7"
+      },
       "banks": {
         "nbe": "National Bank of Egypt",
         "cib": "CIB",
@@ -543,7 +577,7 @@
       },
       "instapayAccount": {
         "name": "natOnat",
-        "number": "01234567890"
+        "number": "100073326685 - CIB"
       },
       "payment": {
         "title": "Payment Method",
@@ -574,7 +608,9 @@
       "subtotal": "Subtotal",
       "shipping": "Shipping",
       "free": "Free",
-      "total": "Total"
+      "total": "Total",
+      "size": "Size",
+      "color": "Color"
     }
   },
   "common": {
@@ -751,7 +787,7 @@
     "questions": {
       "sizeCover": {
         "question": "How do I choose the right size cover?",
-        "answer": "Simply measure your suitcase height from the floor to the top (excluding wheels). S = 18-21 inches (46-53cm), M = 22-25 inches (56-64cm), L = 26-29 inches (66-74cm), XL = 30-32 inches (76-81cm). Check our detailed Size Guide for more information."
+        "answer": "Simply measure your suitcase height from the floor to the top (excluding wheels).<br/><br/><strong>S</strong> = 18-21 inches (46-53cm)<br/><strong>M</strong> = 22-25 inches (56-64cm)<br/><strong>L</strong> = 26-29 inches (66-74cm)<br/><strong>XL</strong> = 30-32 inches (76-81cm)<br/><br/><a href=\"/how-it-works\" class=\"text-[#EEBC3F] hover:text-[#0F1A26] font-medium transition-colors\">Check our detailed Size Guide for more information →</a>"
       },
       "hardShell": {
         "question": "Does the cover fit hard-shell suitcases?",
@@ -1193,6 +1229,1589 @@
       "cta": {
         "title": "Upgrade Your Travel Experience",
         "content": "Order your Vibra luggage cover today and travel with energy, style, and your own unique rhythm."
+      }
+    },
+    "valoria": {
+      "title": "Valoria Luggage Cover | Premium World Landmarks Suitcase Protector",
+      "headline": "Travel the world—carry every destination with you.",
+      "intro": "The natOnat Valoria Luggage Cover is a vibrant fusion of global culture and iconic landmarks. Inspired by famous destinations around the world, this bold design transforms your suitcase into a colorful travel story—perfect for explorers who dream big and travel far.",
+      "designInspiration": {
+        "title": "Design Inspiration – Valoria",
+        "content": "The Valoria design blends iconic landmarks like the Eiffel Tower, Statue of Liberty, Big Ben, and more into a dynamic, artistic composition full of color, movement, and global energy.",
+        "perfectFor": [
+          "Travel lovers & world explorers",
+          "Fans of iconic destinations",
+          "Adventurous spirits & dreamers",
+          "Anyone who wants a bold, eye-catching suitcase"
+        ],
+        "tagline": "At the airport, your luggage won't just stand out — it will tell a story of global adventure."
+      },
+      "whyChoose": {
+        "title": "Why Choose natOnat Luggage Covers in Egypt?",
+        "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
+        "features": [
+          {
+            "title": "Ultimate Suitcase Protection",
+            "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling."
+          },
+          {
+            "title": "Premium Elastic Fabric",
+            "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure."
+          },
+          {
+            "title": "Smart Access Design",
+            "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles. Practical, clean, and travel-friendly design."
+          },
+          {
+            "title": "Ultra-Secure Fit",
+            "desc": "A strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey."
+          },
+          {
+            "title": "Eco-Friendly & Washable",
+            "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers."
+          }
+        ]
+      },
+      "sizeGuide": {
+        "title": "Size Guide – Simple & Accurate",
+        "subtitle": "Choosing the right size is easy:",
+        "tip": "Just measure your suitcase height (without wheels). That's all you need.",
+        "sizes": [
+          "S → Cabin size (carry-on)",
+          "M → Medium suitcase",
+          "L → Large suitcase",
+          "XL → Extra large luggage"
+        ],
+        "proTip": "If you're between sizes, choose the larger size for a smoother fit."
+      },
+      "targetAudience": {
+        "title": "Designed for the Modern Traveler",
+        "items": [
+          "Travelers who love exploring the world",
+          "Fans of global landmarks",
+          "Frequent flyers & adventurers",
+          "Anyone who wants a vibrant, standout suitcase"
+        ]
+      },
+      "about": {
+        "title": "About natOnat",
+        "content": "natOnat is a premium Egyptian travel brand focused on smart design, quality materials, and modern lifestyle needs. We create products that make your travel easier, safer, and more stylish."
+      },
+      "cta": {
+        "title": "Upgrade Your Travel Experience",
+        "content": "Order your Valoria luggage cover today and travel with confidence, protection, and global style."
+      }
+    },
+    "urban-vibes": {
+      "title": "Urban Vibes Luggage Cover | Premium Street Art-Inspired Suitcase Protector",
+      "headline": "Move with the city. Travel with attitude. Own your vibe.",
+      "intro": "The natOnat Urban Vibes Luggage Cover is inspired by the energy of modern city life and street art culture. Featuring bold textures, neon splashes, and raw urban elements, this design transforms your suitcase into a statement of confidence, creativity, and edge. Perfect for travelers who live fast, think bold, and stand out effortlessly.",
+      "designInspiration": {
+        "title": "Design Inspiration – Urban Vibes",
+        "content": "The Urban Vibes design captures the essence of street art, graffiti textures, and city energy, blending bold colors with a raw, edgy aesthetic that reflects individuality and movement.",
+        "perfectFor": [
+          "Street style lovers & creatives",
+          "Urban lifestyle enthusiasts",
+          "Travelers who love bold, modern designs",
+          "Anyone who wants a cool, standout suitcase"
+        ],
+        "tagline": "At baggage claim, your luggage will stand out with strong personality and urban attitude."
+      },
+      "whyChoose": {
+        "title": "Why Choose natOnat Luggage Covers in Egypt?",
+        "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
+        "features": [
+          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
+          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
+          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
+          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
+          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+        ]
+      },
+      "sizeGuide": {
+        "title": "Size Guide – Simple & Accurate",
+        "subtitle": "Choosing the right size is easy:",
+        "tip": "Just measure your suitcase height (without wheels). That's all you need.",
+        "sizes": [
+          "S → Cabin size (carry-on)",
+          "M → Medium suitcase",
+          "L → Large suitcase",
+          "XL → Extra large luggage"
+        ],
+        "proTip": "If you're between sizes, choose the larger size for a smoother fit."
+      },
+      "targetAudience": {
+        "title": "Designed for Urban Minds & Bold Personalities",
+        "items": [
+          "Streetwear lovers & creatives",
+          "Travelers who embrace city culture",
+          "Modern lifestyle enthusiasts",
+          "Anyone who wants a bold, edgy suitcase"
+        ]
+      },
+      "about": {
+        "title": "About natOnat",
+        "content": "natOnat is a premium Egyptian travel brand focused on smart design, quality materials, and modern lifestyle needs. We create products that make your travel easier, safer, and more stylish."
+      },
+      "cta": {
+        "title": "Upgrade Your Travel Experience",
+        "content": "Order your Urban Vibes luggage cover today and travel with confidence, attitude, and style."
+      }
+    },
+    "travel-stickers": {
+      "title": "Travel Stickers Luggage Cover | Premium Travel-Themed Suitcase Protector",
+      "headline": "Travel the world before you even arrive.",
+      "intro": "The natOnat Travel Stickers Luggage Cover turns your suitcase into a vibrant journey across the globe. Inspired by iconic destinations, passport-style stickers, and travel memories, this design captures the spirit of adventure and makes your luggage stand out instantly at any airport. Perfect for travelers who love exploring, collecting memories, and expressing their passion for travel everywhere they go.",
+      "designInspiration": {
+        "title": "Design Inspiration – Travel Stickers",
+        "content": "The Travel Stickers design features a colorful collage of global destinations, landmarks, and travel icons — from Paris and London to tropical beaches and city escapes.",
+        "perfectFor": [
+          "Travel lovers & explorers",
+          "Frequent flyers & adventure seekers",
+          "Content creators & travel bloggers",
+          "Anyone who wants a fun, vibrant, travel-inspired look"
+        ],
+        "tagline": "At baggage claim, your suitcase becomes a story — not just a bag."
+      },
+      "whyChoose": {
+        "title": "Why Choose natOnat Luggage Covers?",
+        "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
+        "features": [
+          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
+          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
+          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
+          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
+          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+        ]
+      },
+      "sizeGuide": {
+        "title": "Size Guide – Simple & Accurate",
+        "subtitle": "Choosing the right size is easy:",
+        "tip": "Just measure your suitcase height (without wheels). That's all you need.",
+        "sizes": [
+          "S → Cabin size (carry-on)",
+          "M → Medium suitcase",
+          "L → Large suitcase",
+          "XL → Extra large luggage"
+        ],
+        "proTip": "If you're between sizes, choose the larger size for a smoother fit."
+      },
+      "targetAudience": {
+        "title": "Designed for Travel Lovers",
+        "items": [
+          "Travel enthusiasts & globe-trotters",
+          "Frequent flyers & vacation lovers",
+          "Students & young travelers",
+          "Anyone who wants a fun, colorful, standout suitcase"
+        ]
+      },
+      "about": {
+        "title": "About natOnat",
+        "content": "natOnat is a premium Egyptian travel brand focused on smart design, quality materials, and modern lifestyle needs. We create products that make your travel easier, safer, and more stylish."
+      },
+      "cta": {
+        "title": "Upgrade Your Travel Experience",
+        "content": "Order your Travel Stickers luggage cover today and let your suitcase reflect your journey."
+      }
+    },
+    "travel-mosaic": {
+      "title": "Travel Mosaic Luggage Cover | Premium Artistic Travel-Inspired Suitcase Protector",
+      "headline": "Travel the world through art.",
+      "intro": "The natOnat Travel Mosaic Luggage Cover blends global travel with artistic expression. Inspired by iconic landmarks, cultural symbols, and mosaic-style textures, this design transforms your suitcase into a vibrant canvas that celebrates exploration, history, and creativity. Perfect for travelers who see every journey as a story worth expressing.",
+      "designInspiration": {
+        "title": "Design Inspiration – Travel Mosaic",
+        "content": "The Travel Mosaic design combines famous travel elements with a mosaic art style, creating a colorful fusion of culture, architecture, and movement.",
+        "perfectFor": [
+          "Travel lovers & culture explorers",
+          "Art enthusiasts & creative personalities",
+          "Frequent travelers & global thinkers",
+          "Anyone who wants a rich, artistic, standout suitcase"
+        ],
+        "tagline": "At baggage claim, your luggage becomes a visual journey across the world."
+      },
+      "whyChoose": {
+        "title": "Why Choose natOnat Luggage Covers in Egypt?",
+        "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
+        "features": [
+          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
+          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
+          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
+          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
+          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+        ]
+      },
+      "sizeGuide": {
+        "title": "Size Guide – Simple & Accurate",
+        "subtitle": "Choosing the right size is easy:",
+        "tip": "Just measure your suitcase height (without wheels). That's all you need.",
+        "sizes": [
+          "S → Cabin size (carry-on)",
+          "M → Medium suitcase",
+          "L → Large suitcase",
+          "XL → Extra large luggage"
+        ],
+        "proTip": "If you're between sizes, choose the larger size for a smoother fit."
+      },
+      "targetAudience": {
+        "title": "Designed for Art Lovers & Global Explorers",
+        "items": [
+          "Travelers who love culture and history",
+          "Art lovers & creative minds",
+          "Frequent flyers & global explorers",
+          "Anyone who wants a unique, artistic suitcase"
+        ]
+      },
+      "about": {
+        "title": "About natOnat",
+        "content": "natOnat is a premium Egyptian travel brand focused on smart design, quality materials, and modern lifestyle needs. We create products that make your travel easier, safer, and more stylish."
+      },
+      "cta": {
+        "title": "Upgrade Your Travel Experience",
+        "content": "Order your Travel Mosaic luggage cover today and turn every trip into a masterpiece."
+      }
+    },
+    "solora": {
+      "title": "Solora Luggage Cover | Premium Tropical & Summer-Inspired Suitcase Protector",
+      "headline": "Travel light. Feel the sunshine. Embrace the vibe.",
+      "intro": "The natOnat Solora Luggage Cover captures the essence of summer, relaxation, and tropical escape. Featuring a soft, elegant design with palm leaves, warm colors, and a relaxed silhouette, this cover transforms your suitcase into a calm and stylish travel statement. Perfect for travelers who love beach vibes, sunshine, and effortless elegance.",
+      "designInspiration": {
+        "title": "Design Inspiration – Solora",
+        "content": "The Solora design is inspired by tropical destinations, warm sunsets, and peaceful moments under the sun. With flowing elements and soft color tones, it reflects calmness, freedom, and summer energy.",
+        "perfectFor": [
+          "Beach lovers & vacation travelers",
+          "Summer getaway enthusiasts",
+          "Travelers who love soft, elegant aesthetics",
+          "Anyone who wants a relaxed, stylish suitcase"
+        ],
+        "tagline": "At baggage claim, your luggage will stand out with a calm, refreshing vibe."
+      },
+      "whyChoose": {
+        "title": "Why Choose natOnat Luggage Covers in Egypt?",
+        "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
+        "features": [
+          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
+          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
+          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
+          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
+          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+        ]
+      },
+      "sizeGuide": {
+        "title": "Size Guide – Simple & Accurate",
+        "subtitle": "Choosing the right size is easy:",
+        "tip": "Just measure your suitcase height (without wheels). That's all you need.",
+        "sizes": [
+          "S → Cabin size (carry-on)",
+          "M → Medium suitcase",
+          "L → Large suitcase",
+          "XL → Extra large luggage"
+        ],
+        "proTip": "If you're between sizes, choose the larger size for a smoother fit."
+      },
+      "targetAudience": {
+        "title": "Designed for Relaxed Travelers & Summer Lovers",
+        "items": [
+          "Beach lovers & holiday travelers",
+          "Summer trip enthusiasts",
+          "Travelers who prefer soft, elegant designs",
+          "Anyone who wants a calm, stylish suitcase"
+        ]
+      },
+      "about": {
+        "title": "About natOnat",
+        "content": "natOnat is a premium Egyptian travel brand focused on smart design, quality materials, and modern lifestyle needs. We create products that make your travel easier, safer, and more stylish."
+      },
+      "cta": {
+        "title": "Upgrade Your Travel Experience",
+        "content": "Order your Solora luggage cover today and travel with comfort, elegance, and summer vibes."
+      }
+    },
+    "tech-explorer": {
+      "title": "Tech Explorer Luggage Cover | Premium Futuristic Suitcase Protector",
+      "headline": "Travel ahead of the future.",
+      "intro": "Travel ahead of the future with the natOnat Tech Explorer Luggage Cover. This isn't just a suitcase protector; it's a high-tech upgrade for your gear. Inspired by circuit board patterns and digital aesthetics, this futuristic luggage cover in Egypt is made for travelers who move fast and want to stand out at baggage claim.",
+      "designInspiration": {
+        "title": "Design Inspiration – Tech Explorer",
+        "content": "The Tech Explorer design combines electronic circuit patterns with vibrant colors that express innovation, speed, and technology.",
+        "perfectFor": [
+          "Tech lovers & innovators",
+          "Digital professionals",
+          "Remote workers & digital nomads",
+          "Anyone who wants a modern, standout suitcase"
+        ],
+        "tagline": "At the airport, your luggage will be noticeable and clear from the first moment."
+      },
+      "whyChoose": {
+        "title": "Why Choose natOnat Luggage Covers in Egypt?",
+        "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
+        "features": [
+          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
+          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
+          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
+          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
+          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+        ]
+      },
+      "sizeGuide": {
+        "title": "Size Guide – Simple & Accurate",
+        "subtitle": "Choosing the right size is easy:",
+        "tip": "Just measure your suitcase height (without wheels). That's all you need.",
+        "sizes": [
+          "S → Cabin size (carry-on)",
+          "M → Medium suitcase",
+          "L → Large suitcase",
+          "XL → Extra large luggage"
+        ],
+        "proTip": "If you're between sizes, choose the larger size for a smoother fit."
+      },
+      "targetAudience": {
+        "title": "Designed for Tech & Innovation Lovers",
+        "items": [
+          "Tech lovers & innovators",
+          "Digital professionals",
+          "Frequent travelers",
+          "Anyone who wants a modern, standout suitcase"
+        ]
+      },
+      "about": {
+        "title": "About natOnat",
+        "content": "natOnat is a premium Egyptian travel brand focused on smart design, quality materials, and modern lifestyle needs. We create products that make your travel easier, safer, and more stylish."
+      },
+      "cta": {
+        "title": "Upgrade Your Travel Experience",
+        "content": "Order your Tech Explorer luggage cover today and travel with confidence and style."
+      }
+    },
+    "pyramids": {
+      "title": "Pyramids Luggage Cover | Premium Egypt-Inspired Suitcase Protector",
+      "headline": "Carry the legacy of ancient Egypt wherever you go.",
+      "intro": "The natOnat Pyramids Luggage Cover is inspired by the timeless beauty and mystery of Egypt's most iconic landmarks. Featuring a stunning illustration of the pyramids, desert landscapes, and symbolic elements, this design transforms your suitcase into a powerful tribute to history, culture, and identity. Perfect for travelers who appreciate heritage, storytelling, and bold cultural expression.",
+      "designInspiration": {
+        "title": "Design Inspiration – Pyramids",
+        "content": "The Pyramids design blends ancient Egyptian symbols with modern artistic elements, capturing the spirit of history, strength, and timeless wonder.",
+        "perfectFor": [
+          "Egypt lovers & cultural explorers",
+          "Travelers who value history and heritage",
+          "Fans of symbolic and meaningful designs",
+          "Anyone who wants a bold, iconic suitcase"
+        ],
+        "tagline": "At baggage claim, your luggage will stand out with a strong cultural identity."
+      },
+      "whyChoose": {
+        "title": "Why Choose natOnat Luggage Covers in Egypt?",
+        "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
+        "features": [
+          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
+          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
+          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
+          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
+          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+        ]
+      },
+      "sizeGuide": {
+        "title": "Size Guide – Simple & Accurate",
+        "subtitle": "Choosing the right size is easy:",
+        "tip": "Just measure your suitcase height (without wheels). That's all you need.",
+        "sizes": [
+          "S → Cabin size (carry-on)",
+          "M → Medium suitcase",
+          "L → Large suitcase",
+          "XL → Extra large luggage"
+        ],
+        "proTip": "If you're between sizes, choose the larger size for a smoother fit."
+      },
+      "targetAudience": {
+        "title": "Designed for Culture Lovers & Proud Travelers",
+        "items": [
+          "Lovers of Egyptian history and heritage",
+          "Travelers who appreciate meaningful designs",
+          "Tourists and locals alike",
+          "Anyone who wants a distinctive, cultural suitcase"
+        ]
+      },
+      "about": {
+        "title": "About natOnat",
+        "content": "natOnat is a premium Egyptian travel brand focused on smart design, quality materials, and modern lifestyle needs. We create products that make your travel easier, safer, and more stylish."
+      },
+      "cta": {
+        "title": "Upgrade Your Travel Experience",
+        "content": "Order your Pyramids luggage cover today and travel with history, pride, and timeless style."
+      }
+    },
+    "peacock": {
+      "title": "Peacock Luggage Cover | Premium Elegant Feather-Inspired Suitcase Protector",
+      "headline": "Travel with elegance. Shine with natural beauty.",
+      "intro": "The natOnat Peacock Luggage Cover is inspired by the graceful beauty of peacock feathers. Featuring flowing golden lines and rich, deep tones, this design transforms your suitcase into a symbol of elegance, confidence, and timeless style. Perfect for travelers who appreciate refined aesthetics and eye-catching sophistication.",
+      "designInspiration": {
+        "title": "Design Inspiration – Peacock",
+        "content": "The Peacock design captures the essence of natural elegance and artistic detail, blending feather patterns with luxurious colors to create a calm yet striking visual experience.",
+        "perfectFor": [
+          "Lovers of elegant and artistic designs",
+          "Travelers who prefer refined, premium aesthetics",
+          "Nature-inspired style enthusiasts",
+          "Anyone who wants a luxurious, standout suitcase"
+        ],
+        "tagline": "At baggage claim, your luggage will stand out with graceful beauty and sophistication."
+      },
+      "whyChoose": {
+        "title": "Why Choose natOnat Luggage Covers in Egypt?",
+        "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
+        "features": [
+          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
+          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
+          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
+          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
+          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+        ]
+      },
+      "sizeGuide": {
+        "title": "Size Guide – Simple & Accurate",
+        "subtitle": "Choosing the right size is easy:",
+        "tip": "Just measure your suitcase height (without wheels). That's all you need.",
+        "sizes": [
+          "S → Cabin size (carry-on)",
+          "M → Medium suitcase",
+          "L → Large suitcase",
+          "XL → Extra large luggage"
+        ],
+        "proTip": "If you're between sizes, choose the larger size for a smoother fit."
+      },
+      "targetAudience": {
+        "title": "Designed for Elegant Travelers & Style Lovers",
+        "items": [
+          "Lovers of elegant and artistic designs",
+          "Travelers who prefer premium aesthetics",
+          "Fashion-conscious travelers",
+          "Anyone who wants a graceful, standout suitcase"
+        ]
+      },
+      "about": {
+        "title": "About natOnat",
+        "content": "natOnat is a premium Egyptian travel brand focused on smart design, quality materials, and modern lifestyle needs. We create products that make your travel easier, safer, and more stylish."
+      },
+      "cta": {
+        "title": "Upgrade Your Travel Experience",
+        "content": "Order your Peacock luggage cover today and travel with elegance, confidence, and timeless beauty."
+      }
+    },
+    "outdoor": {
+      "title": "Outdoor Luggage Cover | Adventure-Inspired Suitcase Protector",
+      "headline": "Take your travel beyond limits.",
+      "intro": "The natOnat Outdoor Luggage Cover is designed for those who live for adventure. Inspired by nature, mountains, forests, and outdoor exploration, this vibrant design brings energy, freedom, and movement to your suitcase—perfect for travelers who never stay still.",
+      "designInspiration": {
+        "title": "Design Inspiration – Outdoor Adventure",
+        "content": "The Outdoor design blends dynamic elements like mountains, forests, skiing, and nature landscapes into a colorful, high-energy composition that reflects the spirit of exploration.",
+        "perfectFor": [
+          "Adventure seekers & explorers",
+          "Nature lovers & outdoor enthusiasts",
+          "Travelers who love hiking, skiing & camping",
+          "Anyone who wants a bold, energetic suitcase look"
+        ],
+        "tagline": "At the airport, your luggage won't just stand out — it will reflect your adventurous lifestyle."
+      },
+      "whyChoose": {
+        "title": "Why Choose natOnat Luggage Covers in Egypt?",
+        "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
+        "features": [
+          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
+          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
+          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
+          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
+          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+        ]
+      },
+      "sizeGuide": {
+        "title": "Size Guide – Simple & Accurate",
+        "subtitle": "Choosing the right size is easy:",
+        "tip": "Just measure your suitcase height (without wheels). That's all you need.",
+        "sizes": [
+          "S → Cabin size (carry-on)",
+          "M → Medium suitcase",
+          "L → Large suitcase",
+          "XL → Extra large luggage"
+        ],
+        "proTip": "If you're between sizes, choose the larger size for a smoother fit."
+      },
+      "targetAudience": {
+        "title": "Designed for the Modern Traveler",
+        "items": [
+          "Adventure travelers & explorers",
+          "Hiking, camping & ski trip lovers",
+          "International & local travel",
+          "Anyone who wants a bold, nature-inspired suitcase"
+        ]
+      },
+      "about": {
+        "title": "About natOnat",
+        "content": "natOnat is a premium Egyptian travel brand focused on smart design, quality materials, and modern lifestyle needs. We create products that make your travel easier, safer, and more stylish."
+      },
+      "cta": {
+        "title": "Upgrade Your Travel Experience",
+        "content": "Order your Outdoor luggage cover today and travel with confidence, protection, and adventurous style."
+      }
+    },
+    "optical-illusion": {
+      "title": "Optical Illusion Luggage Cover | Premium Abstract & Modern Suitcase Protector",
+      "headline": "Challenge perception. Travel differently. Stand out instantly.",
+      "intro": "The natOnat Optical Illusion Luggage Cover is designed to captivate attention. Featuring a bold mix of geometric patterns, visual depth, and dynamic motion, this design creates a striking illusion effect that transforms your suitcase into a modern work of art. Perfect for travelers who love unique visuals, creativity, and making a powerful statement wherever they go.",
+      "designInspiration": {
+        "title": "Design Inspiration – Optical Illusion",
+        "content": "The Optical Illusion design blends abstract geometry, layered patterns, and high-contrast colors to create a sense of movement and visual depth.",
+        "perfectFor": [
+          "Design lovers & creative minds",
+          "Fans of modern and abstract art",
+          "Travelers who want something truly different",
+          "Anyone who wants a bold, eye-catching suitcase"
+        ],
+        "tagline": "At baggage claim, your luggage won't just stand out — it will grab attention instantly."
+      },
+      "whyChoose": {
+        "title": "Why Choose natOnat Luggage Covers in Egypt?",
+        "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
+        "features": [
+          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
+          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
+          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
+          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
+          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+        ]
+      },
+      "sizeGuide": {
+        "title": "Size Guide – Simple & Accurate",
+        "subtitle": "Choosing the right size is easy:",
+        "tip": "Just measure your suitcase height (without wheels). That's all you need.",
+        "sizes": [
+          "S → Cabin size (carry-on)",
+          "M → Medium suitcase",
+          "L → Large suitcase",
+          "XL → Extra large luggage"
+        ],
+        "proTip": "If you're between sizes, choose the larger size for a smoother fit."
+      },
+      "targetAudience": {
+        "title": "Designed for Bold & Creative Personalities",
+        "items": [
+          "Creative thinkers & designers",
+          "Lovers of abstract and modern visuals",
+          "Travelers who want to stand out",
+          "Anyone who wants a unique, artistic suitcase"
+        ]
+      },
+      "about": {
+        "title": "About natOnat",
+        "content": "natOnat is a premium Egyptian travel brand focused on smart design, quality materials, and modern lifestyle needs. We create products that make your travel easier, safer, and more stylish."
+      },
+      "cta": {
+        "title": "Upgrade Your Travel Experience",
+        "content": "Order your Optical Illusion luggage cover today and turn every journey into a visual statement."
+      }
+    },
+    "new-york": {
+      "title": "New York Luggage Cover | Premium Urban Travel-Inspired Suitcase Protector",
+      "headline": "Carry the energy of New York wherever you go.",
+      "intro": "The natOnat New York Luggage Cover captures the bold spirit of one of the world's most iconic cities. Inspired by travel stamps, city skylines, and urban culture, this design transforms your suitcase into a vibrant statement full of movement, history, and global vibes. Perfect for travelers who love big cities, fast energy, and standing out with style.",
+      "designInspiration": {
+        "title": "Design Inspiration – New York",
+        "content": "The New York design blends elements like vintage travel stamps, city architecture, and dynamic urban textures to reflect the fast-paced lifestyle and iconic identity of the city.",
+        "perfectFor": [
+          "City lovers & urban explorers",
+          "Fans of New York & global culture",
+          "Frequent travelers & adventurers",
+          "Anyone who wants a bold, travel-inspired suitcase"
+        ],
+        "tagline": "At baggage claim, your luggage will stand out with a strong city identity."
+      },
+      "whyChoose": {
+        "title": "Why Choose natOnat Luggage Covers in Egypt?",
+        "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
+        "features": [
+          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
+          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
+          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
+          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
+          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+        ]
+      },
+      "sizeGuide": {
+        "title": "Size Guide – Simple & Accurate",
+        "subtitle": "Choosing the right size is easy:",
+        "tip": "Just measure your suitcase height (without wheels). That's all you need.",
+        "sizes": [
+          "S → Cabin size (carry-on)",
+          "M → Medium suitcase",
+          "L → Large suitcase",
+          "XL → Extra large luggage"
+        ],
+        "proTip": "If you're between sizes, choose the larger size for a smoother fit."
+      },
+      "targetAudience": {
+        "title": "Designed for City Lovers & Urban Explorers",
+        "items": [
+          "Travelers who love big cities",
+          "Fans of urban culture and design",
+          "Frequent flyers & global explorers",
+          "Anyone who wants a modern, standout suitcase"
+        ]
+      },
+      "about": {
+        "title": "About natOnat",
+        "content": "natOnat is a premium Egyptian travel brand focused on smart design, quality materials, and modern lifestyle needs. We create products that make your travel easier, safer, and more stylish."
+      },
+      "cta": {
+        "title": "Upgrade Your Travel Experience",
+        "content": "Order your New York luggage cover today and bring the energy of the city to every journey."
+      }
+    },
+    "madrid": {
+      "title": "Madrid Luggage Cover | Premium Elegant Football-Inspired Suitcase Protector",
+      "headline": "Travel with elegance. Carry the spirit of champions.",
+      "intro": "The natOnat Madrid Luggage Cover is inspired by timeless style, prestige, and football excellence. Featuring a clean white base with flowing gold and black accents, this design reflects confidence, class, and winning energy — turning your suitcase into a refined statement wherever you go. Perfect for travelers who appreciate elegance, simplicity, and powerful identity.",
+      "designInspiration": {
+        "title": "Design Inspiration – Madrid",
+        "content": "The Madrid design captures a balance of minimalism and strength, combining smooth flowing lines with premium color tones that symbolize legacy, ambition, and excellence.",
+        "perfectFor": [
+          "Football fans & sports enthusiasts",
+          "Lovers of clean, elegant designs",
+          "Travelers who prefer a premium aesthetic",
+          "Anyone who wants a classy, standout suitcase"
+        ],
+        "tagline": "At baggage claim, your luggage will stand out with quiet confidence and style."
+      },
+      "whyChoose": {
+        "title": "Why Choose natOnat Luggage Covers in Egypt?",
+        "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
+        "features": [
+          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
+          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
+          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
+          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
+          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+        ]
+      },
+      "sizeGuide": {
+        "title": "Size Guide – Simple & Accurate",
+        "subtitle": "Choosing the right size is easy:",
+        "tip": "Just measure your suitcase height (without wheels). That's all you need.",
+        "sizes": [
+          "S → Cabin size (carry-on)",
+          "M → Medium suitcase",
+          "L → Large suitcase",
+          "XL → Extra large luggage"
+        ],
+        "proTip": "If you're between sizes, choose the larger size for a smoother fit."
+      },
+      "targetAudience": {
+        "title": "Designed for Elegant Travelers & Football Fans",
+        "items": [
+          "Football lovers & passionate fans",
+          "Travelers who prefer a clean, premium look",
+          "Professionals & frequent flyers",
+          "Anyone who wants a refined, standout suitcase"
+        ]
+      },
+      "about": {
+        "title": "About natOnat",
+        "content": "natOnat is a premium Egyptian travel brand focused on smart design, quality materials, and modern lifestyle needs. We create products that make your travel easier, safer, and more stylish."
+      },
+      "cta": {
+        "title": "Upgrade Your Travel Experience",
+        "content": "Order your Madrid luggage cover today and travel with elegance, confidence, and style."
+      }
+    },
+    "lunara": {
+      "title": "Lunara Luggage Cover | Premium Celestial & Elegant Suitcase Protector",
+      "headline": "Travel under the stars. Carry the calm of the night.",
+      "intro": "The natOnat Lunara Luggage Cover is inspired by the beauty of the night sky and the mystery of the universe. Featuring a serene celestial design with flowing lines, stars, and constellation elements, this cover transforms your suitcase into a calm and elegant statement. Perfect for travelers who love peaceful aesthetics, cosmic beauty, and timeless elegance.",
+      "designInspiration": {
+        "title": "Design Inspiration – Lunara",
+        "content": "The Lunara design captures the essence of the night sky with delicate constellations, soft flowing elements, and deep tones that reflect calmness, imagination, and wonder.",
+        "perfectFor": [
+          "Dreamers & night lovers",
+          "Fans of celestial and cosmic designs",
+          "Travelers who prefer calm, elegant aesthetics",
+          "Anyone who wants a unique, serene suitcase"
+        ],
+        "tagline": "At baggage claim, your luggage will stand out with quiet beauty and sophistication."
+      },
+      "whyChoose": {
+        "title": "Why Choose natOnat Luggage Covers in Egypt?",
+        "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
+        "features": [
+          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
+          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
+          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
+          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
+          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+        ]
+      },
+      "sizeGuide": {
+        "title": "Size Guide – Simple & Accurate",
+        "subtitle": "Choosing the right size is easy:",
+        "tip": "Just measure your suitcase height (without wheels). That's all you need.",
+        "sizes": [
+          "S → Cabin size (carry-on)",
+          "M → Medium suitcase",
+          "L → Large suitcase",
+          "XL → Extra large luggage"
+        ],
+        "proTip": "If you're between sizes, choose the larger size for a smoother fit."
+      },
+      "targetAudience": {
+        "title": "Designed for Calm Souls & Elegant Travelers",
+        "items": [
+          "Lovers of calm and minimal aesthetics",
+          "Dreamers & night sky enthusiasts",
+          "Travelers who prefer subtle elegance",
+          "Anyone who wants a peaceful, standout suitcase"
+        ]
+      },
+      "about": {
+        "title": "About natOnat",
+        "content": "natOnat is a premium Egyptian travel brand focused on smart design, quality materials, and modern lifestyle needs. We create products that make your travel easier, safer, and more stylish."
+      },
+      "cta": {
+        "title": "Upgrade Your Travel Experience",
+        "content": "Order your Lunara luggage cover today and travel with elegance, calm, and cosmic inspiration."
+      }
+    },
+    "king-tut": {
+      "title": "King Tut Luggage Cover | Premium Ancient Egypt Suitcase Protector",
+      "headline": "Travel like royalty. Carry the legacy of a king.",
+      "intro": "The natOnat King Tut Luggage Cover is inspired by the legendary pharaoh Tutankhamun, bringing the power, elegance, and mystery of Ancient Egypt to your travel style. This bold and luxurious design transforms your suitcase into a symbol of heritage and prestige.",
+      "designInspiration": {
+        "title": "Design Inspiration – King Tut",
+        "content": "The King Tut design features iconic royal elements, including the pharaoh's golden mask, intricate details, and rich tones that reflect the grandeur of ancient Egyptian civilization.",
+        "perfectFor": [
+          "Lovers of Ancient Egyptian history",
+          "Travelers who appreciate luxury & culture",
+          "Fans of bold, royal-inspired designs",
+          "Anyone who wants a powerful, standout suitcase"
+        ],
+        "tagline": "At the airport, your luggage won't just stand out — it will command attention."
+      },
+      "whyChoose": {
+        "title": "Why Choose natOnat Luggage Covers in Egypt?",
+        "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
+        "features": [
+          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
+          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
+          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
+          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
+          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+        ]
+      },
+      "sizeGuide": {
+        "title": "Size Guide – Simple & Accurate",
+        "subtitle": "Choosing the right size is easy:",
+        "tip": "Just measure your suitcase height (without wheels). That's all you need.",
+        "sizes": [
+          "S → Cabin size (carry-on)",
+          "M → Medium suitcase",
+          "L → Large suitcase",
+          "XL → Extra large luggage"
+        ],
+        "proTip": "If you're between sizes, choose the larger size for a smoother fit."
+      },
+      "targetAudience": {
+        "title": "Designed for the Modern Traveler",
+        "items": [
+          "History lovers & culture enthusiasts",
+          "Travelers who love bold luxury designs",
+          "International and local trips",
+          "Anyone who wants a royal, unforgettable suitcase"
+        ]
+      },
+      "about": {
+        "title": "About natOnat",
+        "content": "natOnat is a premium Egyptian travel brand focused on smart design, quality materials, and modern lifestyle needs. We create products that make your travel easier, safer, and more stylish."
+      },
+      "cta": {
+        "title": "Upgrade Your Travel Experience",
+        "content": "Order your King Tut luggage cover today and travel with confidence, protection, and royal style."
+      }
+    },
+    "festival": {
+      "title": "Festival Luggage Cover | Premium Artistic & Music-Inspired Suitcase Protector",
+      "headline": "Travel with energy. Move with rhythm. Stand out everywhere.",
+      "intro": "The natOnat Festival Luggage Cover is a celebration of color, music, and movement. Inspired by festivals, dance, and artistic expression, this vibrant design transforms your suitcase into a bold statement full of life and creativity. Whether you're heading to a new destination or living every journey like a celebration, this cover reflects your energy.",
+      "designInspiration": {
+        "title": "Design Inspiration – Festival",
+        "content": "The Festival design blends dynamic colors, musical elements, and expressive silhouettes to capture the spirit of celebration, rhythm, and freedom.",
+        "perfectFor": [
+          "Music lovers & festival goers",
+          "Creative personalities & artists",
+          "Travelers who love vibrant energy",
+          "Anyone who wants a colorful, expressive suitcase"
+        ],
+        "tagline": "At baggage claim, your luggage won't just stand out — it will shine."
+      },
+      "whyChoose": {
+        "title": "Why Choose natOnat Luggage Covers in Egypt?",
+        "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
+        "features": [
+          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
+          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
+          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
+          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
+          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+        ]
+      },
+      "sizeGuide": {
+        "title": "Size Guide – Simple & Accurate",
+        "subtitle": "Choosing the right size is easy:",
+        "tip": "Just measure your suitcase height (without wheels). That's all you need.",
+        "sizes": [
+          "S → Cabin size (carry-on)",
+          "M → Medium suitcase",
+          "L → Large suitcase",
+          "XL → Extra large luggage"
+        ],
+        "proTip": "If you're between sizes, choose the larger size for a smoother fit."
+      },
+      "targetAudience": {
+        "title": "Designed for Creative Souls & Festival Lovers",
+        "items": [
+          "Music lovers & festival enthusiasts",
+          "Artists & creative personalities",
+          "Travelers who love bold colors",
+          "Anyone who wants a fun, energetic, standout suitcase"
+        ]
+      },
+      "about": {
+        "title": "About natOnat",
+        "content": "natOnat is a premium Egyptian travel brand focused on smart design, quality materials, and modern lifestyle needs. We create products that make your travel easier, safer, and more stylish."
+      },
+      "cta": {
+        "title": "Upgrade Your Travel Experience",
+        "content": "Order your Festival luggage cover today and bring color, energy, and creativity to every journey."
+      }
+    },
+    "explore": {
+      "title": "Explore Luggage Cover | Premium Adventure-Inspired Suitcase Protector",
+      "headline": "Explore more. Discover more. Travel without limits.",
+      "intro": "The natOnat Explore Luggage Cover is designed for those who live for adventure. Featuring a bold, artistic design inspired by exploration, movement, and discovery, this cover transforms your suitcase into a powerful statement of curiosity and freedom. Whether you're chasing new destinations or embracing the unknown, this design reflects your mindset — always ready for the next journey.",
+      "designInspiration": {
+        "title": "Design Inspiration – Explore",
+        "content": "The Explore design captures the spirit of adventure with dynamic colors, expressive textures, and bold typography that inspires movement and discovery.",
+        "perfectFor": [
+          "Adventure seekers & explorers",
+          "Travelers who love new experiences",
+          "Creatives & free spirits",
+          "Anyone who wants a bold, expressive travel look"
+        ],
+        "tagline": "At baggage claim, your suitcase won't just stand out — it will tell a story."
+      },
+      "whyChoose": {
+        "title": "Why Choose natOnat Luggage Covers in Egypt?",
+        "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
+        "features": [
+          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
+          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
+          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
+          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
+          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+        ]
+      },
+      "sizeGuide": {
+        "title": "Size Guide – Simple & Accurate",
+        "subtitle": "Choosing the right size is easy:",
+        "tip": "Just measure your suitcase height (without wheels). That's all you need.",
+        "sizes": [
+          "S → Cabin size (carry-on)",
+          "M → Medium suitcase",
+          "L → Large suitcase",
+          "XL → Extra large luggage"
+        ],
+        "proTip": "If you're between sizes, choose the larger size for a smoother fit."
+      },
+      "targetAudience": {
+        "title": "Designed for Adventurers & Free Spirits",
+        "items": [
+          "Adventure lovers & explorers",
+          "Frequent travelers & backpackers",
+          "Creatives & bold personalities",
+          "Anyone who wants a powerful, standout suitcase"
+        ]
+      },
+      "about": {
+        "title": "About natOnat",
+        "content": "natOnat is a premium Egyptian travel brand focused on smart design, quality materials, and modern lifestyle needs. We create products that make your travel easier, safer, and more stylish."
+      },
+      "cta": {
+        "title": "Upgrade Your Travel Experience",
+        "content": "Order your Explore luggage cover today and carry the spirit of adventure wherever you go."
+      }
+    },
+    "accord": {
+      "title": "Accord Luggage Cover | Premium Geometric Suitcase Protector",
+      "headline": "Modern geometry. Timeless style. Perfect harmony.",
+      "intro": "The natOnat Accord Luggage Cover brings modern geometric elegance to your travel style. Featuring clean lines, balanced patterns, and a sophisticated design, this cover transforms your suitcase into a statement of contemporary taste. Perfect for travelers who appreciate minimal aesthetics and refined style.",
+      "designInspiration": {
+        "title": "Design Inspiration – Accord",
+        "content": "The Accord design draws from modern architecture and geometric art, creating a harmonious balance of shapes and lines that reflects sophistication and contemporary elegance.",
+        "perfectFor": [
+          "Fans of modern minimalist design",
+          "Business travelers & professionals",
+          "Lovers of geometric patterns",
+          "Anyone who appreciates clean aesthetics"
+        ],
+        "tagline": "At the airport, your luggage won't just stand out — it will showcase refined modern taste."
+      },
+      "whyChoose": {
+        "title": "Why Choose natOnat Luggage Covers in Egypt?",
+        "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
+        "features": [
+          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
+          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
+          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
+          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
+          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+        ]
+      },
+      "sizeGuide": {
+        "title": "Size Guide – Simple & Accurate",
+        "subtitle": "Choosing the right size is easy:",
+        "tip": "Just measure your suitcase height (without wheels). That's all you need.",
+        "sizes": [
+          "S → Cabin size (carry-on)",
+          "M → Medium suitcase",
+          "L → Large suitcase",
+          "XL → Extra large luggage"
+        ],
+        "proTip": "If you're between sizes, choose the larger size for a smoother fit."
+      },
+      "targetAudience": {
+        "title": "Designed for Modern Professionals",
+        "items": [
+          "Business travelers & professionals",
+          "Fans of minimalist design",
+          "Travelers who appreciate sophistication",
+          "Anyone who wants a refined, modern suitcase"
+        ]
+      },
+      "about": {
+        "title": "About natOnat",
+        "content": "natOnat is a premium Egyptian travel brand focused on smart design, quality materials, and modern lifestyle needs. We create products that make your travel easier, safer, and more stylish."
+      },
+      "cta": {
+        "title": "Upgrade Your Travel Experience",
+        "content": "Order your Accord luggage cover today and travel with modern elegance and geometric sophistication."
+      }
+    },
+    "anara": {
+      "title": "Anara Luggage Cover | Premium Floral Suitcase Protector",
+      "headline": "Bloom beautifully. Travel gracefully. Express nature.",
+      "intro": "The natOnat Anara Luggage Cover brings the beauty of nature to your travels with its elegant floral design. Featuring delicate blossoms and botanical elements, this cover transforms your suitcase into a celebration of natural beauty. Perfect for travelers who love flowers, gardens, and graceful aesthetics.",
+      "designInspiration": {
+        "title": "Design Inspiration – Anara",
+        "content": "The Anara design captures the essence of blooming gardens and natural beauty, with flowing floral patterns that evoke freshness, growth, and the joy of nature.",
+        "perfectFor": [
+          "Nature lovers & garden enthusiasts",
+          "Fans of floral aesthetics",
+          "Travelers who appreciate soft elegance",
+          "Anyone who wants a beautiful, feminine suitcase"
+        ],
+        "tagline": "At baggage claim, your luggage won't just stand out — it will bloom with natural elegance."
+      },
+      "whyChoose": {
+        "title": "Why Choose natOnat Luggage Covers in Egypt?",
+        "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
+        "features": [
+          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
+          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
+          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
+          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
+          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+        ]
+      },
+      "sizeGuide": {
+        "title": "Size Guide – Simple & Accurate",
+        "subtitle": "Choosing the right size is easy:",
+        "tip": "Just measure your suitcase height (without wheels). That's all you need.",
+        "sizes": [
+          "S → Cabin size (carry-on)",
+          "M → Medium suitcase",
+          "L → Large suitcase",
+          "XL → Extra large luggage"
+        ],
+        "proTip": "If you're between sizes, choose the larger size for a smoother fit."
+      },
+      "targetAudience": {
+        "title": "Designed for Nature Lovers",
+        "items": [
+          "Garden enthusiasts & nature lovers",
+          "Fans of floral designs",
+          "Travelers who appreciate elegance",
+          "Anyone who wants a beautiful, blooming suitcase"
+        ]
+      },
+      "about": {
+        "title": "About natOnat",
+        "content": "natOnat is a premium Egyptian travel brand focused on smart design, quality materials, and modern lifestyle needs. We create products that make your travel easier, safer, and more stylish."
+      },
+      "cta": {
+        "title": "Upgrade Your Travel Experience",
+        "content": "Order your Anara luggage cover today and travel with natural beauty and floral elegance."
+      }
+    },
+    "ascend": {
+      "title": "Ascend Luggage Cover | Premium Abstract Art Suitcase Protector",
+      "headline": "Rise above. Travel boldly. Express creativity.",
+      "intro": "The natOnat Ascend Luggage Cover features bold abstract art that captures the spirit of ambition and upward movement. With dynamic shapes and expressive colors, this cover transforms your suitcase into a canvas of creativity. Perfect for artistic souls and travelers who dare to stand out.",
+      "designInspiration": {
+        "title": "Design Inspiration – Ascend",
+        "content": "The Ascend design draws from abstract expressionism, featuring bold brushstrokes, dynamic forms, and a sense of upward momentum that inspires confidence and creativity.",
+        "perfectFor": [
+          "Art lovers & creative minds",
+          "Travelers who appreciate bold expression",
+          "Fans of abstract modern art",
+          "Anyone who wants an artistic, unique suitcase"
+        ],
+        "tagline": "At the airport, your luggage won't just stand out — it will rise above the ordinary with artistic flair."
+      },
+      "whyChoose": {
+        "title": "Why Choose natOnat Luggage Covers in Egypt?",
+        "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
+        "features": [
+          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
+          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
+          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
+          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
+          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+        ]
+      },
+      "sizeGuide": {
+        "title": "Size Guide – Simple & Accurate",
+        "subtitle": "Choosing the right size is easy:",
+        "tip": "Just measure your suitcase height (without wheels). That's all you need.",
+        "sizes": [
+          "S → Cabin size (carry-on)",
+          "M → Medium suitcase",
+          "L → Large suitcase",
+          "XL → Extra large luggage"
+        ],
+        "proTip": "If you're between sizes, choose the larger size for a smoother fit."
+      },
+      "targetAudience": {
+        "title": "Designed for Creative Souls",
+        "items": [
+          "Artists & creative professionals",
+          "Lovers of abstract art",
+          "Bold personalities & trendsetters",
+          "Anyone who wants an expressive, artistic suitcase"
+        ]
+      },
+      "about": {
+        "title": "About natOnat",
+        "content": "natOnat is a premium Egyptian travel brand focused on smart design, quality materials, and modern lifestyle needs. We create products that make your travel easier, safer, and more stylish."
+      },
+      "cta": {
+        "title": "Upgrade Your Travel Experience",
+        "content": "Order your Ascend luggage cover today and travel with bold artistic expression."
+      }
+    },
+    "dubai": {
+      "title": "Dubai Luggage Cover | Premium Luxury City-Inspired Suitcase Protector",
+      "headline": "Travel in luxury. Carry the spirit of Dubai. Live grand.",
+      "intro": "The natOnat Dubai Luggage Cover captures the opulence and modern grandeur of one of the world's most iconic cities. Featuring architectural marvels, golden accents, and desert elegance, this cover transforms your suitcase into a symbol of luxury travel. Perfect for those who appreciate the finer things in life.",
+      "designInspiration": {
+        "title": "Design Inspiration – Dubai",
+        "content": "The Dubai design celebrates the city's iconic skyline, luxurious lifestyle, and blend of modern architecture with desert heritage — creating a sophisticated tribute to this magnificent destination.",
+        "perfectFor": [
+          "Lovers of luxury & opulence",
+          "Fans of modern architecture",
+          "Travelers who appreciate grandeur",
+          "Anyone who wants a prestigious, elegant suitcase"
+        ],
+        "tagline": "At the airport, your luggage won't just stand out — it will embody the spirit of luxury and ambition."
+      },
+      "whyChoose": {
+        "title": "Why Choose natOnat Luggage Covers in Egypt?",
+        "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
+        "features": [
+          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
+          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
+          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
+          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
+          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+        ]
+      },
+      "sizeGuide": {
+        "title": "Size Guide – Simple & Accurate",
+        "subtitle": "Choosing the right size is easy:",
+        "tip": "Just measure your suitcase height (without wheels). That's all you need.",
+        "sizes": [
+          "S → Cabin size (carry-on)",
+          "M → Medium suitcase",
+          "L → Large suitcase",
+          "XL → Extra large luggage"
+        ],
+        "proTip": "If you're between sizes, choose the larger size for a smoother fit."
+      },
+      "targetAudience": {
+        "title": "Designed for Luxury Travelers",
+        "items": [
+          "Luxury lifestyle enthusiasts",
+          "Fans of modern city skylines",
+          "Travelers who appreciate opulence",
+          "Anyone who wants a grand, prestigious suitcase"
+        ]
+      },
+      "about": {
+        "title": "About natOnat",
+        "content": "natOnat is a premium Egyptian travel brand focused on smart design, quality materials, and modern lifestyle needs. We create products that make your travel easier, safer, and more stylish."
+      },
+      "cta": {
+        "title": "Upgrade Your Travel Experience",
+        "content": "Order your Dubai luggage cover today and travel with the spirit of luxury and grandeur."
+      }
+    },
+    "egypt-skyline": {
+      "title": "Egypt Skyline Luggage Cover | Premium Egyptian Landmarks Suitcase Protector",
+      "headline": "Carry Egypt's wonders. Travel with pride. Celebrate heritage.",
+      "intro": "The natOnat Egypt Skyline Luggage Cover celebrates the iconic landmarks and timeless beauty of Egypt. Featuring the Pyramids, Sphinx, and Cairo's magnificent skyline, this cover transforms your suitcase into a tribute to one of the world's greatest civilizations. Perfect for travelers who carry their heritage with pride.",
+      "designInspiration": {
+        "title": "Design Inspiration – Egypt Skyline",
+        "content": "The Egypt Skyline design captures the majesty of Egypt's most beloved landmarks, from the ancient pyramids to the modern cityscape — a beautiful fusion of history and contemporary life.",
+        "perfectFor": [
+          "Proud Egyptians & heritage lovers",
+          "Fans of iconic landmarks",
+          "Culture enthusiasts & history buffs",
+          "Anyone who wants a patriotic, meaningful suitcase"
+        ],
+        "tagline": "At the airport, your luggage won't just stand out — it will proudly represent the land of the pharaohs."
+      },
+      "whyChoose": {
+        "title": "Why Choose natOnat Luggage Covers in Egypt?",
+        "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
+        "features": [
+          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
+          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
+          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
+          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
+          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+        ]
+      },
+      "sizeGuide": {
+        "title": "Size Guide – Simple & Accurate",
+        "subtitle": "Choosing the right size is easy:",
+        "tip": "Just measure your suitcase height (without wheels). That's all you need.",
+        "sizes": [
+          "S → Cabin size (carry-on)",
+          "M → Medium suitcase",
+          "L → Large suitcase",
+          "XL → Extra large luggage"
+        ],
+        "proTip": "If you're between sizes, choose the larger size for a smoother fit."
+      },
+      "targetAudience": {
+        "title": "Designed for Proud Egyptians",
+        "items": [
+          "Egyptians who love their heritage",
+          "History & culture enthusiasts",
+          "Fans of iconic landmarks",
+          "Anyone who wants a patriotic travel statement"
+        ]
+      },
+      "about": {
+        "title": "About natOnat",
+        "content": "natOnat is a premium Egyptian travel brand focused on smart design, quality materials, and modern lifestyle needs. We create products that make your travel easier, safer, and more stylish."
+      },
+      "cta": {
+        "title": "Upgrade Your Travel Experience",
+        "content": "Order your Egypt Skyline luggage cover today and travel with pride, heritage, and Egyptian spirit."
+      }
+    },
+    "egyptian-queen": {
+      "title": "Egyptian Queen Luggage Cover | Premium Royal Egyptian Suitcase Protector",
+      "headline": "Travel like royalty. Embrace your inner queen. Reign supreme.",
+      "intro": "The natOnat Egyptian Queen Luggage Cover celebrates the power, beauty, and majesty of ancient Egyptian royalty. Featuring regal designs inspired by queens and goddesses, this cover transforms your suitcase into a symbol of feminine strength and timeless elegance. Perfect for travelers who carry themselves with confidence and grace.",
+      "designInspiration": {
+        "title": "Design Inspiration – Egyptian Queen",
+        "content": "The Egyptian Queen design draws from the art and iconography of ancient Egypt's most powerful women — Cleopatra, Nefertiti, and the divine goddesses — creating a tribute to feminine royalty.",
+        "perfectFor": [
+          "Strong, confident women",
+          "Lovers of Egyptian history & royalty",
+          "Fans of regal, elegant aesthetics",
+          "Anyone who wants to travel like a queen"
+        ],
+        "tagline": "At the airport, your luggage won't just stand out — it will command the attention befitting royalty."
+      },
+      "whyChoose": {
+        "title": "Why Choose natOnat Luggage Covers in Egypt?",
+        "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
+        "features": [
+          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
+          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
+          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
+          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
+          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+        ]
+      },
+      "sizeGuide": {
+        "title": "Size Guide – Simple & Accurate",
+        "subtitle": "Choosing the right size is easy:",
+        "tip": "Just measure your suitcase height (without wheels). That's all you need.",
+        "sizes": [
+          "S → Cabin size (carry-on)",
+          "M → Medium suitcase",
+          "L → Large suitcase",
+          "XL → Extra large luggage"
+        ],
+        "proTip": "If you're between sizes, choose the larger size for a smoother fit."
+      },
+      "targetAudience": {
+        "title": "Designed for Modern Queens",
+        "items": [
+          "Confident, powerful women",
+          "Lovers of Egyptian royalty",
+          "Fans of regal aesthetics",
+          "Anyone who deserves to travel like a queen"
+        ]
+      },
+      "about": {
+        "title": "About natOnat",
+        "content": "natOnat is a premium Egyptian travel brand focused on smart design, quality materials, and modern lifestyle needs. We create products that make your travel easier, safer, and more stylish."
+      },
+      "cta": {
+        "title": "Upgrade Your Travel Experience",
+        "content": "Order your Egyptian Queen luggage cover today and reign over every journey with royal elegance."
+      }
+    },
+    "eternal-egypt": {
+      "title": "Eternal Egypt Luggage Cover | Premium Timeless Heritage Suitcase Protector",
+      "headline": "Carry the legacy. Honor the past. Travel eternal.",
+      "intro": "The natOnat Eternal Egypt Luggage Cover celebrates the timeless beauty and enduring spirit of Egyptian civilization. Featuring iconic symbols, hieroglyphics, and ancient motifs, this cover transforms your suitcase into a moving tribute to one of history's greatest cultures. Perfect for travelers who appreciate heritage and timeless design.",
+      "designInspiration": {
+        "title": "Design Inspiration – Eternal Egypt",
+        "content": "The Eternal Egypt design weaves together ancient symbols, hieroglyphic art, and timeless motifs that have defined Egyptian culture for millennia — creating a design that honors the past while traveling into the future.",
+        "perfectFor": [
+          "History enthusiasts & Egyptology fans",
+          "Proud Egyptians & heritage lovers",
+          "Travelers who appreciate ancient art",
+          "Anyone who wants a meaningful, cultural suitcase"
+        ],
+        "tagline": "At the airport, your luggage won't just stand out — it will carry the weight of 5000 years of civilization."
+      },
+      "whyChoose": {
+        "title": "Why Choose natOnat Luggage Covers in Egypt?",
+        "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
+        "features": [
+          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
+          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
+          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
+          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
+          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+        ]
+      },
+      "sizeGuide": {
+        "title": "Size Guide – Simple & Accurate",
+        "subtitle": "Choosing the right size is easy:",
+        "tip": "Just measure your suitcase height (without wheels). That's all you need.",
+        "sizes": [
+          "S → Cabin size (carry-on)",
+          "M → Medium suitcase",
+          "L → Large suitcase",
+          "XL → Extra large luggage"
+        ],
+        "proTip": "If you're between sizes, choose the larger size for a smoother fit."
+      },
+      "targetAudience": {
+        "title": "Designed for Heritage Lovers",
+        "items": [
+          "History & Egyptology enthusiasts",
+          "Proud Egyptians worldwide",
+          "Culture lovers & art appreciators",
+          "Anyone who honors ancient civilizations"
+        ]
+      },
+      "about": {
+        "title": "About natOnat",
+        "content": "natOnat is a premium Egyptian travel brand focused on smart design, quality materials, and modern lifestyle needs. We create products that make your travel easier, safer, and more stylish."
+      },
+      "cta": {
+        "title": "Upgrade Your Travel Experience",
+        "content": "Order your Eternal Egypt luggage cover today and travel with the timeless spirit of the pharaohs."
+      }
+    },
+    "lotus": {
+      "title": "Lotus Luggage Cover | Premium Egyptian Flower Suitcase Protector",
+      "headline": "Bloom with grace. Travel with purity. Embrace rebirth.",
+      "intro": "The natOnat Lotus Luggage Cover celebrates the sacred lotus flower — a timeless symbol of purity, rebirth, and beauty in Egyptian culture. Featuring elegant lotus blooms and flowing botanical elements, this cover transforms your suitcase into a statement of natural elegance and spiritual meaning. Perfect for travelers who appreciate symbolism and graceful design.",
+      "designInspiration": {
+        "title": "Design Inspiration – Lotus",
+        "content": "The Lotus design draws from the sacred blue lotus of ancient Egypt, representing the cycle of life, purity, and the beauty of nature. The elegant blooms create a peaceful, sophisticated aesthetic.",
+        "perfectFor": [
+          "Spiritual travelers & mindfulness seekers",
+          "Nature lovers & flower enthusiasts",
+          "Fans of meaningful symbolism",
+          "Anyone who wants elegant, peaceful luggage"
+        ],
+        "tagline": "At baggage claim, your luggage won't just stand out — it will bloom with serenity and grace."
+      },
+      "whyChoose": {
+        "title": "Why Choose natOnat Luggage Covers in Egypt?",
+        "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
+        "features": [
+          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
+          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
+          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
+          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
+          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+        ]
+      },
+      "sizeGuide": {
+        "title": "Size Guide – Simple & Accurate",
+        "subtitle": "Choosing the right size is easy:",
+        "tip": "Just measure your suitcase height (without wheels). That's all you need.",
+        "sizes": [
+          "S → Cabin size (carry-on)",
+          "M → Medium suitcase",
+          "L → Large suitcase",
+          "XL → Extra large luggage"
+        ],
+        "proTip": "If you're between sizes, choose the larger size for a smoother fit."
+      },
+      "targetAudience": {
+        "title": "Designed for Graceful Travelers",
+        "items": [
+          "Spiritual & mindful travelers",
+          "Flower & nature enthusiasts",
+          "Lovers of symbolic meaning",
+          "Anyone seeking peaceful elegance"
+        ]
+      },
+      "about": {
+        "title": "About natOnat",
+        "content": "natOnat is a premium Egyptian travel brand focused on smart design, quality materials, and modern lifestyle needs. We create products that make your travel easier, safer, and more stylish."
+      },
+      "cta": {
+        "title": "Upgrade Your Travel Experience",
+        "content": "Order your Lotus luggage cover today and bloom beautifully on every journey."
+      }
+    },
+    "black": {
+      "title": "Black Luggage Cover | Premium Classic Black Suitcase Protector",
+      "headline": "Timeless elegance. Understated luxury. Classic style.",
+      "intro": "The natOnat Black Luggage Cover brings sophisticated simplicity to your travels. Featuring a sleek, pure black design with subtle texture, this cover transforms your suitcase into a statement of timeless elegance and professional style. Perfect for business travelers and those who appreciate classic, versatile aesthetics.",
+      "designInspiration": {
+        "title": "Design Inspiration – Black",
+        "content": "The Black design celebrates the power of simplicity — a pure, elegant black that represents sophistication, professionalism, and timeless style that never goes out of fashion.",
+        "perfectFor": [
+          "Business travelers & professionals",
+          "Minimalist design lovers",
+          "Fans of timeless elegance",
+          "Anyone who appreciates versatile sophistication"
+        ],
+        "tagline": "At the airport, your luggage won't just blend in — it will quietly command respect through refined simplicity."
+      },
+      "whyChoose": {
+        "title": "Why Choose natOnat Luggage Covers in Egypt?",
+        "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
+        "features": [
+          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
+          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
+          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
+          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
+          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+        ]
+      },
+      "sizeGuide": {
+        "title": "Size Guide – Simple & Accurate",
+        "subtitle": "Choosing the right size is easy:",
+        "tip": "Just measure your suitcase height (without wheels). That's all you need.",
+        "sizes": [
+          "S → Cabin size (carry-on)",
+          "M → Medium suitcase",
+          "L → Large suitcase",
+          "XL → Extra large luggage"
+        ],
+        "proTip": "If you're between sizes, choose the larger size for a smoother fit."
+      },
+      "targetAudience": {
+        "title": "Designed for Classic Elegance",
+        "items": [
+          "Business professionals",
+          "Minimalist style lovers",
+          "Fans of timeless black",
+          "Anyone seeking versatile sophistication"
+        ]
+      },
+      "about": {
+        "title": "About natOnat",
+        "content": "natOnat is a premium Egyptian travel brand focused on smart design, quality materials, and modern lifestyle needs. We create products that make your travel easier, safer, and more stylish."
+      },
+      "cta": {
+        "title": "Upgrade Your Travel Experience",
+        "content": "Order your Black luggage cover today and travel with timeless sophistication and classic elegance."
+      }
+    },
+    "barcelona": {
+      "title": "Barcelona Luggage Cover | Premium Mediterranean City-Inspired Suitcase Protector",
+      "headline": "Travel with passion. Carry Catalan spirit. Live beautifully.",
+      "intro": "The natOnat Barcelona Luggage Cover captures the vibrant energy and artistic soul of one of Europe's most captivating cities. Inspired by Gaudi's architecture, Mediterranean colors, and Catalan passion, this cover transforms your suitcase into a celebration of life, art, and culture. Perfect for travelers who embrace joy and creativity.",
+      "designInspiration": {
+        "title": "Design Inspiration – Barcelona",
+        "content": "The Barcelona design draws from the city's iconic architecture, Mediterranean blues and warm sierra tones, and the artistic spirit that makes this city unforgettable — creating a tribute to passion and beauty.",
+        "perfectFor": [
+          "Art & architecture lovers",
+          "Fans of Mediterranean culture",
+          "Travelers who embrace life passionately",
+          "Anyone who loves Barcelona's unique spirit"
+        ],
+        "tagline": "At the airport, your luggage won't just stand out — it will radiate the warmth and passion of Catalonia."
+      },
+      "whyChoose": {
+        "title": "Why Choose natOnat Luggage Covers in Egypt?",
+        "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
+        "features": [
+          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
+          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
+          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
+          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
+          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+        ]
+      },
+      "sizeGuide": {
+        "title": "Size Guide – Simple & Accurate",
+        "subtitle": "Choosing the right size is easy:",
+        "tip": "Just measure your suitcase height (without wheels). That's all you need.",
+        "sizes": [
+          "S → Cabin size (carry-on)",
+          "M → Medium suitcase",
+          "L → Large suitcase",
+          "XL → Extra large luggage"
+        ],
+        "proTip": "If you're between sizes, choose the larger size for a smoother fit."
+      },
+      "targetAudience": {
+        "title": "Designed for Passionate Travelers",
+        "items": [
+          "Art & culture enthusiasts",
+          "Mediterranean lifestyle lovers",
+          "Fans of Barcelona & Spain",
+          "Anyone who travels with passion"
+        ]
+      },
+      "about": {
+        "title": "About natOnat",
+        "content": "natOnat is a premium Egyptian travel brand focused on smart design, quality materials, and modern lifestyle needs. We create products that make your travel easier, safer, and more stylish."
+      },
+      "cta": {
+        "title": "Upgrade Your Travel Experience",
+        "content": "Order your Barcelona luggage cover today and travel with Mediterranean passion and artistic spirit."
+      }
+    },
+    "wildfern": {
+      "title": "Wild Fern Luggage Cover | Premium Nature-Inspired Suitcase Protector",
+      "headline": "Grow wild. Travel free. Embrace nature.",
+      "intro": "The natOnat Wild Fern Luggage Cover brings the untamed beauty of nature to your travels. Featuring lush fern fronds, botanical elements, and earthy greens, this cover transforms your suitcase into a celebration of the wild and free spirit of the forest. Perfect for nature lovers and free-spirited travelers.",
+      "designInspiration": {
+        "title": "Design Inspiration – Wild Fern",
+        "content": "The Wild Fern design captures the beauty of untamed nature — delicate fern fronds unfurling in an endless dance of growth, representing freedom, resilience, and the quiet strength of the natural world.",
+        "perfectFor": [
+          "Nature lovers & outdoor enthusiasts",
+          "Fans of botanical designs",
+          "Free spirits & adventurers",
+          "Anyone who feels at home in nature"
+        ],
+        "tagline": "At baggage claim, your luggage won't just stand out — it will carry the fresh spirit of the forest."
+      },
+      "whyChoose": {
+        "title": "Why Choose natOnat Luggage Covers in Egypt?",
+        "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
+        "features": [
+          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
+          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
+          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
+          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
+          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+        ]
+      },
+      "sizeGuide": {
+        "title": "Size Guide – Simple & Accurate",
+        "subtitle": "Choosing the right size is easy:",
+        "tip": "Just measure your suitcase height (without wheels). That's all you need.",
+        "sizes": [
+          "S → Cabin size (carry-on)",
+          "M → Medium suitcase",
+          "L → Large suitcase",
+          "XL → Extra large luggage"
+        ],
+        "proTip": "If you're between sizes, choose the larger size for a smoother fit."
+      },
+      "targetAudience": {
+        "title": "Designed for Nature Enthusiasts",
+        "items": [
+          "Outdoor lovers & hikers",
+          "Botanical design fans",
+          "Free spirits & wanderers",
+          "Anyone who loves wild nature"
+        ]
+      },
+      "about": {
+        "title": "About natOnat",
+        "content": "natOnat is a premium Egyptian travel brand focused on smart design, quality materials, and modern lifestyle needs. We create products that make your travel easier, safer, and more stylish."
+      },
+      "cta": {
+        "title": "Upgrade Your Travel Experience",
+        "content": "Order your Wild Fern luggage cover today and travel with the wild, free spirit of nature."
+      }
+    },
+    "eoehro-passport-holder": {
+      "title": "Eoehro Passport Holder | Premium RFID-Protected Travel Wallet",
+      "headline": "Travel secure. Stay organized. Carry with confidence.",
+      "intro": "The Eoehro Passport Holder is a premium travel accessory designed to keep your passport, vaccine card, credit cards, and travel documents organized and protected. Featuring RFID blocking technology, magnetic clasp closure, and multiple compartments, this faux leather wallet combines security with elegant style. Available in 3 classic colors.",
+      "designInspiration": {
+        "title": "Design Inspiration – Secure Travel",
+        "content": "The Eoehro Passport Holder is designed for modern travelers who value security and organization. Every detail is crafted to protect your personal information while keeping your travel essentials easily accessible.",
+        "perfectFor": [
+          "Frequent travelers",
+          "Security-conscious individuals",
+          "Organized travelers",
+          "Anyone who values elegant travel accessories"
+        ],
+        "tagline": "Travel with peace of mind knowing your documents are secure and organized."
+      },
+      "whyChoose": {
+        "title": "Why Choose Eoehro Passport Holder?",
+        "intro": "Premium quality meets smart design. This passport holder offers the perfect balance of security, functionality, and style for the modern traveler.",
+        "features": [
+          { "title": "RFID Blocking Protection", "desc": "Built-in shielding prevents unauthorized scanning of your passport and cards." },
+          { "title": "Magnetic Clasp Closure", "desc": "Easy-open magnetic button keeps your documents secure yet accessible." },
+          { "title": "Vaccine Card Slot", "desc": "Dedicated compartment for your vaccination certificate." },
+          { "title": "5 Card Pockets", "desc": "Multiple slots for credit cards, business cards, and SIM cards." },
+          { "title": "Premium Faux Leather", "desc": "Soft PU leather exterior with leather lining for a luxurious feel." },
+          { "title": "Compact & Lightweight", "desc": "Slim design fits easily in pockets or bags without bulk." }
+        ]
+      },
+      "targetAudience": {
+        "title": "Designed for Smart Travelers",
+        "items": [
+          "International travelers",
+          "Business travelers",
+          "Families on vacation",
+          "Anyone who wants organized documents"
+        ]
+      },
+      "about": {
+        "title": "About Eoehro",
+        "content": "Eoehro creates premium travel accessories that combine security, organization, and style. Each product is designed with the modern traveler in mind."
+      },
+      "sizeGuide": {
+        "title": "Product Dimensions",
+        "subtitle": "Compact and lightweight design:",
+        "tip": "Fits standard passports and travel documents.",
+        "sizes": [
+          "Dimensions: 10.7 x 14.7 x 0.5 cm",
+          "Weight: 70 grams",
+          "Fits all standard passports"
+        ],
+        "proTip": "Slim enough to fit in any pocket or bag."
+      },
+      "cta": {
+        "title": "Upgrade Your Travel Organization",
+        "content": "Order your Eoehro Passport Holder today and travel with confidence, security, and style."
       }
     }
   }

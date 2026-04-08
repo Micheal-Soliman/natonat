@@ -90,15 +90,15 @@ export function BestSellers() {
                 key={product.id}
                 className="pl-3 sm:pl-5 basis-[85%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4 flex-shrink-0"
               >
-                <Link 
-                  href={`/product/${product.slug}`} 
+                <Link
+                  href={`/product/${product.slug}`}
                   className="group cursor-pointer block select-none"
                   draggable={false}
                 >
                   {/* Product Image */}
-                  <div className="relative aspect-[3/4] rounded-xl sm:rounded-2xl overflow-hidden mb-3 sm:mb-4 border border-white/5">
-                    <Image 
-                      src={product.image} 
+                  <div className="relative aspect-[3/4] rounded-xl sm:rounded-2xl overflow-hidden mb-3 sm:mb-4 border border-white/10 bg-[#F1EBE3]">
+                    <Image
+                      src={product.image}
                       alt={product.name}
                       fill
                       sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
@@ -106,24 +106,23 @@ export function BestSellers() {
                       loading="lazy"
                       draggable={false}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-                    
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0F1A26]/10 to-transparent" />
+
                     {product.tag && (
-                      <span className={`absolute top-2 left-2 sm:top-4 sm:left-4 z-10 text-[9px] sm:text-[10px] font-semibold tracking-wider uppercase px-2 sm:px-3 py-1 sm:py-1.5 rounded-full ${
-                        product.tag === 'Best Seller' ? 'bg-[#EEBC3F] text-[#0F1A26]' :
-                        product.tag === 'New' ? 'bg-white text-[#0F1A26]' :
-                        product.tag === 'Limited' ? 'bg-[#4B1F1F] text-[#F1EBE3]' :
-                        'bg-[#EEBC3F]/20 text-[#EEBC3F] border border-[#EEBC3F]/30'
-                      }`}>
-                        {product.tag === 'Best Seller' ? t('bestSeller') : 
-                         product.tag === 'New' ? t('new') : 
-                         product.tag === 'Limited' ? t('limited') : product.tag}
+                      <span className={`absolute top-2 left-2 sm:top-4 sm:left-4 z-10 text-[9px] sm:text-[10px] font-semibold tracking-wider uppercase px-2 sm:px-3 py-1 sm:py-1.5 rounded-full ${product.tag === 'Best Seller' ? 'bg-[#EEBC3F] text-[#0F1A26]' :
+                          product.tag === 'New' ? 'bg-white text-[#0F1A26]' :
+                            product.tag === 'Limited' ? 'bg-[#4B1F1F] text-[#F1EBE3]' :
+                              'bg-[#EEBC3F]/20 text-[#EEBC3F] border border-[#EEBC3F]/30'
+                        }`}>
+                        {product.tag === 'Best Seller' ? t('bestSeller') :
+                          product.tag === 'New' ? t('new') :
+                            product.tag === 'Limited' ? t('limited') : product.tag}
                       </span>
                     )}
-                    
+
                     {/* Hover overlay - View Product */}
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-500 flex items-center justify-center">
-                      <span className="text-white font-semibold text-xs sm:text-sm tracking-wider uppercase">
+                    <div className="absolute inset-0 bg-[#0F1A26]/20 opacity-0 group-hover:opacity-100 transition-all duration-500 flex items-center justify-center">
+                      <span className="text-[#0F1A26] font-semibold text-xs sm:text-sm tracking-wider uppercase bg-white/90 px-4 py-2 rounded-full">
                         {t('viewProduct')}
                       </span>
                     </div>
@@ -150,7 +149,7 @@ export function BestSellers() {
               </CarouselItem>
             ))}
           </CarouselContent>
-          
+
           {/* Custom navigation */}
           <div className="hidden md:flex items-center gap-3 mt-8">
             <CarouselPrevious className="static translate-y-0 w-12 h-12 rounded-full bg-white/5 border-white/10 text-white hover:bg-white hover:text-[#0F1A26] transition-all duration-300" />
@@ -164,11 +163,10 @@ export function BestSellers() {
             <button
               key={idx}
               onClick={() => api?.scrollTo(idx)}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
-                current === idx 
-                  ? "w-4 bg-[#EEBC3F]" 
+              className={`h-1.5 rounded-full transition-all duration-300 ${current === idx
+                  ? "w-4 bg-[#EEBC3F]"
                   : "w-1.5 bg-white/30"
-              }`}
+                }`}
               aria-label={`Go to slide ${idx + 1}`}
             />
           ))}
