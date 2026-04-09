@@ -30,10 +30,10 @@ Unlike traditional methods that require measuring width, depth, and height, our 
 **Measure your suitcase height (without wheels)**
 
 ### Size Guide:
-- **S (Small)**: 48-53 cm height — Perfect for carry-on luggage
-- **M (Medium)**: 58-63 cm height — Ideal for medium suitcases
+- **S (Small)**: 45-53 cm height — Perfect for carry-on luggage
+- **M (Medium)**: 55-63 cm height — Ideal for medium suitcases
 - **L (Large)**: 65-70 cm height — Great for large suitcases
-- **XL (Extra Large)**: 72-80 cm height — For extra large suitcases
+- **XL (Extra Large)**: 72-81 cm height — For extra large suitcases
 
 **Note:** Measure height only (without wheels). Width and thickness don't matter - our covers are stretchy!
 

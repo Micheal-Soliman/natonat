@@ -17,10 +17,10 @@ const getSteps = (t: (key: string) => string) => [
 ];
 
 const getSizes = (t: (key: string) => string) => [
-  { size: "S", height: "18-21\"", cm: "46-53 cm", icon: "/s.png" },
-  { size: "M", height: "22-25\"", cm: "56-64 cm", icon: "/m.png" },
-  { size: "L", height: "26-29\"", cm: "66-74 cm", icon: "/l.png" },
-  { size: "XL", height: "30-32\"", cm: "76-81 cm", icon: "/xl.png" },
+  { size: "S", height: "18-21\"", cm: "45-53 cm", icon: "/s.png" },
+  { size: "M", height: "22-25\"", cm: "55-63 cm", icon: "/m.png" },
+  { size: "L", height: "26-28\"", cm: "65-70 cm", icon: "/l.png" },
+  { size: "XL", height: "29-32\"", cm: "72-81 cm", icon: "/xl.png" },
 ];
 
 const getBenefits = (t: (key: string) => string) => [
@@ -271,42 +271,47 @@ function HowItWorksContent() {
           </div>
 
           <div className="grid lg:grid-cols-2 gap-8">
-            {/* Size Cards */}
-            <div className="grid grid-cols-2 gap-4">
-              {sizes.map((item, index) => (
-                <div 
-                  key={item.size} 
-                  className="bg-white rounded-2xl p-4 border border-[#0F1A26]/5 hover:border-[#EEBC3F]/30 hover:shadow-lg transition-all duration-300 group text-center"
-                >
-                  {/* Size Image */}
-                  <div className="w-full h-20 mb-2 flex items-center justify-center">
-                    <NextImage 
-                      src={item.icon} 
-                      alt={`Size ${item.size}`} 
-                      width={80} 
-                      height={80} 
-                      className="object-contain"
-                    />
+            {/* Size Cards - Dark Theme */}
+            <div className="bg-[#0F1A26] rounded-3xl p-6 md:p-8">
+              <h3 className="text-xl font-bold text-white mb-4 text-center">{t('sizeGuide.title')}</h3>
+              
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { size: "S", cm: "45-53", inch: "18-21", type: t('sizes.s.type') },
+                  { size: "M", cm: "55-63", inch: "22-25", type: t('sizes.m.type') },
+                  { size: "L", cm: "65-70", inch: "26-28", type: t('sizes.l.type') },
+                  { size: "XL", cm: "72-81", inch: "29-32", type: t('sizes.xl.type') },
+                ].map((item) => (
+                  <div
+                    key={item.size}
+                    className="bg-white/10 rounded-xl p-4 border border-white/10 hover:border-[#EEBC3F]/30 transition-all duration-300 text-center"
+                  >
+                    {/* Size Letter */}
+                    <span className="text-[#EEBC3F] font-bold text-3xl">{item.size}</span>
+
+                    {/* Type */}
+                    <p className="text-white font-medium text-sm mt-1">{item.type}</p>
+
+                    {/* Main Measurement */}
+                    <div className="mt-2">
+                      <p className="text-[#EEBC3F] font-bold text-lg">
+                        {item.cm} <span className="text-white/60 text-sm font-normal">cm</span>
+                      </p>
+                      <p className="text-white/50 text-xs">{item.inch}" inches</p>
+                    </div>
+
+                    {/* Height Only - Without Wheels */}
+                    <div className="mt-3 pt-3 border-t border-white/20">
+                      <p className="text-white/60 text-xs">{t('sizeGuide.heightOnly')}</p>
+                      <p className="text-white/80 text-xs font-medium">({item.cm} cm)</p>
+                    </div>
                   </div>
-                  
-                  {/* Size Label */}
-                  <span className="text-[#EEBC3F] font-bold text-2xl">{item.size}</span>
-                  
-                  {/* Type */}
-                  <p className="text-[#0F1A26]/60 text-xs mb-2">{t(`sizes.${item.size.toLowerCase()}.type`)}</p>
-                  
-                  {/* Measurements - CM highlighted */}
-                  <div className="space-y-1">
-                    <p className="text-[#EEBC3F] font-bold text-base">
-                      {item.cm.split(' ')[0]} <span className="text-[#0F1A26]/60 text-sm font-normal">cm</span>
-                    </p>
-                    <p className="text-[#0F1A26]/50 text-xs">
-                      {item.height} 
-                    </p>
-                    <p className="text-[#0F1A26]/30 text-[14px]">({t('sizeGuide.heightOnly')})</p>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
+
+              <p className="text-white/70 text-xs text-center font-medium mt-4">
+                {t('sizeGuide.note')}
+              </p>
             </div>
 
             {/* Calculator */}
@@ -357,10 +362,10 @@ function HowItWorksContent() {
                 <p className="text-white/50 text-xs text-center mb-6">{t('sizeGuide.note')}</p>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {[
-                    { size: "S", inches: "18-21\"", cm: "46-53 cm", type: t('sizes.s.type') },
-                    { size: "M", inches: "22-25\"", cm: "56-64 cm", type: t('sizes.m.type') },
-                    { size: "L", inches: "26-29\"", cm: "66-74 cm", type: t('sizes.l.type') },
-                    { size: "XL", inches: "30-32\"", cm: "76-81 cm", type: t('sizes.xl.type') },
+                    { size: "S", inches: "18-21\"", cm: "45-53 cm", type: t('sizes.s.type') },
+                    { size: "M", inches: "22-25\"", cm: "55-63 cm", type: t('sizes.m.type') },
+                    { size: "L", inches: "26-28\"", cm: "65-70 cm", type: t('sizes.l.type') },
+                    { size: "XL", inches: "29-32\"", cm: "72-81 cm", type: t('sizes.xl.type') },
                   ].map((item) => (
                     <div key={item.size} className="bg-white/5 rounded-xl p-4 text-center border border-white/10 hover:border-[#EEBC3F]/30 transition-all duration-300">
                       <span className="text-2xl font-bold text-[#EEBC3F]">{item.size}</span>

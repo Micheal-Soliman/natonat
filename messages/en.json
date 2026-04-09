@@ -147,8 +147,8 @@
       "sizes": {
         "s": { "label": "S", "range": "45-53 cm", "type": "Carry-on" },
         "m": { "label": "M", "range": "55-63 cm", "type": "Medium" },
-        "l": { "label": "L", "range": "65-74 cm", "type": "Large" },
-        "xl": { "label": "XL", "range": "76-81 cm", "type": "Extra Large" }
+        "l": { "label": "L", "range": "65-70 cm", "type": "Large" },
+        "xl": { "label": "XL", "range": "72-81 cm", "type": "Extra Large" }
       }
     },
     "sizes": {
@@ -206,7 +206,7 @@
       "questions": {
         "sizeCover": {
           "question": "How do I choose the right size cover?",
-          "answer": "Simply measure your suitcase height from the floor to the top (excluding wheels).<br/><br/><strong>S</strong> = 18-21 inches (46-53cm)<br/><strong>M</strong> = 22-25 inches (56-64cm)<br/><strong>L</strong> = 26-29 inches (66-74cm)<br/><strong>XL</strong> = 30-32 inches (76-81cm)<br/><br/><a href=\"/how-it-works\" class=\"text-[#EEBC3F] hover:text-[#0F1A26] font-medium transition-colors\">Check our detailed Size Guide for more information →</a>"
+          "answer": "Simply measure your suitcase height from the floor to the top (excluding wheels).<br/><br/><strong>S</strong> = 18-21 inches (45-53cm)<br/><strong>M</strong> = 22-25 inches (55-63cm)<br/><strong>L</strong> = 26-28 inches (65-70cm)<br/><strong>XL</strong> = 29-32 inches (72-81cm)<br/><br/><a href=\"/how-it-works\" class=\"text-[#EEBC3F] hover:text-[#0F1A26] font-medium transition-colors\">Check our detailed Size Guide for more information →</a>"
         },
         "hardShell": {
           "question": "Does the cover fit hard-shell suitcases?",
@@ -463,8 +463,8 @@
       "sizes": {
         "s": { "label": "S", "range": "18-21\" / 45-53cm", "type": "Carry-on" },
         "m": { "label": "M", "range": "22-25\" / 55-63cm", "type": "Medium" },
-        "l": { "label": "L", "range": "26-29\" / 65-73cm", "type": "Large" },
-        "xl": { "label": "XL", "range": "30-32\" / 75-80cm", "type": "Extra Large" }
+        "l": { "label": "L", "range": "26-28\" / 65-70cm", "type": "Large" },
+        "xl": { "label": "XL", "range": "29-32\" / 72-81cm", "type": "Extra Large" }
       }
     },
     "sizeGuide": "Size Guide",
@@ -787,7 +787,7 @@
     "questions": {
       "sizeCover": {
         "question": "How do I choose the right size cover?",
-        "answer": "Simply measure your suitcase height from the floor to the top (excluding wheels).<br/><br/><strong>S</strong> = 18-21 inches (46-53cm)<br/><strong>M</strong> = 22-25 inches (56-64cm)<br/><strong>L</strong> = 26-29 inches (66-74cm)<br/><strong>XL</strong> = 30-32 inches (76-81cm)<br/><br/><a href=\"/how-it-works\" class=\"text-[#EEBC3F] hover:text-[#0F1A26] font-medium transition-colors\">Check our detailed Size Guide for more information →</a>"
+        "answer": "Simply measure your suitcase height from the floor to the top (excluding wheels).<br/><br/><strong>S</strong> = 18-21 inches (45-53cm)<br/><strong>M</strong> = 22-25 inches (55-63cm)<br/><strong>L</strong> = 26-28 inches (65-70cm)<br/><strong>XL</strong> = 29-32 inches (72-81cm)<br/><br/><a href=\"/how-it-works\" class=\"text-[#EEBC3F] hover:text-[#0F1A26] font-medium transition-colors\">Check our detailed Size Guide for more information →</a>"
       },
       "hardShell": {
         "question": "Does the cover fit hard-shell suitcases?",
@@ -887,6 +887,7 @@
         "express": "Express",
         "deliveryTime": "Delivery Time",
         "cairoGiza": "Cairo & Giza",
+        "alexandria": "Alexandria",
         "otherGovs": "Other Governorates",
         "cairoTime": "1-2 business days",
         "govsTime": "5-7 business days",
@@ -900,7 +901,7 @@
         "nonReturnable": "Non-Returnable Items",
         "returns30": "Returns accepted within 30 days of delivery",
         "unused": "Items must be unused and in original packaging",
-        "freeExchanges": "Free size exchanges within 30 days",
+        "freeExchanges": "Returns and exchanges cost 100 EGP shipping fee",
         "refunds57": "Refunds processed within 5-7 business days",
         "used": "Items that have been used or washed",
         "noPackaging": "Items without original packaging",

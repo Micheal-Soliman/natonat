@@ -88,8 +88,8 @@ export function HowItWorks() {
               {[
                 { size: "S", cm: "45-53", inch: "18-21", type: tg('sizes.s.type') },
                 { size: "M", cm: "55-63", inch: "22-25", type: tg('sizes.m.type') },
-                { size: "L", cm: "65-73", inch: "26-29", type: tg('sizes.l.type') },
-                { size: "XL", cm: "75-80", inch: "30-32", type: tg('sizes.xl.type') },
+                { size: "L", cm: "65-70", inch: "26-28", type: tg('sizes.l.type') },
+                { size: "XL", cm: "72-81", inch: "29-32", type: tg('sizes.xl.type') },
               ].map((item) => (
                 <div
                   key={item.size}

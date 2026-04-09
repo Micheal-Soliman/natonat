@@ -61,7 +61,18 @@ function CheckoutContent() {
     }, 1500));
   };
 
-  const shipping = checkoutSubtotal > 1000 ? 0 : 75;
+  // Shipping: 75 EGP for Cairo & Alexandria, 100 EGP for other cities, free for orders > 1000
+  const getShippingCost = () => {
+    if (checkoutSubtotal > 1000) return 0;
+    const cityLower = formData.city.toLowerCase();
+    const isCairoOrAlex = cityLower.includes('cairo') || 
+                          cityLower.includes('القاهرة') || 
+                          cityLower.includes('alexandria') || 
+                          cityLower.includes('الإسكندرية') ||
+                          cityLower.includes('alex');
+    return isCairoOrAlex ? 75 : 100;
+  };
+  const shipping = getShippingCost();
   const total = checkoutSubtotal + shipping;
 
   if (isSuccess) {
