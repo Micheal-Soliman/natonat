@@ -454,9 +454,11 @@
       "total": "الإجمالي",
       "checkout": "اكمل الطلبية",
       "proceedToCheckout": "اكمل الطلبية",
+      "proceedToCart": "شوف شنطتك",
       "continueShopping": "كمل تسوق",
       "note": "الشحن والضرائب بتحسب عند الدفع",
-      "egyptOnly": "🚚 توصيل لكل محافظات مصر بس"
+      "egyptOnly": "🚚 توصيل لكل محافظات مصر بس",
+      "shippingAtCheckout": "سيتم حساب الشحن عند الدفع"
     },
     "savings": "هتوفر {amount} جنيه"
   },
@@ -540,7 +542,9 @@
         "card": {
           "title": "فيزا / ماستركارد",
           "subtitle": "ادفع بأمان ببطاقتك",
-          "selectBank": "اختار البنك"
+          "selectBank": "اختار البنك",
+          "eligibleBanks": "البنوك المشمولة",
+          "eligibleBanksNote": "الدفع بالبطاقة متاح للبنوك دي بس"
         },
         "instapay": {
           "title": "انستا باي",
@@ -552,7 +556,9 @@
         }
       },
       "processing": "بنعالج...",
-      "completeOrder": "اكمل الطلبية - {total} جنيه"
+      "completeOrder": "اكمل الطلبية - {total} جنيه",
+      "shippingAtCheckout": "+ الشحن عند الدفع",
+      "selectCity": "حدد المدينة للإجمالي"
     },
     "summary": {
       "title": "ملخص الطلبية",
@@ -560,9 +566,13 @@
       "subtotal": "المجموع",
       "shipping": "الشحن",
       "free": "مجاني",
+      "freeShippingOver1000": "(أوردر أكتر من 1000 جنيه)",
       "total": "الإجمالي",
       "size": "المقاس",
-      "color": "اللون"
+      "color": "اللون",
+      "selectCityForShipping": "اختار المدينة لحساب الشحن",
+      "buyNowMode": "🛒 شراء سريع - Buy Now",
+      "cartMode": "🛍️ من الشنطة"
     }
   },
   "product": {

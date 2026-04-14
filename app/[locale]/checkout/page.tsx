@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useId } from "react";
+import { Suspense, useState, useEffect, useId } from "react";
 import Image from "next/image";
 import { Link } from "@/i18n/routing";
 import { useTranslations, useLocale } from 'next-intl';
@@ -13,6 +13,10 @@ import { Loading } from "@/app/components/loading";
 
 function generateOrderId() {
   return Math.random().toString(36).substring(2, 9).toUpperCase();
+}
+
+function generateOrderRef() {
+  return `NAT-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 }
 
 export default function CheckoutPage() {
@@ -29,10 +33,35 @@ function CheckoutContent() {
   const { items, subtotal, clearCart, buyNowItem, setBuyNowItem } = useCart();
   
   // Use buyNowItem if exists (direct purchase), otherwise use cart items
-  const checkoutItems = buyNowItem ? [buyNowItem] : items;
+  const rawCheckoutItems = buyNowItem ? [buyNowItem] : items;
+  
+  // Group duplicate items (same id + size + color) and sum quantities
+  const checkoutItems = rawCheckoutItems.reduce((acc: typeof rawCheckoutItems, item) => {
+    const existing = acc.find(
+      (i) => i.id === item.id && i.size === item.size && i.color === item.color
+    );
+    if (existing) {
+      existing.quantity += item.quantity;
+    } else {
+      acc.push({ ...item });
+    }
+    return acc;
+  }, []);
+  
   const checkoutSubtotal = buyNowItem 
-    ? buyNowItem.price * buyNowItem.quantity 
+    ? (buyNowItem.price || 0) * (buyNowItem.quantity || 1) 
     : subtotal;
+  
+  // Debug logging for buyNow issues
+  useEffect(() => {
+    if (buyNowItem) {
+      console.log("[Checkout] Buy Now Item:", buyNowItem);
+      console.log("[Checkout] Calculated subtotal:", checkoutSubtotal);
+      if (!buyNowItem.price || buyNowItem.price === 0) {
+        console.error("[Checkout] ERROR: Buy Now item has no price!", buyNowItem);
+      }
+    }
+  }, [buyNowItem, checkoutSubtotal]);
   const [formData, setFormData] = useState({
     email: "",
     firstName: "",
@@ -47,10 +76,167 @@ function CheckoutContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [orderId, setOrderId] = useState<string>("");
+  const [submitError, setSubmitError] = useState<string>("");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitError("");
     setIsSubmitting(true);
+
+    const orderRef = generateOrderRef();
+
+    if (paymentMethod === "card") {
+      try {
+        const publicKey = process.env.NEXT_PUBLIC_PAYMOB_PUBLIC_KEY;
+        const paymobBaseUrl = process.env.NEXT_PUBLIC_PAYMOB_BASE_URL || "https://accept.paymob.com";
+
+        if (!publicKey) {
+          throw new Error("NEXT_PUBLIC_PAYMOB_PUBLIC_KEY is not set");
+        }
+
+        const origin = window.location.origin;
+        const notificationUrl = `${origin}/api/paymob/webhook`;
+        const redirectionUrl = `${origin}/${locale}/payment/return`;
+
+        const intentionItems = checkoutItems.map((item) => ({
+          name: item.name,
+          amount: Math.round(item.price * item.quantity * 100),
+          description: item.slug,
+          quantity: item.quantity,
+        }));
+
+        if (deliveryMethod === "delivery" && shipping > 0) {
+          intentionItems.push({
+            name: "Shipping",
+            amount: Math.round(shipping * 100),
+            description: "delivery",
+            quantity: 1,
+          });
+        }
+
+        const amountCents = Math.round(total * 100);
+        const itemsSum = intentionItems.reduce((sum, it) => sum + it.amount, 0);
+        if (itemsSum !== amountCents) {
+          throw new Error("Invalid amount: items sum does not match total");
+        }
+
+        const res = await fetch("/api/paymob/intention", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            amount: amountCents,
+            currency: "EGP",
+            items: intentionItems,
+            billing_data: {
+              apartment: "NA",
+              first_name: formData.firstName || "Customer",
+              last_name: formData.lastName || "NA",
+              street: formData.address || "NA",
+              building: "NA",
+              phone_number: formData.phone,
+              city: formData.city || "NA",
+              country: "EG",
+              email: formData.email,
+              floor: "NA",
+              state: "NA",
+            },
+            extras: {
+              locale,
+              delivery_method: deliveryMethod,
+              order_ref: orderRef,
+              customer_email: formData.email,
+              customer_phone: formData.phone,
+              total_egp: total,
+            },
+            special_reference: orderRef,
+            notification_url: notificationUrl,
+            redirection_url: redirectionUrl,
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data?.error || "Failed to create intention");
+        }
+
+        const clientSecret = data?.client_secret;
+        if (!clientSecret) {
+          throw new Error("Paymob response missing client_secret");
+        }
+
+        const shippingRule = deliveryMethod === "pickup" 
+          ? "pickup_free" 
+          : checkoutSubtotal > 1000 
+            ? "subtotal_over_1000_free" 
+            : formData.city === "cairo" || formData.city === "giza" || formData.city === "alexandria" 
+              ? "cairo_giza_alex_75" 
+              : "other_governorates_100";
+
+        await fetch("/api/orders/log", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            source: "checkout",
+            order_ref: orderRef,
+            locale,
+            payment_method: "paymob_card",
+            status: "created",
+            payment_status: "Pending",
+            amount_egp: total,
+            amount_cents: amountCents,
+            shipping_egp: shipping,
+            delivery_method: deliveryMethod,
+            customer: {
+              email: formData.email,
+              phone: formData.phone,
+              first_name: formData.firstName,
+              last_name: formData.lastName,
+              city: formData.city,
+              address: formData.address,
+            },
+            items: checkoutItems.map((item) => ({
+              id: item.id,
+              name: item.name,
+              slug: item.slug,
+              price_egp: item.price,
+              quantity: item.quantity,
+              size: item.size,
+              color: item.color,
+              type: item.type,
+              image: item.image,
+            })),
+            paymob: {
+              client_secret: clientSecret,
+              intention_order_id: data?.intention_order_id,
+              id: data?.id,
+              special_reference: orderRef,
+            },
+            extras: {
+              shipping_rule: shippingRule,
+              city_key: formData.city,
+              subtotal_egp: checkoutSubtotal,
+              free_shipping_threshold: 1000,
+              order_url: `${origin}/${locale}/orders/${orderRef}`,
+            },
+            created_at: new Date().toISOString(),
+          }),
+        });
+
+        const checkoutUrl = `${paymobBaseUrl}/unifiedcheckout/?publicKey=${encodeURIComponent(publicKey)}&clientSecret=${encodeURIComponent(clientSecret)}`;
+        window.location.href = checkoutUrl;
+        return;
+      } catch (err) {
+        setIsSubmitting(false);
+        setSubmitError(err instanceof Error ? err.message : "Payment initialization failed");
+        return;
+      }
+    }
+
     // Simulate order processing
     await new Promise(resolve => setTimeout(() => {
       setIsSubmitting(false);
@@ -59,18 +245,71 @@ function CheckoutContent() {
       clearCart(); // Clear cart after successful order
       setBuyNowItem(null); // Clear buyNowItem after successful order
     }, 1500));
+
+    const shippingRuleCOD = deliveryMethod === "pickup" 
+      ? "pickup_free" 
+      : checkoutSubtotal > 1000 
+        ? "subtotal_over_1000_free" 
+        : formData.city === "cairo" || formData.city === "giza" || formData.city === "alexandria" 
+          ? "cairo_giza_alex_75" 
+          : "other_governorates_100";
+
+    try {
+      await fetch("/api/orders/log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          source: "checkout",
+          order_ref: orderRef,
+          locale,
+          payment_method: paymentMethod,
+          status: "confirmed",
+          payment_status: paymentMethod === "cod" ? "Cash on Delivery" : "Confirmed",
+          amount_egp: total,
+          amount_cents: Math.round(total * 100),
+          shipping_egp: shipping,
+          delivery_method: deliveryMethod,
+          customer: {
+            email: formData.email,
+            phone: formData.phone,
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            city: formData.city,
+            address: formData.address,
+          },
+          items: checkoutItems.map((item) => ({
+            id: item.id,
+            name: item.name,
+            slug: item.slug,
+            price_egp: item.price,
+            quantity: item.quantity,
+            size: item.size,
+            color: item.color,
+            type: item.type,
+            image: item.image,
+          })),
+          extras: {
+            shipping_rule: shippingRuleCOD,
+            city_key: formData.city,
+            subtotal_egp: checkoutSubtotal,
+            free_shipping_threshold: 1000,
+            bank_name: paymentMethod === "card" ? "Eligible Banks: NBE, CIB, Banque Misr" : null,
+          },
+          created_at: new Date().toISOString(),
+        }),
+      });
+    } catch {
+      // ignore logging failures
+    }
   };
 
-  // Shipping: 75 EGP for Cairo & Alexandria, 100 EGP for other cities, free for orders > 1000
+  // Shipping: 75 EGP for Cairo, Giza & Alexandria, 100 EGP for other cities, free for orders > 1000, pickup = 0
   const getShippingCost = () => {
+    if (deliveryMethod === "pickup") return 0;
     if (checkoutSubtotal > 1000) return 0;
-    const cityLower = formData.city.toLowerCase();
-    const isCairoOrAlex = cityLower.includes('cairo') || 
-                          cityLower.includes('القاهرة') || 
-                          cityLower.includes('alexandria') || 
-                          cityLower.includes('الإسكندرية') ||
-                          cityLower.includes('alex');
-    return isCairoOrAlex ? 75 : 100;
+    const cityKey = (formData.city || "").toLowerCase();
+    const isCairoGizaAlex = cityKey === "cairo" || cityKey === "giza" || cityKey === "alexandria";
+    return isCairoGizaAlex ? 75 : 100;
   };
   const shipping = getShippingCost();
   const total = checkoutSubtotal + shipping;
@@ -80,7 +319,7 @@ function CheckoutContent() {
       <>
         <Navigation />
         <main className="min-h-screen bg-[#F1EBE3]">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-40">
             <div className="max-w-md mx-auto text-center">
               <div className="w-20 h-20 rounded-full bg-[#EEBC3F]/20 flex items-center justify-center mx-auto mb-6">
                 <Check className="w-10 h-10 text-[#EEBC3F]" />
@@ -217,34 +456,72 @@ function CheckoutContent() {
                       </div>
                     </label>
 
-                    {/* Pickup Location Details */}
+                    {/* Pickup Customer Details */}
                     {deliveryMethod === "pickup" && (
-                      <div className="mx-4 md:ml-7 p-3 md:p-4 bg-[#EEBC3F]/10 rounded-xl border border-[#EEBC3F]/30 animate-in slide-in-from-top-2 duration-200">
-                        <div className="flex items-center gap-2 mb-3">
+                      <div className="mx-4 md:ml-7 p-4 md:p-5 bg-[#EEBC3F]/10 rounded-xl border border-[#EEBC3F]/30 animate-in slide-in-from-top-2 duration-200">
+                        <div className="flex items-center gap-2 mb-4">
                           <div className="w-8 h-8 rounded-full bg-[#EEBC3F] flex items-center justify-center">
                             <Store className="w-4 h-4 text-white" />
                           </div>
                           <p className="text-sm font-semibold text-[#0F1A26]">{t('form.delivery.pickupLocation.title')}</p>
                         </div>
-                        <div className="space-y-2">
-                          <div className="flex flex-col p-3 bg-white rounded-lg">
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="text-sm text-[#0F1A26]/60 mb-1 block">{t('form.shipping.firstName')}</label>
+                              <input
+                                type="text"
+                                required
+                                value={formData.firstName}
+                                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                                className="w-full px-3 py-2.5 rounded-lg border border-[#0F1A26]/10 focus:border-[#EEBC3F] focus:outline-none transition-colors text-sm"
+                                placeholder={t('form.shipping.firstNamePlaceholder')}
+                              />
+                            </div>
+                            <div>
+                              <label className="text-sm text-[#0F1A26]/60 mb-1 block">{t('form.shipping.lastName')}</label>
+                              <input
+                                type="text"
+                                required
+                                value={formData.lastName}
+                                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                                className="w-full px-3 py-2.5 rounded-lg border border-[#0F1A26]/10 focus:border-[#EEBC3F] focus:outline-none transition-colors text-sm"
+                                placeholder={t('form.shipping.lastNamePlaceholder')}
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-sm text-[#0F1A26]/60 mb-1 block">{t('form.shipping.phone')}</label>
+                            <div className="relative">
+                              <Phone className="w-4 h-4 text-[#0F1A26]/40 absolute left-3 top-1/2 -translate-y-1/2" />
+                              <input
+                                type="tel"
+                                required
+                                value={formData.phone}
+                                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                className="w-full px-3 py-2.5 pl-10 rounded-lg border border-[#0F1A26]/10 focus:border-[#EEBC3F] focus:outline-none transition-colors text-sm"
+                                placeholder={t('form.shipping.phonePlaceholder')}
+                              />
+                            </div>
+                          </div>
+                          <div className="flex flex-col p-3 bg-white rounded-lg mt-3">
                             <span className="text-sm text-[#0F1A26]/60 mb-1">{t('form.delivery.pickupLocation.addressLabel')}</span>
                             <span className="text-sm font-medium text-[#0F1A26]">{t('form.pickupLocation.name')}</span>
                             <span className="text-sm font-medium text-[#0F1A26]">{t('form.pickupLocation.address')}</span>
                           </div>
+                          <a 
+                            href={t('form.pickupLocation.mapUrl')} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-center gap-2 p-2 bg-white rounded-lg text-sm font-medium text-[#0F1A26] hover:bg-[#EEBC3F]/20 transition-colors"
+                          >
+                            <MapPin className="w-4 h-4 text-[#EEBC3F]" />
+                            {t('form.delivery.pickupLocation.viewOnMap')}
+                          </a>
+                          <p className="text-xs text-[#0F1A26]/60 text-center">
+                            {t('form.delivery.pickupLocation.instruction')}
+                          </p>
                         </div>
-                        <a 
-                          href={t('form.pickupLocation.mapUrl')} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="flex items-center justify-center gap-2 mt-3 p-2 bg-white rounded-lg text-sm font-medium text-[#0F1A26] hover:bg-[#EEBC3F]/20 transition-colors"
-                        >
-                          <MapPin className="w-4 h-4 text-[#EEBC3F]" />
-                          {t('form.delivery.pickupLocation.viewOnMap')}
-                        </a>
-                        <p className="text-xs text-[#0F1A26]/60 mt-3 text-center">
-                          {t('form.delivery.pickupLocation.instruction')}
-                        </p>
                       </div>
                     )}
                   </div>
@@ -327,15 +604,42 @@ function CheckoutContent() {
                       <div>
                         <label className="text-sm text-[#0F1A26]/60 mb-1 block">{t('form.shipping.city')}</label>
                         <div className="relative">
-                          <Building className="w-4 h-4 text-[#0F1A26]/40 absolute left-4 top-1/2 -translate-y-1/2" />
-                          <input
-                            type="text"
+                          <Building className="w-4 h-4 text-[#0F1A26]/40 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          <select
                             required
                             value={formData.city}
                             onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                            className="w-full px-4 py-3 pl-11 rounded-xl border border-[#0F1A26]/10 focus:border-[#EEBC3F] focus:outline-none transition-colors"
-                            placeholder={t('form.shipping.cityPlaceholder')}
-                          />
+                            className="w-full px-4 py-3 pl-11 rounded-xl border border-[#0F1A26]/10 focus:border-[#EEBC3F] focus:outline-none transition-colors bg-white appearance-none"
+                          >
+                            <option value="">{t('form.shipping.cityPlaceholder')}</option>
+                            <option value="cairo">القاهرة</option>
+                            <option value="alexandria">الإسكندرية</option>
+                            <option value="giza">الجيزة</option>
+                            <option value="qalyubia">القليوبية</option>
+                            <option value="port_said">بورسعيد</option>
+                            <option value="suez">السويس</option>
+                            <option value="luxor">الأقصر</option>
+                            <option value="aswan">أسوان</option>
+                            <option value="asyut">أسيوط</option>
+                            <option value="beheira">البحيرة</option>
+                            <option value="beni_suef">بني سويف</option>
+                            <option value="dakahlia">الدقهلية</option>
+                            <option value="damietta">دمياط</option>
+                            <option value="faiyum">الفيوم</option>
+                            <option value="gharbia">الغربية</option>
+                            <option value="ismailia">الإسماعيلية</option>
+                            <option value="kafr_el_sheikh">كفر الشيخ</option>
+                            <option value="matrouh">مطروح</option>
+                            <option value="minya">المنيا</option>
+                            <option value="monufia">المنوفية</option>
+                            <option value="new_valley">الوادي الجديد</option>
+                            <option value="north_sinai">شمال سيناء</option>
+                            <option value="qena">قنا</option>
+                            <option value="red_sea">البحر الأحمر</option>
+                            <option value="sharqia">الشرقية</option>
+                            <option value="sohag">سوهاج</option>
+                            <option value="south_sinai">جنوب سيناء</option>
+                          </select>
                         </div>
                       </div>
                       <div>
@@ -404,28 +708,25 @@ function CheckoutContent() {
                       </div>
                     </label>
                     
-                    {/* Credit Card Banks Dropdown */}
+                    {/* Credit Card Eligible Banks Info */}
                     {paymentMethod === "card" && (
-                      <div className="mx-2 p-5 bg-gradient-to-br from-[#F8F6F3] to-white rounded-2xl border border-[#EEBC3F]/20 shadow-sm animate-in slide-in-from-top-2 duration-300">
-                        <div className="flex items-center gap-2 mb-4">
+                      <div className="mx-2 p-4 bg-gradient-to-br from-[#F8F6F3] to-white rounded-2xl border border-[#EEBC3F]/20 shadow-sm animate-in slide-in-from-top-2 duration-300">
+                        <div className="flex items-center gap-2 mb-2">
                           <div className="w-8 h-8 rounded-xl bg-[#EEBC3F] flex items-center justify-center">
                             <Building className="w-4 h-4 text-white" />
                           </div>
-                          <p className="text-sm font-semibold text-[#0F1A26]">{t('form.payment.card.selectBank')}</p>
+                          <p className="text-sm font-semibold text-[#0F1A26]">{t('form.payment.card.eligibleBanks')}</p>
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <p className="text-xs text-[#0F1A26]/60 mb-3">{t('form.payment.card.eligibleBanksNote')}</p>
+                        <div className="flex flex-wrap gap-2">
                           {[
-                            { key: 'nbe', name: t('form.banks.nbe') },
-                            { key: 'cib', name: t('form.banks.cib') },
-                            { key: 'qnb', name: t('form.banks.qnb') },
-                            { key: 'banqueMisr', name: t('form.banks.banqueMisr') },
-                            { key: 'alexBank', name: t('form.banks.alexBank') },
-                            { key: 'adib', name: t('form.banks.adib') }
-                          ].map((bank) => (
-                            <label key={bank.name} className="flex items-center gap-3 p-3 bg-white rounded-xl border border-[#0F1A26]/5 hover:border-[#EEBC3F]/50 hover:shadow-md cursor-pointer transition-all duration-200 group">
-                              <input type="radio" name="bank" className="w-4 h-4 accent-[#EEBC3F]" />
-                              <span className="text-sm font-medium text-[#0F1A26] group-hover:text-[#EEBC3F] transition-colors">{bank.name}</span>
-                            </label>
+                            t('form.banks.nbe'),
+                            t('form.banks.cib'),
+                            t('form.banks.banqueMisr')
+                          ].map((bankName) => (
+                            <span key={bankName} className="inline-flex items-center px-3 py-1.5 bg-white rounded-lg border border-[#0F1A26]/10 text-sm font-medium text-[#0F1A26]">
+                              {bankName}
+                            </span>
                           ))}
                         </div>
                       </div>
@@ -484,23 +785,48 @@ function CheckoutContent() {
                   disabled={isSubmitting}
                   className="w-full bg-[#EEBC3F] text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white rounded-full h-14 font-bold text-base transition-all duration-300 disabled:opacity-50"
                 >
-                  {isSubmitting ? t('form.processing') : t('form.completeOrder', { total: total.toString() })}
+                  {isSubmitting 
+                    ? t('form.processing') 
+                    : mounted 
+                      ? deliveryMethod === "delivery" && !formData.city
+                        ? `${t('form.completeOrder', { total: checkoutSubtotal.toString() })} (${t('form.selectCity')})`
+                        : t('form.completeOrder', { total: total.toString() })
+                      : t('form.completeOrder', { total: "--" })
+                  }
                 </Button>
+
+                {submitError ? (
+                  <p className="text-sm text-red-600 mt-3">{submitError}</p>
+                ) : null}
               </form>
             </div>
 
             {/* Order Summary */}
             <div className="lg:w-96 order-first lg:order-last">
               <div className="bg-white rounded-2xl p-6 border border-[#0F1A26]/5 lg:sticky lg:top-28">
-                <h2 className="text-lg font-semibold text-[#0F1A26] mb-6">{t('summary.title')}</h2>
+                <h2 className="text-lg font-semibold text-[#0F1A26] mb-2">{t('summary.title')}</h2>
+                {buyNowItem ? (
+                  <p className="text-xs text-[#EEBC3F] font-medium mb-4">{t('summary.buyNowMode') || '🛒 Buy Now - Quick Purchase'}</p>
+                ) : (
+                  <p className="text-xs text-[#0F1A26]/60 mb-4">{t('summary.cartMode') || '🛍️ From Cart'}</p>
+                )}
                 
                 {/* Items */}
                 <div className="space-y-4 mb-6">
-                  {checkoutItems.map((item) => (
+                  {!mounted ? (
+                    <div className="flex gap-3">
+                      <div className="w-24 h-24 rounded-lg bg-[#F8F6F3] flex-shrink-0 animate-pulse" />
+                      <div className="flex-1 min-w-0 space-y-2">
+                        <div className="h-4 bg-[#F8F6F3] rounded w-3/4 animate-pulse" />
+                        <div className="h-3 bg-[#F8F6F3] rounded w-1/2 animate-pulse" />
+                      </div>
+                    </div>
+                  ) : checkoutItems.map((item, index) => (
                     <Link
-                      key={item.id}
+                      key={`${item.id}-${item.size || 'no-size'}-${item.color || 'no-color'}-${index}`}
                       href={`/product/${item.slug}`}
                       className="flex gap-3 group cursor-pointer"
+                      prefetch={false}
                     >
                       <div className="w-24 h-24 rounded-lg overflow-hidden bg-[#F8F6F3] flex-shrink-0 relative">
                         <Image 
@@ -540,16 +866,33 @@ function CheckoutContent() {
                     <span className="text-[#0F1A26]/60">{t('summary.subtotal')}</span>
                     <span className="text-[#0F1A26] font-medium">EGP {checkoutSubtotal}</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[#0F1A26]/60">{t('summary.shipping')}</span>
-                    <span className="text-[#0F1A26] font-medium">
-                      {shipping === 0 ? t('summary.free') : `EGP ${shipping}`}
-                    </span>
-                  </div>
+                  {deliveryMethod === "delivery" && formData.city ? (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-[#0F1A26]/60">{t('summary.shipping')}</span>
+                      <span className="text-[#0F1A26] font-medium">
+                        {shipping === 0 
+                          ? `${t('summary.free')} ${t('summary.freeShippingOver1000') || '(Order > 1000 EGP)'}` 
+                          : `EGP ${shipping}`
+                        }
+                      </span>
+                    </div>
+                  ) : deliveryMethod === "delivery" ? (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-[#0F1A26]/60">{t('summary.shipping')}</span>
+                      <span className="text-[#0F1A26]/50 font-medium text-xs">{t('summary.selectCityForShipping')}</span>
+                    </div>
+                  ) : (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-[#0F1A26]/60">{t('summary.shipping')}</span>
+                      <span className="text-[#0F1A26] font-medium">{t('summary.free')}</span>
+                    </div>
+                  )}
                   <div className="border-t border-[#0F1A26]/10 pt-2 mt-2">
                     <div className="flex justify-between">
                       <span className="text-[#0F1A26] font-semibold">{t('summary.total')}</span>
-                      <span className="text-[#0F1A26] font-bold text-lg">EGP {total}</span>
+                      <span className="text-[#0F1A26] font-bold text-lg">
+                        EGP {deliveryMethod === "delivery" && !formData.city ? checkoutSubtotal : total}
+                      </span>
                     </div>
                   </div>
                 </div>

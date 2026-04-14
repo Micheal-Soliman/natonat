@@ -502,9 +502,11 @@
       "total": "Total",
       "checkout": "Proceed to Checkout",
       "proceedToCheckout": "Proceed to Checkout",
+      "proceedToCart": "Proceed to cart",
       "continueShopping": "Continue Shopping",
       "note": "Shipping and taxes calculated at checkout",
-      "egyptOnly": "🚚 Egypt delivery only"
+      "egyptOnly": "🚚 Egypt delivery only",
+      "shippingAtCheckout": "Shipping calculated at checkout"
     },
     "savings": "You're saving EGP {amount}"
   },
@@ -588,7 +590,9 @@
         "card": {
           "title": "Credit/Debit Card",
           "subtitle": "Pay securely with your card",
-          "selectBank": "Select your bank"
+          "selectBank": "Select your bank",
+          "eligibleBanks": "Eligible Banks",
+          "eligibleBanksNote": "Card payment available for these banks only"
         },
         "instapay": {
           "title": "InstaPay",
@@ -600,7 +604,9 @@
         }
       },
       "processing": "Processing...",
-      "completeOrder": "Complete Order - EGP {total}"
+      "completeOrder": "Complete Order - EGP {total}",
+      "shippingAtCheckout": "+ shipping at checkout",
+      "selectCity": "select city for total"
     },
     "summary": {
       "title": "Order Summary",
@@ -608,9 +614,13 @@
       "subtotal": "Subtotal",
       "shipping": "Shipping",
       "free": "Free",
+      "freeShippingOver1000": "(Order > 1000 EGP)",
       "total": "Total",
       "size": "Size",
-      "color": "Color"
+      "color": "Color",
+      "selectCityForShipping": "Select city to calculate shipping",
+      "buyNowMode": "🛒 Buy Now - Quick Purchase",
+      "cartMode": "🛍️ From Cart"
     }
   },
   "common": {

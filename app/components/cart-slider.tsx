@@ -20,8 +20,7 @@ export function CartSlider() {
     setBuyNowItem,
   } = useCart();
 
-  const shipping = subtotal > 1000 ? 0 : 75;
-  const total = subtotal + shipping;
+  // Cart shows subtotal only - shipping calculated at checkout based on city selection
 
   if (!isOpen) return null;
 
@@ -118,7 +117,7 @@ export function CartSlider() {
                         )}
                       </div>
                       <button
-                        onClick={() => removeFromCart(item.id)}
+                        onClick={() => removeFromCart(item.id, item.size, item.color)}
                         className="w-7 h-7 rounded-full bg-white flex items-center justify-center text-[#0F1A26]/50 hover:bg-red-50 hover:text-red-500 transition-colors flex-shrink-0"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -129,7 +128,7 @@ export function CartSlider() {
                       {/* Quantity */}
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => updateQuantity(item.id, -1)}
+                          onClick={() => updateQuantity(item.id, -1, item.size, item.color)}
                           className="w-7 h-7 rounded-lg bg-white flex items-center justify-center text-[#0F1A26] hover:bg-[#0F1A26]/10 transition-colors"
                         >
                           <Minus className="w-3.5 h-3.5" />
@@ -138,7 +137,7 @@ export function CartSlider() {
                           {item.quantity}
                         </span>
                         <button
-                          onClick={() => updateQuantity(item.id, 1)}
+                          onClick={() => updateQuantity(item.id, 1, item.size, item.color)}
                           className="w-7 h-7 rounded-lg bg-white flex items-center justify-center text-[#0F1A26] hover:bg-[#0F1A26]/10 transition-colors"
                         >
                           <Plus className="w-3.5 h-3.5" />
@@ -161,26 +160,19 @@ export function CartSlider() {
         {items.length > 0 && (
           <div className="border-t border-[#0F1A26]/10 p-6 bg-[#F1EBE3]">
             <div className="space-y-3 mb-6">
-              <div className="flex justify-between text-sm">
-                <span className="text-[#0F1A26]/60">{t("summary.subtotal")}</span>
-                <span className="text-[#0F1A26] font-medium">EGP {subtotal}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-[#0F1A26]/60">{t("summary.shipping")}</span>
-                <span className="text-[#0F1A26] font-medium">
-                  {shipping === 0 ? t("summary.free") : `EGP ${shipping}`}
-                </span>
-              </div>
               <div className="border-t border-[#0F1A26]/10 pt-3">
                 <div className="flex justify-between">
                   <span className="text-[#0F1A26] font-semibold">
-                    {t("summary.total")}
+                    {t("summary.subtotal")}
                   </span>
                   <span className="text-[#0F1A26] font-bold text-lg">
-                    EGP {total}
+                    EGP {subtotal}
                   </span>
                 </div>
               </div>
+              <p className="text-xs text-[#0F1A26]/50 text-center">
+                {t("summary.shippingAtCheckout")}
+              </p>
             </div>
 
             <Link 
@@ -200,13 +192,13 @@ export function CartSlider() {
                 variant="outline"
                 className="w-full border-[#0F1A26]/20 text-[#0F1A26] hover:bg-[#0F1A26] rounded-full h-12 font-medium transition-all duration-300"
               >
-                View Cart
+                {t("summary.proceedToCart")}
               </Button>
             </Link>
 
-            <p className="text-xs text-[#0F1A26]/40 text-center mt-3">
+            {/* <p className="text-xs text-[#0F1A26]/40 text-center mt-3">
               {t("summary.note")}
-            </p>
+            </p> */}
           </div>
         )}
       </div>

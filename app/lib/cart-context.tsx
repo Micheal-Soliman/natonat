@@ -18,8 +18,8 @@ export interface CartItem {
 interface CartContextType {
   items: CartItem[];
   addToCart: (item: Omit<CartItem, "quantity"> & { quantity?: number }) => void;
-  removeFromCart: (id: number) => void;
-  updateQuantity: (id: number, delta: number) => void;
+  removeFromCart: (id: number, size?: string, color?: string) => void;
+  updateQuantity: (id: number, delta: number, size?: string, color?: string) => void;
   clearCart: () => void;
   buyNowItem: CartItem | null;
   setBuyNowItem: (item: CartItem | null) => void;
@@ -73,18 +73,34 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setIsOpen(true);
   }, []);
 
-  const removeFromCart = useCallback((id: number) => {
-    setItems((currentItems) => currentItems.filter((item) => item.id !== id));
-  }, []);
-
-  const updateQuantity = useCallback((id: number, delta: number) => {
-    setItems((currentItems) =>
-      currentItems.map((item) =>
-        item.id === id
-          ? { ...item, quantity: Math.max(1, item.quantity + delta) }
-          : item
+  const removeFromCart = useCallback((id: number, size?: string, color?: string) => {
+    setItems((currentItems) => 
+      currentItems.filter((item) => 
+        !(item.id === id && item.size === size && item.color === color)
       )
     );
+  }, []);
+
+  const updateQuantity = useCallback((id: number, delta: number, size?: string, color?: string) => {
+    setItems((currentItems) => {
+      const targetItem = currentItems.find(
+        (item) => item.id === id && item.size === size && item.color === color
+      );
+      
+      // If decreasing and quantity would become 0, remove the item
+      if (delta < 0 && targetItem && targetItem.quantity <= 1) {
+        return currentItems.filter(
+          (item) => !(item.id === id && item.size === size && item.color === color)
+        );
+      }
+      
+      // Otherwise update quantity
+      return currentItems.map((item) =>
+        item.id === id && item.size === size && item.color === color
+          ? { ...item, quantity: Math.max(1, item.quantity + delta) }
+          : item
+      );
+    });
   }, []);
 
   const clearCart = useCallback(() => {

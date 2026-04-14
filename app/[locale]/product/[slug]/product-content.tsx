@@ -709,13 +709,19 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                 </Button>
                 <Button 
                   onClick={() => {
+                    const priceToUse = currentPrice?.price || product?.price || 0;
+                    if (!priceToUse || priceToUse === 0) {
+                      console.error("[Product] Cannot buy now - invalid price:", { currentPrice, product });
+                      alert("Error: Product price not loaded. Please refresh the page.");
+                      return;
+                    }
                     setBuyNowItem({
                       id: product.id,
                       name: product.name,
                       slug: product.slug,
                       type: product.type,
-                      price: currentPrice.price,
-                      originalPrice: currentPrice.originalPrice,
+                      price: priceToUse,
+                      originalPrice: currentPrice?.originalPrice || product?.originalPrice || priceToUse,
                       image: product.colors && selectedColor 
                         ? product.colors.find(c => c.id === selectedColor)?.image || product.image 
                         : product.image,

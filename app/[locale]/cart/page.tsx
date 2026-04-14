@@ -188,79 +188,82 @@ function CartContent() {
                               </Link>
                             </div>
                             <button 
-                              onClick={() => removeFromCart(item.id)}
+                              onClick={() => {
+                                // Remove all variants of this item
+                                item.variants.forEach(v => {
+                                  removeFromCart(item.id, v.size, v.color);
+                                });
+                              }}
                               className="w-8 h-8 rounded-full bg-[#0F1A26]/5 flex items-center justify-center text-[#0F1A26]/50 hover:bg-red-50 hover:text-red-500 transition-colors"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
                           
-                          {/* Sizes List */}
+                          {/* Variants with Individual Controls */}
                           {item.variants.length > 0 && (
-                            <div className="mt-2 space-y-1">
+                            <div className="mt-3 space-y-2">
                               {item.variants.map((variant, idx) => (
-                                <div key={idx} className="flex items-center gap-2 text-sm">
-                                  {variant.size && (
-                                    <span className="bg-[#EEBC3F]/10 text-[#0F1A26] px-2 py-0.5 rounded text-xs font-medium">
-                                      {t('size')} {variant.size.toUpperCase()}
+                                <div key={idx} className="flex items-center justify-between bg-[#F8F6F3] rounded-lg px-3 py-2">
+                                  <div className="flex items-center gap-2">
+                                    {variant.size && (
+                                      <span className="bg-[#EEBC3F]/20 text-[#0F1A26] px-2 py-0.5 rounded text-xs font-medium">
+                                        {t('size')} {variant.size.toUpperCase()}
+                                      </span>
+                                    )}
+                                    {variant.color && (
+                                      <span className="text-[#0F1A26]/60 text-xs">{variant.color}</span>
+                                    )}
+                                  </div>
+                                  
+                                  <div className="flex items-center gap-2">
+                                    <button 
+                                      onClick={() => {
+                                        const originalItem = items.find(i => 
+                                          i.id === item.id && 
+                                          i.size === variant.size && 
+                                          i.color === variant.color
+                                        );
+                                        if (originalItem) {
+                                          updateQuantity(originalItem.id, -1, variant.size, variant.color);
+                                        }
+                                      }}
+                                      className="w-6 h-6 rounded bg-white flex items-center justify-center text-[#0F1A26] hover:bg-[#EEBC3F]/20 transition-colors"
+                                    >
+                                      <Minus className="w-3 h-3" />
+                                    </button>
+                                    <span className="w-6 text-center font-medium text-[#0F1A26] text-sm">
+                                      {variant.quantity}
                                     </span>
-                                  )}
-                                  {variant.color && (
-                                    <span className="text-[#0F1A26]/60">{variant.color}</span>
-                                  )}
-                                  <span className="text-[#0F1A26]/50">× {variant.quantity}</span>
+                                    <button 
+                                      onClick={() => {
+                                        const originalItem = items.find(i => 
+                                          i.id === item.id && 
+                                          i.size === variant.size && 
+                                          i.color === variant.color
+                                        );
+                                        if (originalItem) {
+                                          updateQuantity(originalItem.id, 1, variant.size, variant.color);
+                                        }
+                                      }}
+                                      className="w-6 h-6 rounded bg-white flex items-center justify-center text-[#0F1A26] hover:bg-[#EEBC3F]/20 transition-colors"
+                                    >
+                                      <Plus className="w-3 h-3" />
+                                    </button>
+                                    <span className="text-sm font-medium text-[#0F1A26] ml-2">
+                                      EGP {item.price * variant.quantity}
+                                    </span>
+                                  </div>
                                 </div>
                               ))}
                             </div>
                           )}
                         </div>
 
-                        <div className="flex items-center justify-between mt-3">
-                          {/* Quantity - Total for all variants */}
-                          <div className="flex items-center gap-2">
-                            <button 
-                              onClick={() => {
-                                // Decrease first variant as example
-                                if (item.variants[0]) {
-                                  const originalItem = items.find(i => 
-                                    i.id === item.id && 
-                                    i.size === item.variants[0].size && 
-                                    i.color === item.variants[0].color
-                                  );
-                                  if (originalItem) {
-                                    updateQuantity(originalItem.id, -1);
-                                  }
-                                }
-                              }}
-                              className="w-8 h-8 rounded-lg bg-[#0F1A26]/5 flex items-center justify-center text-[#0F1A26] hover:bg-[#0F1A26]/10 transition-colors"
-                            >
-                              <Minus className="w-4 h-4" />
-                            </button>
-                            <span className="w-8 text-center font-medium text-[#0F1A26]">
-                              {getTotalQuantity(item.variants)}
-                            </span>
-                            <button 
-                              onClick={() => {
-                                // Increase first variant as example
-                                if (item.variants[0]) {
-                                  const originalItem = items.find(i => 
-                                    i.id === item.id && 
-                                    i.size === item.variants[0].size && 
-                                    i.color === item.variants[0].color
-                                  );
-                                  if (originalItem) {
-                                    updateQuantity(originalItem.id, 1);
-                                  }
-                                }
-                              }}
-                              className="w-8 h-8 rounded-lg bg-[#0F1A26]/5 flex items-center justify-center text-[#0F1A26] hover:bg-[#0F1A26]/10 transition-colors"
-                            >
-                              <Plus className="w-4 h-4" />
-                            </button>
-                          </div>
-
-                          {/* Price */}
-                          <span className="font-semibold text-[#0F1A26]">
+                        {/* Total Price for this item */}
+                        <div className="flex items-center justify-end mt-3 pt-3 border-t border-[#0F1A26]/5">
+                          <span className="text-sm text-[#0F1A26]/60 mr-2">{t('summary.total')}:</span>
+                          <span className="font-bold text-[#0F1A26]">
                             EGP {getTotalPrice(item.price, item.variants)}
                           </span>
                         </div>
