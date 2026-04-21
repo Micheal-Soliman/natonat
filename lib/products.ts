@@ -823,18 +823,19 @@ export const products: Product[] = [
       xl: { price: 749, originalPrice: 900 }
     }
   },
-  // PackOnat Backpack (Product ID 50)
-  { 
-    id: 50, 
-    slug: "packonat",
-    name: "PackOnat", 
-    category: "backpacks", 
-    size: null, 
-    theme: "minimal", 
-    price: 799, 
-    originalPrice: 999, 
-    type: "Backpack", 
-    tag: null, 
+  // PackOnat Packing Folder - 3 Separate Products by Color
+  {
+    id: 50,
+    slug: "packonat-black",
+    name: "PackOnat Packing Folder - Black",
+    category: "packonat",
+    size: null,
+    theme: "minimal",
+    price: 799,
+    originalPrice: 999,
+    type: "Packing Folder",
+    tag: null,
+    color: "Black",
     image: "/packOnat/Black/Artboard%205.png",
     images: [
       "/packOnat/Black/Artboard%205.png",
@@ -842,12 +843,49 @@ export const products: Product[] = [
       "/packOnat/Black/Artboard%207.png",
       "/packOnat/Black/Artboard%208.png"
     ],
-    description: "Premium travel backpack with smart organization",
-    colors: [
-      { id: "black", name: "Black", image: "/packOnat/Black/Artboard%205.png" },
-      { id: "green", name: "Green", image: "/packOnat/Green/Artboard%209.png" },
-      { id: "red", name: "Red", image: "/packOnat/Red/Artboard%201.png" }
-    ]
+    description: "Premium travel packing folder in Black with smart organization, multiple compartments, and durable design."
+  },
+  {
+    id: 51,
+    slug: "packonat-green",
+    name: "PackOnat Packing Folder - Green",
+    category: "packonat",
+    size: null,
+    theme: "minimal",
+    price: 799,
+    originalPrice: 999,
+    type: "Packing Folder",
+    tag: null,
+    color: "Green",
+    image: "/packOnat/Green/Artboard%209.png",
+    images: [
+      "/packOnat/Green/Artboard%209.png",
+      "/packOnat/Green/Artboard%2010.png",
+      "/packOnat/Green/Artboard%2011.png",
+      "/packOnat/Green/Artboard%2012.png"
+    ],
+    description: "Premium travel packing folder in Green with smart organization, multiple compartments, and durable design."
+  },
+  {
+    id: 52,
+    slug: "packonat-red",
+    name: "PackOnat Packing Folder - Red",
+    category: "packonat",
+    size: null,
+    theme: "minimal",
+    price: 799,
+    originalPrice: 999,
+    type: "Packing Folder",
+    tag: null,
+    color: "Red",
+    image: "/packOnat/Red/Artboard%201.png",
+    images: [
+      "/packOnat/Red/Artboard%201.png",
+      "/packOnat/Red/Artboard%202.png",
+      "/packOnat/Red/Artboard%203.png",
+      "/packOnat/Red/Artboard%204.png"
+    ],
+    description: "Premium travel packing folder in Red with smart organization, multiple compartments, and durable design."
   },
   
   // Bundles - Updated with new discount structure
@@ -895,14 +933,14 @@ export const products: Product[] = [
       "/packOnat/Black/Artboard%205.png",
       "/octopus%20photo/ACCORD/1.png"
     ],
-    description: "Everything you need - luggage cover, backpack, and passport wallet",
+    description: "Everything you need - luggage cover, packing folder, and passport wallet",
     isBundle: true,
     bundleItems: [
       { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28], quantity: 1, label: "Select Luggage Cover" },
-      { productId: 50, quantity: 1, label: "PackOnat Backpack" },
-      { productId: 107, quantity: 1, label: "Passport Wallet" }
+      { productIds: [50, 51, 52], quantity: 1, label: "Select PackOnat Color" },
+      { productIds: [107, 108, 109], quantity: 1, label: "Select Passport Wallet Color" }
     ],
-    features: ["Cover + Backpack + Passport", "Save 18%", "Complete travel kit", "Ready to go"]
+    features: ["Cover + Packing Folder + Passport", "Save 18%", "Complete travel kit", "Ready to go"]
   },
   // 3. PackOnat with Cover - 12% off
   {
@@ -921,13 +959,13 @@ export const products: Product[] = [
       "/packOnat/Black/Artboard%205.png",
       "/octopus%20photo/ACCORD/1.png"
     ],
-    description: "Travel in style with backpack and matching cover",
+    description: "Travel in style with packing folder and matching cover",
     isBundle: true,
     bundleItems: [
-      { productId: 50, quantity: 1, label: "PackOnat Backpack" },
+      { productIds: [50, 51, 52], quantity: 1, label: "Select PackOnat Color" },
       { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28], quantity: 1, label: "Select Luggage Cover" }
     ],
-    features: ["Backpack + Cover combo", "Save 12%", "Modern design", "Travel essentials"]
+    features: ["Packing Folder + Cover combo", "Save 12%", "Modern design", "Travel essentials"]
   },
   // 4. 2 Covers + PackOnat - 15% off
   {
@@ -946,14 +984,14 @@ export const products: Product[] = [
       "/packOnat/Black/Artboard%205.png",
       "/octopus%20photo/Anara/1.png"
     ],
-    description: "Perfect for couples - two covers and a shared backpack",
+    description: "Perfect for couples - two covers and a shared packing folder",
     isBundle: true,
     bundleItems: [
       { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28], quantity: 1, label: "First Cover" },
       { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28], quantity: 1, label: "Second Cover" },
-      { productId: 50, quantity: 1, label: "PackOnat Backpack" }
+      { productIds: [50, 51, 52], quantity: 1, label: "Select PackOnat Color" }
     ],
-    features: ["2 Covers + Backpack", "Save 15%", "Perfect for couples", "Travel together"]
+    features: ["2 Covers + Packing Folder", "Save 15%", "Perfect for couples", "Travel together"]
   },
   // 5. 2 PackOnat - 12% off
   {
@@ -972,13 +1010,13 @@ export const products: Product[] = [
       "/packOnat/Black/Artboard%205.png",
       "/packOnat/Green/Artboard%209.png"
     ],
-    description: "Double the style - two PackOnat backpacks",
+    description: "Double the style - two PackOnat packing folders",
     isBundle: true,
     bundleItems: [
-      { productId: 50, quantity: 1, label: "First PackOnat" },
-      { productId: 50, quantity: 1, label: "Second PackOnat" }
+      { productIds: [50, 51, 52], quantity: 1, label: "First PackOnat Color" },
+      { productIds: [50, 51, 52], quantity: 1, label: "Second PackOnat Color" }
     ],
-    features: ["2 PackOnat backpacks", "Save 12%", "His & Hers", "Matching set"]
+    features: ["2 PackOnat packing folders", "Save 12%", "His & Hers", "Matching set"]
   },
   // 6. Passport + Any Item - 15% off (Passport + Cover combo)
   {
@@ -1000,16 +1038,16 @@ export const products: Product[] = [
     description: "Essential travel combo - passport wallet and luggage cover",
     isBundle: true,
     bundleItems: [
-      { productId: 107, quantity: 1, label: "Passport Wallet" },
+      { productIds: [107, 108, 109], quantity: 1, label: "Select Passport Wallet Color" },
       { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28], quantity: 1, label: "Select Luggage Cover" }
     ],
     features: ["Passport + Cover combo", "Save 15%", "Travel ready", "Perfect pair"]
   },
-  // Eoehro Passport Holder - 1 Product with 3 Colors
+  // Eoehro Passport Holder - 3 Separate Products by Color
   {
     id: 107,
-    slug: "eoehro-passport-holder",
-    name: "Eoehro Passport Holder",
+    slug: "eoehro-passport-holder-cognac",
+    name: "Eoehro Passport Holder - Cognac Brown",
     category: "passport-wallets",
     size: null,
     theme: "minimal",
@@ -1017,6 +1055,7 @@ export const products: Product[] = [
     originalPrice: 1950,
     type: "Passport Wallet",
     tag: "New",
+    color: "Cognac Brown",
     image: "/passport%20wallet/Cognac%20brown/1.png",
     images: [
       "/passport%20wallet/Cognac%20brown/1.png",
@@ -1025,14 +1064,50 @@ export const products: Product[] = [
       "/passport%20wallet/Cognac%20brown/4.png",
       "/passport%20wallet/Cognac%20brown/5.png",
       "/passport%20wallet/Cognac%20brown/6.png",
-      "/passport%20wallet/Cognac%20brown/7.png",
+      "/passport%20wallet/Cognac%20brown/7.png"
+    ],
+    description: "RFID Protected faux leather passport holder in Cognac Brown with magnetic clasp, vaccine card slot, and 5 pockets for cards, tickets, and SIM cards.",
+    features: ["RFID Blocking", "Magnetic Clasp", "Vaccine Card Slot", "5 Card Pockets", "Faux Leather", "Cognac Brown Color"]
+  },
+  {
+    id: 108,
+    slug: "eoehro-passport-holder-espresso",
+    name: "Eoehro Passport Holder - Espresso Brown",
+    category: "passport-wallets",
+    size: null,
+    theme: "minimal",
+    price: 1789,
+    originalPrice: 1950,
+    type: "Passport Wallet",
+    tag: "New",
+    color: "Espresso Brown",
+    image: "/passport%20wallet/Espresso%20brown/1.png",
+    images: [
       "/passport%20wallet/Espresso%20brown/1.png",
       "/passport%20wallet/Espresso%20brown/2.png",
       "/passport%20wallet/Espresso%20brown/3.png",
       "/passport%20wallet/Espresso%20brown/4.png",
       "/passport%20wallet/Espresso%20brown/5.png",
       "/passport%20wallet/Espresso%20brown/6.png",
-      "/passport%20wallet/Espresso%20brown/7.png",
+      "/passport%20wallet/Espresso%20brown/7.png"
+    ],
+    description: "RFID Protected faux leather passport holder in Espresso Brown with magnetic clasp, vaccine card slot, and 5 pockets for cards, tickets, and SIM cards.",
+    features: ["RFID Blocking", "Magnetic Clasp", "Vaccine Card Slot", "5 Card Pockets", "Faux Leather", "Espresso Brown Color"]
+  },
+  {
+    id: 109,
+    slug: "eoehro-passport-holder-honey",
+    name: "Eoehro Passport Holder - Honey Brown",
+    category: "passport-wallets",
+    size: null,
+    theme: "minimal",
+    price: 1789,
+    originalPrice: 1950,
+    type: "Passport Wallet",
+    tag: "New",
+    color: "Honey Brown",
+    image: "/passport%20wallet/Honey%20brown/1.png",
+    images: [
       "/passport%20wallet/Honey%20brown/1.png",
       "/passport%20wallet/Honey%20brown/2.png",
       "/passport%20wallet/Honey%20brown/3.png",
@@ -1041,13 +1116,8 @@ export const products: Product[] = [
       "/passport%20wallet/Honey%20brown/6.png",
       "/passport%20wallet/Honey%20brown/7.png"
     ],
-    description: "RFID Protected faux leather passport holder with magnetic clasp, vaccine card slot, and 5 pockets for cards, tickets, and SIM cards. Available in 3 colors: Brown, Black, and Tan.",
-    features: ["RFID Blocking", "Magnetic Clasp", "Vaccine Card Slot", "5 Card Pockets", "Faux Leather", "3 Colors Available"],
-    colors: [
-      { id: "cognac", name: "Cognac Brown", image: "/passport%20wallet/Cognac%20brown/1.png" },
-      { id: "espresso", name: "Espresso Brown", image: "/passport%20wallet/Espresso%20brown/1.png" },
-      { id: "honey", name: "Honey Brown", image: "/passport%20wallet/Honey%20brown/1.png" }
-    ]
+    description: "RFID Protected faux leather passport holder in Honey Brown with magnetic clasp, vaccine card slot, and 5 pockets for cards, tickets, and SIM cards.",
+    features: ["RFID Blocking", "Magnetic Clasp", "Vaccine Card Slot", "5 Card Pockets", "Faux Leather", "Honey Brown Color"]
   },
 ];
 
@@ -1076,8 +1146,8 @@ export const getBundles = (): Product[] => {
   return products.filter(p => p.category === "bundles");
 };
 
-export const getBackpacks = (): Product[] => {
-  return products.filter(p => p.category === "backpacks");
+export const getPackOnat = (): Product[] => {
+  return products.filter(p => p.category === "packonat");
 };
 
 // Product metadata
@@ -1099,5 +1169,5 @@ export const categories = [
   { id: "bundles", label: "Bundles & Sets" },
   { id: "luggage-covers", label: "Luggage Covers" },
   { id: "passport-wallets", label: "Passport Wallets" },
-  { id: "backpacks", label: "Backpacks" },
+  { id: "packonat", label: "PackOnat" },
 ];

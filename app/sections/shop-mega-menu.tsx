@@ -39,9 +39,9 @@ export function ShopMegaMenu({ scrolled }: ShopMegaMenuProps) {
     },
     {
       id: "backpacks",
-      name: t('backpacks'),
-      description: t('backpacksDesc'),
-      href: "/shop?category=backpacks",
+      name: t('packOnat'),
+      description: t('packOnatDesc'),
+      href: "/shop?category=packonat",
       image: "/packOnat/Black/Artboard%205.png",
     },
   ];

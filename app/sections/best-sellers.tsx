@@ -13,12 +13,12 @@ const getDisplayProducts = () => {
   const tagged = products.filter(p => p.tag === "Best Seller" || p.tag === "New").slice(0, 4);
   const luggage = products.find(p => p.category === "luggage-covers" && !tagged.find(t => t.id === p.id));
   const passport = products.find(p => p.category === "passport-wallets" && !tagged.find(t => t.id === p.id));
-  const backpack = products.find(p => p.category === "backpacks" && !tagged.find(t => t.id === p.id));
+  const packonat = products.find(p => p.category === "packonat" && !tagged.find(t => t.id === p.id));
   
   const result = [...tagged];
   if (luggage) result.push(luggage);
   if (passport) result.push(passport);
-  if (backpack) result.push(backpack);
+  if (packonat) result.push(packonat);
   
   const remaining = products.filter(p => !result.find(r => r.id === p.id)).slice(0, 8 - result.length);
   return [...result, ...remaining].slice(0, 8);

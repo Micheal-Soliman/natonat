@@ -22,6 +22,7 @@ function ShopContent() {
   const [activeCategory, setActiveCategory] = useState(categoryFromUrl);
   const [selectedSizes, setSelectedSizes] = useState<string[]>(sizeFromUrl ? [sizeFromUrl] : []);
   const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
+  const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [showBestSellers, setShowBestSellers] = useState(sortFromUrl === "best-sellers");
   const [searchQuery, setSearchQuery] = useState(searchFromUrl || "");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -103,6 +104,7 @@ function ShopContent() {
     if (activeCategory !== "all" && product.category !== activeCategory) return false;
     if (selectedSizes.length > 0 && product.size && !selectedSizes.includes(product.size)) return false;
     if (selectedThemes.length > 0 && !selectedThemes.includes(product.theme)) return false;
+    if (selectedColors.length > 0 && (!product.color || !selectedColors.includes(product.color))) return false;
     return true;
   });
 
@@ -116,7 +118,7 @@ function ShopContent() {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeCategory, selectedSizes, selectedThemes, showBestSellers, searchQuery]);
+  }, [activeCategory, selectedSizes, selectedThemes, selectedColors, showBestSellers, searchQuery]);
 
   const toggleSize = (sizeId: string) => {
     setSelectedSizes((prev) =>
@@ -134,14 +136,21 @@ function ShopContent() {
     );
   };
 
+  const toggleColor = (color: string) => {
+    setSelectedColors((prev) =>
+      prev.includes(color) ? prev.filter((c) => c !== color) : [...prev, color]
+    );
+  };
+
   const clearFilters = () => {
     setSelectedSizes([]);
     setSelectedThemes([]);
+    setSelectedColors([]);
     setShowBestSellers(false);
     setCurrentPage(1);
   };
 
-  const activeFiltersCount = selectedSizes.length + selectedThemes.length + (showBestSellers ? 1 : 0);
+  const activeFiltersCount = selectedSizes.length + selectedThemes.length + selectedColors.length + (showBestSellers ? 1 : 0);
 
   // Dynamic header based on category
   const getHeaderContent = () => {
@@ -155,6 +164,11 @@ function ShopContent() {
         return {
           title: <>{t('header.passportWallets.title').split(' ')[0]} <span className="text-[#EEBC3F]">{t('header.passportWallets.title').split(' ').slice(1).join(' ')}</span></>,
           subtitle: t('header.passportWallets.subtitle')
+        };
+      case "packonat":
+        return {
+          title: <>{t('header.packOnat.title').split(' ')[0]} <span className="text-[#EEBC3F]">{t('header.packOnat.title').split(' ').slice(1).join(' ')}</span></>,
+          subtitle: t('header.packOnat.subtitle')
         };
       case "bundles":
         return {
@@ -304,6 +318,40 @@ function ShopContent() {
                     ))}
                   </div>
                 </div>
+
+                {/* Color Filter - For PackOnat and Passport Wallets */}
+                {(activeCategory === "all" || activeCategory === "packonat" || activeCategory === "passport-wallets") && (
+                  <div className="mb-8">
+                    <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">{t('filters.color.title') || 'Color'}</h3>
+                    <div className="space-y-2">
+                      {/* Get unique colors from products */}
+                      {Array.from(new Set(products.filter(p => p.color).map(p => p.color))).map((color) => (
+                        <label 
+                          key={color} 
+                          className="flex items-center gap-2 cursor-pointer"
+                        >
+                          <div
+                            className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${
+                              selectedColors.includes(color!) 
+                                ? "bg-[#EEBC3F] border-[#EEBC3F]" 
+                                : "border-[#0F1A26]/20"
+                            }`}
+                            onClick={() => toggleColor(color!)}
+                          >
+                            {selectedColors.includes(color!) && (
+                              <svg className="w-3 h-3 text-[#0F1A26]" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                          </div>
+                          <span className={`text-sm ${selectedColors.includes(color!) ? "text-[#0F1A26] font-medium" : "text-[#0F1A26]/60"}`}>
+                            {color}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Size Guide Card - Clean */}
                 <div className="bg-[#0F1A26] rounded-xl p-4">
@@ -510,6 +558,34 @@ function ShopContent() {
                   ))}
                 </div>
               </div>
+
+              {/* Mobile Color Filter - For PackOnat and Passport Wallets */}
+              {(activeCategory === "all" || activeCategory === "packonat" || activeCategory === "passport-wallets") && (
+                <div className="mb-6">
+                  <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">{t('filters.color.title') || 'Color'}</h3>
+                  <div className="space-y-2">
+                    {Array.from(new Set(products.filter(p => p.color).map(p => p.color))).map((color) => (
+                      <label key={color} className="flex items-center gap-2 cursor-pointer">
+                        <div
+                          className={`w-4 h-4 rounded border flex items-center justify-center ${
+                            selectedColors.includes(color!) ? "bg-[#EEBC3F] border-[#EEBC3F]" : "border-[#0F1A26]/20"
+                          }`}
+                          onClick={() => toggleColor(color!)}
+                        >
+                          {selectedColors.includes(color!) && (
+                            <svg className="w-3 h-3 text-[#0F1A26]" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </div>
+                        <span className={`text-sm ${selectedColors.includes(color!) ? "text-[#0F1A26] font-medium" : "text-[#0F1A26]/60"}`}>
+                          {color}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <Button 
                 className="w-full bg-[#0F1A26] text-white rounded-full h-12 font-medium" 

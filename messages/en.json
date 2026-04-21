@@ -14,8 +14,8 @@
     "luggageCoversDesc": "Protective stretchy covers",
     "passportWallets": "Passport Wallets",
     "passportWalletsDesc": "RFID-blocking organizers",
-    "backpacks": "Backpacks",
-    "backpacksDesc": "Smart travel backpacks",
+    "packOnat": "PackOnat",
+    "packOnatDesc": "Smart packing organizers",
     "travelSets": "Travel Sets",
     "travelSetsDesc": "Curated bundles",
     "bestSellers": "Best Sellers",
@@ -77,9 +77,9 @@
       "description": "Smart organization for your documents",
       "badge": "Premium Leather"
     },
-    "backpacks": {
-      "title": "Backpacks",
-      "description": "Smart travel backpacks with organization",
+    "packOnat": {
+      "title": "PackOnat",
+      "description": "Smart packing organizers for travel",
       "badge": "New"
     },
     "explore": "Explore Collection"
@@ -282,7 +282,7 @@
         "title": "Shop",
         "luggageCovers": "Luggage Covers",
         "passportWallets": "Passport Wallets",
-        "backpacks": "Backpacks",
+        "packOnat": "PackOnat",
         "travelSets": "Travel Sets",
         "allProducts": "All Products"
       },
@@ -328,9 +328,9 @@
         "title": "Passport Wallets",
         "subtitle": "Premium leather with RFID protection for secure travel"
       },
-      "backpacks": {
-        "title": "Backpacks",
-        "subtitle": "Smart travel backpacks with modern organization"
+      "packOnat": {
+        "title": "PackOnat",
+        "subtitle": "Smart packing folders for organized travel"
       },
       "bundles": {
         "title": "Bundle Deals",
@@ -356,6 +356,9 @@
       },
       "sizeGuide": {
         "title": "Size Guide"
+      },
+      "color": {
+        "title": "Color"
       }
     },
     "results": {
@@ -463,6 +466,11 @@
       "detailsTitle": "Product Details & Specifications",
       "infoTitle": "Why You'll Love It & FAQs",
       "moreAvailable": "Click to read full description"
+    },
+    "videoSection": {
+      "title": "See It In Action",
+      "subtitle": "Watch how PackOnat keeps your clothes organized and wrinkle-free",
+      "passportSubtitle": "Discover the premium leather and RFID protection of our passport wallet"
     }
   },
   "sizeModal": {
@@ -3070,20 +3078,20 @@
         "content": "Order your Wild Fern luggage cover today and travel with the wild, free spirit of nature."
       }
     },
-    "eoehro-passport-holder": {
-      "title": "Eoehro Passport Holder | Premium RFID-Protected Travel Wallet",
+    "eoehro-passport-holder-cognac": {
+      "title": "Eoehro Passport Holder – Cognac Brown | Premium RFID-Protected Travel Wallet",
       "headline": "Travel secure. Stay organized. Carry with confidence.",
-      "intro": "The Eoehro Passport Holder is a premium travel accessory designed to keep your passport, vaccine card, credit cards, and travel documents organized and protected. Featuring RFID blocking technology, magnetic clasp closure, and multiple compartments, this faux leather wallet combines security with elegant style. Available in 3 classic colors.",
+      "intro": "The Eoehro Passport Holder in elegant Cognac Brown is a premium travel accessory designed to keep your passport, vaccine card, credit cards, and travel documents organized and protected. Featuring RFID blocking technology, magnetic clasp closure, and multiple compartments with premium faux leather.",
       "designInspiration": {
         "title": "Design Inspiration – Secure Travel",
-        "content": "The Eoehro Passport Holder is designed for modern travelers who value security and organization. Every detail is crafted to protect your personal information while keeping your travel essentials easily accessible.",
+        "content": "The Eoehro Passport Holder is designed for modern travelers who value security and organization. The classic Cognac Brown color adds a touch of luxurious elegance to every journey.",
         "perfectFor": [
           "Frequent travelers",
           "Security-conscious individuals",
           "Organized travelers",
           "Anyone who values elegant travel accessories"
         ],
-        "tagline": "Travel with peace of mind knowing your documents are secure and organized."
+        "tagline": "Travel with peace of mind in classic Cognac Brown."
       },
       "whyChoose": {
         "title": "Why Choose Eoehro Passport Holder?",
@@ -3093,7 +3101,7 @@
           { "title": "Magnetic Clasp Closure", "desc": "Easy-open magnetic button keeps your documents secure yet accessible." },
           { "title": "Vaccine Card Slot", "desc": "Dedicated compartment for your vaccination certificate." },
           { "title": "5 Card Pockets", "desc": "Multiple slots for credit cards, business cards, and SIM cards." },
-          { "title": "Premium Faux Leather", "desc": "Soft PU leather exterior with leather lining for a luxurious feel." },
+          { "title": "Premium Faux Leather", "desc": "Soft PU leather in Cognac Brown with leather lining for a luxurious feel." },
           { "title": "Compact & Lightweight", "desc": "Slim design fits easily in pockets or bags without bulk." }
         ]
       },
@@ -3126,13 +3134,125 @@
         "content": "Order your Eoehro Passport Holder today and travel with confidence, security, and style."
       }
     },
-    "packonat": {
-      "title": "PackOnat Travel Backpack | Premium Smart Backpack",
+    "eoehro-passport-holder-espresso": {
+      "title": "Eoehro Passport Holder – Espresso Brown | Premium RFID-Protected Travel Wallet",
+      "headline": "Travel secure. Stay organized. Carry with confidence.",
+      "intro": "The Eoehro Passport Holder in deep Espresso Brown is a premium travel accessory designed to keep your passport, vaccine card, credit cards, and travel documents organized and protected. Featuring RFID blocking technology, magnetic clasp closure, and multiple compartments with premium faux leather.",
+      "designInspiration": {
+        "title": "Design Inspiration – Secure Travel",
+        "content": "The Eoehro Passport Holder is designed for modern travelers who value security and organization. The deep Espresso Brown color reflects elegance and professionalism.",
+        "perfectFor": [
+          "Frequent travelers",
+          "Security-conscious individuals",
+          "Organized travelers",
+          "Anyone who values elegant travel accessories"
+        ],
+        "tagline": "Travel with peace of mind in sophisticated Espresso Brown."
+      },
+      "whyChoose": {
+        "title": "Why Choose Eoehro Passport Holder?",
+        "intro": "Premium quality meets smart design. This passport holder offers the perfect balance of security, functionality, and style for the modern traveler.",
+        "features": [
+          { "title": "RFID Blocking Protection", "desc": "Built-in shielding prevents unauthorized scanning of your passport and cards." },
+          { "title": "Magnetic Clasp Closure", "desc": "Easy-open magnetic button keeps your documents secure yet accessible." },
+          { "title": "Vaccine Card Slot", "desc": "Dedicated compartment for your vaccination certificate." },
+          { "title": "5 Card Pockets", "desc": "Multiple slots for credit cards, business cards, and SIM cards." },
+          { "title": "Premium Faux Leather", "desc": "Soft PU leather in Espresso Brown with leather lining for a luxurious feel." },
+          { "title": "Compact & Lightweight", "desc": "Slim design fits easily in pockets or bags without bulk." }
+        ]
+      },
+      "targetAudience": {
+        "title": "Designed for Smart Travelers",
+        "items": [
+          "International travelers",
+          "Business travelers",
+          "Families on vacation",
+          "Anyone who wants organized documents"
+        ]
+      },
+      "about": {
+        "title": "About Eoehro",
+        "content": "Eoehro creates premium travel accessories that combine security, organization, and style. Each product is designed with the modern traveler in mind."
+      },
+      "sizeGuide": {
+        "title": "Product Dimensions",
+        "subtitle": "Compact and lightweight design:",
+        "tip": "Fits standard passports and travel documents.",
+        "sizes": [
+          "Dimensions: 10.7 x 14.7 x 0.5 cm",
+          "Weight: 70 grams",
+          "Fits all standard passports"
+        ],
+        "proTip": "Slim enough to fit in any pocket or bag."
+      },
+      "cta": {
+        "title": "Upgrade Your Travel Organization",
+        "content": "Order your Eoehro Passport Holder today and travel with confidence, security, and style."
+      }
+    },
+    "eoehro-passport-holder-honey": {
+      "title": "Eoehro Passport Holder – Honey Brown | Premium RFID-Protected Travel Wallet",
+      "headline": "Travel secure. Stay organized. Carry with confidence.",
+      "intro": "The Eoehro Passport Holder in warm Honey Brown is a premium travel accessory designed to keep your passport, vaccine card, credit cards, and travel documents organized and protected. Featuring RFID blocking technology, magnetic clasp closure, and multiple compartments with premium faux leather.",
+      "designInspiration": {
+        "title": "Design Inspiration – Secure Travel",
+        "content": "The Eoehro Passport Holder is designed for modern travelers who value security and organization. The warm Honey Brown color adds a touch of natural elegance.",
+        "perfectFor": [
+          "Frequent travelers",
+          "Security-conscious individuals",
+          "Organized travelers",
+          "Anyone who values elegant travel accessories"
+        ],
+        "tagline": "Travel with peace of mind in warm Honey Brown."
+      },
+      "whyChoose": {
+        "title": "Why Choose Eoehro Passport Holder?",
+        "intro": "Premium quality meets smart design. This passport holder offers the perfect balance of security, functionality, and style for the modern traveler.",
+        "features": [
+          { "title": "RFID Blocking Protection", "desc": "Built-in shielding prevents unauthorized scanning of your passport and cards." },
+          { "title": "Magnetic Clasp Closure", "desc": "Easy-open magnetic button keeps your documents secure yet accessible." },
+          { "title": "Vaccine Card Slot", "desc": "Dedicated compartment for your vaccination certificate." },
+          { "title": "5 Card Pockets", "desc": "Multiple slots for credit cards, business cards, and SIM cards." },
+          { "title": "Premium Faux Leather", "desc": "Soft PU leather in Honey Brown with leather lining for a luxurious feel." },
+          { "title": "Compact & Lightweight", "desc": "Slim design fits easily in pockets or bags without bulk." }
+        ]
+      },
+      "targetAudience": {
+        "title": "Designed for Smart Travelers",
+        "items": [
+          "International travelers",
+          "Business travelers",
+          "Families on vacation",
+          "Anyone who wants organized documents"
+        ]
+      },
+      "about": {
+        "title": "About Eoehro",
+        "content": "Eoehro creates premium travel accessories that combine security, organization, and style. Each product is designed with the modern traveler in mind."
+      },
+      "sizeGuide": {
+        "title": "Product Dimensions",
+        "subtitle": "Compact and lightweight design:",
+        "tip": "Fits standard passports and travel documents.",
+        "sizes": [
+          "Dimensions: 10.7 x 14.7 x 0.5 cm",
+          "Weight: 70 grams",
+          "Fits all standard passports"
+        ],
+        "proTip": "Slim enough to fit in any pocket or bag."
+      },
+      "cta": {
+        "title": "Upgrade Your Travel Organization",
+        "content": "Order your Eoehro Passport Holder today and travel with confidence, security, and style."
+      }
+    },
+    "packonat-black": {
+      "title": "PackOnat Packing Folder – Black | Premium Smart Packing Cube",
       "headline": "Pack smart. Travel easy. Carry everything.",
-      "intro": "The PackOnat Travel Backpack is your ultimate travel companion. With smart organization compartments, durable construction, and a sleek modern design, this backpack keeps your essentials secure and accessible. Available in three stylish colors - Black, Green, and Red.",
+      "intro": "The PackOnat Packing Folder in classic Black is your ultimate travel companion for organized luggage. With smart organization compartments, durable construction, and a sleek modern design, this packing folder keeps your clothes and essentials secure and neatly organized. Perfect for maximizing luggage space.",
       "designInspiration": {
         "title": "Design Inspiration – PackOnat",
-        "content": "The PackOnat backpack is designed for modern travelers who need both style and functionality. Every compartment and pocket is thoughtfully placed for maximum convenience.",
+        "content": "The PackOnat packing folder is designed for modern travelers who need both style and functionality. Every compartment and pocket is thoughtfully placed for maximum convenience.",
         "perfectFor": [
           "Daily commuters & travelers",
           "Students & professionals",
@@ -3142,15 +3262,15 @@
         "tagline": "Your perfect travel companion - organized, stylish, and ready for any journey."
       },
       "whyChoose": {
-        "title": "Why Choose PackOnat Backpack?",
-        "intro": "Premium quality meets smart design. The PackOnat backpack offers the perfect balance of storage, comfort, and style for the modern traveler.",
+        "title": "Why Choose PackOnat Packing Folder?",
+        "intro": "Premium quality meets smart design. The PackOnat packing folder offers the perfect balance of storage, organization, and style for the modern traveler.",
         "features": [
-          { "title": "Smart Organization", "desc": "Multiple compartments for laptop, documents, water bottle, and daily essentials." },
+          { "title": "Smart Organization", "desc": "Multiple compartments for clothes, shoes, documents, and daily essentials." },
           { "title": "Premium Materials", "desc": "Durable, water-resistant fabric that protects your belongings in any weather." },
-          { "title": "Comfortable Design", "desc": "Padded shoulder straps and back panel for all-day comfort." },
-          { "title": "Three Color Options", "desc": "Available in Classic Black, Forest Green, and Bold Red to match your style." },
-          { "title": "Secure Storage", "desc": "Hidden pockets and secure zippers keep your valuables safe." },
-          { "title": "Lightweight & Spacious", "desc": "Generous capacity without the bulk - perfect for daily use or short trips." }
+          { "title": "Compact Design", "desc": "Space-saving design that maximizes luggage space while keeping clothes organized." },
+          { "title": "Classic Black Color", "desc": "Elegant black color that suits all tastes and travel styles." },
+          { "title": "Secure Storage", "desc": "Secure zippers keep your items contained and organized." },
+          { "title": "Lightweight & Spacious", "desc": "Generous capacity without added weight - perfect for daily use or short trips." }
         ]
       },
       "targetAudience": {
@@ -3166,9 +3286,132 @@
         "title": "About PackOnat",
         "content": "PackOnat represents smart travel gear that combines functionality with modern style. Designed for travelers who refuse to compromise on organization."
       },
+      "sizeGuide": {
+        "title": "PackOnat Dimensions",
+        "subtitle": "One size fits all luggage types",
+        "tip": "Fits perfectly in any carry-on or checked luggage",
+        "sizes": [
+          "Standard Size: 40cm x 30cm x 8cm",
+          "Fits in luggage: 20-32 inches",
+          "Capacity: Holds 8-12 shirts or equivalent"
+        ],
+        "proTip": "Roll clothes tightly for maximum space efficiency."
+      },
       "cta": {
         "title": "Upgrade Your Travel Gear",
-        "content": "Order your PackOnat backpack today and travel with everything you need, perfectly organized."
+        "content": "Order your PackOnat packing folder today and travel with everything you need, perfectly organized."
+      }
+    },
+    "packonat-green": {
+      "title": "PackOnat Packing Folder – Green | Premium Smart Packing Cube",
+      "headline": "Pack smart. Travel easy. Carry everything.",
+      "intro": "The PackOnat Packing Folder in Forest Green is your ultimate travel companion for organized luggage. With smart organization compartments, durable construction, and a sleek modern design, this packing folder keeps your clothes and essentials secure and neatly organized. Perfect for maximizing luggage space.",
+      "designInspiration": {
+        "title": "Design Inspiration – PackOnat",
+        "content": "The PackOnat packing folder is designed for modern travelers who need both style and functionality. The green color adds a refreshing natural touch to your travel gear.",
+        "perfectFor": [
+          "Daily commuters & travelers",
+          "Students & professionals",
+          "Weekend adventurers",
+          "Anyone who values organization"
+        ],
+        "tagline": "Your perfect travel companion - organized, stylish, and ready for any journey."
+      },
+      "whyChoose": {
+        "title": "Why Choose PackOnat Packing Folder?",
+        "intro": "Premium quality meets smart design. The PackOnat packing folder offers the perfect balance of storage, organization, and style for the modern traveler.",
+        "features": [
+          { "title": "Smart Organization", "desc": "Multiple compartments for clothes, shoes, documents, and daily essentials." },
+          { "title": "Premium Materials", "desc": "Durable, water-resistant fabric that protects your belongings in any weather." },
+          { "title": "Compact Design", "desc": "Space-saving design that maximizes luggage space while keeping clothes organized." },
+          { "title": "Forest Green Color", "desc": "The forest green color adds a natural, refreshing look to your travel gear." },
+          { "title": "Secure Storage", "desc": "Secure zippers keep your items contained and organized." },
+          { "title": "Lightweight & Spacious", "desc": "Generous capacity without added weight - perfect for daily use or short trips." }
+        ]
+      },
+      "targetAudience": {
+        "title": "Designed for Modern Travelers",
+        "items": [
+          "Daily commuters",
+          "Weekend travelers",
+          "Students & professionals",
+          "Anyone who wants organized travel"
+        ]
+      },
+      "about": {
+        "title": "About PackOnat",
+        "content": "PackOnat represents smart travel gear that combines functionality with modern style. Designed for travelers who refuse to compromise on organization."
+      },
+      "sizeGuide": {
+        "title": "PackOnat Dimensions",
+        "subtitle": "One size fits all luggage types",
+        "tip": "Fits perfectly in any carry-on or checked luggage",
+        "sizes": [
+          "Standard Size: 40cm x 30cm x 8cm",
+          "Fits in luggage: 20-32 inches",
+          "Capacity: Holds 8-12 shirts or equivalent"
+        ],
+        "proTip": "Roll clothes tightly for maximum space efficiency."
+      },
+      "cta": {
+        "title": "Upgrade Your Travel Gear",
+        "content": "Order your PackOnat packing folder today and travel with everything you need, perfectly organized."
+      }
+    },
+    "packonat-red": {
+      "title": "PackOnat Packing Folder – Red | Premium Smart Packing Cube",
+      "headline": "Pack smart. Travel easy. Carry everything.",
+      "intro": "The PackOnat Packing Folder in Bold Red is your ultimate travel companion for organized luggage. With smart organization compartments, durable construction, and a sleek modern design, this packing folder keeps your clothes and essentials secure and neatly organized. Perfect for maximizing luggage space.",
+      "designInspiration": {
+        "title": "Design Inspiration – PackOnat",
+        "content": "The PackOnat packing folder is designed for modern travelers who need both style and functionality. The bold red color adds a touch of confidence and distinction.",
+        "perfectFor": [
+          "Daily commuters & travelers",
+          "Students & professionals",
+          "Weekend adventurers",
+          "Anyone who values organization"
+        ],
+        "tagline": "Your perfect travel companion - organized, stylish, and ready for any journey."
+      },
+      "whyChoose": {
+        "title": "Why Choose PackOnat Packing Folder?",
+        "intro": "Premium quality meets smart design. The PackOnat packing folder offers the perfect balance of storage, organization, and style for the modern traveler.",
+        "features": [
+          { "title": "Smart Organization", "desc": "Multiple compartments for clothes, shoes, documents, and daily essentials." },
+          { "title": "Premium Materials", "desc": "Durable, water-resistant fabric that protects your belongings in any weather." },
+          { "title": "Compact Design", "desc": "Space-saving design that maximizes luggage space while keeping clothes organized." },
+          { "title": "Bold Red Color", "desc": "The striking red color adds confidence and style to your travel gear." },
+          { "title": "Secure Storage", "desc": "Secure zippers keep your items contained and organized." },
+          { "title": "Lightweight & Spacious", "desc": "Generous capacity without added weight - perfect for daily use or short trips." }
+        ]
+      },
+      "targetAudience": {
+        "title": "Designed for Modern Travelers",
+        "items": [
+          "Daily commuters",
+          "Weekend travelers",
+          "Students & professionals",
+          "Anyone who wants organized travel"
+        ]
+      },
+      "about": {
+        "title": "About PackOnat",
+        "content": "PackOnat represents smart travel gear that combines functionality with modern style. Designed for travelers who refuse to compromise on organization."
+      },
+      "sizeGuide": {
+        "title": "PackOnat Dimensions",
+        "subtitle": "One size fits all luggage types",
+        "tip": "Fits perfectly in any carry-on or checked luggage",
+        "sizes": [
+          "Standard Size: 40cm x 30cm x 8cm",
+          "Fits in luggage: 20-32 inches",
+          "Capacity: Holds 8-12 shirts or equivalent"
+        ],
+        "proTip": "Roll clothes tightly for maximum space efficiency."
+      },
+      "cta": {
+        "title": "Upgrade Your Travel Gear",
+        "content": "Order your PackOnat packing folder today and travel with everything you need, perfectly organized."
       }
     }
   }

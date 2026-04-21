@@ -1050,6 +1050,10 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                             { questionKey: "questions.cards.question", answerKey: "questions.cards.answer" },
                             { questionKey: "questions.leather.question", answerKey: "questions.leather.answer" },
                             { questionKey: "questions.pocket.question", answerKey: "questions.pocket.answer" },
+                          ] : product.category === "packonat" ? [
+                            { questionKey: "questions.returnPolicy.question", answerKey: "questions.returnPolicy.answer" },
+                            { questionKey: "questions.exchange.question", answerKey: "questions.exchange.answer" },
+                            { questionKey: "questions.freeShip.question", answerKey: "questions.freeShip.answer" },
                           ] : [
                             { questionKey: "questions.returnPolicy.question", answerKey: "questions.returnPolicy.answer" },
                             { questionKey: "questions.exchange.question", answerKey: "questions.exchange.answer" },
@@ -1063,6 +1067,64 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
               </div>
             )}
           </div>
+
+          {/* PackOnat Video Section - Only for packonat category */}
+          {product.category === "packonat" && (
+            <div className="mt-6 lg:mt-8">
+              <div className="bg-white rounded-3xl p-6 md:p-8 border border-[#0F1A26]/5 shadow-lg">
+                <h3 className="text-base font-bold text-[#0F1A26] mb-5 tracking-[0.1em] uppercase flex items-center gap-3">
+                  <Sparkles className="w-5 h-5 text-[#EEBC3F]" />
+                  {t('videoSection.title') || 'See It In Action'}
+                </h3>
+                <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-[#F1EBE3]">
+                  <video
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    className="w-full h-full object-cover"
+                    poster="/packOnat/Black/Artboard%205.png"
+                  >
+                    <source src="/packOnat/Cloth%20case%20landscape%20without%20logo.mov" type="video/quicktime" />
+                    <source src="/packOnat/Cloth%20case%20landscape%20without%20logo.mov" type="video/mp4" />
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+                <p className="text-[#0F1A26]/60 text-sm mt-4 text-center">
+                  {t('videoSection.subtitle') || 'Watch how PackOnat keeps your clothes organized and wrinkle-free'}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Passport Wallet Video Section - Only for passport-wallets category */}
+          {product.category === "passport-wallets" && (
+            <div className="mt-6 lg:mt-8">
+              <div className="bg-white rounded-3xl p-6 md:p-8 border border-[#0F1A26]/5 shadow-lg">
+                <h3 className="text-base font-bold text-[#0F1A26] mb-5 tracking-[0.1em] uppercase flex items-center gap-3">
+                  <Sparkles className="w-5 h-5 text-[#EEBC3F]" />
+                  {t('videoSection.title') || 'See It In Action'}
+                </h3>
+                <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-[#F1EBE3]">
+                  <video
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    className="w-full h-full object-cover"
+                    poster="/passport%20wallet/Cognac%20brown/1.png"
+                  >
+                    <source src="/passport%20wallet/Wallet%20landscape%20without%20logo.mov" type="video/quicktime" />
+                    <source src="/passport%20wallet/Wallet%20landscape%20without%20logo.mov" type="video/mp4" />
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+                <p className="text-[#0F1A26]/60 text-sm mt-4 text-center">
+                  {t('videoSection.passportSubtitle') || 'Discover the premium leather and RFID protection of our passport wallet'}
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Related Products */}
           <div className="mt-12 pt-12 lg:mt-24 lg:pt-20 border-t border-[#0F1A26]/10">

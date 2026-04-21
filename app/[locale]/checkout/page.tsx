@@ -707,30 +707,6 @@ function CheckoutContent() {
                         <p className="text-xs text-[#0F1A26]/50">{t('form.payment.card.subtitle')}</p>
                       </div>
                     </label>
-                    
-                    {/* Credit Card Eligible Banks Info */}
-                    {paymentMethod === "card" && (
-                      <div className="mx-2 p-4 bg-gradient-to-br from-[#F8F6F3] to-white rounded-2xl border border-[#EEBC3F]/20 shadow-sm animate-in slide-in-from-top-2 duration-300">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="w-8 h-8 rounded-xl bg-[#EEBC3F] flex items-center justify-center">
-                            <Building className="w-4 h-4 text-white" />
-                          </div>
-                          <p className="text-sm font-semibold text-[#0F1A26]">{t('form.payment.card.eligibleBanks')}</p>
-                        </div>
-                        <p className="text-xs text-[#0F1A26]/60 mb-3">{t('form.payment.card.eligibleBanksNote')}</p>
-                        <div className="flex flex-wrap gap-2">
-                          {[
-                            t('form.banks.nbe'),
-                            t('form.banks.cib'),
-                            t('form.banks.banqueMisr')
-                          ].map((bankName) => (
-                            <span key={bankName} className="inline-flex items-center px-3 py-1.5 bg-white rounded-lg border border-[#0F1A26]/10 text-sm font-medium text-[#0F1A26]">
-                              {bankName}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
 
                     <label 
                       className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
@@ -864,7 +840,9 @@ function CheckoutContent() {
                 <div className="border-t border-[#0F1A26]/10 pt-4 space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-[#0F1A26]/60">{t('summary.subtotal')}</span>
-                    <span className="text-[#0F1A26] font-medium">EGP {checkoutSubtotal}</span>
+                    <span className="text-[#0F1A26] font-medium">
+                      EGP {mounted ? checkoutSubtotal : "--"}
+                    </span>
                   </div>
                   {deliveryMethod === "delivery" && formData.city ? (
                     <div className="flex justify-between text-sm">
@@ -891,7 +869,10 @@ function CheckoutContent() {
                     <div className="flex justify-between">
                       <span className="text-[#0F1A26] font-semibold">{t('summary.total')}</span>
                       <span className="text-[#0F1A26] font-bold text-lg">
-                        EGP {deliveryMethod === "delivery" && !formData.city ? checkoutSubtotal : total}
+                        EGP {mounted 
+                          ? (deliveryMethod === "delivery" && !formData.city ? checkoutSubtotal : total) 
+                          : "--"
+                        }
                       </span>
                     </div>
                   </div>
