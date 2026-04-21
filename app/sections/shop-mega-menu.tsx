@@ -42,7 +42,7 @@ export function ShopMegaMenu({ scrolled }: ShopMegaMenuProps) {
       name: t('packOnat'),
       description: t('packOnatDesc'),
       href: "/shop?category=packonat",
-      image: "/packOnat/Black/Artboard%205.png",
+      image: "/packOnat/Black/1.png",
     },
   ];
 

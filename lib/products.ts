@@ -836,8 +836,9 @@ export const products: Product[] = [
     type: "Packing Folder",
     tag: null,
     color: "Black",
-    image: "/packOnat/Black/Artboard%205.png",
+    image: "/packOnat/Black/1.png",
     images: [
+      "/packOnat/Black/1.png",
       "/packOnat/Black/Artboard%205.png",
       "/packOnat/Black/Artboard%206.png",
       "/packOnat/Black/Artboard%207.png",
@@ -857,8 +858,9 @@ export const products: Product[] = [
     type: "Packing Folder",
     tag: null,
     color: "Green",
-    image: "/packOnat/Green/Artboard%209.png",
+    image: "/packOnat/Green/1.png",
     images: [
+      "/packOnat/Green/1.png",
       "/packOnat/Green/Artboard%209.png",
       "/packOnat/Green/Artboard%2010.png",
       "/packOnat/Green/Artboard%2011.png",
@@ -878,8 +880,9 @@ export const products: Product[] = [
     type: "Packing Folder",
     tag: null,
     color: "Red",
-    image: "/packOnat/Red/Artboard%201.png",
+    image: "/packOnat/Red/1.png",
     images: [
+      "/packOnat/Red/1.png",
       "/packOnat/Red/Artboard%201.png",
       "/packOnat/Red/Artboard%202.png",
       "/packOnat/Red/Artboard%203.png",

@@ -1083,7 +1083,7 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                     loop
                     playsInline
                     className="w-full h-full object-cover"
-                    poster="/packOnat/Black/Artboard%205.png"
+                    poster="/packOnat/Black/1.png"
                   >
                     <source src="/packOnat/Cloth%20case%20landscape%20without%20logo.mov" type="video/quicktime" />
                     <source src="/packOnat/Cloth%20case%20landscape%20without%20logo.mov" type="video/mp4" />

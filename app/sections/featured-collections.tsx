@@ -35,7 +35,7 @@ export function FeaturedCollections() {
       description: t('packOnat.description'),
       badge: t('packOnat.badge'),
       href: "/shop?category=packonat",
-      image: "/packOnat/Black/Artboard%205.png",
+      image: "/packOnat/Black/1.png",
       bgColor: "from-[#0F1A26] to-[#EEBC3F]/30",
       accent: "#EEBC3F",
     },
