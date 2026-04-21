@@ -54,9 +54,20 @@ function ProductDetailedDescriptionIntro({ product, onExpand }: ProductDetailedD
     }
   };
 
+  const getIntro = () => {
+    try {
+      return tp(`${product.slug}.intro`);
+    } catch {
+      return null;
+    }
+  };
+
   if (!hasDetailedDescription()) {
     return null;
   }
+
+  const intro = getIntro();
+  if (!intro) return null;
 
   return (
     <button
@@ -64,7 +75,7 @@ function ProductDetailedDescriptionIntro({ product, onExpand }: ProductDetailedD
       className="w-full text-left p-5 bg-white rounded-xl border border-[#0F1A26]/5 shadow-md hover:shadow-lg hover:border-[#EEBC3F]/30 transition-all duration-300 cursor-pointer group"
     >
       <p className="text-[#0F1A26]/80 text-sm leading-relaxed">
-        {tp(`${product.slug}.intro`)}
+        {intro}
       </p>
       {/* Clickable indicator showing there's more content */}
       <div className="flex items-center justify-center gap-2 mt-4 pt-3 border-t border-[#0F1A26]/10 text-[#EEBC3F] group-hover:text-[#0F1A26] transition-colors">
@@ -264,6 +275,36 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
   const [showDetails, setShowDetails] = useState(true); // Partially open - shows intro only
   const [detailsExpanded, setDetailsExpanded] = useState(false); // Controls full expansion
   const [showInfo, setShowInfo] = useState(true); // Fully open by default
+
+  const isBundle = product.category === "bundles" && !!product.bundleItems?.length;
+  const getBundleProduct = useCallback(
+    (productId: number) => products.find((p) => p.id === productId),
+    []
+  );
+
+  const getBundleSizeOptions = useCallback((bundleProduct: Product): string[] => {
+    if (bundleProduct.sizePrices) {
+      return Object.keys(bundleProduct.sizePrices);
+    }
+    return [];
+  }, []);
+
+  const [bundleSelections, setBundleSelections] = useState<{ [key: number]: { productId?: number; size?: string; color?: string } }>(() => {
+    const initial: { [key: number]: { productId?: number; size?: string; color?: string } } = {};
+    if (isBundle && product.bundleItems) {
+      product.bundleItems.forEach((item, index) => {
+        const productId = item.productId || item.productIds?.[0];
+        const bundleProduct = productId ? products.find((p) => p.id === productId) : undefined;
+        const sizeOptions = bundleProduct ? getBundleSizeOptions(bundleProduct) : [];
+        initial[index] = {
+          productId: productId,
+          size: sizeOptions[0],
+          color: bundleProduct?.colors?.[0]?.id,
+        };
+      });
+    }
+    return initial;
+  });
 
   // Helper function to get price based on selected size
   const getPriceBySize = (sizeId: string) => {
@@ -630,6 +671,133 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                 </div>
               )}
 
+              {isBundle && product.bundleItems && (
+                <div className="mb-6 sm:mb-8">
+                  <h4 className="font-bold text-[#0F1A26] text-sm mb-4 flex items-center gap-2">
+                    <span className="w-8 h-8 rounded-full bg-[#EEBC3F] text-[#0F1A26] flex items-center justify-center text-xs font-bold">
+                      {product.bundleItems.length}
+                    </span>
+                    {t("bundleItemsTitle")}
+                  </h4>
+                  <div className="space-y-4">
+                    {product.bundleItems.map((item, index) => {
+                      const selection = bundleSelections[index] || {};
+                      const selectedProductId = selection.productId || item.productId || item.productIds?.[0];
+                      const bundleProduct = selectedProductId ? getBundleProduct(selectedProductId) : undefined;
+                      const sizeOptions = bundleProduct ? getBundleSizeOptions(bundleProduct) : [];
+
+                      // Get available product options for this bundle item
+                      const productOptions = item.productIds
+                        ? item.productIds.map(id => {
+                            const p = getBundleProduct(id);
+                            return p ? { id: p.id, name: p.name, image: p.image } : null;
+                          }).filter(Boolean)
+                        : item.productId && bundleProduct
+                          ? [{ id: bundleProduct.id, name: bundleProduct.name, image: bundleProduct.image }]
+                          : [];
+
+                      return (
+                        <div key={index} className="bg-white rounded-xl p-4 border border-[#0F1A26]/10">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="w-12 h-12 rounded-lg bg-[#F1EBE3] flex items-center justify-center overflow-hidden">
+                              {bundleProduct ? (
+                                <img src={bundleProduct.image} alt={bundleProduct.name} className="w-full h-full object-contain" />
+                              ) : (
+                                <div className="w-full h-full bg-[#EEBC3F]/20" />
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              {item.label && <p className="text-[#0F1A26]/50 text-xs mb-0.5">{item.label}</p>}
+                              {productOptions.length > 1 ? (
+                                <select
+                                  value={selectedProductId || ""}
+                                  onChange={(e) => {
+                                    const newProductId = parseInt(e.target.value);
+                                    const newProduct = getBundleProduct(newProductId);
+                                    const newSizeOptions = newProduct ? getBundleSizeOptions(newProduct) : [];
+                                    setBundleSelections((prev) => ({
+                                      ...prev,
+                                      [index]: {
+                                        ...prev[index],
+                                        productId: newProductId,
+                                        size: newSizeOptions[0],
+                                        color: newProduct?.colors?.[0]?.id,
+                                      },
+                                    }));
+                                  }}
+                                  className="w-full text-sm font-semibold text-[#0F1A26] bg-transparent border border-[#0F1A26]/20 rounded-lg px-2 py-1 focus:border-[#EEBC3F] focus:outline-none"
+                                >
+                                  <option value="">Select product...</option>
+                                  {productOptions.map((opt) => opt && (
+                                    <option key={opt.id} value={opt.id}>{opt.name}</option>
+                                  ))}
+                                </select>
+                              ) : bundleProduct ? (
+                                <h5 className="font-semibold text-[#0F1A26] text-sm">{bundleProduct.name}</h5>
+                              ) : null}
+                              <span className="text-[#EEBC3F] text-xs font-medium block mt-1">Qty: {item.quantity}</span>
+                            </div>
+                          </div>
+
+                          {sizeOptions.length > 0 && (
+                            <div className="mb-3">
+                              <label className="text-[#0F1A26]/60 text-xs mb-2 block">{t("size.select")}</label>
+                              <div className="flex flex-wrap gap-2">
+                                {sizeOptions.map((size: string) => (
+                                  <button
+                                    key={size}
+                                    onClick={() =>
+                                      setBundleSelections((prev) => ({
+                                        ...prev,
+                                        [index]: { ...prev[index], size },
+                                      }))
+                                    }
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                      selection.size === size
+                                        ? "bg-[#EEBC3F] text-[#0F1A26]"
+                                        : "bg-white text-[#0F1A26]/70 hover:bg-[#EEBC3F]/20"
+                                    }`}
+                                  >
+                                    {size.toUpperCase()}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {bundleProduct?.colors && bundleProduct.colors.length > 0 && (
+                            <div>
+                              <label className="text-[#0F1A26]/60 text-xs mb-2 block">{t("color.select")}</label>
+                              <div className="flex flex-wrap gap-2">
+                                {bundleProduct.colors.map((color) => (
+                                  <button
+                                    key={color.id}
+                                    onClick={() =>
+                                      setBundleSelections((prev) => ({
+                                        ...prev,
+                                        [index]: { ...prev[index], color: color.id },
+                                      }))
+                                    }
+                                    className={`w-8 h-8 rounded-full border-2 transition-all overflow-hidden ${
+                                      selection.color === color.id
+                                        ? "border-[#EEBC3F] ring-2 ring-[#EEBC3F]/30"
+                                        : "border-[#0F1A26]/10 hover:border-[#EEBC3F]/50"
+                                    }`}
+                                    title={color.name}
+                                  >
+                                    <img src={color.image} alt={color.name} className="w-full h-full object-cover" />
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Color Selection */}
               {product.colors && product.colors.length > 0 && (
                 <div className="mb-4 sm:mb-6">
@@ -686,8 +854,24 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                     +
                   </button>
                 </div>
-                <Button 
+                <Button
                   onClick={() => {
+                    const cartBundleSelections =
+                      isBundle && product.bundleItems
+                        ? product.bundleItems.map((item, index) => {
+                            const selection = bundleSelections[index] || {};
+                            const selectedProductId = selection.productId || item.productId || item.productIds?.[0];
+                            const bundleProduct = selectedProductId ? getBundleProduct(selectedProductId) : undefined;
+                            return {
+                              productId: selectedProductId || 0,
+                              productName: bundleProduct?.name || "",
+                              size: selection.size,
+                              color: selection.color,
+                              quantity: item.quantity,
+                            };
+                          })
+                        : undefined;
+
                     addToCart({
                       id: product.id,
                       name: product.name,
@@ -701,6 +885,8 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                       size: product.size ? selectedSize : undefined,
                       color: product.colors && selectedColor ? selectedColor : undefined,
                       quantity: quantity,
+                      isBundle,
+                      bundleSelections: cartBundleSelections,
                     });
                   }}
                   className="flex-1 bg-[#0F1A26] text-white hover:bg-[#EEBC3F] hover:text-[#0F1A26] h-14 sm:h-16 rounded-2xl font-bold text-base sm:text-lg transition-all duration-300 hover:shadow-xl hover:shadow-[#EEBC3F]/20 group"
@@ -715,6 +901,23 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                       alert("Error: Product price not loaded. Please refresh the page.");
                       return;
                     }
+
+                    const cartBundleSelections =
+                      isBundle && product.bundleItems
+                        ? product.bundleItems.map((item, index) => {
+                            const selection = bundleSelections[index] || {};
+                            const selectedProductId = selection.productId || item.productId || item.productIds?.[0];
+                            const bundleProduct = selectedProductId ? getBundleProduct(selectedProductId) : undefined;
+                            return {
+                              productId: selectedProductId || 0,
+                              productName: bundleProduct?.name || "",
+                              size: selection.size,
+                              color: selection.color,
+                              quantity: item.quantity,
+                            };
+                          })
+                        : undefined;
+
                     setBuyNowItem({
                       id: product.id,
                       name: product.name,
@@ -728,6 +931,8 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                       size: product.size ? selectedSize : undefined,
                       color: product.colors && selectedColor ? selectedColor : undefined,
                       quantity: quantity,
+                      isBundle,
+                      bundleSelections: cartBundleSelections,
                     });
                     router.push("/checkout");
                   }}
@@ -903,8 +1108,24 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                 <span className="text-[#0F1A26]/40 text-xs line-through">EGP {currentPrice.originalPrice}</span>
               </div>
             </div>
-            <Button 
+            <Button
               onClick={() => {
+                const cartBundleSelections =
+                  isBundle && product.bundleItems
+                    ? product.bundleItems.map((item, index) => {
+                        const selection = bundleSelections[index] || {};
+                        const selectedProductId = selection.productId || item.productId || item.productIds?.[0];
+                        const bundleProduct = selectedProductId ? getBundleProduct(selectedProductId) : undefined;
+                        return {
+                          productId: selectedProductId || 0,
+                          productName: bundleProduct?.name || "",
+                          size: selection.size,
+                          color: selection.color,
+                          quantity: item.quantity,
+                        };
+                      })
+                    : undefined;
+
                 addToCart({
                   id: product.id,
                   name: product.name,
@@ -915,6 +1136,8 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                   image: product.image,
                   size: product.size ? selectedSize : undefined,
                   quantity: quantity,
+                  isBundle,
+                  bundleSelections: cartBundleSelections,
                 });
               }}
               className="bg-[#0F1A26] text-white hover:bg-[#EEBC3F] hover:text-[#0F1A26] h-12 px-6 rounded-xl font-bold text-sm transition-all duration-300 flex-shrink-0"

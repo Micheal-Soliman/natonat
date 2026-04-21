@@ -24,13 +24,6 @@ export function ShopMegaMenu({ scrolled }: ShopMegaMenuProps) {
 
   const shopCategories = [
     {
-      id: "all",
-      name: t('allProducts'),
-      description: t('allProductsDesc'),
-      href: "/shop",
-      image: "/octopus photo/ACCORD/1.png",
-    },
-    {
       id: "luggage-covers",
       name: t('luggageCovers'),
       description: t('luggageCoversDesc'),
@@ -42,14 +35,14 @@ export function ShopMegaMenu({ scrolled }: ShopMegaMenuProps) {
       name: t('passportWallets'),
       description: t('passportWalletsDesc'),
       href: "/shop?category=passport-wallets",
-      image: "/passport wallet/1/2.png",
+      image: "/passport wallet/Cognac brown/1.png",
     },
     {
-      id: "travel-sets",
-      name: t('travelSets'),
-      description: t('travelSetsDesc'),
-      href: "/shop?category=travel-sets",
-      image: "/octopus photo/Barcelona/1.png",
+      id: "backpacks",
+      name: t('backpacks'),
+      description: t('backpacksDesc'),
+      href: "/shop?category=backpacks",
+      image: "/packOnat/Black/Artboard%205.png",
     },
   ];
 

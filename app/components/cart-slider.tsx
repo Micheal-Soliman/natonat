@@ -77,7 +77,7 @@ export function CartSlider() {
             <div className="space-y-4">
               {items.map((item) => (
                 <div
-                  key={`${item.id}-${item.size}-${item.color}`}
+                  key={`${item.id}-${item.size}-${item.color}-${item.isBundle ? JSON.stringify(item.bundleSelections || []) : ""}`}
                   className="bg-[#F1EBE3] rounded-2xl p-4 flex gap-4"
                 >
                   {/* Image */}
@@ -115,9 +115,33 @@ export function CartSlider() {
                             )}
                           </div>
                         )}
+
+                        {item.isBundle && item.bundleSelections && item.bundleSelections.length > 0 && (
+                          <div className="mt-2 space-y-1">
+                            <p className="text-[#0F1A26]/60 text-[10px] uppercase tracking-wider font-semibold">
+                              {t("bundleIncludes")}
+                            </p>
+                            {item.bundleSelections.map((bundleItem, idx) => (
+                              <div key={idx} className="flex items-center gap-1 text-xs text-[#0F1A26]/70">
+                                <span className="truncate">{bundleItem.productName}</span>
+                                {bundleItem.size && (
+                                  <span className="bg-[#0F1A26]/10 px-1.5 py-0.5 rounded text-[10px]">
+                                    {bundleItem.size.toUpperCase()}
+                                  </span>
+                                )}
+                                {bundleItem.color && (
+                                  <span className="bg-[#0F1A26]/10 px-1.5 py-0.5 rounded text-[10px] capitalize">
+                                    {bundleItem.color}
+                                  </span>
+                                )}
+                                <span className="text-[#0F1A26]/50">×{bundleItem.quantity}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       <button
-                        onClick={() => removeFromCart(item.id, item.size, item.color)}
+                        onClick={() => removeFromCart(item.id, item.size, item.color, item.bundleKey)}
                         className="w-7 h-7 rounded-full bg-white flex items-center justify-center text-[#0F1A26]/50 hover:bg-red-50 hover:text-red-500 transition-colors flex-shrink-0"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -128,7 +152,7 @@ export function CartSlider() {
                       {/* Quantity */}
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => updateQuantity(item.id, -1, item.size, item.color)}
+                          onClick={() => updateQuantity(item.id, -1, item.size, item.color, item.bundleKey)}
                           className="w-7 h-7 rounded-lg bg-white flex items-center justify-center text-[#0F1A26] hover:bg-[#0F1A26]/10 transition-colors"
                         >
                           <Minus className="w-3.5 h-3.5" />
@@ -137,7 +161,7 @@ export function CartSlider() {
                           {item.quantity}
                         </span>
                         <button
-                          onClick={() => updateQuantity(item.id, 1, item.size, item.color)}
+                          onClick={() => updateQuantity(item.id, 1, item.size, item.color, item.bundleKey)}
                           className="w-7 h-7 rounded-lg bg-white flex items-center justify-center text-[#0F1A26] hover:bg-[#0F1A26]/10 transition-colors"
                         >
                           <Plus className="w-3.5 h-3.5" />

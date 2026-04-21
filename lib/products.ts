@@ -19,8 +19,10 @@ export interface Product {
   features?: string[];
   isBundle?: boolean;
   bundleItems?: {
-    productId: number;
+    productId?: number;
+    productIds?: number[];
     quantity: number;
+    label?: string;
   }[];
   sizePrices?: {
     s: { price: number; originalPrice: number };
@@ -821,11 +823,11 @@ export const products: Product[] = [
       xl: { price: 749, originalPrice: 900 }
     }
   },
-  // BackOnat Backpack (Product ID 50) - Placeholder image until real photos arrive
+  // PackOnat Backpack (Product ID 50)
   { 
     id: 50, 
-    slug: "backonat",
-    name: "BackOnat", 
+    slug: "packonat",
+    name: "PackOnat", 
     category: "backpacks", 
     size: null, 
     theme: "minimal", 
@@ -833,11 +835,19 @@ export const products: Product[] = [
     originalPrice: 999, 
     type: "Backpack", 
     tag: null, 
-    image: "/octopus%20photo/ACCORD/1.png",
+    image: "/packOnat/Black/Artboard%205.png",
     images: [
-      "/octopus%20photo/ACCORD/1.png"
+      "/packOnat/Black/Artboard%205.png",
+      "/packOnat/Black/Artboard%206.png",
+      "/packOnat/Black/Artboard%207.png",
+      "/packOnat/Black/Artboard%208.png"
     ],
-    description: "Stylish travel backpack perfect for your journey"
+    description: "Premium travel backpack with smart organization",
+    colors: [
+      { id: "black", name: "Black", image: "/packOnat/Black/Artboard%205.png" },
+      { id: "green", name: "Green", image: "/packOnat/Green/Artboard%209.png" },
+      { id: "red", name: "Red", image: "/packOnat/Red/Artboard%201.png" }
+    ]
   },
   
   // Bundles - Updated with new discount structure
@@ -862,13 +872,13 @@ export const products: Product[] = [
     description: "Complete set with S, M, and L size covers for all your luggage",
     isBundle: true,
     bundleItems: [
-      { productId: 27, quantity: 1 }, // Wildfern S
-      { productId: 2, quantity: 1 },  // Anara M
-      { productId: 3, quantity: 1 }   // Ascend L
+      { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28], quantity: 1, label: "First Cover" },
+      { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28], quantity: 1, label: "Second Cover" },
+      { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28], quantity: 1, label: "Third Cover" }
     ],
     features: ["3 Different sizes (S, M, L)", "Save 15%", "Perfect for families", "Complete luggage protection"]
   },
-  // 2. All Set Bundle - 18% off (Passport + Cover + BackOnat)
+  // 2. All Set Bundle - 18% off (Passport + Cover + PackOnat)
   {
     id: 102,
     slug: "all-set-bundle",
@@ -880,25 +890,25 @@ export const products: Product[] = [
     originalPrice: 2012,
     type: "Bundle",
     tag: "Popular",
-    image: "/octopus%20photo/ACCORD/1.png",
+    image: "/packOnat/Black/Artboard%205.png",
     images: [
-      "/octopus%20photo/ACCORD/1.png",
-      "/octopus%20photo/Anara/1.png"
+      "/packOnat/Black/Artboard%205.png",
+      "/octopus%20photo/ACCORD/1.png"
     ],
     description: "Everything you need - luggage cover, backpack, and passport wallet",
     isBundle: true,
     bundleItems: [
-      { productId: 1, quantity: 1 },   // ACCORD Cover
-      { productId: 50, quantity: 1 }, // BackOnat
-      { productId: 29, quantity: 1 }  // Bon Voyage Passport
+      { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28], quantity: 1, label: "Select Luggage Cover" },
+      { productId: 50, quantity: 1, label: "PackOnat Backpack" },
+      { productId: 107, quantity: 1, label: "Passport Wallet" }
     ],
     features: ["Cover + Backpack + Passport", "Save 18%", "Complete travel kit", "Ready to go"]
   },
-  // 3. BackOnat with Cover - 12% off
+  // 3. PackOnat with Cover - 12% off
   {
     id: 103,
-    slug: "backonat-cover-bundle",
-    name: "BackOnat + Cover",
+    slug: "packonat-cover-bundle",
+    name: "PackOnat + Cover",
     category: "bundles",
     size: null,
     theme: "minimal",
@@ -906,24 +916,24 @@ export const products: Product[] = [
     originalPrice: 1448,
     type: "Bundle",
     tag: null,
-    image: "/octopus%20photo/ACCORD/1.png",
+    image: "/packOnat/Black/Artboard%205.png",
     images: [
-      "/octopus%20photo/ACCORD/1.png",
-      "/octopus%20photo/ACCORD/2.webp"
+      "/packOnat/Black/Artboard%205.png",
+      "/octopus%20photo/ACCORD/1.png"
     ],
     description: "Travel in style with backpack and matching cover",
     isBundle: true,
     bundleItems: [
-      { productId: 50, quantity: 1 }, // BackOnat
-      { productId: 1, quantity: 1 }   // ACCORD Cover
+      { productId: 50, quantity: 1, label: "PackOnat Backpack" },
+      { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28], quantity: 1, label: "Select Luggage Cover" }
     ],
     features: ["Backpack + Cover combo", "Save 12%", "Modern design", "Travel essentials"]
   },
-  // 4. 2 Covers + BackOnat - 15% off
+  // 4. 2 Covers + PackOnat - 15% off
   {
     id: 104,
-    slug: "double-cover-backonat-bundle",
-    name: "2 Covers + BackOnat",
+    slug: "double-cover-packonat-bundle",
+    name: "2 Covers + PackOnat",
     category: "bundles",
     size: null,
     theme: "mixed",
@@ -931,25 +941,25 @@ export const products: Product[] = [
     originalPrice: 2117,
     type: "Bundle",
     tag: "Best Seller",
-    image: "/octopus%20photo/Anara/1.png",
+    image: "/packOnat/Black/Artboard%205.png",
     images: [
-      "/octopus%20photo/Anara/1.png",
-      "/octopus%20photo/Solora/1.png"
+      "/packOnat/Black/Artboard%205.png",
+      "/octopus%20photo/Anara/1.png"
     ],
     description: "Perfect for couples - two covers and a shared backpack",
     isBundle: true,
     bundleItems: [
-      { productId: 2, quantity: 1 },   // Anara Cover
-      { productId: 13, quantity: 1 }, // Solora Cover
-      { productId: 50, quantity: 1 }  // BackOnat
+      { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28], quantity: 1, label: "First Cover" },
+      { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28], quantity: 1, label: "Second Cover" },
+      { productId: 50, quantity: 1, label: "PackOnat Backpack" }
     ],
     features: ["2 Covers + Backpack", "Save 15%", "Perfect for couples", "Travel together"]
   },
-  // 5. 2 BackOnat - 12% off
+  // 5. 2 PackOnat - 12% off
   {
     id: 105,
-    slug: "double-backonat-bundle",
-    name: "2 BackOnat Bundle",
+    slug: "double-packonat-bundle",
+    name: "2 PackOnat Bundle",
     category: "bundles",
     size: null,
     theme: "minimal",
@@ -957,16 +967,18 @@ export const products: Product[] = [
     originalPrice: 1598,
     type: "Bundle",
     tag: null,
-    image: "/octopus%20photo/ACCORD/1.png",
+    image: "/packOnat/Black/Artboard%205.png",
     images: [
-      "/octopus%20photo/ACCORD/1.png"
+      "/packOnat/Black/Artboard%205.png",
+      "/packOnat/Green/Artboard%209.png"
     ],
-    description: "Double the style - two BackOnat backpacks",
+    description: "Double the style - two PackOnat backpacks",
     isBundle: true,
     bundleItems: [
-      { productId: 50, quantity: 2 }  // 2x BackOnat
+      { productId: 50, quantity: 1, label: "First PackOnat" },
+      { productId: 50, quantity: 1, label: "Second PackOnat" }
     ],
-    features: ["2 BackOnat backpacks", "Save 12%", "His & Hers", "Matching set"]
+    features: ["2 PackOnat backpacks", "Save 12%", "His & Hers", "Matching set"]
   },
   // 6. Passport + Any Item - 15% off (Passport + Cover combo)
   {
@@ -988,8 +1000,8 @@ export const products: Product[] = [
     description: "Essential travel combo - passport wallet and luggage cover",
     isBundle: true,
     bundleItems: [
-      { productId: 29, quantity: 1 }, // Bon Voyage Passport
-      { productId: 1, quantity: 1 }   // ACCORD Cover
+      { productId: 107, quantity: 1, label: "Passport Wallet" },
+      { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28], quantity: 1, label: "Select Luggage Cover" }
     ],
     features: ["Passport + Cover combo", "Save 15%", "Travel ready", "Perfect pair"]
   },
@@ -1005,24 +1017,36 @@ export const products: Product[] = [
     originalPrice: 1950,
     type: "Passport Wallet",
     tag: "New",
-    image: "/passport%20wallet/1/1.png",
+    image: "/passport%20wallet/Cognac%20brown/1.png",
     images: [
-      "/passport%20wallet/1/1.png",
-      "/passport%20wallet/1/2.png",
-      "/passport%20wallet/1/3.png",
-      "/passport%20wallet/2/1.png",
-      "/passport%20wallet/2/2.png",
-      "/passport%20wallet/2/3.png",
-      "/passport%20wallet/3/1.png",
-      "/passport%20wallet/3/2.png",
-      "/passport%20wallet/3/3.png"
+      "/passport%20wallet/Cognac%20brown/1.png",
+      "/passport%20wallet/Cognac%20brown/2.png",
+      "/passport%20wallet/Cognac%20brown/3.png",
+      "/passport%20wallet/Cognac%20brown/4.png",
+      "/passport%20wallet/Cognac%20brown/5.png",
+      "/passport%20wallet/Cognac%20brown/6.png",
+      "/passport%20wallet/Cognac%20brown/7.png",
+      "/passport%20wallet/Espresso%20brown/1.png",
+      "/passport%20wallet/Espresso%20brown/2.png",
+      "/passport%20wallet/Espresso%20brown/3.png",
+      "/passport%20wallet/Espresso%20brown/4.png",
+      "/passport%20wallet/Espresso%20brown/5.png",
+      "/passport%20wallet/Espresso%20brown/6.png",
+      "/passport%20wallet/Espresso%20brown/7.png",
+      "/passport%20wallet/Honey%20brown/1.png",
+      "/passport%20wallet/Honey%20brown/2.png",
+      "/passport%20wallet/Honey%20brown/3.png",
+      "/passport%20wallet/Honey%20brown/4.png",
+      "/passport%20wallet/Honey%20brown/5.png",
+      "/passport%20wallet/Honey%20brown/6.png",
+      "/passport%20wallet/Honey%20brown/7.png"
     ],
     description: "RFID Protected faux leather passport holder with magnetic clasp, vaccine card slot, and 5 pockets for cards, tickets, and SIM cards. Available in 3 colors: Brown, Black, and Tan.",
     features: ["RFID Blocking", "Magnetic Clasp", "Vaccine Card Slot", "5 Card Pockets", "Faux Leather", "3 Colors Available"],
     colors: [
-      { id: "brown", name: "Brown", image: "/passport%20wallet/1/1.png" },
-      { id: "tan", name: "Tan", image: "/passport%20wallet/2/1.png" },
-      { id: "black", name: "Black", image: "/passport%20wallet/3/1.png" }
+      { id: "cognac", name: "Cognac Brown", image: "/passport%20wallet/Cognac%20brown/1.png" },
+      { id: "espresso", name: "Espresso Brown", image: "/passport%20wallet/Espresso%20brown/1.png" },
+      { id: "honey", name: "Honey Brown", image: "/passport%20wallet/Honey%20brown/1.png" }
     ]
   },
 ];

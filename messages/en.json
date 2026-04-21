@@ -14,6 +14,8 @@
     "luggageCoversDesc": "Protective stretchy covers",
     "passportWallets": "Passport Wallets",
     "passportWalletsDesc": "RFID-blocking organizers",
+    "backpacks": "Backpacks",
+    "backpacksDesc": "Smart travel backpacks",
     "travelSets": "Travel Sets",
     "travelSetsDesc": "Curated bundles",
     "bestSellers": "Best Sellers",
@@ -74,6 +76,11 @@
       "title": "Passport Wallets",
       "description": "Smart organization for your documents",
       "badge": "Premium Leather"
+    },
+    "backpacks": {
+      "title": "Backpacks",
+      "description": "Smart travel backpacks with organization",
+      "badge": "New"
     },
     "explore": "Explore Collection"
   },
@@ -275,6 +282,7 @@
         "title": "Shop",
         "luggageCovers": "Luggage Covers",
         "passportWallets": "Passport Wallets",
+        "backpacks": "Backpacks",
         "travelSets": "Travel Sets",
         "allProducts": "All Products"
       },
@@ -319,6 +327,10 @@
       "passportWallets": {
         "title": "Passport Wallets",
         "subtitle": "Premium leather with RFID protection for secure travel"
+      },
+      "backpacks": {
+        "title": "Backpacks",
+        "subtitle": "Smart travel backpacks with modern organization"
       },
       "bundles": {
         "title": "Bundle Deals",
@@ -382,6 +394,7 @@
     "color": {
       "select": "Select Color"
     },
+    "bundleItemsTitle": "Bundle Items - Customize Each",
     "quantity": "Quantity",
     "addToCart": "Add to Cart",
     "buyNow": "Buy Now",
@@ -477,6 +490,7 @@
       "title": "Shopping Cart",
       "subtitle": "Review your items and proceed to checkout"
     },
+    "bundleIncludes": "Bundle includes:",
     "cartItems": "{count, plural, =0 {No items} =1 {1 item} other {# items}}",
     "continueShopping": "Continue Shopping",
     "empty": {
@@ -1171,6 +1185,293 @@
     }
   },
   "products": {
+    "three-sizes-bundle": {
+      "intro": "Build your perfect 3-cover set. Choose any three luggage covers from our collection and customize each with your preferred size. Perfect for families or travelers with multiple suitcases.",
+      "about": {
+        "title": "What's Included",
+        "content": "This bundle includes 3 luggage covers of your choice. Select from our 28 unique designs, each customizable in sizes S, M, L, or XL. Whether you want matching covers for the family or different designs for each trip, you decide."
+      },
+      "cta": {
+        "title": "Save 15% When You Bundle",
+        "content": "Buying 3 covers separately would cost more. Bundle them together and save EGP 297 while getting exactly what you want."
+      },
+      "designInspiration": {
+        "title": "Flexible Bundle Design",
+        "content": "We designed this bundle to give you complete freedom. Instead of forcing specific products on you, we let you pick any 3 covers that match your needs.",
+        "perfectFor": [
+          "Families with suitcases of different sizes",
+          "Frequent travelers with multiple luggage pieces",
+          "People who want matching covers for the whole family",
+          "Anyone who wants choice and savings together"
+        ]
+      },
+      "targetAudience": {
+        "title": "Who Is This Bundle For?",
+        "items": [
+          "Families with multiple suitcase sizes",
+          "Frequent travelers",
+          "People wanting to coordinate covers for the whole family",
+          "Budget-conscious shoppers who don't want to compromise"
+        ]
+      },
+      "sizeGuide": {
+        "title": "Available Sizes",
+        "sizes": [
+          { "name": "S", "height": "55-60 cm", "desc": "Small (cabin)" },
+          { "name": "M", "height": "65-70 cm", "desc": "Medium" },
+          { "name": "L", "height": "75-80 cm", "desc": "Large" },
+          { "name": "XL", "height": "85-90 cm", "desc": "Extra Large" }
+        ]
+      },
+      "whyChoose": {
+        "title": "Why Choose This Bundle?",
+        "features": [
+          { "title": "Complete Freedom", "desc": "Pick any 3 covers from 28 designs" },
+          { "title": "Real Savings", "desc": "Save 15% compared to buying separately" },
+          { "title": "Full Customization", "desc": "Each cover gets its own size" },
+          { "title": "Consistent Quality", "desc": "Same premium fabric on all covers" }
+        ]
+      }
+    },
+    "all-set-bundle": {
+      "intro": "The ultimate travel kit. Pick any luggage cover you love, add a PackOnat backpack in your favorite color, and complete it with our Eoehro Passport Wallet. Everything you need for your next adventure.",
+      "about": {
+        "title": "Complete Travel Solution",
+        "content": "This bundle combines three essentials: your choice of luggage cover (any size), a PackOnat backpack (available in multiple colors), and the Eoehro Passport Wallet with premium leather finish. Save 18% compared to buying separately."
+      },
+      "cta": {
+        "title": "Ready for Your Next Trip?",
+        "content": "Save EGP 363 with this bundle. Select your preferred cover design, backpack color, and passport wallet to create your personalized travel set."
+      },
+      "designInspiration": {
+        "title": "Complete Travel Kit",
+        "content": "We designed this bundle to cover all your travel essentials in one order. From luggage protection to comfort on the go to passport security.",
+        "perfectFor": [
+          "New travelers who want everything at once",
+          "People planning long trips",
+          "Gifts for travel lovers",
+          "Anyone who wants to gear up quickly"
+        ]
+      },
+      "targetAudience": {
+        "title": "Who Is This Bundle For?",
+        "items": [
+          "New travelers wanting a complete set",
+          "People planning long trips",
+          "Those looking for practical gifts",
+          "Pros who want to streamline travel"
+        ]
+      },
+      "sizeGuide": {
+        "title": "Available Sizes",
+        "sizes": [
+          { "name": "S", "height": "55-60 cm", "desc": "Small (cabin)" },
+          { "name": "M", "height": "65-70 cm", "desc": "Medium" },
+          { "name": "L", "height": "75-80 cm", "desc": "Large" },
+          { "name": "XL", "height": "85-90 cm", "desc": "Extra Large" }
+        ]
+      },
+      "whyChoose": {
+        "title": "Why Choose This Bundle?",
+        "features": [
+          { "title": "Everything in One Order", "desc": "Cover + backpack + passport wallet" },
+          { "title": "Big Savings", "desc": "Save 18% on the bundle" },
+          { "title": "Freedom of Choice", "desc": "Pick any cover and any backpack color" },
+          { "title": "Quality in Every Piece", "desc": "Best materials in every product" }
+        ]
+      }
+    },
+    "packonat-cover-bundle": {
+      "intro": "Travel in style with the perfect duo. Choose any luggage cover from our collection to pair with the versatile PackOnat backpack. A match made for modern travelers.",
+      "about": {
+        "title": "Backpack + Cover Combo",
+        "content": "Select your favorite luggage cover (available in all sizes) and pair it with the PackOnat backpack. The backpack features multiple compartments and comes in various colors to match your style. Save 12% when bundled."
+      },
+      "cta": {
+        "title": "Save EGP 173 Today",
+        "content": "Get both essentials for EGP 1275 instead of EGP 1448. Choose your cover design and backpack color to complete your travel look."
+      },
+      "designInspiration": {
+        "title": "The Perfect Duo",
+        "content": "This bundle combines luggage protection with comfort on your journey. The PackOnat backpack is designed to be the perfect companion for your natOnat cover.",
+        "perfectFor": [
+          "Modern travelers who love coordination",
+          "People who want a comfortable travel daypack",
+          "Those looking for a complete set",
+          "Anyone who wants to protect luggage and carry essentials in style"
+        ]
+      },
+      "targetAudience": {
+        "title": "Who Is This Bundle For?",
+        "items": [
+          "Travelers who love style and coordination",
+          "People wanting a comfortable daypack",
+          "Those looking for an essential combo",
+          "Frequent flyers"
+        ]
+      },
+      "sizeGuide": {
+        "title": "Available Sizes",
+        "sizes": [
+          { "name": "S", "height": "55-60 cm", "desc": "Small (cabin)" },
+          { "name": "M", "height": "65-70 cm", "desc": "Medium" },
+          { "name": "L", "height": "75-80 cm", "desc": "Large" },
+          { "name": "XL", "height": "85-90 cm", "desc": "Extra Large" }
+        ]
+      },
+      "whyChoose": {
+        "title": "Why Choose This Bundle?",
+        "features": [
+          { "title": "Protection + Comfort", "desc": "Cover for luggage, backpack for essentials" },
+          { "title": "Save 12%", "desc": "Less than buying each piece separately" },
+          { "title": "Perfect Coordination", "desc": "Backpack and cover together elegantly" },
+          { "title": "Freedom of Choice", "desc": "Pick any cover and any backpack color" }
+        ]
+      }
+    },
+    "double-cover-packonat-bundle": {
+      "intro": "Perfect for couples or travel partners. Select any 2 luggage covers of your choice to pair with a shared PackOnat backpack. Each cover customizable with different sizes and designs.",
+      "about": {
+        "title": "Ideal for Two",
+        "content": "This bundle lets you choose 2 different luggage covers (any designs, any sizes) plus 1 PackOnat backpack. Great for couples traveling together or friends sharing gear. Each person gets their own style while saving 15% on the total."
+      },
+      "cta": {
+        "title": "Travel Together, Save Together",
+        "content": "Save EGP 318 when you bundle. Pick two covers that match your personalities and one backpack to share (or keep for yourself)."
+      },
+      "designInspiration": {
+        "title": "Travel Together",
+        "content": "This bundle is designed for people who travel together. Each person gets a cover that expresses their style, plus one shared backpack for essentials.",
+        "perfectFor": [
+          "Couples who travel together",
+          "Travel buddy pros",
+          "Siblings who want to coordinate",
+          "Any two people who want to save and travel together"
+        ]
+      },
+      "targetAudience": {
+        "title": "Who Is This Bundle For?",
+        "items": [
+          "Couples who love traveling together",
+          "Travel friends who share gear",
+          "Siblings wanting a shared set",
+          "Those looking for couple gifts"
+        ]
+      },
+      "sizeGuide": {
+        "title": "Available Sizes",
+        "sizes": [
+          { "name": "S", "height": "55-60 cm", "desc": "Small (cabin)" },
+          { "name": "M", "height": "65-70 cm", "desc": "Medium" },
+          { "name": "L", "height": "75-80 cm", "desc": "Large" },
+          { "name": "XL", "height": "85-90 cm", "desc": "Extra Large" }
+        ]
+      },
+      "whyChoose": {
+        "title": "Why Choose This Bundle?",
+        "features": [
+          { "title": "For Two Together", "desc": "2 different covers + 1 shared backpack" },
+          { "title": "Save 15%", "desc": "Less than buying pieces separately" },
+          { "title": "Free Choice", "desc": "Each person picks what suits them" },
+          { "title": "Perfect Sharing", "desc": "One backpack for two" }
+        ]
+      }
+    },
+    "double-packonat-bundle": {
+      "intro": "Double the PackOnat, double the style. Get two backpacks in different colors - perfect for couples, siblings, or having options for different trips.",
+      "about": {
+        "title": "His & Hers, or Mix & Match",
+        "content": "This bundle includes 2 PackOnat backpacks. Choose different colors for each - maybe Black and Green, or both in your favorite shade. Each backpack has the same great features: multiple compartments, comfortable straps, and durable construction."
+      },
+      "cta": {
+        "title": "Save EGP 199 on Two Backpacks",
+        "content": "Get both PackOnat backpacks for EGP 1399 instead of EGP 1598. Pick your colors and travel in style together."
+      },
+      "designInspiration": {
+        "title": "Two Is Better Than One",
+        "content": "We designed this bundle for people who want two backpacks - whether for couples, siblings, or to have options for different types of trips.",
+        "perfectFor": [
+          "Couples who want to coordinate",
+          "Siblings who travel together",
+          "People wanting one for work and one for travel",
+          "Anyone who wants to treat themselves to two"
+        ]
+      },
+      "targetAudience": {
+        "title": "Who Is This Bundle For?",
+        "items": [
+          "Couples who want to match",
+          "Siblings who love traveling together",
+          "People wanting color variety",
+          "Those looking for a unique gift"
+        ]
+      },
+      "sizeGuide": {
+        "title": "Available Colors",
+        "sizes": [
+          { "name": "Black", "height": "", "desc": "Classic and sleek" },
+          { "name": "Green", "height": "", "desc": "Vibrant and unique" },
+          { "name": "Brown", "height": "", "desc": "Warm and natural" }
+        ]
+      },
+      "whyChoose": {
+        "title": "Why Choose This Bundle?",
+        "features": [
+          { "title": "Two at a Lower Price", "desc": "Save EGP 199 on the pair" },
+          { "title": "Color Variety", "desc": "Pick a different color for each" },
+          { "title": "Double Quality", "desc": "Same great features in both" },
+          { "title": "Versatility", "desc": "A backpack for every occasion" }
+        ]
+      }
+    },
+    "passport-cover-bundle": {
+      "intro": "The essential travel pair. Choose any luggage cover from our collection and combine it with the premium Eoehro Passport Wallet for a coordinated travel look.",
+      "about": {
+        "title": "Travel Essentials Combo",
+        "content": "Select any luggage cover (all sizes available) and pair it with our Eoehro Passport Wallet featuring genuine leather in three elegant colors. The wallet includes RFID protection and multiple card slots. Save 15% when you buy them together."
+      },
+      "cta": {
+        "title": "Save EGP 174 Today",
+        "content": "Get both for EGP 999 instead of EGP 1173. Choose your cover design and passport wallet color to start your journey in style."
+      },
+      "designInspiration": {
+        "title": "Travel Elegance",
+        "content": "This bundle combines luggage protection with passport security. The Eoehro wallet is designed to be the elegant companion to your natOnat cover.",
+        "perfectFor": [
+          "Travelers who love coordination and style",
+          "People wanting protection for luggage and passport",
+          "Those looking for traveler gifts",
+          "Anyone who wants to start their journey elegantly"
+        ]
+      },
+      "targetAudience": {
+        "title": "Who Is This Bundle For?",
+        "items": [
+          "Travelers who appreciate elegance",
+          "People wanting complete protection",
+          "Those looking for a premium gift",
+          "Frequent flyers"
+        ]
+      },
+      "sizeGuide": {
+        "title": "Available Sizes",
+        "sizes": [
+          { "name": "S", "height": "55-60 cm", "desc": "Small (cabin)" },
+          { "name": "M", "height": "65-70 cm", "desc": "Medium" },
+          { "name": "L", "height": "75-80 cm", "desc": "Large" },
+          { "name": "XL", "height": "85-90 cm", "desc": "Extra Large" }
+        ]
+      },
+      "whyChoose": {
+        "title": "Why Choose This Bundle?",
+        "features": [
+          { "title": "Complete Protection", "desc": "Cover for luggage + wallet for passport" },
+          { "title": "Save 15%", "desc": "Less than buying pieces separately" },
+          { "title": "Elegant Coordination", "desc": "Complete set for a refined look" },
+          { "title": "Freedom of Choice", "desc": "Pick any cover and any wallet color" }
+        ]
+      }
+    },
     "vibra": {
       "title": "Vibra Luggage Cover | Premium Music-Inspired Neon Suitcase Protector",
       "headline": "Feel the rhythm. Travel with energy. Express your vibe.",
@@ -2823,6 +3124,51 @@
       "cta": {
         "title": "Upgrade Your Travel Organization",
         "content": "Order your Eoehro Passport Holder today and travel with confidence, security, and style."
+      }
+    },
+    "packonat": {
+      "title": "PackOnat Travel Backpack | Premium Smart Backpack",
+      "headline": "Pack smart. Travel easy. Carry everything.",
+      "intro": "The PackOnat Travel Backpack is your ultimate travel companion. With smart organization compartments, durable construction, and a sleek modern design, this backpack keeps your essentials secure and accessible. Available in three stylish colors - Black, Green, and Red.",
+      "designInspiration": {
+        "title": "Design Inspiration – PackOnat",
+        "content": "The PackOnat backpack is designed for modern travelers who need both style and functionality. Every compartment and pocket is thoughtfully placed for maximum convenience.",
+        "perfectFor": [
+          "Daily commuters & travelers",
+          "Students & professionals",
+          "Weekend adventurers",
+          "Anyone who values organization"
+        ],
+        "tagline": "Your perfect travel companion - organized, stylish, and ready for any journey."
+      },
+      "whyChoose": {
+        "title": "Why Choose PackOnat Backpack?",
+        "intro": "Premium quality meets smart design. The PackOnat backpack offers the perfect balance of storage, comfort, and style for the modern traveler.",
+        "features": [
+          { "title": "Smart Organization", "desc": "Multiple compartments for laptop, documents, water bottle, and daily essentials." },
+          { "title": "Premium Materials", "desc": "Durable, water-resistant fabric that protects your belongings in any weather." },
+          { "title": "Comfortable Design", "desc": "Padded shoulder straps and back panel for all-day comfort." },
+          { "title": "Three Color Options", "desc": "Available in Classic Black, Forest Green, and Bold Red to match your style." },
+          { "title": "Secure Storage", "desc": "Hidden pockets and secure zippers keep your valuables safe." },
+          { "title": "Lightweight & Spacious", "desc": "Generous capacity without the bulk - perfect for daily use or short trips." }
+        ]
+      },
+      "targetAudience": {
+        "title": "Designed for Modern Travelers",
+        "items": [
+          "Daily commuters",
+          "Weekend travelers",
+          "Students & professionals",
+          "Anyone who wants organized travel"
+        ]
+      },
+      "about": {
+        "title": "About PackOnat",
+        "content": "PackOnat represents smart travel gear that combines functionality with modern style. Designed for travelers who refuse to compromise on organization."
+      },
+      "cta": {
+        "title": "Upgrade Your Travel Gear",
+        "content": "Order your PackOnat backpack today and travel with everything you need, perfectly organized."
       }
     }
   }

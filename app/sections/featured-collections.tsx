@@ -26,8 +26,17 @@ export function FeaturedCollections() {
       description: t('passportWallets.description'),
       badge: t('passportWallets.badge'),
       href: "/shop?category=passport-wallets",
-      image: "/octopus photo/Ascend/1.png",
+      image: "/passport wallet/Cognac brown/1.png",
       bgColor: "from-[#364353] to-[#0F1A26]",
+      accent: "#EEBC3F",
+    },
+    {
+      title: t('backpacks.title'),
+      description: t('backpacks.description'),
+      badge: t('backpacks.badge'),
+      href: "/shop?category=backpacks",
+      image: "/packOnat/Black/Artboard%205.png",
+      bgColor: "from-[#0F1A26] to-[#EEBC3F]/30",
       accent: "#EEBC3F",
     },
   ];
@@ -59,52 +68,72 @@ export function FeaturedCollections() {
           </h2>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-4 md:gap-6">
+        <div className="grid md:grid-cols-3 gap-6 md:gap-8">
           {collections.map((collection, index) => (
             <Link
               key={collection.title}
               href={collection.href}
-              className={`group relative overflow-hidden rounded-3xl aspect-[4/3] transition-all duration-700 ${
+              className={`group relative overflow-hidden rounded-3xl bg-[#0F1A26] transition-all duration-700 hover:shadow-2xl hover:shadow-[#EEBC3F]/10 hover:-translate-y-2 ${
                 isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
               }`}
               style={{ transitionDelay: `${(index + 1) * 150}ms` }}
             >
-              {/* Background Image */}
-              <Image
-                src={collection.image}
-                alt={collection.title}
-                fill
-                sizes="(max-width: 768px) 100vw, 50vw"
-                className="absolute inset-0 w-full h-full object-contain transition-transform duration-700 group-hover:scale-110"
-                loading="lazy"
-              />
+              {/* Image Container - Full Card */}
+              <div className="relative aspect-[4/5] overflow-hidden">
+                <Image
+                  src={collection.image}
+                  alt={collection.title}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 33vw"
+                  className="object-contain transition-all duration-700 group-hover:scale-110"
+                  loading="lazy"
+                />
+                
+                {/* Gradient Overlay - Always visible but intensifies on hover */}
+                <div className={`absolute inset-0 bg-gradient-to-t ${collection.bgColor} opacity-60 group-hover:opacity-40 transition-opacity duration-700`} />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0F1A26] via-[#0F1A26]/50 to-transparent" />
+                
+                {/* Animated border on hover */}
+                <div className="absolute inset-0 rounded-3xl border-2 border-transparent group-hover:border-[#EEBC3F]/50 transition-colors duration-500" />
+                
+                {/* Shine effect on hover */}
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none">
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                </div>
 
-              {/* Overlay gradient */}
-              <div className={`absolute inset-0 bg-gradient-to-br ${collection.bgColor} opacity-80 transition-all duration-700 group-hover:opacity-0`} />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent transition-all duration-700 group-hover:opacity-0" />
-
-              {/* Content */}
-              <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-10">
-                <span
-                  className="text-xs font-medium tracking-[0.2em] uppercase mb-3 transition-colors duration-300"
-                  style={{ color: collection.accent }}
-                >
-                  {collection.badge}
-                </span>
-                <h3 className="text-2xl md:text-3xl lg:text-4xl font-semibold text-white tracking-tight mb-2 md:mb-3">
-                  {collection.title}
-                </h3>
-                <p className="text-white/70 mb-4 md:mb-6 max-w-xs font-light text-sm md:text-base">
-                  {collection.description}
-                </p>
-                <span className="inline-flex items-center gap-2 text-white font-medium group-hover:gap-3 transition-all duration-300 text-sm md:text-base">
-                  {t('explore')}
-                  <ArrowUpRight className="w-4 h-4 md:w-5 md:h-5 transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-1" />
-                </span>
+                {/* Content - Positioned at bottom */}
+                <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-8">
+                  {/* Badge with animation */}
+                  <span
+                    className="inline-block self-start text-[10px] font-bold tracking-[0.2em] uppercase mb-3 px-4 py-1.5 rounded-full transform translate-y-2 opacity-80 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500"
+                    style={{ 
+                      color: '#0F1A26',
+                      backgroundColor: collection.accent
+                    }}
+                  >
+                    {collection.badge}
+                  </span>
+                  
+                  {/* Title with reveal animation */}
+                  <h3 className="text-2xl md:text-3xl font-bold text-white mb-2 transform translate-y-0 group-hover:-translate-y-1 transition-transform duration-500">
+                    {collection.title}
+                  </h3>
+                  
+                  {/* Description - slides up on hover */}
+                  <p className="text-white/70 text-sm mb-4 line-clamp-2 transform translate-y-2 opacity-80 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 delay-75">
+                    {collection.description}
+                  </p>
+                  
+                  {/* Explore button with arrow animation */}
+                  <span className="inline-flex items-center gap-2 text-[#EEBC3F] font-semibold text-sm transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500 delay-100">
+                    <span className="relative">
+                      {t('explore')}
+                      <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#EEBC3F] group-hover:w-full transition-all duration-500" />
+                    </span>
+                    <ArrowUpRight className="w-5 h-5 transform group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform duration-300" />
+                  </span>
+                </div>
               </div>
-
-              {/* Hover border glow */}
-              <div className="absolute inset-0 rounded-3xl border-2 border-transparent group-hover:border-white/20 transition-colors duration-500" />
             </Link>
           ))}
         </div>

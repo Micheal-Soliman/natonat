@@ -3,28 +3,78 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Link } from "@/i18n/routing";
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-  type CarouselApi,
-} from "@/components/ui/carousel";
+import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { products } from "@/lib/products";
 
-// Filter best seller products from lib/products
-const bestSellers = products.filter(p => p.tag === "Best Seller" || p.tag === "New").slice(0, 6);
+// Get products from all 3 categories for display
+const getDisplayProducts = () => {
+  const tagged = products.filter(p => p.tag === "Best Seller" || p.tag === "New").slice(0, 4);
+  const luggage = products.find(p => p.category === "luggage-covers" && !tagged.find(t => t.id === p.id));
+  const passport = products.find(p => p.category === "passport-wallets" && !tagged.find(t => t.id === p.id));
+  const backpack = products.find(p => p.category === "backpacks" && !tagged.find(t => t.id === p.id));
+  
+  const result = [...tagged];
+  if (luggage) result.push(luggage);
+  if (passport) result.push(passport);
+  if (backpack) result.push(backpack);
+  
+  const remaining = products.filter(p => !result.find(r => r.id === p.id)).slice(0, 8 - result.length);
+  return [...result, ...remaining].slice(0, 8);
+};
+
+const displayProducts = getDisplayProducts();
 
 export function BestSellers() {
   const t = useTranslations('bestSellers');
+  const locale = useLocale();
+  const isRTL = locale === 'ar';
   const [isVisible, setIsVisible] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const [api, setApi] = useState<CarouselApi>();
-  const [current, setCurrent] = useState(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+  const isDraggingRef = useRef(false);
+  const hasDraggedRef = useRef(false);
+  const dragStartX = useRef(0);
+  const dragStartScrollLeft = useRef(0);
+
+  // Mouse drag handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!scrollRef.current) return;
+    isDraggingRef.current = true;
+    hasDraggedRef.current = false;
+    dragStartX.current = e.pageX - scrollRef.current.offsetLeft;
+    dragStartScrollLeft.current = scrollRef.current.scrollLeft;
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDraggingRef.current || !scrollRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - scrollRef.current.offsetLeft;
+    const walk = x - dragStartX.current;
+    
+    // Only consider it a drag if moved more than 5px
+    if (Math.abs(walk) > 5) {
+      hasDraggedRef.current = true;
+    }
+    
+    scrollRef.current.scrollLeft = dragStartScrollLeft.current - walk;
+  };
+
+  const handleMouseUp = () => {
+    isDraggingRef.current = false;
+    // Reset hasDragged after a short delay to prevent click
+    setTimeout(() => {
+      hasDraggedRef.current = false;
+    }, 10);
+  };
+
+  const handleMouseLeave = () => {
+    isDraggingRef.current = false;
+    hasDraggedRef.current = false;
+  };
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -43,15 +93,46 @@ export function BestSellers() {
     return () => observer.disconnect();
   }, []);
 
+  const checkScroll = () => {
+    if (scrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+      const maxScroll = scrollWidth - clientWidth;
+      
+      if (isRTL) {
+        // In RTL, scrollLeft is negative or starts from max
+        setCanScrollLeft(scrollLeft < -5 || Math.abs(scrollLeft) < maxScroll - 5);
+        setCanScrollRight(scrollLeft > -maxScroll + 5);
+      } else {
+        setCanScrollLeft(scrollLeft > 5);
+        setCanScrollRight(scrollLeft < maxScroll - 5);
+      }
+    }
+  };
+
   useEffect(() => {
-    if (!api) return;
+    const el = scrollRef.current;
+    if (el) {
+      el.addEventListener('scroll', checkScroll, { passive: true });
+      checkScroll();
+      return () => el.removeEventListener('scroll', checkScroll);
+    }
+  }, [isRTL]);
 
-    setCurrent(api.selectedScrollSnap());
-
-    api.on("select", () => {
-      setCurrent(api.selectedScrollSnap());
-    });
-  }, [api]);
+  const scroll = (direction: 'prev' | 'next') => {
+    if (scrollRef.current) {
+      const cardWidth = scrollRef.current.firstElementChild?.clientWidth || 280;
+      const gap = 20;
+      const scrollAmount = cardWidth + gap;
+      
+      // For RTL: prev goes right (+), next goes left (-)
+      // For LTR: prev goes left (-), next goes right (+)
+      const amount = isRTL 
+        ? (direction === 'prev' ? scrollAmount : -scrollAmount)
+        : (direction === 'prev' ? -scrollAmount : scrollAmount);
+      
+      scrollRef.current.scrollBy({ left: amount, behavior: 'smooth' });
+    }
+  };
 
   return (
     <section ref={ref} className="py-24 bg-[#0F1A26]">
@@ -71,29 +152,45 @@ export function BestSellers() {
             className="hidden md:flex border-white/20 text-white hover:bg-white hover:text-[#0F1A26] rounded-full px-6 h-11 transition-all duration-300"
           >
             {t('viewAll')}
-            <ArrowRight className="w-4 h-4 ml-2" />
+            <ArrowRight className={`w-4 h-4 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'}`} />
           </Button>
         </div>
 
-        <Carousel
-          setApi={setApi}
-          opts={{
-            align: "start",
-            loop: true,
-            dragFree: true,
-          }}
-          className="w-full overflow-visible"
-        >
-          <CarouselContent className="-ml-3 sm:-ml-5">
-            {bestSellers.map((product, index) => (
-              <CarouselItem
+        {/* Carousel Container with drag support */}
+        <div className="relative">
+          <div
+            ref={scrollRef}
+            className={`flex gap-4 md:gap-5 overflow-x-auto pb-4 scrollbar-hide cursor-grab ${isDraggingRef.current ? 'cursor-grabbing' : ''}`}
+            style={{ 
+              scrollbarWidth: 'none', 
+              msOverflowStyle: 'none',
+              WebkitOverflowScrolling: 'touch',
+              touchAction: 'pan-x pinch-zoom',
+              userSelect: 'none'
+            }}
+            dir={isRTL ? 'rtl' : 'ltr'}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseLeave}
+          >
+            {displayProducts.map((product, index) => (
+              <div
                 key={product.id}
-                className="pl-3 sm:pl-5 basis-[85%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4 flex-shrink-0"
+                className={`group flex-shrink-0 w-[260px] sm:w-[280px] md:w-[300px] transition-all duration-500 ${
+                  isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                }`}
+                style={{ transitionDelay: `${(index + 1) * 80}ms` }}
               >
                 <Link
                   href={`/product/${product.slug}`}
-                  className="group cursor-pointer block select-none"
-                  draggable={false}
+                  className="block"
+                  onClick={(e) => {
+                    if (hasDraggedRef.current) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }
+                  }}
                 >
                   {/* Product Image */}
                   <div className="relative aspect-[3/4] rounded-xl sm:rounded-2xl overflow-hidden mb-3 sm:mb-4 border border-white/10 bg-[#F1EBE3]">
@@ -101,75 +198,57 @@ export function BestSellers() {
                       src={product.image}
                       alt={product.name}
                       fill
-                      sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                      className="absolute inset-0 w-full h-full object-contain transition-transform duration-700 group-hover:scale-110 pointer-events-none"
+                      sizes="300px"
+                      className="object-contain transition-transform duration-500 group-hover:scale-105"
                       loading="lazy"
-                      draggable={false}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0F1A26]/10 to-transparent" />
 
                     {product.tag && (
-                      <span className={`absolute top-2 left-2 sm:top-4 sm:left-4 z-10 text-[9px] sm:text-[10px] font-semibold tracking-wider uppercase px-2 sm:px-3 py-1 sm:py-1.5 rounded-full ${product.tag === 'Best Seller' ? 'bg-[#EEBC3F] text-[#0F1A26]' :
-                          product.tag === 'New' ? 'bg-white text-[#0F1A26]' :
-                            product.tag === 'Limited' ? 'bg-[#4B1F1F] text-[#F1EBE3]' :
-                              'bg-[#EEBC3F]/20 text-[#EEBC3F] border border-[#EEBC3F]/30'
-                        }`}>
-                        {product.tag === 'Best Seller' ? t('bestSeller') :
-                          product.tag === 'New' ? t('new') :
-                            product.tag === 'Limited' ? t('limited') : product.tag}
-                      </span>
+                    <span className={`absolute top-2 left-2 sm:top-3 sm:left-3 z-10 text-[9px] sm:text-[10px] font-semibold tracking-wider uppercase px-2 sm:px-3 py-1 sm:py-1.5 rounded-full ${product.tag === 'Best Seller' ? 'bg-[#EEBC3F] text-[#0F1A26]' :
+                        product.tag === 'New' ? 'bg-white text-[#0F1A26]' :
+                          product.tag === 'Limited' ? 'bg-[#4B1F1F] text-[#F1EBE3]' :
+                            'bg-[#EEBC3F]/20 text-[#EEBC3F] border border-[#EEBC3F]/30'
+                      }`}>
+                      {product.tag === 'Best Seller' ? t('bestSeller') :
+                        product.tag === 'New' ? t('new') :
+                          product.tag === 'Limited' ? t('limited') : product.tag}
+                    </span>
                     )}
-
-                    {/* Hover overlay - View Product */}
-                    <div className="absolute inset-0 bg-[#0F1A26]/20 opacity-0 group-hover:opacity-100 transition-all duration-500 flex items-center justify-center">
-                      <span className="text-[#0F1A26] font-semibold text-xs sm:text-sm tracking-wider uppercase bg-white/90 px-4 py-2 rounded-full">
-                        {t('viewProduct')}
-                      </span>
-                    </div>
                   </div>
 
                   {/* Product Info */}
                   <div>
-                    <div className="flex items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
-                      <span className="text-[#EEBC3F]/80 text-[9px] sm:text-[10px] font-semibold tracking-[0.15em] uppercase">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[#EEBC3F]/80 text-[10px] font-semibold tracking-[0.15em] uppercase">
                         {product.type}
                       </span>
-                      {/* {product.size && (
-                        <>
-                          <span className="text-white/20">·</span>
-                          <span className="text-white/40 text-[9px] sm:text-[10px]">{t('size')} {product.size}</span>
-                        </>
-                      )} */}
                     </div>
-                    <h3 className="text-white font-medium text-sm sm:text-lg mb-1 sm:mb-2 tracking-tight group-hover:text-[#EEBC3F] transition-colors duration-300 line-clamp-1">
+                    <h3 className="text-white font-medium text-sm sm:text-base tracking-tight group-hover:text-[#EEBC3F] transition-colors duration-300 line-clamp-1">
                       {product.name}
                     </h3>
                   </div>
                 </Link>
-              </CarouselItem>
+              </div>
             ))}
-          </CarouselContent>
-
-          {/* Custom navigation */}
-          <div className="hidden md:flex items-center gap-3 mt-8">
-            <CarouselPrevious className="static translate-y-0 w-12 h-12 rounded-full bg-white/5 border-white/10 text-white hover:bg-white hover:text-[#0F1A26] transition-all duration-300" />
-            <CarouselNext className="static translate-y-0 w-12 h-12 rounded-full bg-white/5 border-white/10 text-white hover:bg-white hover:text-[#0F1A26] transition-all duration-300" />
           </div>
-        </Carousel>
+        </div>
 
-        {/* Mobile Swipe Dots Indicator */}
-        <div className="flex md:hidden items-center justify-center gap-1.5 mt-4">
-          {bestSellers.map((_, idx) => (
-            <button
-              key={idx}
-              onClick={() => api?.scrollTo(idx)}
-              className={`h-1.5 rounded-full transition-all duration-300 ${current === idx
-                  ? "w-4 bg-[#EEBC3F]"
-                  : "w-1.5 bg-white/30"
-                }`}
-              aria-label={`Go to slide ${idx + 1}`}
-            />
-          ))}
+        {/* Navigation Arrows Below */}
+        <div className="hidden md:flex items-center justify-center gap-3 mt-6">
+          <button
+            onClick={() => scroll('prev')}
+            className={`w-12 h-12 rounded-full border border-white/20 text-white flex items-center justify-center transition-all duration-300 hover:bg-white hover:text-[#0F1A26] hover:border-white ${!canScrollLeft ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}
+            aria-label="Previous"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => scroll('next')}
+            className={`w-12 h-12 rounded-full border border-white/20 text-white flex items-center justify-center transition-all duration-300 hover:bg-white hover:text-[#0F1A26] hover:border-white ${!canScrollRight ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}
+            aria-label="Next"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Mobile CTA */}
@@ -182,6 +261,12 @@ export function BestSellers() {
           </Button>
         </div>
       </div>
+
+      <style jsx>{`
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
     </section>
   );
 }

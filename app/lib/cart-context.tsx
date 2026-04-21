@@ -2,6 +2,14 @@
 
 import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from "react";
 
+export interface BundleSelection {
+  productId: number;
+  productName: string;
+  size?: string;
+  color?: string;
+  quantity: number;
+}
+
 export interface CartItem {
   id: number;
   name: string;
@@ -13,13 +21,16 @@ export interface CartItem {
   image: string;
   size?: string;
   color?: string;
+  isBundle?: boolean;
+  bundleSelections?: BundleSelection[];
+  bundleKey?: string;
 }
 
 interface CartContextType {
   items: CartItem[];
   addToCart: (item: Omit<CartItem, "quantity"> & { quantity?: number }) => void;
-  removeFromCart: (id: number, size?: string, color?: string) => void;
-  updateQuantity: (id: number, delta: number, size?: string, color?: string) => void;
+  removeFromCart: (id: number, size?: string, color?: string, bundleKey?: string) => void;
+  updateQuantity: (id: number, delta: number, size?: string, color?: string, bundleKey?: string) => void;
   clearCart: () => void;
   buyNowItem: CartItem | null;
   setBuyNowItem: (item: CartItem | null) => void;
@@ -55,49 +66,81 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const qty = newItem.quantity || 1;
 
     setItems((currentItems) => {
-      const existingItem = currentItems.find((item) => 
-        item.id === newItem.id && item.size === newItem.size && item.color === newItem.color
-      );
+      const normalizedNewItem: Omit<CartItem, "quantity"> & { quantity?: number } = {
+        ...newItem,
+        bundleKey:
+          newItem.isBundle
+            ? newItem.bundleKey || JSON.stringify(newItem.bundleSelections || [])
+            : undefined,
+      };
+
+      const existingItem = currentItems.find((item) => {
+        if (item.id !== normalizedNewItem.id) return false;
+
+        // Bundles: match by bundleSelections
+        if (normalizedNewItem.isBundle && item.isBundle) {
+          return item.bundleKey === normalizedNewItem.bundleKey;
+        }
+
+        // Regular items: match by size/color
+        return item.size === normalizedNewItem.size && item.color === normalizedNewItem.color;
+      });
 
       if (existingItem) {
         return currentItems.map((item) =>
-          item.id === newItem.id && item.size === newItem.size && item.color === newItem.color
-            ? { ...item, quantity: item.quantity + (newItem.quantity || 1) }
-            : item
+          item.id !== normalizedNewItem.id
+            ? item
+            : normalizedNewItem.isBundle && item.isBundle
+              ? item.bundleKey === normalizedNewItem.bundleKey
+                ? { ...item, quantity: item.quantity + (normalizedNewItem.quantity || 1) }
+                : item
+              : item.size === normalizedNewItem.size && item.color === normalizedNewItem.color
+                ? { ...item, quantity: item.quantity + (normalizedNewItem.quantity || 1) }
+                : item
         );
       }
 
-      return [...currentItems, { ...newItem, quantity: qty }];
+      return [...currentItems, { ...normalizedNewItem, quantity: qty }];
     });
 
     setIsOpen(true);
   }, []);
 
-  const removeFromCart = useCallback((id: number, size?: string, color?: string) => {
+  const removeFromCart = useCallback((id: number, size?: string, color?: string, bundleKey?: string) => {
     setItems((currentItems) => 
       currentItems.filter((item) => 
-        !(item.id === id && item.size === size && item.color === color)
+        item.id !== id
+          ? true
+          : item.isBundle
+            ? item.bundleKey !== bundleKey
+            : !(item.size === size && item.color === color)
       )
     );
   }, []);
 
-  const updateQuantity = useCallback((id: number, delta: number, size?: string, color?: string) => {
+  const updateQuantity = useCallback((id: number, delta: number, size?: string, color?: string, bundleKey?: string) => {
     setItems((currentItems) => {
       const targetItem = currentItems.find(
-        (item) => item.id === id && item.size === size && item.color === color
+        (item) =>
+          item.id === id &&
+          (item.isBundle ? item.bundleKey === bundleKey : item.size === size && item.color === color)
       );
       
       // If decreasing and quantity would become 0, remove the item
       if (delta < 0 && targetItem && targetItem.quantity <= 1) {
         return currentItems.filter(
-          (item) => !(item.id === id && item.size === size && item.color === color)
+          (item) =>
+            item.id !== id
+              ? true
+              : item.isBundle
+                ? item.bundleKey !== bundleKey
+                : !(item.size === size && item.color === color)
         );
       }
       
-      // Otherwise update quantity
-      return currentItems.map((item) =>
-        item.id === id && item.size === size && item.color === color
-          ? { ...item, quantity: Math.max(1, item.quantity + delta) }
+      return currentItems.map((item) => 
+        item.id === id && (item.isBundle ? item.bundleKey === bundleKey : item.size === size && item.color === color)
+          ? { ...item, quantity: item.quantity + delta }
           : item
       );
     });

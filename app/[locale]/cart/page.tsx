@@ -12,6 +12,7 @@ import { useCart } from "@/app/lib/cart-context";
 import { Loading } from "@/app/components/loading";
 
 interface GroupedItem {
+  groupKey: string;
   id: number;
   slug: string;
   name: string;
@@ -23,15 +24,19 @@ interface GroupedItem {
     size?: string;
     color?: string;
     quantity: number;
+    bundleKey?: string;
   }[];
 }
 
 function groupCartItems(items: ReturnType<typeof useCart>['items']): GroupedItem[] {
-  const grouped = new Map<number, GroupedItem>();
+  const grouped = new Map<string, GroupedItem>();
   
   items.forEach((item) => {
-    if (!grouped.has(item.id)) {
-      grouped.set(item.id, {
+    const groupKey = item.isBundle ? `${item.id}:${item.bundleKey || ""}` : String(item.id);
+
+    if (!grouped.has(groupKey)) {
+      grouped.set(groupKey, {
+        groupKey,
         id: item.id,
         slug: item.slug,
         name: item.name,
@@ -43,11 +48,12 @@ function groupCartItems(items: ReturnType<typeof useCart>['items']): GroupedItem
       });
     }
     
-    const group = grouped.get(item.id)!;
+    const group = grouped.get(groupKey)!;
     group.variants.push({
       size: item.size,
       color: item.color,
       quantity: item.quantity,
+      bundleKey: item.bundleKey,
     });
   });
   
@@ -161,7 +167,7 @@ function CartContent() {
                 <div className="space-y-4">
                   {groupedItems.map((item) => (
                     <div 
-                      key={item.id}
+                      key={item.groupKey}
                       className="bg-white rounded-2xl p-4 border border-[#0F1A26]/5 flex gap-4"
                     >
                       {/* Image */}
@@ -191,7 +197,7 @@ function CartContent() {
                               onClick={() => {
                                 // Remove all variants of this item
                                 item.variants.forEach(v => {
-                                  removeFromCart(item.id, v.size, v.color);
+                                  removeFromCart(item.id, v.size, v.color, v.bundleKey);
                                 });
                               }}
                               className="w-8 h-8 rounded-full bg-[#0F1A26]/5 flex items-center justify-center text-[#0F1A26]/50 hover:bg-red-50 hover:text-red-500 transition-colors"
@@ -225,7 +231,7 @@ function CartContent() {
                                           i.color === variant.color
                                         );
                                         if (originalItem) {
-                                          updateQuantity(originalItem.id, -1, variant.size, variant.color);
+                                          updateQuantity(originalItem.id, -1, variant.size, variant.color, originalItem.bundleKey);
                                         }
                                       }}
                                       className="w-6 h-6 rounded bg-white flex items-center justify-center text-[#0F1A26] hover:bg-[#EEBC3F]/20 transition-colors"
@@ -243,7 +249,7 @@ function CartContent() {
                                           i.color === variant.color
                                         );
                                         if (originalItem) {
-                                          updateQuantity(originalItem.id, 1, variant.size, variant.color);
+                                          updateQuantity(originalItem.id, 1, variant.size, variant.color, originalItem.bundleKey);
                                         }
                                       }}
                                       className="w-6 h-6 rounded bg-white flex items-center justify-center text-[#0F1A26] hover:bg-[#EEBC3F]/20 transition-colors"

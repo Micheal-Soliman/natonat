@@ -64,7 +64,7 @@ export function ArticlesSection() {
               }`}
               style={{ transitionDelay: `${(index + 1) * 100}ms` }}
             >
-              <div className="relative overflow-hidden flex-shrink-0 h-40 sm:h-48">
+              <div className="relative overflow-hidden flex-shrink-0 h-52 sm:h-60">
                 <Image
                   src={article.image}
                   alt={article.title}
