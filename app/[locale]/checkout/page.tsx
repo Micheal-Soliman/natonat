@@ -609,36 +609,36 @@ function CheckoutContent() {
                             required
                             value={formData.city}
                             onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                            className="w-full px-4 py-3 pl-11 rounded-xl border border-[#0F1A26]/10 focus:border-[#EEBC3F] focus:outline-none transition-colors bg-white appearance-none"
+                            className="w-full px-4 py-3 pl-11 rounded-xl border border-[#0F1A26]/10 focus:border-[#EEBC3F] focus:outline-none transition-colors bg-white text-[#0F1A26] font-medium appearance-none"
                           >
-                            <option value="">{t('form.shipping.cityPlaceholder')}</option>
-                            <option value="cairo">القاهرة</option>
-                            <option value="alexandria">الإسكندرية</option>
-                            <option value="giza">الجيزة</option>
-                            <option value="qalyubia">القليوبية</option>
-                            <option value="port_said">بورسعيد</option>
-                            <option value="suez">السويس</option>
-                            <option value="luxor">الأقصر</option>
-                            <option value="aswan">أسوان</option>
-                            <option value="asyut">أسيوط</option>
-                            <option value="beheira">البحيرة</option>
-                            <option value="beni_suef">بني سويف</option>
-                            <option value="dakahlia">الدقهلية</option>
-                            <option value="damietta">دمياط</option>
-                            <option value="faiyum">الفيوم</option>
-                            <option value="gharbia">الغربية</option>
-                            <option value="ismailia">الإسماعيلية</option>
-                            <option value="kafr_el_sheikh">كفر الشيخ</option>
-                            <option value="matrouh">مطروح</option>
-                            <option value="minya">المنيا</option>
-                            <option value="monufia">المنوفية</option>
-                            <option value="new_valley">الوادي الجديد</option>
-                            <option value="north_sinai">شمال سيناء</option>
-                            <option value="qena">قنا</option>
-                            <option value="red_sea">البحر الأحمر</option>
-                            <option value="sharqia">الشرقية</option>
-                            <option value="sohag">سوهاج</option>
-                            <option value="south_sinai">جنوب سيناء</option>
+                            <option value="" className="text-[#0F1A26]">{t('form.shipping.cityPlaceholder')}</option>
+                            <option value="cairo" className="text-[#0F1A26]">القاهرة</option>
+                            <option value="alexandria" className="text-[#0F1A26]">الإسكندرية</option>
+                            <option value="giza" className="text-[#0F1A26]">الجيزة</option>
+                            <option value="qalyubia" className="text-[#0F1A26]">القليوبية</option>
+                            <option value="port_said" className="text-[#0F1A26]">بورسعيد</option>
+                            <option value="suez" className="text-[#0F1A26]">السويس</option>
+                            <option value="luxor" className="text-[#0F1A26]">الأقصر</option>
+                            <option value="aswan" className="text-[#0F1A26]">أسوان</option>
+                            <option value="asyut" className="text-[#0F1A26]">أسيوط</option>
+                            <option value="beheira" className="text-[#0F1A26]">البحيرة</option>
+                            <option value="beni_suef" className="text-[#0F1A26]">بني سويف</option>
+                            <option value="dakahlia" className="text-[#0F1A26]">الدقهلية</option>
+                            <option value="damietta" className="text-[#0F1A26]">دمياط</option>
+                            <option value="faiyum" className="text-[#0F1A26]">الفيوم</option>
+                            <option value="gharbia" className="text-[#0F1A26]">الغربية</option>
+                            <option value="ismailia" className="text-[#0F1A26]">الإسماعيلية</option>
+                            <option value="kafr_el_sheikh" className="text-[#0F1A26]">كفر الشيخ</option>
+                            <option value="matrouh" className="text-[#0F1A26]">مطروح</option>
+                            <option value="minya" className="text-[#0F1A26]">المنيا</option>
+                            <option value="monufia" className="text-[#0F1A26]">المنوفية</option>
+                            <option value="new_valley" className="text-[#0F1A26]">الوادي الجديد</option>
+                            <option value="north_sinai" className="text-[#0F1A26]">شمال سيناء</option>
+                            <option value="qena" className="text-[#0F1A26]">قنا</option>
+                            <option value="red_sea" className="text-[#0F1A26]">البحر الأحمر</option>
+                            <option value="sharqia" className="text-[#0F1A26]">الشرقية</option>
+                            <option value="sohag" className="text-[#0F1A26]">سوهاج</option>
+                            <option value="south_sinai" className="text-[#0F1A26]">جنوب سيناء</option>
                           </select>
                         </div>
                       </div>
