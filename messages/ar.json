@@ -904,7 +904,8 @@
     "needHelp": "لسه عندك أسئلة؟",
     "contactSubtitle": "محتاج مساعدة في حاجة تانية؟ فريقنا هنا يساعدك.",
     "whatsappCta": "تواصل واتساب",
-    "contactCta": "تواصل معانا"
+    "contactCta": "تواصل معانا",
+    "floatingLabel": "محتاج مساعدة؟"
   },
   "legal": {
     "shipping": {

@@ -890,7 +890,8 @@
     "contactSubtitle": "Need help with something else? Our team is here to assist you.",
     "whatsappCta": "WhatsApp Us",
     "needHelp": "Still have questions?",
-    "contactCta": "Contact Us"
+    "contactCta": "Contact Us",
+    "floatingLabel": "Need help?"
   },
   "legal": {
     "shipping": {

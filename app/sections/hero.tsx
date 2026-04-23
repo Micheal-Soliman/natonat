@@ -83,17 +83,15 @@ export function Hero() {
         </div>
       </div>
 
-
-
       {/* Free Shipping Marquee Banner */}
       <div className="absolute bottom-0 left-0 right-0 bg-[#EEBC3F] py-3 overflow-hidden z-20">
         <div className="animate-marquee flex whitespace-nowrap">
           {[...Array(10)].map((_, i) => (
-            <div key={i} className="flex items-center mx-8">
-              <span className="text-[#0F1A26] font-semibold text-sm tracking-wide uppercase">
+            <div key={i} className="flex items-center">
+              <span className="text-[#0F1A26] font-semibold text-sm tracking-wide uppercase px-8">
                 {t('freeShipping')} - {t('egyptOnly')}
               </span>
-              <span className="mx-4 text-[#0F1A26]/30">|</span>
+              <span className="text-[#0F1A26]/30">|</span>
             </div>
           ))}
         </div>

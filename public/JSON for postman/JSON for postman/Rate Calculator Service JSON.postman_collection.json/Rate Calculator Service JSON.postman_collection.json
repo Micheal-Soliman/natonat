@@ -1,0 +1,48 @@
+{
+	"info": {
+		"name": "Rate Calculator Service JSON",
+		"_postman_id": "0c7911e5-5520-15f8-58b1-ec13a9463644",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "CalculateRate",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"ClientInfo\":{\"UserName\":\"reem@reem.com\",\"Password\":\"123456789\",\"Version\":\"v1\",\"AccountNumber\":\"20016\",\"AccountPin\":\"331421\",\"AccountEntity\":\"AMM\",\"AccountCountryCode\":\"JO\",\"Source\":24},\"DestinationAddress\":{\"Line1\":\"XYZ Street\",\"Line2\":\"Unit # 1\",\"Line3\":\"\",\"City\":\"Dubai\",\"StateOrProvinceCode\":\"\",\"PostCode\":\"\",\"CountryCode\":\"AE\",\"Longitude\":0,\"Latitude\":0,\"BuildingNumber\":null,\"BuildingName\":null,\"Floor\":null,\"Apartment\":null,\"POBox\":null,\"Description\":null},\"OriginAddress\":{\"Line1\":\"ABC Street\",\"Line2\":\"Unit # 1\",\"Line3\":\"\",\"City\":\"Amman\",\"StateOrProvinceCode\":\"\",\"PostCode\":\"\",\"CountryCode\":\"JO\",\"Longitude\":0,\"Latitude\":0,\"BuildingNumber\":null,\"BuildingName\":null,\"Floor\":null,\"Apartment\":null,\"POBox\":null,\"Description\":null},\"PreferredCurrencyCode\":\"USD\",\"ShipmentDetails\":{\"Dimensions\":null,\"ActualWeight\":{\"Unit\":\"KG\",\"Value\":1},\"ChargeableWeight\":null,\"DescriptionOfGoods\":null,\"GoodsOriginCountry\":null,\"NumberOfPieces\":1,\"ProductGroup\":\"EXP\",\"ProductType\":\"PPX\",\"PaymentType\":\"P\",\"PaymentOptions\":\"\",\"CustomsValueAmount\":null,\"CashOnDeliveryAmount\":null,\"InsuranceAmount\":null,\"CashAdditionalAmount\":null,\"CashAdditionalAmountDescription\":null,\"CollectAmount\":null,\"Services\":\"\",\"Items\":null,\"DeliveryInstructions\":null},\"Transaction\":{\"Reference1\":\"\",\"Reference2\":\"\",\"Reference3\":\"\",\"Reference4\":\"\",\"Reference5\":\"\"}}"
+				},
+				"url": {
+					"raw": "https://ws.dev.aramex.net/ShippingAPI.V2/RateCalculator/Service_1_0.svc/json/CalculateRate",
+					"protocol": "https",
+					"host": [
+						"ws",
+						"dev",
+						"aramex",
+						"net"
+					],
+					"path": [
+						"ShippingAPI.V2",
+						"RateCalculator",
+						"Service_1_0.svc",
+						"json",
+						"CalculateRate"
+					]
+				},
+				"description": null
+			},
+			"response": []
+		}
+	]
+}
