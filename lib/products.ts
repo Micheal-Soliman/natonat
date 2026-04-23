@@ -823,6 +823,74 @@ export const products: Product[] = [
       xl: { price: 749, originalPrice: 900 }
     }
   },
+  { 
+    id: 29, 
+    slug: "green",
+    name: "Green", 
+    category: "luggage-covers", 
+    size: "m", 
+    theme: "minimal", 
+    price: 649, 
+    originalPrice: 800, 
+    type: "Luggage Cover", 
+    tag: null, 
+    image: "/octopus%20photo/Green/021A9832.jpg",
+    images: [
+      "/octopus%20photo/Green/021A9832.jpg",
+      "/octopus%20photo/Green/021A9833.jpg",
+      "/octopus%20photo/Green/021A9837.jpg",
+      "/octopus%20photo/Green/021A9840.jpg",
+      "/octopus%20photo/Green/021A9843.jpg",
+      "/octopus%20photo/Green/021A9844.jpg",
+      "/octopus%20photo/Green/021A9847.jpg",
+      "/octopus%20photo/Green/021A9848.jpg",
+      "/octopus%20photo/Green/021A9849.jpg",
+      "/octopus%20photo/Green/021A9851.jpg",
+      "/octopus%20photo/Green/021A9852.jpg",
+      "/octopus%20photo/Green/021A9854.jpg"
+    ],
+    description: "Clean minimal green luggage cover design for a fresh, modern travel look.",
+    sizePrices: {
+      s: { price: 589, originalPrice: 750 },
+      m: { price: 649, originalPrice: 800 },
+      l: { price: 689, originalPrice: 850 },
+      xl: { price: 749, originalPrice: 900 }
+    }
+  },
+  {
+    id: 30,
+    slug: "red",
+    name: "Red",
+    category: "luggage-covers",
+    size: "m",
+    theme: "minimal",
+    price: 649,
+    originalPrice: 800,
+    type: "Luggage Cover",
+    tag: null,
+    image: "/octopus%20photo/Red/021A9832.jpg",
+    images: [
+      "/octopus%20photo/Red/021A9832.jpg",
+      "/octopus%20photo/Red/021A9833.jpg",
+      "/octopus%20photo/Red/021A9837.jpg",
+      "/octopus%20photo/Red/021A9840.jpg",
+      "/octopus%20photo/Red/021A9843.jpg",
+      "/octopus%20photo/Red/021A9844.jpg",
+      "/octopus%20photo/Red/021A9847.jpg",
+      "/octopus%20photo/Red/021A9848.jpg",
+      "/octopus%20photo/Red/021A9849.jpg",
+      "/octopus%20photo/Red/021A9851.jpg",
+      "/octopus%20photo/Red/021A9852.jpg",
+      "/octopus%20photo/Red/021A9854.jpg"
+    ],
+    description: "Bold minimal red luggage cover design for a confident, modern travel look.",
+    sizePrices: {
+      s: { price: 589, originalPrice: 750 },
+      m: { price: 649, originalPrice: 800 },
+      l: { price: 689, originalPrice: 850 },
+      xl: { price: 749, originalPrice: 900 }
+    }
+  },
   // PackOnat Packing Folder - 3 Separate Products by Color
   {
     id: 50,
@@ -831,7 +899,7 @@ export const products: Product[] = [
     category: "packonat",
     size: null,
     theme: "minimal",
-    price: 799,
+    price: 849,
     originalPrice: 999,
     type: "Packing Folder",
     tag: null,
@@ -839,12 +907,11 @@ export const products: Product[] = [
     image: "/packOnat/Black/1.png",
     images: [
       "/packOnat/Black/1.png",
-      "/packOnat/Black/Artboard%205.png",
-      "/packOnat/Black/Artboard%206.png",
-      "/packOnat/Black/Artboard%207.png",
-      "/packOnat/Black/Artboard%208.png"
+      "/packOnat/Black/2.png",
+      "/packOnat/Black/3.png",
+      "/packOnat/Black/4.png"
     ],
-    description: "Premium travel packing folder in Black with smart organization, multiple compartments, and durable design."
+    description: "Upgrade your travel experience with the PackOnat Garment Folder by natOnat, designed to keep your clothes perfectly folded, organized, and wrinkle-free wherever you go. Whether you're traveling for business or leisure, PackOnat ensures your suits, shirts, dresses, and outfits stay flat and ready to wear straight out of your luggage."
   },
   {
     id: 51,
@@ -853,7 +920,7 @@ export const products: Product[] = [
     category: "packonat",
     size: null,
     theme: "minimal",
-    price: 799,
+    price: 849,
     originalPrice: 999,
     type: "Packing Folder",
     tag: null,
@@ -861,12 +928,11 @@ export const products: Product[] = [
     image: "/packOnat/Green/1.png",
     images: [
       "/packOnat/Green/1.png",
-      "/packOnat/Green/Artboard%209.png",
-      "/packOnat/Green/Artboard%2010.png",
-      "/packOnat/Green/Artboard%2011.png",
-      "/packOnat/Green/Artboard%2012.png"
+      "/packOnat/Green/2.png",
+      "/packOnat/Green/3.png",
+      "/packOnat/Green/4.png"
     ],
-    description: "Premium travel packing folder in Green with smart organization, multiple compartments, and durable design."
+    description: "Upgrade your travel experience with the PackOnat Garment Folder by natOnat, designed to keep your clothes perfectly folded, organized, and wrinkle-free wherever you go. Whether you're traveling for business or leisure, PackOnat ensures your suits, shirts, dresses, and outfits stay flat and ready to wear straight out of your luggage."
   },
   {
     id: 52,
@@ -875,7 +941,7 @@ export const products: Product[] = [
     category: "packonat",
     size: null,
     theme: "minimal",
-    price: 799,
+    price: 849,
     originalPrice: 999,
     type: "Packing Folder",
     tag: null,
@@ -883,12 +949,11 @@ export const products: Product[] = [
     image: "/packOnat/Red/1.png",
     images: [
       "/packOnat/Red/1.png",
-      "/packOnat/Red/Artboard%201.png",
-      "/packOnat/Red/Artboard%202.png",
-      "/packOnat/Red/Artboard%203.png",
-      "/packOnat/Red/Artboard%204.png"
+      "/packOnat/Red/2.png",
+      "/packOnat/Red/3.png",
+      "/packOnat/Red/4.png"
     ],
-    description: "Premium travel packing folder in Red with smart organization, multiple compartments, and durable design."
+    description: "Upgrade your travel experience with the PackOnat Garment Folder by natOnat, designed to keep your clothes perfectly folded, organized, and wrinkle-free wherever you go. Whether you're traveling for business or leisure, PackOnat ensures your suits, shirts, dresses, and outfits stay flat and ready to wear straight out of your luggage."
   },
   
   // Bundles - Updated with new discount structure
@@ -913,9 +978,9 @@ export const products: Product[] = [
     description: "Complete set with S, M, and L size covers for all your luggage",
     isBundle: true,
     bundleItems: [
-      { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28], quantity: 1, label: "First Cover" },
-      { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28], quantity: 1, label: "Second Cover" },
-      { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28], quantity: 1, label: "Third Cover" }
+      { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30], quantity: 1, label: "First Cover" },
+      { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30], quantity: 1, label: "Second Cover" },
+      { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30], quantity: 1, label: "Third Cover" }
     ],
     features: ["3 Different sizes (S, M, L)", "Save 15%", "Perfect for families", "Complete luggage protection"]
   },
@@ -931,15 +996,15 @@ export const products: Product[] = [
     originalPrice: 2012,
     type: "Bundle",
     tag: "Popular",
-    image: "/packOnat/Black/Artboard%205.png",
+    image: "/packOnat/Black/1.png",
     images: [
-      "/packOnat/Black/Artboard%205.png",
+      "/packOnat/Black/1.png",
       "/octopus%20photo/ACCORD/1.png"
     ],
     description: "Everything you need - luggage cover, packing folder, and passport wallet",
     isBundle: true,
     bundleItems: [
-      { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28], quantity: 1, label: "Select Luggage Cover" },
+      { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30], quantity: 1, label: "Select Luggage Cover" },
       { productIds: [50, 51, 52], quantity: 1, label: "Select PackOnat Color" },
       { productIds: [107, 108, 109], quantity: 1, label: "Select Passport Wallet Color" }
     ],
@@ -957,16 +1022,16 @@ export const products: Product[] = [
     originalPrice: 1448,
     type: "Bundle",
     tag: null,
-    image: "/packOnat/Black/Artboard%205.png",
+    image: "/packOnat/Black/1.png",
     images: [
-      "/packOnat/Black/Artboard%205.png",
+      "/packOnat/Black/1.png",
       "/octopus%20photo/ACCORD/1.png"
     ],
     description: "Travel in style with packing folder and matching cover",
     isBundle: true,
     bundleItems: [
       { productIds: [50, 51, 52], quantity: 1, label: "Select PackOnat Color" },
-      { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28], quantity: 1, label: "Select Luggage Cover" }
+      { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30], quantity: 1, label: "Select Luggage Cover" }
     ],
     features: ["Packing Folder + Cover combo", "Save 12%", "Modern design", "Travel essentials"]
   },
@@ -982,16 +1047,16 @@ export const products: Product[] = [
     originalPrice: 2117,
     type: "Bundle",
     tag: "Best Seller",
-    image: "/packOnat/Black/Artboard%205.png",
+    image: "/packOnat/Black/1.png",
     images: [
-      "/packOnat/Black/Artboard%205.png",
+      "/packOnat/Black/1.png",
       "/octopus%20photo/Anara/1.png"
     ],
     description: "Perfect for couples - two covers and a shared packing folder",
     isBundle: true,
     bundleItems: [
-      { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28], quantity: 1, label: "First Cover" },
-      { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28], quantity: 1, label: "Second Cover" },
+      { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30], quantity: 1, label: "First Cover" },
+      { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30], quantity: 1, label: "Second Cover" },
       { productIds: [50, 51, 52], quantity: 1, label: "Select PackOnat Color" }
     ],
     features: ["2 Covers + Packing Folder", "Save 15%", "Perfect for couples", "Travel together"]
@@ -1008,10 +1073,10 @@ export const products: Product[] = [
     originalPrice: 1598,
     type: "Bundle",
     tag: null,
-    image: "/packOnat/Black/Artboard%205.png",
+    image: "/packOnat/Black/1.png",
     images: [
-      "/packOnat/Black/Artboard%205.png",
-      "/packOnat/Green/Artboard%209.png"
+      "/packOnat/Black/1.png",
+      "/packOnat/Green/1.png"
     ],
     description: "Double the style - two PackOnat packing folders",
     isBundle: true,
@@ -1042,7 +1107,7 @@ export const products: Product[] = [
     isBundle: true,
     bundleItems: [
       { productIds: [107, 108, 109], quantity: 1, label: "Select Passport Wallet Color" },
-      { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28], quantity: 1, label: "Select Luggage Cover" }
+      { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30], quantity: 1, label: "Select Luggage Cover" }
     ],
     features: ["Passport + Cover combo", "Save 15%", "Travel ready", "Perfect pair"]
   },
@@ -1050,7 +1115,7 @@ export const products: Product[] = [
   {
     id: 107,
     slug: "eoehro-passport-holder-cognac",
-    name: "Eoehro Passport Holder - Cognac Brown",
+    name: "Passport Wallet - Cognac Brown",
     category: "passport-wallets",
     size: null,
     theme: "minimal",
@@ -1069,13 +1134,13 @@ export const products: Product[] = [
       "/passport%20wallet/Cognac%20brown/6.png",
       "/passport%20wallet/Cognac%20brown/7.png"
     ],
-    description: "RFID Protected faux leather passport holder in Cognac Brown with magnetic clasp, vaccine card slot, and 5 pockets for cards, tickets, and SIM cards.",
+    description: "RFID Protected faux leather passport wallet in Cognac Brown with magnetic clasp, vaccine card slot, and 5 pockets for cards, tickets, and SIM cards.",
     features: ["RFID Blocking", "Magnetic Clasp", "Vaccine Card Slot", "5 Card Pockets", "Faux Leather", "Cognac Brown Color"]
   },
   {
     id: 108,
     slug: "eoehro-passport-holder-espresso",
-    name: "Eoehro Passport Holder - Espresso Brown",
+    name: "Passport Wallet - Espresso Brown",
     category: "passport-wallets",
     size: null,
     theme: "minimal",
@@ -1094,13 +1159,13 @@ export const products: Product[] = [
       "/passport%20wallet/Espresso%20brown/6.png",
       "/passport%20wallet/Espresso%20brown/7.png"
     ],
-    description: "RFID Protected faux leather passport holder in Espresso Brown with magnetic clasp, vaccine card slot, and 5 pockets for cards, tickets, and SIM cards.",
+    description: "RFID Protected faux leather passport wallet in Espresso Brown with magnetic clasp, vaccine card slot, and 5 pockets for cards, tickets, and SIM cards.",
     features: ["RFID Blocking", "Magnetic Clasp", "Vaccine Card Slot", "5 Card Pockets", "Faux Leather", "Espresso Brown Color"]
   },
   {
     id: 109,
     slug: "eoehro-passport-holder-honey",
-    name: "Eoehro Passport Holder - Honey Brown",
+    name: "Passport Wallet - Honey Brown",
     category: "passport-wallets",
     size: null,
     theme: "minimal",
@@ -1119,7 +1184,7 @@ export const products: Product[] = [
       "/passport%20wallet/Honey%20brown/6.png",
       "/passport%20wallet/Honey%20brown/7.png"
     ],
-    description: "RFID Protected faux leather passport holder in Honey Brown with magnetic clasp, vaccine card slot, and 5 pockets for cards, tickets, and SIM cards.",
+    description: "RFID Protected faux leather passport wallet in Honey Brown with magnetic clasp, vaccine card slot, and 5 pockets for cards, tickets, and SIM cards.",
     features: ["RFID Blocking", "Magnetic Clasp", "Vaccine Card Slot", "5 Card Pockets", "Faux Leather", "Honey Brown Color"]
   },
 ];

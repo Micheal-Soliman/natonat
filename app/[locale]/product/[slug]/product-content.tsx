@@ -39,6 +39,58 @@ interface ProductDetailedDescriptionIntroProps {
   onExpand: () => void;
 }
 
+function ProductVideoSection({
+  title,
+  subtitle,
+  poster,
+  src,
+  fullWidth,
+}: {
+  title: string;
+  subtitle: string;
+  poster: string;
+  src: string;
+  fullWidth?: boolean;
+}) {
+  const wrapperClassName = fullWidth
+    ? "mt-6 lg:mt-8 relative left-1/2 right-1/2 -mx-[50vw] w-screen"
+    : "mt-6 lg:mt-8";
+
+  const innerClassName = fullWidth
+    ? "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+    : undefined;
+
+  return (
+    <div className={wrapperClassName}>
+      <div className={innerClassName}>
+        <div className="bg-white rounded-3xl p-6 md:p-8 border border-[#0F1A26]/5 shadow-lg">
+          <h3 className="text-base font-bold text-[#0F1A26] mb-5 tracking-[0.1em] uppercase flex items-center gap-3">
+            <Sparkles className="w-5 h-5 text-[#EEBC3F]" />
+            {title}
+          </h3>
+          <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-[#F1EBE3]">
+            <video
+              autoPlay
+              muted
+              loop
+              playsInline
+              controls
+              preload="metadata"
+              className="w-full h-full object-cover"
+              poster={poster}
+            >
+              <source src={src} type="video/mp4" />
+              <source src={src} type="video/quicktime" />
+              Your browser does not support the video tag.
+            </video>
+          </div>
+          <p className="text-[#0F1A26]/60 text-sm mt-4 text-center">{subtitle}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Component for showing just the intro (partially open)
 function ProductDetailedDescriptionIntro({ product, onExpand }: ProductDetailedDescriptionIntroProps) {
   const tp = useTranslations('products');
@@ -965,6 +1017,33 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
             </div>
           </div>
 
+          {/* Video Section - Full Width */}
+          {product.category === "passport-wallets" && (
+            <ProductVideoSection
+              title={t('videoSection.title') || 'See It In Action'}
+              subtitle={
+                t('videoSection.passportSubtitle') ||
+                'Discover the premium leather and RFID protection of our passport wallet'
+              }
+              poster="/passport%20wallet/Cognac%20brown/1.png"
+              src="/passport%20wallet/Wallet%20landscape%20without%20logo.mov"
+              fullWidth
+            />
+          )}
+
+          {product.category === "packonat" && (
+            <ProductVideoSection
+              title={t('videoSection.title') || 'See It In Action'}
+              subtitle={
+                t('videoSection.subtitle') ||
+                'Watch how PackOnat keeps your clothes organized and wrinkle-free'
+              }
+              poster="/packOnat/Black/1.png"
+              src="/packOnat/Cloth%20case%20landscape%20without%20logo.mov"
+              fullWidth
+            />
+          )}
+
           {/* Detailed Product Description - Partially open (intro only) */}
           <div className="mt-6 lg:mt-8">
             <button
@@ -1067,64 +1146,6 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
               </div>
             )}
           </div>
-
-          {/* PackOnat Video Section - Only for packonat category */}
-          {product.category === "packonat" && (
-            <div className="mt-6 lg:mt-8">
-              <div className="bg-white rounded-3xl p-6 md:p-8 border border-[#0F1A26]/5 shadow-lg">
-                <h3 className="text-base font-bold text-[#0F1A26] mb-5 tracking-[0.1em] uppercase flex items-center gap-3">
-                  <Sparkles className="w-5 h-5 text-[#EEBC3F]" />
-                  {t('videoSection.title') || 'See It In Action'}
-                </h3>
-                <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-[#F1EBE3]">
-                  <video
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                    className="w-full h-full object-cover"
-                    poster="/packOnat/Black/1.png"
-                  >
-                    <source src="/packOnat/Cloth%20case%20landscape%20without%20logo.mov" type="video/quicktime" />
-                    <source src="/packOnat/Cloth%20case%20landscape%20without%20logo.mov" type="video/mp4" />
-                    Your browser does not support the video tag.
-                  </video>
-                </div>
-                <p className="text-[#0F1A26]/60 text-sm mt-4 text-center">
-                  {t('videoSection.subtitle') || 'Watch how PackOnat keeps your clothes organized and wrinkle-free'}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Passport Wallet Video Section - Only for passport-wallets category */}
-          {product.category === "passport-wallets" && (
-            <div className="mt-6 lg:mt-8">
-              <div className="bg-white rounded-3xl p-6 md:p-8 border border-[#0F1A26]/5 shadow-lg">
-                <h3 className="text-base font-bold text-[#0F1A26] mb-5 tracking-[0.1em] uppercase flex items-center gap-3">
-                  <Sparkles className="w-5 h-5 text-[#EEBC3F]" />
-                  {t('videoSection.title') || 'See It In Action'}
-                </h3>
-                <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-[#F1EBE3]">
-                  <video
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                    className="w-full h-full object-cover"
-                    poster="/passport%20wallet/Cognac%20brown/1.png"
-                  >
-                    <source src="/passport%20wallet/Wallet%20landscape%20without%20logo.mov" type="video/quicktime" />
-                    <source src="/passport%20wallet/Wallet%20landscape%20without%20logo.mov" type="video/mp4" />
-                    Your browser does not support the video tag.
-                  </video>
-                </div>
-                <p className="text-[#0F1A26]/60 text-sm mt-4 text-center">
-                  {t('videoSection.passportSubtitle') || 'Discover the premium leather and RFID protection of our passport wallet'}
-                </p>
-              </div>
-            </div>
-          )}
 
           {/* Related Products */}
           <div className="mt-12 pt-12 lg:mt-24 lg:pt-20 border-t border-[#0F1A26]/10">

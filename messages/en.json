@@ -1242,10 +1242,10 @@
       }
     },
     "all-set-bundle": {
-      "intro": "The ultimate travel kit. Pick any luggage cover you love, add a PackOnat backpack in your favorite color, and complete it with our Eoehro Passport Wallet. Everything you need for your next adventure.",
+      "intro": "The ultimate travel kit. Pick any luggage cover you love, add a PackOnat backpack in your favorite color, and complete it with our Passport Wallet. Everything you need for your next adventure.",
       "about": {
         "title": "Complete Travel Solution",
-        "content": "This bundle combines three essentials: your choice of luggage cover (any size), a PackOnat backpack (available in multiple colors), and the Eoehro Passport Wallet with premium leather finish. Save 18% compared to buying separately."
+        "content": "This bundle combines three essentials: your choice of luggage cover (any size), a PackOnat backpack (available in multiple colors), and the Passport Wallet with premium leather finish. Save 18% compared to buying separately."
       },
       "cta": {
         "title": "Ready for Your Next Trip?",
@@ -1433,10 +1433,10 @@
       }
     },
     "passport-cover-bundle": {
-      "intro": "The essential travel pair. Choose any luggage cover from our collection and combine it with the premium Eoehro Passport Wallet for a coordinated travel look.",
+      "intro": "The essential travel pair. Choose any luggage cover from our collection and combine it with the premium Passport Wallet for a coordinated travel look.",
       "about": {
         "title": "Travel Essentials Combo",
-        "content": "Select any luggage cover (all sizes available) and pair it with our Eoehro Passport Wallet featuring genuine leather in three elegant colors. The wallet includes RFID protection and multiple card slots. Save 15% when you buy them together."
+        "content": "Select any luggage cover (all sizes available) and pair it with our Passport Wallet featuring genuine leather in three elegant colors. The wallet includes RFID protection and multiple card slots. Save 15% when you buy them together."
       },
       "cta": {
         "title": "Save EGP 174 Today",
@@ -1444,7 +1444,7 @@
       },
       "designInspiration": {
         "title": "Travel Elegance",
-        "content": "This bundle combines luggage protection with passport security. The Eoehro wallet is designed to be the elegant companion to your natOnat cover.",
+        "content": "This bundle combines luggage protection with passport security. The Passport Wallet is designed to be the elegant companion to your natOnat cover.",
         "perfectFor": [
           "Travelers who love coordination and style",
           "People wanting protection for luggage and passport",
@@ -2518,6 +2518,118 @@
         "content": "Order your Accord luggage cover today and travel with modern elegance and geometric sophistication."
       }
     },
+    "green": {
+      "title": "Green Luggage Cover | Premium Suitcase Protector by natOnat",
+      "headline": "Fresh look. Strong protection. Easy travel.",
+      "intro": "The natOnat Green Luggage Cover adds a calm, fresh style to your suitcase while protecting it from scratches, dust, and travel wear. Designed for travelers who love clean minimal aesthetics with premium performance.",
+      "designInspiration": {
+        "title": "Design Inspiration – Green",
+        "content": "A clean, modern green look made to feel calm, minimal, and travel-ready.",
+        "perfectFor": [
+          "Fans of minimal style",
+          "Frequent travelers",
+          "Business travelers",
+          "Anyone who wants a clean suitcase look"
+        ],
+        "tagline": "Minimal look. Maximum protection."
+      },
+      "whyChoose": {
+        "title": "Why Choose natOnat Luggage Covers in Egypt?",
+        "intro": "natOnat combines durability, smart functionality, and clean design to protect your suitcase trip after trip.",
+        "features": [
+          { "title": "Ultimate Suitcase Protection", "desc": "Helps protect your luggage from scratches, dirt, dust, and rough handling." },
+          { "title": "Premium Elastic Fabric", "desc": "High-quality Spandex + Polyester blend for a snug, stretch fit." },
+          { "title": "Smart Access Design", "desc": "Openings for handles and zippers for easy access while traveling." },
+          { "title": "Ultra-Secure Fit", "desc": "Velcro + buckle system keeps the cover secure during your trip." },
+          { "title": "Eco-Friendly & Washable", "desc": "Washable and reusable for frequent travelers." }
+        ]
+      },
+      "sizeGuide": {
+        "title": "Size Guide – Simple & Accurate",
+        "subtitle": "Choosing the right size is easy:",
+        "tip": "Just measure your suitcase height (without wheels). That's all you need.",
+        "sizes": [
+          "S → Cabin size (carry-on)",
+          "M → Medium suitcase",
+          "L → Large suitcase",
+          "XL → Extra large luggage"
+        ],
+        "proTip": "If you're between sizes, choose the larger size for a smoother fit."
+      },
+      "targetAudience": {
+        "title": "Designed for Modern Travelers",
+        "items": [
+          "Business travelers & professionals",
+          "Fans of minimalist design",
+          "Frequent flyers",
+          "Anyone who wants premium suitcase protection"
+        ]
+      },
+      "about": {
+        "title": "About natOnat",
+        "content": "natOnat is a premium Egyptian travel brand focused on smart design, quality materials, and modern lifestyle needs. We create products that make your travel easier, safer, and more stylish."
+      },
+      "cta": {
+        "title": "Upgrade Your Travel Experience",
+        "content": "Order your Green luggage cover today and travel with fresh style and premium protection."
+      }
+    },
+    "red": {
+      "title": "Red Luggage Cover | Premium Suitcase Protector by natOnat",
+      "headline": "Bold look. Strong protection. Confident travel.",
+      "intro": "The natOnat Red Luggage Cover adds a bold, confident style to your suitcase while protecting it from scratches, dust, and travel wear. Designed for travelers who love a statement color with premium performance.",
+      "designInspiration": {
+        "title": "Design Inspiration – Red",
+        "content": "A bold, modern red look made to stand out and travel with confidence.",
+        "perfectFor": [
+          "Fans of statement colors",
+          "Bold travelers",
+          "Frequent flyers",
+          "Anyone who wants a standout suitcase"
+        ],
+        "tagline": "Bold look. Maximum protection."
+      },
+      "whyChoose": {
+        "title": "Why Choose natOnat Luggage Covers in Egypt?",
+        "intro": "natOnat combines durability, smart functionality, and bold design to protect your suitcase trip after trip.",
+        "features": [
+          { "title": "Ultimate Suitcase Protection", "desc": "Helps protect your luggage from scratches, dirt, dust, and rough handling." },
+          { "title": "Premium Elastic Fabric", "desc": "High-quality Spandex + Polyester blend for a snug, stretch fit." },
+          { "title": "Smart Access Design", "desc": "Openings for handles and zippers for easy access while traveling." },
+          { "title": "Ultra-Secure Fit", "desc": "Velcro + buckle system keeps the cover secure during your trip." },
+          { "title": "Eco-Friendly & Washable", "desc": "Washable and reusable for frequent travelers." }
+        ]
+      },
+      "sizeGuide": {
+        "title": "Size Guide – Simple & Accurate",
+        "subtitle": "Choosing the right size is easy:",
+        "tip": "Just measure your suitcase height (without wheels). That's all you need.",
+        "sizes": [
+          "S → Cabin size (carry-on)",
+          "M → Medium suitcase",
+          "L → Large suitcase",
+          "XL → Extra large luggage"
+        ],
+        "proTip": "If you're between sizes, choose the larger size for a smoother fit."
+      },
+      "targetAudience": {
+        "title": "Designed for Confident Travelers",
+        "items": [
+          "Bold travelers & trendsetters",
+          "Frequent flyers",
+          "Anyone who wants a standout suitcase",
+          "Travelers who love statement colors"
+        ]
+      },
+      "about": {
+        "title": "About natOnat",
+        "content": "natOnat is a premium Egyptian travel brand focused on smart design, quality materials, and modern lifestyle needs. We create products that make your travel easier, safer, and more stylish."
+      },
+      "cta": {
+        "title": "Upgrade Your Travel Experience",
+        "content": "Order your Red luggage cover today and travel with bold style and premium protection."
+      }
+    },
     "anara": {
       "title": "Anara Luggage Cover | Premium Floral Suitcase Protector",
       "headline": "Bloom beautifully. Travel gracefully. Express nature.",
@@ -3079,12 +3191,12 @@
       }
     },
     "eoehro-passport-holder-cognac": {
-      "title": "Eoehro Passport Holder – Cognac Brown | Premium RFID-Protected Travel Wallet",
+      "title": "Passport Wallet – Cognac Brown | Premium RFID-Protected Travel Wallet",
       "headline": "Travel secure. Stay organized. Carry with confidence.",
-      "intro": "The Eoehro Passport Holder in elegant Cognac Brown is a premium travel accessory designed to keep your passport, vaccine card, credit cards, and travel documents organized and protected. Featuring RFID blocking technology, magnetic clasp closure, and multiple compartments with premium faux leather.",
+      "intro": "The Passport Wallet in elegant Cognac Brown is a premium travel accessory designed to keep your passport, vaccine card, credit cards, and travel documents organized and protected. Featuring RFID blocking technology, magnetic clasp closure, and multiple compartments with premium faux leather.",
       "designInspiration": {
         "title": "Design Inspiration – Secure Travel",
-        "content": "The Eoehro Passport Holder is designed for modern travelers who value security and organization. The classic Cognac Brown color adds a touch of luxurious elegance to every journey.",
+        "content": "The Passport Wallet is designed for modern travelers who value security and organization. The classic Cognac Brown color adds a touch of luxurious elegance to every journey.",
         "perfectFor": [
           "Frequent travelers",
           "Security-conscious individuals",
@@ -3094,7 +3206,7 @@
         "tagline": "Travel with peace of mind in classic Cognac Brown."
       },
       "whyChoose": {
-        "title": "Why Choose Eoehro Passport Holder?",
+        "title": "Why Choose Passport Wallet?",
         "intro": "Premium quality meets smart design. This passport holder offers the perfect balance of security, functionality, and style for the modern traveler.",
         "features": [
           { "title": "RFID Blocking Protection", "desc": "Built-in shielding prevents unauthorized scanning of your passport and cards." },
@@ -3115,8 +3227,8 @@
         ]
       },
       "about": {
-        "title": "About Eoehro",
-        "content": "Eoehro creates premium travel accessories that combine security, organization, and style. Each product is designed with the modern traveler in mind."
+        "title": "About Passport Wallet",
+        "content": "Premium travel accessories with premium travel accessories that combine security, organization, and style. Each product is designed with the modern traveler in mind."
       },
       "sizeGuide": {
         "title": "Product Dimensions",
@@ -3131,16 +3243,16 @@
       },
       "cta": {
         "title": "Upgrade Your Travel Organization",
-        "content": "Order your Eoehro Passport Holder today and travel with confidence, security, and style."
+        "content": "Order your Passport Wallet today and travel with confidence, security, and style."
       }
     },
     "eoehro-passport-holder-espresso": {
-      "title": "Eoehro Passport Holder – Espresso Brown | Premium RFID-Protected Travel Wallet",
+      "title": "Passport Wallet – Espresso Brown | Premium RFID-Protected Travel Wallet",
       "headline": "Travel secure. Stay organized. Carry with confidence.",
-      "intro": "The Eoehro Passport Holder in deep Espresso Brown is a premium travel accessory designed to keep your passport, vaccine card, credit cards, and travel documents organized and protected. Featuring RFID blocking technology, magnetic clasp closure, and multiple compartments with premium faux leather.",
+      "intro": "The Passport Wallet in deep Espresso Brown is a premium travel accessory designed to keep your passport, vaccine card, credit cards, and travel documents organized and protected. Featuring RFID blocking technology, magnetic clasp closure, and multiple compartments with premium faux leather.",
       "designInspiration": {
         "title": "Design Inspiration – Secure Travel",
-        "content": "The Eoehro Passport Holder is designed for modern travelers who value security and organization. The deep Espresso Brown color reflects elegance and professionalism.",
+        "content": "The Passport Wallet is designed for modern travelers who value security and organization. The deep Espresso Brown color reflects elegance and professionalism.",
         "perfectFor": [
           "Frequent travelers",
           "Security-conscious individuals",
@@ -3150,7 +3262,7 @@
         "tagline": "Travel with peace of mind in sophisticated Espresso Brown."
       },
       "whyChoose": {
-        "title": "Why Choose Eoehro Passport Holder?",
+        "title": "Why Choose Passport Wallet?",
         "intro": "Premium quality meets smart design. This passport holder offers the perfect balance of security, functionality, and style for the modern traveler.",
         "features": [
           { "title": "RFID Blocking Protection", "desc": "Built-in shielding prevents unauthorized scanning of your passport and cards." },
@@ -3171,8 +3283,8 @@
         ]
       },
       "about": {
-        "title": "About Eoehro",
-        "content": "Eoehro creates premium travel accessories that combine security, organization, and style. Each product is designed with the modern traveler in mind."
+        "title": "About Passport Wallet",
+        "content": "Premium travel accessories with premium travel accessories that combine security, organization, and style. Each product is designed with the modern traveler in mind."
       },
       "sizeGuide": {
         "title": "Product Dimensions",
@@ -3187,16 +3299,16 @@
       },
       "cta": {
         "title": "Upgrade Your Travel Organization",
-        "content": "Order your Eoehro Passport Holder today and travel with confidence, security, and style."
+        "content": "Order your Passport Wallet today and travel with confidence, security, and style."
       }
     },
     "eoehro-passport-holder-honey": {
-      "title": "Eoehro Passport Holder – Honey Brown | Premium RFID-Protected Travel Wallet",
+      "title": "Passport Wallet – Honey Brown | Premium RFID-Protected Travel Wallet",
       "headline": "Travel secure. Stay organized. Carry with confidence.",
-      "intro": "The Eoehro Passport Holder in warm Honey Brown is a premium travel accessory designed to keep your passport, vaccine card, credit cards, and travel documents organized and protected. Featuring RFID blocking technology, magnetic clasp closure, and multiple compartments with premium faux leather.",
+      "intro": "The Passport Wallet in warm Honey Brown is a premium travel accessory designed to keep your passport, vaccine card, credit cards, and travel documents organized and protected. Featuring RFID blocking technology, magnetic clasp closure, and multiple compartments with premium faux leather.",
       "designInspiration": {
         "title": "Design Inspiration – Secure Travel",
-        "content": "The Eoehro Passport Holder is designed for modern travelers who value security and organization. The warm Honey Brown color adds a touch of natural elegance.",
+        "content": "The Passport Wallet is designed for modern travelers who value security and organization. The warm Honey Brown color adds a touch of natural elegance.",
         "perfectFor": [
           "Frequent travelers",
           "Security-conscious individuals",
@@ -3206,7 +3318,7 @@
         "tagline": "Travel with peace of mind in warm Honey Brown."
       },
       "whyChoose": {
-        "title": "Why Choose Eoehro Passport Holder?",
+        "title": "Why Choose Passport Wallet?",
         "intro": "Premium quality meets smart design. This passport holder offers the perfect balance of security, functionality, and style for the modern traveler.",
         "features": [
           { "title": "RFID Blocking Protection", "desc": "Built-in shielding prevents unauthorized scanning of your passport and cards." },
@@ -3227,8 +3339,8 @@
         ]
       },
       "about": {
-        "title": "About Eoehro",
-        "content": "Eoehro creates premium travel accessories that combine security, organization, and style. Each product is designed with the modern traveler in mind."
+        "title": "About Passport Wallet",
+        "content": "Premium travel accessories with premium travel accessories that combine security, organization, and style. Each product is designed with the modern traveler in mind."
       },
       "sizeGuide": {
         "title": "Product Dimensions",
@@ -3243,13 +3355,13 @@
       },
       "cta": {
         "title": "Upgrade Your Travel Organization",
-        "content": "Order your Eoehro Passport Holder today and travel with confidence, security, and style."
+        "content": "Order your Passport Wallet today and travel with confidence, security, and style."
       }
     },
     "packonat-black": {
       "title": "PackOnat Packing Folder – Black | Premium Smart Packing Cube",
       "headline": "Pack smart. Travel easy. Carry everything.",
-      "intro": "The PackOnat Packing Folder in classic Black is your ultimate travel companion for organized luggage. With smart organization compartments, durable construction, and a sleek modern design, this packing folder keeps your clothes and essentials secure and neatly organized. Perfect for maximizing luggage space.",
+      "intro": "Upgrade your travel experience with the PackOnat Garment Folder by natOnat, designed to keep your clothes perfectly folded, organized, and wrinkle-free wherever you go. Whether you're traveling for business or leisure, PackOnat ensures your suits, shirts, dresses, and outfits stay flat and ready to wear straight out of your luggage.",
       "designInspiration": {
         "title": "Design Inspiration – PackOnat",
         "content": "The PackOnat packing folder is designed for modern travelers who need both style and functionality. Every compartment and pocket is thoughtfully placed for maximum convenience.",
@@ -3305,7 +3417,7 @@
     "packonat-green": {
       "title": "PackOnat Packing Folder – Green | Premium Smart Packing Cube",
       "headline": "Pack smart. Travel easy. Carry everything.",
-      "intro": "The PackOnat Packing Folder in Forest Green is your ultimate travel companion for organized luggage. With smart organization compartments, durable construction, and a sleek modern design, this packing folder keeps your clothes and essentials secure and neatly organized. Perfect for maximizing luggage space.",
+      "intro": "Upgrade your travel experience with the PackOnat Garment Folder by natOnat, designed to keep your clothes perfectly folded, organized, and wrinkle-free wherever you go. Whether you're traveling for business or leisure, PackOnat ensures your suits, shirts, dresses, and outfits stay flat and ready to wear straight out of your luggage.",
       "designInspiration": {
         "title": "Design Inspiration – PackOnat",
         "content": "The PackOnat packing folder is designed for modern travelers who need both style and functionality. The green color adds a refreshing natural touch to your travel gear.",
@@ -3361,10 +3473,10 @@
     "packonat-red": {
       "title": "PackOnat Packing Folder – Red | Premium Smart Packing Cube",
       "headline": "Pack smart. Travel easy. Carry everything.",
-      "intro": "The PackOnat Packing Folder in Bold Red is your ultimate travel companion for organized luggage. With smart organization compartments, durable construction, and a sleek modern design, this packing folder keeps your clothes and essentials secure and neatly organized. Perfect for maximizing luggage space.",
+      "intro": "Upgrade your travel experience with the PackOnat Garment Folder by natOnat, designed to keep your clothes perfectly folded, organized, and wrinkle-free wherever you go. Whether you're traveling for business or leisure, PackOnat ensures your suits, shirts, dresses, and outfits stay flat and ready to wear straight out of your luggage.",
       "designInspiration": {
         "title": "Design Inspiration – PackOnat",
-        "content": "The PackOnat packing folder is designed for modern travelers who need both style and functionality. The bold red color adds a touch of confidence and distinction.",
+        "content": "The PackOnat packing folder is designed for modern travelers who need both style and functionality. The bold red color makes a confident statement while keeping you organized.",
         "perfectFor": [
           "Daily commuters & travelers",
           "Students & professionals",
