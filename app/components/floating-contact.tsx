@@ -60,7 +60,7 @@ export function FloatingContact() {
       {/* Main Toggle Button */}
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative w-14 h-14 rounded-full bg-[#0F1A26] flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-105"
+        className="relative w-14 h-14 rounded-full bg-green-500 flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-105"
         whileTap={{ scale: 0.95 }}
       >
         <AnimatePresence mode="wait">
