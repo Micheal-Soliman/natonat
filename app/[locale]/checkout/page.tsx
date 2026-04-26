@@ -76,6 +76,9 @@ function CheckoutContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [orderId, setOrderId] = useState<string>("");
+  const [trackingNumber, setTrackingNumber] = useState<string>("");
+  const [aramexStatus, setAramexStatus] = useState<"idle"|"pending"|"success"|"failed"|"skipped">("idle");
+  const [aramexError, setAramexError] = useState<string>("");
   const [submitError, setSubmitError] = useState<string>("");
   const [mounted, setMounted] = useState(false);
 
@@ -237,15 +240,78 @@ function CheckoutContent() {
       }
     }
 
-    // Simulate order processing
-    await new Promise(resolve => setTimeout(() => {
-      setIsSubmitting(false);
-      setOrderId(generateOrderId());
-      setIsSuccess(true);
-      clearCart(); // Clear cart after successful order
-      setBuyNowItem(null); // Clear buyNowItem after successful order
-    }, 1500));
+    // --- Delivery Order Flow ---
+    // Step 1: Create Aramex shipment FIRST (before showing success)
+    if (deliveryMethod === "delivery") {
+      setAramexStatus("pending");
+      console.log("[Checkout] Creating Aramex shipment for order:", orderRef);
+      
+      try {
+        const shipmentPayload = {
+          orderRef,
+          customer: {
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            phone: formData.phone,
+            email: formData.email,
+            address: formData.address,
+            city: formData.city,
+          },
+          items: checkoutItems.map((item) => ({
+            name: item.name,
+            quantity: item.quantity,
+          })),
+          totalValue: total,
+          cod: paymentMethod === "cod",
+          codAmount: paymentMethod === "cod" ? total : 0,
+        };
 
+        const shipmentRes = await fetch("/api/aramex/shipment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(shipmentPayload),
+        });
+
+        const shipmentData = await shipmentRes.json();
+        console.log("[Checkout] Shipment response:", shipmentData);
+        
+        if (shipmentData.success) {
+          setTrackingNumber(shipmentData.trackingNumber);
+          setAramexStatus("success");
+          console.log("[Aramex] Shipment created! Tracking:", shipmentData.trackingNumber);
+          
+          // Update order with tracking info
+          try {
+            await fetch("/api/orders/log", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                source: "aramex_shipment",
+                order_ref: orderRef,
+                aramex: {
+                  trackingNumber: shipmentData.trackingNumber,
+                  labelUrl: shipmentData.labelUrl,
+                  guid: shipmentData.guid,
+                },
+                updated_at: new Date().toISOString(),
+              }),
+            });
+          } catch {}
+        } else {
+          setAramexStatus("failed");
+          setAramexError(shipmentData.details || shipmentData.error || "Unknown error");
+          console.error("[Aramex] Failed:", shipmentData.error, shipmentData.details);
+        }
+      } catch (err) {
+        setAramexStatus("failed");
+        setAramexError(err instanceof Error ? err.message : "Network error");
+        console.error("[Aramex] Error:", err);
+      }
+    } else {
+      setAramexStatus("skipped");
+    }
+
+    // Step 2: Log order
     const shippingRuleCOD = deliveryMethod === "pickup" 
       ? "pickup_free" 
       : checkoutSubtotal > 1000 
@@ -298,9 +364,14 @@ function CheckoutContent() {
           created_at: new Date().toISOString(),
         }),
       });
-    } catch {
-      // ignore logging failures
-    }
+    } catch {}
+
+    // Step 3: Show success page
+    setIsSubmitting(false);
+    setOrderId(generateOrderId());
+    setIsSuccess(true);
+    clearCart();
+    setBuyNowItem(null);
   };
 
   // Shipping: 75 EGP for Cairo, Giza & Alexandria, 100 EGP for other cities, free for orders > 1000, pickup = 0
@@ -330,7 +401,52 @@ function CheckoutContent() {
               </p>
               <div className="bg-white rounded-2xl p-6 border border-[#0F1A26]/5 mb-6">
                 <p className="text-sm text-[#0F1A26]/60 mb-1">{t('success.orderNumber')}</p>
-                <p className="text-lg font-semibold text-[#0F1A26]">#NAT-{orderId}</p>
+                <p className="text-lg font-semibold text-[#0F1A26] mb-4">#NAT-{orderId}</p>
+                
+                {/* Aramex Status Indicator */}
+                {aramexStatus !== "idle" && aramexStatus !== "skipped" && (
+                  <div className={`border-t border-[#0F1A26]/10 pt-4 ${
+                    aramexStatus === "success" ? "" : aramexStatus === "pending" ? "animate-pulse" : ""
+                  }`}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                        aramexStatus === "success" 
+                          ? "bg-green-100 text-green-600" 
+                          : aramexStatus === "pending" 
+                            ? "bg-[#EEBC3F]/20 text-[#EEBC3F]" 
+                            : "bg-red-100 text-red-600"
+                      }`}>
+                        {aramexStatus === "success" ? "\u2713" : aramexStatus === "pending" ? "\u2022" : "\u2717"}
+                      </div>
+                      <p className={`text-sm font-semibold ${
+                        aramexStatus === "success" 
+                          ? "text-green-600" 
+                          : aramexStatus === "pending" 
+                            ? "text-[#EEBC3F]" 
+                            : "text-red-600"
+                      }`}>
+                        {aramexStatus === "success" 
+                          ? "Aramex Shipment Created" 
+                          : aramexStatus === "pending" 
+                            ? "Creating Aramex Shipment..." 
+                            : "Aramex Shipment Failed"
+                        }
+                      </p>
+                    </div>
+                    {trackingNumber && (
+                      <>
+                        <p className="text-sm text-[#0F1A26]/60 mb-0.5">Tracking Number - \u0631\u0642\u0645 \u0627\u0644\u062A\u062A\u0628\u0639</p>
+                        <p className="text-lg font-semibold text-[#EEBC3F]">{trackingNumber}</p>
+                      </>
+                    )}
+                    {aramexStatus === "failed" && aramexError && (
+                      <p className="text-xs text-red-500 mt-1">{aramexError}</p>
+                    )}
+                    {aramexStatus === "failed" && (
+                      <p className="text-xs text-[#0F1A26]/40 mt-1">Your order is confirmed. We\u2019ll create the shipment manually.</p>
+                    )}
+                  </div>
+                )}
               </div>
               <Link href="/shop">
                 <Button className="bg-[#0F1A26] text-white hover:bg-[#EEBC3F] hover:text-[#0F1A26] rounded-full px-8 h-12 font-semibold transition-all duration-300">

@@ -47,5 +47,66 @@ export async function POST(req: Request) {
     }
   }
 
+  // Create Aramex shipment for successful card payments with delivery
+  if (payload?.success && paymentDetails.special_reference) {
+    try {
+      // Retrieve order details from order log
+      const orderLogRes = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || ""}/api/orders/log?order_ref=${paymentDetails.special_reference}`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+      
+      if (orderLogRes.ok) {
+        const orderData = await orderLogRes.json();
+        
+        // Only create shipment for delivery orders (not pickup)
+        if (orderData?.delivery_method === "delivery" && orderData?.customer) {
+          const shipmentRes = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || ""}/api/aramex/shipment`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              orderRef: paymentDetails.special_reference,
+              customer: orderData.customer,
+              items: orderData.items?.map((item: { name: string; quantity: number }) => ({
+                name: item.name,
+                quantity: item.quantity,
+              })) || [],
+              totalValue: (paymentDetails.amount_cents || 0) / 100,
+              cod: false,
+            }),
+          });
+
+          const shipmentData = await shipmentRes.json();
+          
+          if (shipmentData.success) {
+            console.log("[Webhook] Aramex shipment created:", shipmentData.trackingNumber);
+            
+            // Update order with tracking info
+            await fetch(`${process.env.NEXT_PUBLIC_APP_URL || ""}/api/orders/log`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                source: "paymob_webhook_aramex",
+                order_ref: paymentDetails.special_reference,
+                aramex: {
+                  trackingNumber: shipmentData.trackingNumber,
+                  labelUrl: shipmentData.labelUrl,
+                  guid: shipmentData.guid,
+                },
+                payment: paymentDetails,
+                updated_at: new Date().toISOString(),
+              }),
+            });
+          } else {
+            console.error("[Webhook] Failed to create Aramex shipment:", shipmentData.error);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("[Webhook] Aramex shipment creation error:", err);
+      // Don't block webhook response if shipment fails
+    }
+  }
+
   return NextResponse.json({ received: true, payment_status: paymentDetails.payment_status });
 }

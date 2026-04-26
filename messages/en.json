@@ -3527,5 +3527,10 @@
         "content": "Order your PackOnat packing folder today and travel with everything you need, perfectly organized."
       }
     }
+  },
+  "components": {
+    "floatingContact": {
+      "label": "Need help?"
+    }
   }
 }

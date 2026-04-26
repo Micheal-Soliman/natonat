@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# sensitive credentials
+**/credentials*.txt
+**/JSON for postman/
+**/postman/
+**/testing credentials*
+**/api credentials*

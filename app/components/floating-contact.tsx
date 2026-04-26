@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from 'next-intl';
 
 export function FloatingContact() {
-  const t = useTranslations('faq');
+  const t = useTranslations('components.floatingContact');
   const [isOpen, setIsOpen] = useState(false);
 
   const contacts = [
@@ -108,7 +108,7 @@ export function FloatingContact() {
             exit={{ opacity: 0, x: 20 }}
             className="absolute bottom-16 right-0 bg-white px-4 py-2 rounded-lg shadow-lg whitespace-nowrap"
           >
-            <p className="text-sm font-medium text-[#0F1A26]">{t('floatingLabel')}</p>
+            <p className="text-sm font-medium text-[#0F1A26]">{t('label')}</p>
           </motion.div>
         )}
       </AnimatePresence>
