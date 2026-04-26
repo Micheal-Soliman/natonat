@@ -15,8 +15,8 @@ export function FloatingContact() {
       label: "واتساب",
       icon: MessageCircle,
       href: "https://wa.me/201070004227",
-      color: "bg-green-500",
-      hoverColor: "hover:bg-green-600",
+      color: "bg-[#0F1A26]",
+      hoverColor: "hover:bg-[#1a2938]",
     },
     {
       id: "phone",
@@ -62,7 +62,7 @@ export function FloatingContact() {
       {/* Main Toggle Button */}
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative w-14 h-14 rounded-full bg-green-500 flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-105"
+        className="relative w-14 h-14 rounded-full bg-[#0F1A26] flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-105"
         whileTap={{ scale: 0.95 }}
       >
         <AnimatePresence mode="wait">
@@ -94,7 +94,7 @@ export function FloatingContact() {
         {!isOpen && (
           <>
             <span className="absolute inset-0 rounded-full bg-[#EEBC3F] animate-ping opacity-20" />
-            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white" />
+            <span className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white" />
           </>
         )}
       </motion.button>
