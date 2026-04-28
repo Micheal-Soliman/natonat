@@ -969,11 +969,10 @@ export const products: Product[] = [
     originalPrice: 1947,
     type: "Bundle",
     tag: "Best Value",
-    image: "/octopus%20photo/Wildfern/1.png",
+    image: "/bundles/Three%20Sizes%20Bundle/6o.png",
     images: [
-      "/octopus%20photo/Wildfern/1.png",
-      "/octopus%20photo/Anara/1.png",
-      "/octopus%20photo/Ascend/1.png"
+      "/bundles/Three%20Sizes%20Bundle/6o.png",
+      "/bundles/Three%20Sizes%20Bundle/7o.png"
     ],
     description: "Complete set with S, M, and L size covers for all your luggage",
     isBundle: true,
@@ -996,10 +995,10 @@ export const products: Product[] = [
     originalPrice: 2012,
     type: "Bundle",
     tag: "Popular",
-    image: "/packOnat/Black/1.png",
+    image: "/bundles/All%20Set%20Bundel/1%20o.png",
     images: [
-      "/packOnat/Black/1.png",
-      "/octopus%20photo/ACCORD/1.png"
+      "/bundles/All%20Set%20Bundel/1%20o.png",
+      "/bundles/All%20Set%20Bundel/2o.png"
     ],
     description: "Everything you need - luggage cover, packing folder, and passport wallet",
     isBundle: true,
@@ -1022,10 +1021,10 @@ export const products: Product[] = [
     originalPrice: 1448,
     type: "Bundle",
     tag: null,
-    image: "/packOnat/Black/1.png",
+    image: "/bundles/PackOnat%20%2B%20Cover/3o.png",
     images: [
-      "/packOnat/Black/1.png",
-      "/octopus%20photo/ACCORD/1.png"
+      "/bundles/PackOnat%20%2B%20Cover/3o.png",
+      "/bundles/PackOnat%20%2B%20Cover/4o.png"
     ],
     description: "Travel in style with packing folder and matching cover",
     isBundle: true,
@@ -1047,10 +1046,10 @@ export const products: Product[] = [
     originalPrice: 2117,
     type: "Bundle",
     tag: "Best Seller",
-    image: "/packOnat/Black/1.png",
+    image: "/bundles/2%20Covers%20%2B%20packOnat/5o.png",
     images: [
-      "/packOnat/Black/1.png",
-      "/octopus%20photo/Anara/1.png"
+      "/bundles/2%20Covers%20%2B%20packOnat/5o.png",
+      "/bundles/2%20Covers%20%2B%20packOnat/8o.png"
     ],
     description: "Perfect for couples - two covers and a shared packing folder",
     isBundle: true,
@@ -1073,10 +1072,10 @@ export const products: Product[] = [
     originalPrice: 1598,
     type: "Bundle",
     tag: null,
-    image: "/packOnat/Black/1.png",
+    image: "/bundles/2%20PackOnat%20Bundle/10o.png",
     images: [
-      "/packOnat/Black/1.png",
-      "/packOnat/Green/1.png"
+      "/bundles/2%20PackOnat%20Bundle/10o.png",
+      "/bundles/2%20PackOnat%20Bundle/10o.png",
     ],
     description: "Double the style - two PackOnat packing folders",
     isBundle: true,
@@ -1098,10 +1097,10 @@ export const products: Product[] = [
     originalPrice: 1173,
     type: "Bundle",
     tag: "Essential",
-    image: "/octopus%20photo/Anara/1.png",
+    image: "/bundles/Passport%20_%20cover/9o.png",
     images: [
-      "/octopus%20photo/Anara/1.png",
-      "/octopus%20photo/ACCORD/1.png"
+      "/bundles/Passport%20_%20cover/9o.png",
+      "/bundles/Passport%20_%20cover/9o.png"
     ],
     description: "Essential travel combo - passport wallet and luggage cover",
     isBundle: true,

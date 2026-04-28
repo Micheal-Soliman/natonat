@@ -44,6 +44,13 @@ export function ShopMegaMenu({ scrolled }: ShopMegaMenuProps) {
       href: "/shop?category=packonat",
       image: "/packOnat/Black/1.png",
     },
+    {
+      id: "bundles",
+      name: "Bundles",
+      description: "Best bundle deals",
+      href: "/shop?category=bundles",
+      image: "/bundles/All%20Set%20Bundel/1%20o.png",
+    },
   ];
 
   const isActive = (href: string) => {
@@ -126,7 +133,7 @@ export function ShopMegaMenu({ scrolled }: ShopMegaMenuProps) {
                 </p>
                 <h3 className={`text-lg font-medium mt-0.5 ${scrolled ? 'text-white' : 'text-[#0F1A26]'}`}>{tc('title')}</h3>
               </div>
-              <span className={`text-sm font-medium ${scrolled ? 'text-white/30' : 'text-[#0F1A26]/30'}`}>{shopCategories.length - 1} {t('categories') || 'categories'}</span>
+              <span className={`text-sm font-medium ${scrolled ? 'text-white/30' : 'text-[#0F1A26]/30'}`}>{shopCategories.length} {t('categories') || 'categories'}</span>
             </div>
           </div>
 

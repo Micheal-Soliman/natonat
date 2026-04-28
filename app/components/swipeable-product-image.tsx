@@ -18,6 +18,7 @@ export function SwipeableProductImage({ product }: SwipeableProductImageProps) {
 
   const images = product.images || [product.image];
   const hasMultipleImages = images.length > 1;
+  const hoverImage = images[3] || images[1];
 
   useEffect(() => {
     setIsMounted(true);
@@ -119,10 +120,10 @@ export function SwipeableProductImage({ product }: SwipeableProductImageProps) {
       </div>
 
       {/* Desktop Hover - cover */}
-      {images[3] && (
+      {hoverImage && (
         <div className="hidden md:block absolute inset-0 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
           <Image 
-            src={images[3]} 
+            src={hoverImage} 
             alt={`${product.name} - hover view`}
             fill
             sizes="33vw"
