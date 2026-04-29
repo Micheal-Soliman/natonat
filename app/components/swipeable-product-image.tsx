@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import type { Product } from "@/lib/products";
 
 interface SwipeableProductImageProps {
@@ -9,6 +10,7 @@ interface SwipeableProductImageProps {
 }
 
 export function SwipeableProductImage({ product }: SwipeableProductImageProps) {
+  const t = useTranslations('bestSellers');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [startX, setStartX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -141,7 +143,13 @@ export function SwipeableProductImage({ product }: SwipeableProductImageProps) {
           product.tag === 'RFID' ? 'bg-[#4B1F1F] text-[#F1EBE3]' :
           'bg-white/90 text-[#0F1A26]'
         }`}>
-          {product.tag}
+          {product.tag === 'Best Seller' ? t('bestSeller') :
+            product.tag === 'Best Value' ? t('bestValue') :
+              product.tag === 'Popular' ? t('popular') :
+                product.tag === 'Bundle' ? t('bundle') :
+                  product.tag === 'Essential' ? t('essential') :
+                    product.tag === 'New' ? t('new') :
+                      product.tag === 'Limited' ? t('limited') : product.tag}
         </span>
       )}
       

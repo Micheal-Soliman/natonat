@@ -210,8 +210,12 @@ export function BestSellers() {
                             'bg-[#EEBC3F]/20 text-[#EEBC3F] border border-[#EEBC3F]/30'
                       }`}>
                       {product.tag === 'Best Seller' ? t('bestSeller') :
-                        product.tag === 'New' ? t('new') :
-                          product.tag === 'Limited' ? t('limited') : product.tag}
+                        product.tag === 'Best Value' ? t('bestValue') :
+                          product.tag === 'Popular' ? t('popular') :
+                            product.tag === 'Bundle' ? t('bundle') :
+                              product.tag === 'Essential' ? t('essential') :
+                                product.tag === 'New' ? t('new') :
+                                  product.tag === 'Limited' ? t('limited') : product.tag}
                     </span>
                     )}
                   </div>

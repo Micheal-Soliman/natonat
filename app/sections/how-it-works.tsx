@@ -10,6 +10,7 @@ export function HowItWorks() {
   const t = useTranslations('howItWorks');
   const ts = useTranslations('howItWorks.steps');
   const tg = useTranslations('howItWorks.sizeGuide');
+  const tc = useTranslations('howItWorks.calculator');
 
   const steps = [
     {
@@ -86,10 +87,10 @@ export function HowItWorks() {
             {/* Size Guide Grid */}
             <div className="grid grid-cols-2 gap-3">
               {[
-                { size: "S", cm: "45-53", inch: "18-21", type: tg('sizes.s.type') },
-                { size: "M", cm: "55-63", inch: "22-25", type: tg('sizes.m.type') },
-                { size: "L", cm: "65-70", inch: "26-28", type: tg('sizes.l.type') },
-                { size: "XL", cm: "72-81", inch: "29-32", type: tg('sizes.xl.type') },
+                { size: "S", cm: "45–53", inch: "18–21", type: tg('sizes.s.type') },
+                { size: "M", cm: "55–63", inch: "22–25", type: tg('sizes.m.type') },
+                { size: "L", cm: "65–70", inch: "26–28", type: tg('sizes.l.type') },
+                { size: "XL", cm: "72–81", inch: "29–32", type: tg('sizes.xl.type') },
               ].map((item) => (
                 <div
                   key={item.size}
@@ -104,15 +105,15 @@ export function HowItWorks() {
                   {/* Main Measurement */}
                   <div className="mt-2">
                     <p className="text-[#EEBC3F] font-bold text-lg">
-                      {item.cm} <span className="text-white/60 text-sm font-normal">cm</span>
+                      {item.cm} {tc('cm')}
                     </p>
-                    <p className="text-white/50 text-xs">{item.inch}" inches</p>
+                    <p className="text-white/50 text-xs">{item.inch} {tc('inches')}</p>
                   </div>
 
                   {/* Height Only - Without Wheels */}
                   <div className="mt-3 pt-3 border-t border-white/20">
                     <p className="text-white/60 text-xs">{tg('heightOnly')}</p>
-                    <p className="text-white/80 text-xs font-medium">({item.cm} cm)</p>
+                    <p className="text-white/80 text-xs font-medium">({item.cm} {tc('cm')})</p>
                   </div>
                 </div>
               ))}

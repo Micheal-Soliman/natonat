@@ -20,10 +20,10 @@ export function SizeModal({ isOpen, onClose, onConfirm, productName }: SizeModal
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
 
   const sizes = [
-    { id: "s", label: tg('sizes.s.label'), cm: "45-53", inch: "18-21", type: tg('sizes.s.type'), icon: "/s.png" },
-    { id: "m", label: tg('sizes.m.label'), cm: "55-63", inch: "22-25", type: tg('sizes.m.type'), icon: "/m.png" },
-    { id: "l", label: tg('sizes.l.label'), cm: "65-70", inch: "26-28", type: tg('sizes.l.type'), icon: "/l.png" },
-    { id: "xl", label: tg('sizes.xl.label'), cm: "72-81", inch: "29-32", type: tg('sizes.xl.type'), icon: "/xl.png" },
+    { id: "s", label: tg('sizes.s.label'), cm: "45–53", inch: "18–21", type: tg('sizes.s.type'), icon: "/s.png" },
+    { id: "m", label: tg('sizes.m.label'), cm: "55–63", inch: "22–25", type: tg('sizes.m.type'), icon: "/m.png" },
+    { id: "l", label: tg('sizes.l.label'), cm: "65–70", inch: "26–28", type: tg('sizes.l.type'), icon: "/l.png" },
+    { id: "xl", label: tg('sizes.xl.label'), cm: "72–81", inch: "29–32", type: tg('sizes.xl.type'), icon: "/xl.png" },
   ];
 
   if (!isOpen) return null;

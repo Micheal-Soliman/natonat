@@ -277,10 +277,10 @@ function HowItWorksContent() {
               
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { size: "S", cm: "45-53", inch: "18-21", type: t('sizes.s.type') },
-                  { size: "M", cm: "55-63", inch: "22-25", type: t('sizes.m.type') },
-                  { size: "L", cm: "65-70", inch: "26-28", type: t('sizes.l.type') },
-                  { size: "XL", cm: "72-81", inch: "29-32", type: t('sizes.xl.type') },
+                  { size: "S", cm: "45–53", inch: "18–21", type: t('sizes.s.type') },
+                  { size: "M", cm: "55–63", inch: "22–25", type: t('sizes.m.type') },
+                  { size: "L", cm: "65–70", inch: "26–28", type: t('sizes.l.type') },
+                  { size: "XL", cm: "72–81", inch: "29–32", type: t('sizes.xl.type') },
                 ].map((item) => (
                   <div
                     key={item.size}
@@ -295,15 +295,15 @@ function HowItWorksContent() {
                     {/* Main Measurement */}
                     <div className="mt-2">
                       <p className="text-[#EEBC3F] font-bold text-lg">
-                        {item.cm} <span className="text-white/60 text-sm font-normal">cm</span>
+                        {item.cm} <span className="text-white/60 text-sm font-normal">{t('calculator.cm')}</span>
                       </p>
-                      <p className="text-white/50 text-xs">{item.inch}" inches</p>
+                      <p className="text-white/50 text-xs">{item.inch} {t('calculator.inches')}</p>
                     </div>
 
                     {/* Height Only - Without Wheels */}
                     <div className="mt-3 pt-3 border-t border-white/20">
                       <p className="text-white/60 text-xs">{t('sizeGuide.heightOnly')}</p>
-                      <p className="text-white/80 text-xs font-medium">({item.cm} cm)</p>
+                      <p className="text-white/80 text-xs font-medium">({item.cm} {t('calculator.cm')})</p>
                     </div>
                   </div>
                 ))}

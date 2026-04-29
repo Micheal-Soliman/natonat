@@ -46,8 +46,8 @@ export function ShopMegaMenu({ scrolled }: ShopMegaMenuProps) {
     },
     {
       id: "bundles",
-      name: "Bundles",
-      description: "Best bundle deals",
+      name: t('travelSets'),
+      description: t('travelSetsDesc'),
       href: "/shop?category=bundles",
       image: "/bundles/All%20Set%20Bundel/1%20o.png",
     },
@@ -133,7 +133,7 @@ export function ShopMegaMenu({ scrolled }: ShopMegaMenuProps) {
                 </p>
                 <h3 className={`text-lg font-medium mt-0.5 ${scrolled ? 'text-white' : 'text-[#0F1A26]'}`}>{tc('title')}</h3>
               </div>
-              <span className={`text-sm font-medium ${scrolled ? 'text-white/30' : 'text-[#0F1A26]/30'}`}>{shopCategories.length} {t('categories') || 'categories'}</span>
+              <span className={`text-sm font-medium ${scrolled ? 'text-white/30' : 'text-[#0F1A26]/30'}`}>{t('categoriesCount', { count: shopCategories.length })}</span>
             </div>
           </div>
 
@@ -211,11 +211,11 @@ export function ShopMegaMenu({ scrolled }: ShopMegaMenuProps) {
                   <ArrowRight className="w-4 h-4 text-[#EEBC3F] group-hover:text-white transition-colors" />
                 </div>
                 <div>
-                  <span className={`font-semibold text-sm ${scrolled ? 'text-white' : 'text-[#0F1A26]'}`}>{t('browseAll') || 'Browse All Products'}</span>
+                  <span className={`font-semibold text-sm ${scrolled ? 'text-white' : 'text-[#0F1A26]'}`}>{t('browseAll')}</span>
                 </div>
               </div>
               <div className={`flex items-center gap-2 transition-colors ${scrolled ? 'text-white/30 group-hover:text-[#EEBC3F]' : 'text-[#0F1A26]/30 group-hover:text-[#EEBC3F]'}`}>
-                <span className="text-xs font-medium">{t('view') || 'View'}</span>
+                <span className="text-xs font-medium">{t('view')}</span>
                 <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
               </div>
             </Link>
