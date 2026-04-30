@@ -360,6 +360,22 @@
       },
       "color": {
         "title": "Color"
+      },
+      "gender": {
+        "title": "Gender",
+        "male": "Male",
+        "female": "Female",
+        "unisex": "Unisex"
+      },
+      "collection": {
+        "title": "Collection",
+        "sports": "Sports",
+        "pharaoh": "Pharaoh Collection"
+      },
+      "printType": {
+        "title": "Print Type",
+        "plain": "Plain Models",
+        "printed": "Printed Models"
       }
     },
     "results": {

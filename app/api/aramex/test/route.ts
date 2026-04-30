@@ -1,16 +1,18 @@
 import { NextResponse } from "next/server";
-import { getAramexCredentials, calculateRate } from "@/lib/aramex";
+import { getAramexCredentials, calculateRate, getAramexEnv, getAramexHost } from "@/lib/aramex";
 
 export async function GET() {
+  const env = getAramexEnv();
+  if (env === "prod") {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
   const diagnostics: Record<string, any> = {};
 
   const credentials = getAramexCredentials();
-  const env = process.env.ARAMEX_ENV || "dev";
   diagnostics.config = {
     environment: env,
-    host: env === "prod" ? "ws.aramex.net" : "ws.dev.aramex.net",
-    username: credentials.UserName,
-    account: credentials.AccountNumber,
+    host: getAramexHost(),
     entity: credentials.AccountEntity,
     countryCode: credentials.AccountCountryCode,
     source: credentials.Source,
@@ -110,14 +112,12 @@ export async function GET() {
   }
   diagnostics.rateTest = rateTest;
 
-  const currentEnvOk = env === "prod"
-    ? diagnostics.endpoints.prod_rate?.reachable && !diagnostics.endpoints.prod_rate?.hasAuthError
-    : diagnostics.endpoints.dev_rate?.reachable;
+  const currentEnvOk = diagnostics.endpoints.dev_rate?.reachable;
 
   return NextResponse.json({
     success: !!currentEnvOk,
     message: !currentEnvOk
-      ? `Aramex ${env} environment not working. ${env === "dev" ? "ws.dev.aramex.net unreachable - use VPN or switch to prod with ARAMEX_ENV=prod" : "Credentials rejected (ERR75) - need valid prod credentials"}`
+      ? "Aramex dev environment not working. ws.dev.aramex.net unreachable - use VPN or switch to prod with ARAMEX_ENV=prod"
       : "Aramex integration working",
     diagnostics,
   }, { status: currentEnvOk ? 200 : 502 });

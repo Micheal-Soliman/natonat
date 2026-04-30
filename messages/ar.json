@@ -392,6 +392,22 @@
       },
       "color": {
         "title": "اللون"
+      },
+      "gender": {
+        "title": "النوع",
+        "male": "رجالي",
+        "female": "حريمي",
+        "unisex": "للجنسين"
+      },
+      "collection": {
+        "title": "المجموعة",
+        "sports": "رياضي",
+        "pharaoh": "مجموعة الفراعنة"
+      },
+      "printType": {
+        "title": "نوع الطباعة",
+        "plain": "موديلات سادة",
+        "printed": "موديلات مطبوعة"
       }
     },
     "results": {

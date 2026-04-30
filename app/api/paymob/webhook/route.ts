@@ -59,8 +59,11 @@ export async function POST(req: Request) {
       if (orderLogRes.ok) {
         const orderData = await orderLogRes.json();
         
-        // Only create shipment for delivery orders (not pickup)
-        if (orderData?.delivery_method === "delivery" && orderData?.customer) {
+        // --- PREVENT DUPLICATES ---
+        // Only create shipment if it's a delivery order AND we haven't already created a tracking number for it
+        if (orderData?.delivery_method === "delivery" && orderData?.customer && !orderData?.aramex?.trackingNumber) {
+          console.log(`[Webhook] Proceeding with Aramex shipment for order: ${paymentDetails.special_reference}`);
+          
           const shipmentRes = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || ""}/api/aramex/shipment`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -88,6 +91,8 @@ export async function POST(req: Request) {
               body: JSON.stringify({
                 source: "paymob_webhook_aramex",
                 order_ref: paymentDetails.special_reference,
+                status: "shipped", // Update overall status
+                payment_status: "Paid", // Ensure payment status is updated
                 aramex: {
                   trackingNumber: shipmentData.trackingNumber,
                   labelUrl: shipmentData.labelUrl,
@@ -100,6 +105,8 @@ export async function POST(req: Request) {
           } else {
             console.error("[Webhook] Failed to create Aramex shipment:", shipmentData.error);
           }
+        } else if (orderData?.aramex?.trackingNumber) {
+          console.log(`[Webhook] Shipment already exists for order ${paymentDetails.special_reference}. Skipping Aramex.`);
         }
       }
     } catch (err) {

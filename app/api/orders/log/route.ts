@@ -49,18 +49,40 @@ export async function POST(req: Request) {
   // Store in memory for retrieval by webhook
   const orderRef = body.order_ref as string | undefined;
   if (orderRef) {
-    // Merge with existing order data if present
-    const existing = orderStore.get(orderRef);
-    if (existing) {
-      orderStore.set(orderRef, { ...existing, ...body });
-    } else {
-      orderStore.set(orderRef, body);
-    }
+    const existing = orderStore.get(orderRef) as any;
     
-    // Clean up old orders after 24 hours
+    // Build status history
+    const newStatus = (body.status || existing?.status || "confirmed") as string;
+    const historyEntry = {
+      status: newStatus,
+      timestamp: new Date().toISOString(),
+      source: body.source || "manual"
+    };
+
+    const history = existing?.history ? [...existing.history, historyEntry] : [historyEntry];
+    
+    // Add Aramex tracking link if tracking number exists
+    const trackingNumber = (body.aramex as any)?.trackingNumber || (existing?.aramex as any)?.trackingNumber;
+    const trackingLink = trackingNumber 
+      ? `https://www.aramex.com/eg/ar/track/results?mode=0&ShipmentNumber=${trackingNumber}`
+      : "";
+
+    const updatedOrder = { 
+      ...existing, 
+      ...body, 
+      history,
+      tracking_link: trackingLink 
+    };
+
+    orderStore.set(orderRef, updatedOrder);
+    
+    // Forward the ENTIRE updated order to Google Sheets
+    body = updatedOrder;
+
+    // Clean up old orders after 48 hours (extended to cover weekend payments)
     setTimeout(() => {
       orderStore.delete(orderRef);
-    }, 24 * 60 * 60 * 1000);
+    }, 48 * 60 * 60 * 1000);
   }
 
   const res = await fetch(webhookUrl, {

@@ -1,8 +1,20 @@
 // Aramex API Integration
 // API Documentation: https://www.aramex.com/developers
 
-const ARAMEX_ENV = process.env.ARAMEX_ENV || "dev";
-const ARAMEX_HOST = ARAMEX_ENV === "prod" ? "ws.aramex.net" : "ws.dev.aramex.net";
+type AramexEnv = "prod" | "dev";
+
+export function getAramexEnv(): AramexEnv {
+  const raw = (process.env.ARAMEX_ENV || "dev").toLowerCase();
+  if (raw === "prod" || raw === "production") return "prod";
+  return "dev";
+}
+
+export function getAramexHost(): string {
+  return getAramexEnv() === "prod" ? "ws.aramex.net" : "ws.dev.aramex.net";
+}
+
+const ARAMEX_ENV = getAramexEnv();
+const ARAMEX_HOST = getAramexHost();
 
 const ARAMEX_LOCATION_JSON_BASE = `https://${ARAMEX_HOST}/ShippingAPI.V2/Location/Service_1_0.svc/json`;
 const ARAMEX_RATE_JSON_BASE = `https://${ARAMEX_HOST}/ShippingAPI.V2/RateCalculator/Service_1_0.svc/json`;
@@ -165,6 +177,21 @@ export interface AramexShipmentResponse {
 
 // Get credentials from environment
 export function getAramexCredentials(): AramexCredentials {
+  const env = getAramexEnv();
+  const hasAllRequired =
+    !!process.env.ARAMEX_USERNAME &&
+    !!process.env.ARAMEX_PASSWORD &&
+    !!process.env.ARAMEX_ACCOUNT_NUMBER &&
+    !!process.env.ARAMEX_ACCOUNT_PIN &&
+    !!process.env.ARAMEX_ACCOUNT_ENTITY &&
+    !!process.env.ARAMEX_ACCOUNT_COUNTRY_CODE;
+
+  if (env === "prod" && !hasAllRequired) {
+    throw new Error(
+      "Aramex credentials are not configured for production. Set ARAMEX_USERNAME, ARAMEX_PASSWORD, ARAMEX_ACCOUNT_NUMBER, ARAMEX_ACCOUNT_PIN, ARAMEX_ACCOUNT_ENTITY, ARAMEX_ACCOUNT_COUNTRY_CODE (and optionally ARAMEX_VERSION, ARAMEX_SOURCE)."
+    );
+  }
+
   return {
     UserName: process.env.ARAMEX_USERNAME || "testingapi@aramex.com",
     Password: process.env.ARAMEX_PASSWORD || "R123456789$r",
@@ -231,6 +258,11 @@ export async function createShipment(
         AccountingInstrcutions: shipmentData.AccountingInstrcutions,
         Details: {
           ...shipmentData.Details,
+          ChargeableWeight: shipmentData.Details.ChargeableWeight || {
+            Value: shipmentData.Details.ActualWeight.Value,
+            Unit: shipmentData.Details.ActualWeight.Unit,
+          },
+          PaymentOptions: shipmentData.Details.PaymentOptions || "",
           CashOnDeliveryAmount: shipmentData.Details.CashOnDeliveryAmount || null,
           CustomsValueAmount: shipmentData.Details.CustomsValueAmount || null,
         },
@@ -511,6 +543,36 @@ export function mapCityName(cityKey: string): string {
   return CITY_NAME_MAP[cityKey.toLowerCase()] || cityKey;
 }
 
+function getRequiredEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) throw new Error(`Missing required environment variable: ${name}`);
+  return value;
+}
+
+function getShipperConfig() {
+  const env = getAramexEnv();
+  const requiredInProd = env === "prod";
+
+  const getValue = (key: string, fallback: string) => {
+    if (requiredInProd) return getRequiredEnv(key);
+    return process.env[key] || fallback;
+  };
+
+  return {
+    addressLine1: getValue("ARAMEX_SHIPPER_ADDRESS_LINE1", "123 natOnat Warehouse"),
+    addressLine2: getValue("ARAMEX_SHIPPER_ADDRESS_LINE2", "Industrial Area"),
+    addressLine3: process.env.ARAMEX_SHIPPER_ADDRESS_LINE3 || "",
+    city: getValue("ARAMEX_SHIPPER_CITY", "Cairo"),
+    state: getValue("ARAMEX_SHIPPER_STATE", "Cairo"),
+    postCode: getValue("ARAMEX_SHIPPER_POSTCODE", "11728"),
+    countryCode: getValue("ARAMEX_SHIPPER_COUNTRY_CODE", "EG"),
+    companyName: getValue("ARAMEX_SHIPPER_COMPANY", "natOnat"),
+    personName: getValue("ARAMEX_SHIPPER_PERSON", "natOnat Shipping"),
+    phone: getValue("ARAMEX_SHIPPER_PHONE", "+201070004227"),
+    email: getValue("ARAMEX_SHIPPER_EMAIL", "shipping@natonat.com"),
+  };
+}
+
 // Build shipment from order data
 export function buildShipmentFromOrder(
   orderRef: string,
@@ -530,16 +592,17 @@ export function buildShipmentFromOrder(
   cod: boolean = false,
   codAmount: number = 0
 ): Omit<AramexShipmentRequest, "ClientInfo"> {
+  const shipperConfig = getShipperConfig();
   const shipper: AramexParty = {
     Reference1: orderRef,
     PartyAddress: {
-      Line1: "123 natOnat Warehouse",
-      Line2: "Industrial Area",
-      Line3: "",
-      City: "Cairo",
-      StateOrProvinceCode: "Cairo",
-      PostCode: "11728",
-      CountryCode: "EG",
+      Line1: shipperConfig.addressLine1,
+      Line2: shipperConfig.addressLine2,
+      Line3: shipperConfig.addressLine3,
+      City: shipperConfig.city,
+      StateOrProvinceCode: shipperConfig.state,
+      PostCode: shipperConfig.postCode,
+      CountryCode: shipperConfig.countryCode,
       Longitude: 0,
       Latitude: 0,
       BuildingNumber: null,
@@ -551,16 +614,16 @@ export function buildShipmentFromOrder(
     },
     Contact: {
       Department: "",
-      PersonName: "natOnat Shipping",
+      PersonName: shipperConfig.personName,
       Title: "",
-      CompanyName: "natOnat",
-      PhoneNumber1: "+201070004227",
+      CompanyName: shipperConfig.companyName,
+      PhoneNumber1: shipperConfig.phone,
       PhoneNumber1Ext: "",
       PhoneNumber2: "",
       PhoneNumber2Ext: "",
       FaxNumber: "",
-      CellPhone: "+201070004227",
-      EmailAddress: "shipping@natonat.com",
+      CellPhone: shipperConfig.phone,
+      EmailAddress: shipperConfig.email,
       Type: "",
     },
   };

@@ -8,7 +8,7 @@ import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
 import { Filter, X, ChevronLeft, ChevronRight } from "lucide-react";
-import { products, categories, sizes, themes } from "@/lib/products";
+import { products, categories, sizes, genders, collections, printTypes } from "@/lib/products";
 import { Loading } from "@/app/components/loading";
 import { SwipeableProductImage } from "@/app/components/swipeable-product-image";
 
@@ -21,7 +21,9 @@ function ShopContent() {
   const searchFromUrl = searchParams.get("search");
   const [activeCategory, setActiveCategory] = useState(categoryFromUrl);
   const [selectedSizes, setSelectedSizes] = useState<string[]>(sizeFromUrl ? [sizeFromUrl] : []);
-  const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
+  const [selectedGenders, setSelectedGenders] = useState<string[]>([]);
+  const [selectedCollections, setSelectedCollections] = useState<string[]>([]);
+  const [selectedPrintTypes, setSelectedPrintTypes] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [showBestSellers, setShowBestSellers] = useState(sortFromUrl === "best-sellers");
   const [searchQuery, setSearchQuery] = useState(searchFromUrl || "");
@@ -103,7 +105,12 @@ function ShopContent() {
     if (showBestSellers && product.tag !== "Best Seller") return false;
     if (activeCategory !== "all" && product.category !== activeCategory) return false;
     if (selectedSizes.length > 0 && product.size && !selectedSizes.includes(product.size)) return false;
-    if (selectedThemes.length > 0 && !selectedThemes.includes(product.theme)) return false;
+    // New filters for luggage covers only
+    if (activeCategory === "luggage-covers" || activeCategory === "all") {
+      if (selectedGenders.length > 0 && product.gender && !selectedGenders.includes(product.gender)) return false;
+      if (selectedCollections.length > 0 && product.collection && !selectedCollections.includes(product.collection)) return false;
+      if (selectedPrintTypes.length > 0 && product.printType && !selectedPrintTypes.includes(product.printType)) return false;
+    }
     if (selectedColors.length > 0 && (!product.color || !selectedColors.includes(product.color))) return false;
     return true;
   });
@@ -118,7 +125,7 @@ function ShopContent() {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeCategory, selectedSizes, selectedThemes, selectedColors, showBestSellers, searchQuery]);
+  }, [activeCategory, selectedSizes, selectedGenders, selectedCollections, selectedPrintTypes, selectedColors, showBestSellers, searchQuery]);
 
   const toggleSize = (sizeId: string) => {
     setSelectedSizes((prev) =>
@@ -130,9 +137,21 @@ function ShopContent() {
     setShowBestSellers((prev) => !prev);
   };
 
-  const toggleTheme = (themeId: string) => {
-    setSelectedThemes((prev) =>
-      prev.includes(themeId) ? prev.filter((t) => t !== themeId) : [...prev, themeId]
+  const toggleGender = (genderId: string) => {
+    setSelectedGenders((prev) =>
+      prev.includes(genderId) ? prev.filter((g) => g !== genderId) : [...prev, genderId]
+    );
+  };
+
+  const toggleCollection = (collectionId: string) => {
+    setSelectedCollections((prev) =>
+      prev.includes(collectionId) ? prev.filter((c) => c !== collectionId) : [...prev, collectionId]
+    );
+  };
+
+  const togglePrintType = (printTypeId: string) => {
+    setSelectedPrintTypes((prev) =>
+      prev.includes(printTypeId) ? prev.filter((p) => p !== printTypeId) : [...prev, printTypeId]
     );
   };
 
@@ -144,13 +163,15 @@ function ShopContent() {
 
   const clearFilters = () => {
     setSelectedSizes([]);
-    setSelectedThemes([]);
+    setSelectedGenders([]);
+    setSelectedCollections([]);
+    setSelectedPrintTypes([]);
     setSelectedColors([]);
     setShowBestSellers(false);
     setCurrentPage(1);
   };
 
-  const activeFiltersCount = selectedSizes.length + selectedThemes.length + selectedColors.length + (showBestSellers ? 1 : 0);
+  const activeFiltersCount = selectedSizes.length + selectedGenders.length + selectedCollections.length + selectedPrintTypes.length + selectedColors.length + (showBestSellers ? 1 : 0);
 
   // Dynamic header based on category
   const getHeaderContent = () => {
@@ -288,36 +309,95 @@ function ShopContent() {
                   </div>
                 )}
 
-                {/* Theme Filter - Clean */}
-                <div className="mb-8">
-                  <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">{t('filters.theme.title')}</h3>
-                  <div className="space-y-2">
-                    {themes.map((theme) => (
-                      <label 
-                        key={theme.id} 
-                        className="flex items-center gap-2 cursor-pointer"
-                      >
-                        <div
-                          className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${
-                            selectedThemes.includes(theme.id) 
-                              ? "bg-[#EEBC3F] border-[#EEBC3F]" 
-                              : "border-[#0F1A26]/20"
-                          }`}
-                          onClick={() => toggleTheme(theme.id)}
-                        >
-                          {selectedThemes.includes(theme.id) && (
-                            <svg className="w-3 h-3 text-[#0F1A26]" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                          )}
-                        </div>
-                        <span className={`text-sm ${selectedThemes.includes(theme.id) ? "text-[#0F1A26] font-medium" : "text-[#0F1A26]/60"}`}>
-                          {theme.label}
-                        </span>
-                      </label>
-                    ))}
+                {/* Gender Filter - For Luggage Covers */}
+                {(activeCategory === "all" || activeCategory === "luggage-covers") && (
+                  <div className="mb-8">
+                    <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">{t('filters.gender.title') || 'Gender'}</h3>
+                    <div className="space-y-2">
+                      {genders.map((gender) => (
+                        <label key={gender.id} className="flex items-center gap-2 cursor-pointer">
+                          <div
+                            className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${
+                              selectedGenders.includes(gender.id)
+                                ? "bg-[#EEBC3F] border-[#EEBC3F]"
+                                : "border-[#0F1A26]/20"
+                            }`}
+                            onClick={() => toggleGender(gender.id)}
+                          >
+                            {selectedGenders.includes(gender.id) && (
+                              <svg className="w-3 h-3 text-[#0F1A26]" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                          </div>
+                          <span className={`text-sm ${selectedGenders.includes(gender.id) ? "text-[#0F1A26] font-medium" : "text-[#0F1A26]/60"}`}>
+                            {gender.label}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {/* Collection Filter - For Luggage Covers */}
+                {(activeCategory === "all" || activeCategory === "luggage-covers") && (
+                  <div className="mb-8">
+                    <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">{t('filters.collection.title') || 'Collection'}</h3>
+                    <div className="space-y-2">
+                      {collections.map((collection) => (
+                        <label key={collection.id} className="flex items-center gap-2 cursor-pointer">
+                          <div
+                            className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${
+                              selectedCollections.includes(collection.id)
+                                ? "bg-[#EEBC3F] border-[#EEBC3F]"
+                                : "border-[#0F1A26]/20"
+                            }`}
+                            onClick={() => toggleCollection(collection.id)}
+                          >
+                            {selectedCollections.includes(collection.id) && (
+                              <svg className="w-3 h-3 text-[#0F1A26]" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                          </div>
+                          <span className={`text-sm ${selectedCollections.includes(collection.id) ? "text-[#0F1A26] font-medium" : "text-[#0F1A26]/60"}`}>
+                            {collection.label}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Print Type Filter - For Luggage Covers */}
+                {(activeCategory === "all" || activeCategory === "luggage-covers") && (
+                  <div className="mb-8">
+                    <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">{t('filters.printType.title') || 'Print Type'}</h3>
+                    <div className="space-y-2">
+                      {printTypes.map((printType) => (
+                        <label key={printType.id} className="flex items-center gap-2 cursor-pointer">
+                          <div
+                            className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${
+                              selectedPrintTypes.includes(printType.id)
+                                ? "bg-[#EEBC3F] border-[#EEBC3F]"
+                                : "border-[#0F1A26]/20"
+                            }`}
+                            onClick={() => togglePrintType(printType.id)}
+                          >
+                            {selectedPrintTypes.includes(printType.id) && (
+                              <svg className="w-3 h-3 text-[#0F1A26]" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                          </div>
+                          <span className={`text-sm ${selectedPrintTypes.includes(printType.id) ? "text-[#0F1A26] font-medium" : "text-[#0F1A26]/60"}`}>
+                            {printType.label}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Color Filter - For PackOnat and Passport Wallets */}
                 {(activeCategory === "all" || activeCategory === "packonat" || activeCategory === "passport-wallets") && (
@@ -533,31 +613,89 @@ function ShopContent() {
                 </div>
               )}
 
-              {/* Mobile Theme Filter - Clean */}
-              <div className="mb-6">
-                <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">{t('filters.theme.title')}</h3>
-                <div className="space-y-2">
-                  {themes.map((theme) => (
-                    <label key={theme.id} className="flex items-center gap-2 cursor-pointer">
-                      <div
-                        className={`w-4 h-4 rounded border flex items-center justify-center ${
-                          selectedThemes.includes(theme.id) ? "bg-[#EEBC3F] border-[#EEBC3F]" : "border-[#0F1A26]/20"
-                        }`}
-                        onClick={() => toggleTheme(theme.id)}
-                      >
-                        {selectedThemes.includes(theme.id) && (
-                          <svg className="w-3 h-3 text-[#0F1A26]" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        )}
-                      </div>
-                      <span className={`text-sm ${selectedThemes.includes(theme.id) ? "text-[#0F1A26] font-medium" : "text-[#0F1A26]/60"}`}>
-                        {theme.label}
-                      </span>
-                    </label>
-                  ))}
+              {/* Mobile Gender Filter */}
+              {(activeCategory === "all" || activeCategory === "luggage-covers") && (
+                <div className="mb-6">
+                  <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">{t('filters.gender.title') || 'Gender'}</h3>
+                  <div className="space-y-2">
+                    {genders.map((gender) => (
+                      <label key={gender.id} className="flex items-center gap-2 cursor-pointer">
+                        <div
+                          className={`w-4 h-4 rounded border flex items-center justify-center ${
+                            selectedGenders.includes(gender.id) ? "bg-[#EEBC3F] border-[#EEBC3F]" : "border-[#0F1A26]/20"
+                          }`}
+                          onClick={() => toggleGender(gender.id)}
+                        >
+                          {selectedGenders.includes(gender.id) && (
+                            <svg className="w-3 h-3 text-[#0F1A26]" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </div>
+                        <span className={`text-sm ${selectedGenders.includes(gender.id) ? "text-[#0F1A26] font-medium" : "text-[#0F1A26]/60"}`}>
+                          {gender.label}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Mobile Collection Filter */}
+              {(activeCategory === "all" || activeCategory === "luggage-covers") && (
+                <div className="mb-6">
+                  <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">{t('filters.collection.title') || 'Collection'}</h3>
+                  <div className="space-y-2">
+                    {collections.map((collection) => (
+                      <label key={collection.id} className="flex items-center gap-2 cursor-pointer">
+                        <div
+                          className={`w-4 h-4 rounded border flex items-center justify-center ${
+                            selectedCollections.includes(collection.id) ? "bg-[#EEBC3F] border-[#EEBC3F]" : "border-[#0F1A26]/20"
+                          }`}
+                          onClick={() => toggleCollection(collection.id)}
+                        >
+                          {selectedCollections.includes(collection.id) && (
+                            <svg className="w-3 h-3 text-[#0F1A26]" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </div>
+                        <span className={`text-sm ${selectedCollections.includes(collection.id) ? "text-[#0F1A26] font-medium" : "text-[#0F1A26]/60"}`}>
+                          {collection.label}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Mobile Print Type Filter */}
+              {(activeCategory === "all" || activeCategory === "luggage-covers") && (
+                <div className="mb-6">
+                  <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">{t('filters.printType.title') || 'Print Type'}</h3>
+                  <div className="space-y-2">
+                    {printTypes.map((printType) => (
+                      <label key={printType.id} className="flex items-center gap-2 cursor-pointer">
+                        <div
+                          className={`w-4 h-4 rounded border flex items-center justify-center ${
+                            selectedPrintTypes.includes(printType.id) ? "bg-[#EEBC3F] border-[#EEBC3F]" : "border-[#0F1A26]/20"
+                          }`}
+                          onClick={() => togglePrintType(printType.id)}
+                        >
+                          {selectedPrintTypes.includes(printType.id) && (
+                            <svg className="w-3 h-3 text-[#0F1A26]" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </div>
+                        <span className={`text-sm ${selectedPrintTypes.includes(printType.id) ? "text-[#0F1A26] font-medium" : "text-[#0F1A26]/60"}`}>
+                          {printType.label}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Mobile Color Filter - For PackOnat and Passport Wallets */}
               {(activeCategory === "all" || activeCategory === "packonat" || activeCategory === "passport-wallets") && (
