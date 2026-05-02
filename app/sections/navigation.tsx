@@ -48,11 +48,15 @@ export function Navigation() {
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       const results = products
-        .filter(p => 
-          p.name.toLowerCase().includes(query) ||
-          p.category.toLowerCase().includes(query) ||
-          p.type.toLowerCase().includes(query)
-        )
+        .filter(p => {
+          const nameMatch = p.name.toLowerCase().includes(query);
+          const typeMatch = p.type.toLowerCase().includes(query);
+          const categoryMatch = Array.isArray(p.category)
+            ? p.category.some(c => c.toLowerCase().includes(query))
+            : p.category.toLowerCase().includes(query);
+          
+          return nameMatch || typeMatch || categoryMatch;
+        })
         .slice(0, 5);
       setSearchResults(results);
     } else {
