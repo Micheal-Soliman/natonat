@@ -21,18 +21,29 @@ export async function POST(req: Request) {
       );
     }
 
+    // DIAGNOSTIC: Fetch valid cities from Aramex for Egypt
+    try {
+      const { fetchCities } = require("@/lib/aramex");
+      const citiesResponse = await fetchCities("EG");
+      console.log("[Aramex Diagnostic] Valid Cities in EG:", JSON.stringify(citiesResponse.Cities?.slice(0, 20), null, 2));
+    } catch (diagError) {
+      console.error("[Aramex Diagnostic] Failed to fetch cities:", diagError);
+    }
+
     // Build shipment data (with COD params)
     const shipmentData = buildShipmentFromOrder(orderRef, customer, items, totalValue, cod, codAmount);
 
     // Create shipment with Aramex
     const result = await createShipment(shipmentData);
+    console.log("[Aramex API Response]:", JSON.stringify(result, null, 2));
 
     // Check for errors
     if (!result.success) {
+      console.error("[Aramex Shipment] Error:", result.error);
       return NextResponse.json(
         { 
           error: "Aramex shipment creation failed", 
-          details: result.error || "Unknown error",
+          details: result.error || "Unknown Aramex error",
           raw: result.raw 
         },
         { status: 400 }
@@ -40,6 +51,7 @@ export async function POST(req: Request) {
     }
 
     // Success
+    console.log("[Aramex Shipment] Success:", result);
     return NextResponse.json({
       success: true,
       trackingNumber: result.trackingNumber,

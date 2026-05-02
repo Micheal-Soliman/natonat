@@ -242,13 +242,18 @@ export async function createShipment(
           ...shipmentData.Shipper,
           AccountNumber: credentials.AccountNumber,
         },
-        Consignee: shipmentData.Consignee,
-        ThirdParty: shipmentData.ThirdParty || {
+        Consignee: {
+          Reference1: shipmentData.Consignee.Reference1,
+          PartyAddress: shipmentData.Consignee.PartyAddress,
+          Contact: shipmentData.Consignee.Contact,
+          AccountNumber: credentials.AccountNumber,
+        },
+        ThirdParty: {
           Reference1: "",
           Reference2: "",
-          AccountNumber: "",
           PartyAddress: { Line1: "", Line2: "", Line3: "", City: "", StateOrProvinceCode: "", PostCode: "", CountryCode: "", Longitude: 0, Latitude: 0, BuildingNumber: null, BuildingName: null, Floor: null, Apartment: null, POBox: null, Description: null },
           Contact: { Department: "", PersonName: "", Title: "", CompanyName: "", PhoneNumber1: "", PhoneNumber1Ext: "", PhoneNumber2: "", PhoneNumber2Ext: "", FaxNumber: "", CellPhone: "", EmailAddress: "", Type: "" },
+          AccountNumber: credentials.AccountNumber,
         },
         ShippingDateTime: shipmentData.ShippingDateTime,
         DueDate: shipmentData.DueDate || shipmentData.ShippingDateTime,
@@ -453,8 +458,11 @@ export async function fetchCountries(): Promise<any> {
   const payload = {
     ClientInfo: credentials,
     Transaction: {
-      Reference1: "001",
-      Reference2: "002",
+      Reference1: "",
+      Reference2: "",
+      Reference3: "",
+      Reference4: "",
+      Reference5: "",
     },
   };
 
@@ -482,12 +490,16 @@ export async function fetchCities(countryCode: string, nameStartsWith?: string):
 
   const payload = {
     ClientInfo: credentials,
+    Transaction: {
+      Reference1: "",
+      Reference2: "",
+      Reference3: "",
+      Reference4: "",
+      Reference5: "",
+    },
     CountryCode: countryCode,
     NameStartsWith: nameStartsWith,
-    Transaction: {
-      Reference1: "001",
-      Reference2: "002",
-    },
+    State: "",
   };
 
   const response = await fetch(`${ARAMEX_LOCATION_JSON_BASE}/FetchCities`, {
@@ -510,33 +522,40 @@ export async function fetchCities(countryCode: string, nameStartsWith?: string):
 
 // Map lowercase city keys to Aramex-expected city names
 const CITY_NAME_MAP: Record<string, string> = {
-  cairo: "Cairo",
-  giza: "Giza",
-  alexandria: "Alexandria",
-  qalyubia: "Qalyubia",
-  port_said: "Port Said",
-  suez: "Suez",
-  luxor: "Luxor",
-  aswan: "Aswan",
-  asyut: "Assiut",
-  beheira: "Beheira",
-  beni_suef: "Beni Suef",
-  dakahlia: "Dakahlia",
-  damietta: "Damietta",
-  faiyum: "Faiyum",
-  gharbia: "Gharbia",
-  ismailia: "Ismailia",
-  kafr_el_sheikh: "Kafr El Sheikh",
-  matrouh: "Matrouh",
-  minya: "Minya",
-  monufia: "Monufia",
-  new_valley: "New Valley",
-  north_sinai: "North Sinai",
-  qena: "Qena",
-  red_sea: "Red Sea",
-  sharqia: "Sharqia",
-  sohag: "Sohag",
-  south_sinai: "South Sinai",
+  cairo: "CAIRO",
+  giza: "GIZA",
+  alexandria: "ALEXANDRIA",
+  dakahlia: "DAKAHLIA",
+  red_sea: "RED SEA",
+  beheira: "BEHEIRA",
+  fayoum: "FAYOUM",
+  gharbia: "GHARBIA",
+  ismailia: "ISMAILIA",
+  monufia: "MONUFIA",
+  minya: "MINYA",
+  qalyubia: "QALYUBIA",
+  wadi_el_gadid: "WADI EL JADID",
+  sharqia: "SHARQIA",
+  suez: "SUEZ",
+  aswan: "ASWAN",
+  asyut: "ASYUT",
+  beni_suef: "BENI SUEF",
+  portsaid: "PORT SAID",
+  damietta: "DAMIETTA",
+  south_sinai: "SOUTH SINAI",
+  kafr_el_sheikh: "KAFR EL SHEIKH",
+  matrouh: "MATROUH",
+  luxor: "LUXOR",
+  qena: "QENA",
+  sohag: "SOHAG",
+  north_sinai: "NORTH SINAI",
+};
+
+// Helper to get Aramex State Codes for Egypt
+const CITY_STATE_MAP: Record<string, string> = {
+  cairo: "CAI",
+  giza: "GIZ",
+  alexandria: "ALX",
 };
 
 export function mapCityName(cityKey: string): string {
@@ -599,8 +618,8 @@ export function buildShipmentFromOrder(
       Line1: shipperConfig.addressLine1,
       Line2: shipperConfig.addressLine2,
       Line3: shipperConfig.addressLine3,
-      City: shipperConfig.city,
-      StateOrProvinceCode: shipperConfig.state,
+      City: mapCityName(shipperConfig.city),
+      StateOrProvinceCode: CITY_STATE_MAP[shipperConfig.city.toLowerCase()] || "",
       PostCode: shipperConfig.postCode,
       CountryCode: shipperConfig.countryCode,
       Longitude: 0,
@@ -635,8 +654,8 @@ export function buildShipmentFromOrder(
       Line2: "",
       Line3: "",
       City: mapCityName(customer.city),
-      StateOrProvinceCode: mapCityName(customer.city),
-      PostCode: "00000",
+      StateOrProvinceCode: CITY_STATE_MAP[customer.city.toLowerCase()] || "",
+      PostCode: "11511",
       CountryCode: "EG",
       Longitude: 0,
       Latitude: 0,
@@ -661,10 +680,12 @@ export function buildShipmentFromOrder(
       EmailAddress: customer.email,
       Type: "",
     },
+    AccountNumber: "",
   };
 
   const itemsDescription = items.map((i) => `${i.name} x${i.quantity}`).join(", ");
-  const numberOfPieces = items.reduce((sum, i) => sum + i.quantity, 0);
+  const numberOfPieces = items.length > 0 ? items.reduce((sum, i) => sum + (i.quantity || 1), 0) : 1;
+  const actualWeight = Math.max(0.5, 0.5 * numberOfPieces);
 
   return {
     Reference1: orderRef,
@@ -681,7 +702,7 @@ export function buildShipmentFromOrder(
         Unit: "cm",
       },
       ActualWeight: {
-        Value: 0.5 * numberOfPieces,
+        Value: actualWeight,
         Unit: "Kg",
       },
       DescriptionOfGoods: itemsDescription,
