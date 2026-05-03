@@ -71,6 +71,30 @@ function CheckoutContent() {
     phone: "",
     newsletter: false,
   });
+  const [aramexCities, setAramexCities] = useState<string[]>([]);
+  const [loadingCities, setLoadingCities] = useState(false);
+
+  useEffect(() => {
+    async function getCities() {
+      setLoadingCities(true);
+      try {
+        const res = await fetch("/api/aramex/cities?countryCode=EG");
+        if (res.ok) {
+          const data = await res.json();
+          // Filter out duplicates and empty strings
+          const uniqueCities = Array.from(new Set(data as string[]))
+            .filter(Boolean)
+            .sort((a, b) => a.localeCompare(b));
+          setAramexCities(uniqueCities);
+        }
+      } catch (err) {
+        console.error("Error fetching Aramex cities:", err);
+      } finally {
+        setLoadingCities(false);
+      }
+    }
+    getCities();
+  }, []);
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [deliveryMethod, setDeliveryMethod] = useState("delivery");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -725,36 +749,17 @@ function CheckoutContent() {
                             required
                             value={formData.city}
                             onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                            className="w-full px-4 py-3 pl-11 rounded-xl border border-[#0F1A26]/10 focus:border-[#EEBC3F] focus:outline-none transition-colors bg-white text-[#0F1A26] font-medium appearance-none"
+                            className="w-full px-4 py-3 pl-11 rounded-xl border border-[#0F1A26]/10 focus:border-[#EEBC3F] focus:outline-none transition-colors bg-white text-[#0F1A26] font-medium appearance-none disabled:opacity-50"
+                            disabled={loadingCities}
                           >
-                            <option value="" className="text-[#0F1A26]">{t('form.shipping.cityPlaceholder')}</option>
-                            <option value="cairo" className="text-[#0F1A26]">القاهرة</option>
-                            <option value="alexandria" className="text-[#0F1A26]">الإسكندرية</option>
-                            <option value="giza" className="text-[#0F1A26]">الجيزة</option>
-                            <option value="qalyubia" className="text-[#0F1A26]">القليوبية</option>
-                            <option value="port_said" className="text-[#0F1A26]">بورسعيد</option>
-                            <option value="suez" className="text-[#0F1A26]">السويس</option>
-                            <option value="luxor" className="text-[#0F1A26]">الأقصر</option>
-                            <option value="aswan" className="text-[#0F1A26]">أسوان</option>
-                            <option value="asyut" className="text-[#0F1A26]">أسيوط</option>
-                            <option value="beheira" className="text-[#0F1A26]">البحيرة</option>
-                            <option value="beni_suef" className="text-[#0F1A26]">بني سويف</option>
-                            <option value="dakahlia" className="text-[#0F1A26]">الدقهلية</option>
-                            <option value="damietta" className="text-[#0F1A26]">دمياط</option>
-                            <option value="faiyum" className="text-[#0F1A26]">الفيوم</option>
-                            <option value="gharbia" className="text-[#0F1A26]">الغربية</option>
-                            <option value="ismailia" className="text-[#0F1A26]">الإسماعيلية</option>
-                            <option value="kafr_el_sheikh" className="text-[#0F1A26]">كفر الشيخ</option>
-                            <option value="matrouh" className="text-[#0F1A26]">مطروح</option>
-                            <option value="minya" className="text-[#0F1A26]">المنيا</option>
-                            <option value="monufia" className="text-[#0F1A26]">المنوفية</option>
-                            <option value="new_valley" className="text-[#0F1A26]">الوادي الجديد</option>
-                            <option value="north_sinai" className="text-[#0F1A26]">شمال سيناء</option>
-                            <option value="qena" className="text-[#0F1A26]">قنا</option>
-                            <option value="red_sea" className="text-[#0F1A26]">البحر الأحمر</option>
-                            <option value="sharqia" className="text-[#0F1A26]">الشرقية</option>
-                            <option value="sohag" className="text-[#0F1A26]">سوهاج</option>
-                            <option value="south_sinai" className="text-[#0F1A26]">جنوب سيناء</option>
+                            <option value="" className="text-[#0F1A26]">
+                              {loadingCities ? t('form.shipping.loadingCities') || "Loading cities..." : t('form.shipping.cityPlaceholder')}
+                            </option>
+                            {aramexCities.map((city) => (
+                              <option key={city} value={city} className="text-[#0F1A26]">
+                                {city}
+                              </option>
+                            ))}
                           </select>
                         </div>
                       </div>

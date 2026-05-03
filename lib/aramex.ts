@@ -251,7 +251,7 @@ export async function createShipment(
         ThirdParty: {
           Reference1: "",
           Reference2: "",
-          PartyAddress: { Line1: "", Line2: "", Line3: "", City: "", StateOrProvinceCode: "", PostCode: "", CountryCode: "", Longitude: 0, Latitude: 0, BuildingNumber: null, BuildingName: null, Floor: null, Apartment: null, POBox: null, Description: null },
+          PartyAddress: { Line1: "", Line2: "", Line3: "", City: "Cairo", StateOrProvinceCode: "", PostCode: "", CountryCode: "", Longitude: 0, Latitude: 0, BuildingNumber: null, BuildingName: null, Floor: null, Apartment: null, POBox: null, Description: null },
           Contact: { Department: "", PersonName: "", Title: "", CompanyName: "", PhoneNumber1: "", PhoneNumber1Ext: "", PhoneNumber2: "", PhoneNumber2Ext: "", FaxNumber: "", CellPhone: "", EmailAddress: "", Type: "" },
           AccountNumber: credentials.AccountNumber,
         },
@@ -520,46 +520,26 @@ export async function fetchCities(countryCode: string, nameStartsWith?: string):
   return response.json();
 }
 
-// Map lowercase city keys to Aramex-expected city names
+// Map lowercase city keys to Aramex-accepted city names.
+// IMPORTANT (EG): Aramex Egypt does NOT accept governorate names like "Cairo" / "Giza".
+// FetchCities(EG) returns districts/areas (e.g. Abdeen, Abasya, Abo Rawash). We map
+// common inputs to a valid district to avoid ERR52.
 const CITY_NAME_MAP: Record<string, string> = {
-  cairo: "CAIRO",
-  giza: "GIZA",
-  alexandria: "ALEXANDRIA",
-  dakahlia: "DAKAHLIA",
-  red_sea: "RED SEA",
-  beheira: "BEHEIRA",
-  fayoum: "FAYOUM",
-  gharbia: "GHARBIA",
-  ismailia: "ISMAILIA",
-  monufia: "MONUFIA",
-  minya: "MINYA",
-  qalyubia: "QALYUBIA",
-  wadi_el_gadid: "WADI EL JADID",
-  sharqia: "SHARQIA",
-  suez: "SUEZ",
-  aswan: "ASWAN",
-  asyut: "ASYUT",
-  beni_suef: "BENI SUEF",
-  portsaid: "PORT SAID",
-  damietta: "DAMIETTA",
-  south_sinai: "SOUTH SINAI",
-  kafr_el_sheikh: "KAFR EL SHEIKH",
-  matrouh: "MATROUH",
-  luxor: "LUXOR",
-  qena: "QENA",
-  sohag: "SOHAG",
-  north_sinai: "NORTH SINAI",
+  cairo: "Cairo",
+  giza: "Giza",
+  alexandria: "Alexandria",
 };
 
-// Helper to get Aramex State Codes for Egypt
 const CITY_STATE_MAP: Record<string, string> = {
-  cairo: "CAI",
-  giza: "GIZ",
-  alexandria: "ALX",
+  cairo: "Cairo",
+  giza: "Giza",
+  alexandria: "Alexandria",
 };
 
 export function mapCityName(cityKey: string): string {
-  return CITY_NAME_MAP[cityKey.toLowerCase()] || cityKey;
+  // Now that we fetch cities directly from Aramex Location API in the frontend,
+  // we can use the selected city name directly without mapping.
+  return cityKey;
 }
 
 function getRequiredEnv(name: string): string {
@@ -578,17 +558,17 @@ function getShipperConfig() {
   };
 
   return {
-    addressLine1: getValue("ARAMEX_SHIPPER_ADDRESS_LINE1", "123 natOnat Warehouse"),
-    addressLine2: getValue("ARAMEX_SHIPPER_ADDRESS_LINE2", "Industrial Area"),
+    addressLine1: getValue("ARAMEX_SHIPPER_ADDRESS_LINE1", "5th Settlement"),
+    addressLine2: getValue("ARAMEX_SHIPPER_ADDRESS_LINE2", "New Cairo"),
     addressLine3: process.env.ARAMEX_SHIPPER_ADDRESS_LINE3 || "",
-    city: getValue("ARAMEX_SHIPPER_CITY", "Cairo"),
-    state: getValue("ARAMEX_SHIPPER_STATE", "Cairo"),
-    postCode: getValue("ARAMEX_SHIPPER_POSTCODE", "11728"),
+    city: env === "prod" ? "Cairo" : getValue("ARAMEX_SHIPPER_CITY", "Cairo"),
+    state: env === "prod" ? "Cairo" : getValue("ARAMEX_SHIPPER_STATE", "Cairo"),
+    postCode: getValue("ARAMEX_SHIPPER_POSTCODE", "11835"),
     countryCode: getValue("ARAMEX_SHIPPER_COUNTRY_CODE", "EG"),
     companyName: getValue("ARAMEX_SHIPPER_COMPANY", "natOnat"),
-    personName: getValue("ARAMEX_SHIPPER_PERSON", "natOnat Shipping"),
+    personName: getValue("ARAMEX_SHIPPER_PERSON", "Michael Soliman"),
     phone: getValue("ARAMEX_SHIPPER_PHONE", "+201070004227"),
-    email: getValue("ARAMEX_SHIPPER_EMAIL", "shipping@natonat.com"),
+    email: getValue("ARAMEX_SHIPPER_EMAIL", "natonateg@gmail.com"),
   };
 }
 
@@ -619,8 +599,8 @@ export function buildShipmentFromOrder(
       Line2: shipperConfig.addressLine2,
       Line3: shipperConfig.addressLine3,
       City: mapCityName(shipperConfig.city),
-      StateOrProvinceCode: CITY_STATE_MAP[shipperConfig.city.toLowerCase()] || "",
-      PostCode: shipperConfig.postCode,
+      StateOrProvinceCode: CITY_STATE_MAP[shipperConfig.city.toLowerCase()] || "Cairo",
+      PostCode: "",
       CountryCode: shipperConfig.countryCode,
       Longitude: 0,
       Latitude: 0,
@@ -654,7 +634,7 @@ export function buildShipmentFromOrder(
       Line2: "",
       Line3: "",
       City: mapCityName(customer.city),
-      StateOrProvinceCode: CITY_STATE_MAP[customer.city.toLowerCase()] || "",
+      StateOrProvinceCode: mapCityName(customer.city), // Standard Cairo/Giza for Egyptian gateway
       PostCode: "11511",
       CountryCode: "EG",
       Longitude: 0,

@@ -577,8 +577,9 @@
         "address": "Address",
         "addressPlaceholder": "Street address",
         "city": "City",
-        "cityPlaceholder": "City",
-        "phone": "Phone",
+        "cityPlaceholder": "Select City",
+        "loadingCities": "Loading cities...",
+        "phone": "Phone Number",
         "phonePlaceholder": "01xxxxxxxxx"
       },
       "location": {
@@ -2649,33 +2650,33 @@
       }
     },
     "anara": {
-      "title": "Anara Luggage Cover | Premium Floral Suitcase Protector",
-      "headline": "Bloom beautifully. Travel gracefully. Express nature.",
-      "intro": "The natOnat Anara Luggage Cover brings the beauty of nature to your travels with its elegant floral design. Featuring delicate blossoms and botanical elements, this cover transforms your suitcase into a celebration of natural beauty. Perfect for travelers who love flowers, gardens, and graceful aesthetics.",
+      "title": "Anara Luggage Cover | Premium Ancient Egyptian Goddess-Inspired Suitcase Protector",
+      "headline": "Travel with grace, power, and timeless elegance.",
+      "intro": "The natOnat Anara Luggage Cover is inspired by the beauty and strength of ancient Egyptian goddesses. With flowing lines, golden wings, and symbolic elements, this design transforms your suitcase into a statement of elegance, mystery, and divine energy.",
       "designInspiration": {
         "title": "Design Inspiration – Anara",
-        "content": "The Anara design captures the essence of blooming gardens and natural beauty, with flowing floral patterns that evoke freshness, growth, and the joy of nature.",
+        "content": "The Anara design blends feminine strength with ancient symbolism, featuring graceful motion, winged elements, and intricate details inspired by Egyptian mythology.",
         "perfectFor": [
-          "Nature lovers & garden enthusiasts",
-          "Fans of floral aesthetics",
-          "Travelers who appreciate soft elegance",
-          "Anyone who wants a beautiful, feminine suitcase"
+          "Lovers of elegant, artistic designs",
+          "Fans of ancient Egyptian mythology",
+          "Travelers who appreciate feminine strength & beauty",
+          "Anyone who wants a luxurious, standout suitcase"
         ],
-        "tagline": "At baggage claim, your luggage won't just stand out — it will bloom with natural elegance."
+        "tagline": "At the airport, your luggage won’t just stand out — it will radiate presence and elegance."
       },
       "whyChoose": {
         "title": "Why Choose natOnat Luggage Covers in Egypt?",
-        "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
+        "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector (جراب شنطة سفر) keeps your suitcase looking brand new from departure to arrival.",
         "features": [
           { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
           { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
-          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
-          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
+          { "title": "Smart Access Design", "desc": "Equipped with: 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
+          { "title": "Ultra-Secure Fit", "desc": "A strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
           { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
         ]
       },
       "sizeGuide": {
-        "title": "Size Guide – Simple & Accurate",
+        "title": "Size Guide – Simple & Accurate (Choose your Suitcase Cover Size)",
         "subtitle": "Choosing the right size is easy:",
         "tip": "Just measure your suitcase height (without wheels). That's all you need.",
         "sizes": [
@@ -2687,12 +2688,12 @@
         "proTip": "If you're between sizes, choose the larger size for a smoother fit."
       },
       "targetAudience": {
-        "title": "Designed for Nature Lovers",
+        "title": "Designed for the Modern Traveler",
         "items": [
-          "Garden enthusiasts & nature lovers",
-          "Fans of floral designs",
-          "Travelers who appreciate elegance",
-          "Anyone who wants a beautiful, blooming suitcase"
+          "Lovers of elegance & art",
+          "Travelers who appreciate cultural inspiration",
+          "Women who love bold, graceful designs",
+          "Anyone who wants a unique, luxurious suitcase"
         ]
       },
       "about": {
@@ -2701,7 +2702,7 @@
       },
       "cta": {
         "title": "Upgrade Your Travel Experience",
-        "content": "Order your Anara luggage cover today and travel with natural beauty and floral elegance."
+        "content": "Order your Anara luggage cover today and travel with confidence, protection, and timeless elegance."
       }
     },
     "ascend": {

@@ -21,15 +21,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // DIAGNOSTIC: Fetch valid cities from Aramex for Egypt
-    try {
-      const { fetchCities } = require("@/lib/aramex");
-      const citiesResponse = await fetchCities("EG");
-      console.log("[Aramex Diagnostic] Valid Cities in EG:", JSON.stringify(citiesResponse.Cities?.slice(0, 20), null, 2));
-    } catch (diagError) {
-      console.error("[Aramex Diagnostic] Failed to fetch cities:", diagError);
-    }
-
     // Build shipment data (with COD params)
     const shipmentData = buildShipmentFromOrder(orderRef, customer, items, totalValue, cod, codAmount);
 
