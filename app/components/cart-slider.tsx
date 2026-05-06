@@ -14,6 +14,9 @@ export function CartSlider() {
     removeFromCart,
     updateQuantity,
     subtotal,
+    discount,
+    originalSubtotal,
+    appliedDiscounts,
     isOpen,
     closeCart,
     totalItems,
@@ -184,10 +187,31 @@ export function CartSlider() {
         {items.length > 0 && (
           <div className="border-t border-[#0F1A26]/10 p-6 bg-[#F1EBE3]">
             <div className="space-y-3 mb-6">
+              <div className="flex justify-between text-sm">
+                <span className="text-[#0F1A26]/60">{t("summary.subtotal")}</span>
+                <span className="text-[#0F1A26] font-medium">EGP {originalSubtotal}</span>
+              </div>
+              
+              {discount > 0 && (
+                <div className="space-y-1">
+                  <div className="flex justify-between text-sm text-green-600 font-medium">
+                    <span>{t("summary.discount")}</span>
+                    <span>-EGP {discount}</span>
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    {appliedDiscounts.map((desc, i) => (
+                      <span key={i} className="text-[10px] text-green-600/70 italic text-right block">
+                        • {desc}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="border-t border-[#0F1A26]/10 pt-3">
                 <div className="flex justify-between">
                   <span className="text-[#0F1A26] font-semibold">
-                    {t("summary.subtotal")}
+                    {t("summary.total")}
                   </span>
                   <span className="text-[#0F1A26] font-bold text-lg">
                     EGP {subtotal}

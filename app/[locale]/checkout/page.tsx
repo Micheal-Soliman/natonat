@@ -30,7 +30,7 @@ export default function CheckoutPage() {
 function CheckoutContent() {
   const t = useTranslations('checkout');
   const locale = useLocale();
-  const { items, subtotal, clearCart, buyNowItem, setBuyNowItem } = useCart();
+  const { items, subtotal, discount, originalSubtotal, appliedDiscounts, clearCart, buyNowItem, setBuyNowItem } = useCart();
   
   // Use buyNowItem if exists (direct purchase), otherwise use cart items
   const rawCheckoutItems = buyNowItem ? [buyNowItem] : items;
@@ -68,6 +68,7 @@ function CheckoutContent() {
     lastName: "",
     address: "",
     city: "",
+    postCode: "",
     phone: "",
     newsletter: false,
   });
@@ -225,6 +226,7 @@ function CheckoutContent() {
               last_name: formData.lastName,
               city: formData.city,
               address: formData.address,
+              postCode: formData.postCode,
             },
             items: checkoutItems.map((item) => ({
               id: item.id,
@@ -280,6 +282,7 @@ function CheckoutContent() {
             email: formData.email,
             address: formData.address,
             city: formData.city,
+            postCode: formData.postCode,
           },
           items: checkoutItems.map((item) => ({
             name: item.name,
@@ -402,8 +405,18 @@ function CheckoutContent() {
   const getShippingCost = () => {
     if (deliveryMethod === "pickup") return 0;
     if (checkoutSubtotal > 1000) return 0;
-    const cityKey = (formData.city || "").toLowerCase();
-    const isCairoGizaAlex = cityKey === "cairo" || cityKey === "giza" || cityKey === "alexandria";
+    
+    // Use the same mapping logic as the backend to identify governorates
+    const cairoDistricts = ["cairo", "new cairo", "nasr city", "maadi", "heliopolis", "zamalek", "down town", "ain shams", "abasya", "el rehab"];
+    const gizaDistricts = ["giza", "dokki", "mohandiseen", "agouza", "imbaba", "sheikh zayed city", "october city"];
+    const alexDistricts = ["alexandria"];
+    
+    const cityLower = (formData.city || "").toLowerCase();
+    const isCairoGizaAlex = 
+      cairoDistricts.includes(cityLower) || 
+      gizaDistricts.includes(cityLower) || 
+      alexDistricts.includes(cityLower);
+
     return isCairoGizaAlex ? 75 : 100;
   };
   const shipping = getShippingCost();
@@ -764,6 +777,19 @@ function CheckoutContent() {
                         </div>
                       </div>
                       <div>
+                        <label className="text-sm text-[#0F1A26]/60 mb-1 block">{t('form.shipping.postCode')}</label>
+                        <div className="relative">
+                          <MapPin className="w-4 h-4 text-[#0F1A26]/40 absolute left-4 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            value={formData.postCode}
+                            onChange={(e) => setFormData({ ...formData, postCode: e.target.value })}
+                            className="w-full px-4 py-3 pl-11 rounded-xl border border-[#0F1A26]/10 focus:border-[#EEBC3F] focus:outline-none transition-colors"
+                            placeholder={t('form.shipping.postCodePlaceholder')}
+                          />
+                        </div>
+                      </div>
+                      <div>
                         <label className="text-sm text-[#0F1A26]/60 mb-1 block">{t('form.shipping.phone')}</label>
                         <div className="relative">
                           <Phone className="w-4 h-4 text-[#0F1A26]/40 absolute left-4 top-1/2 -translate-y-1/2" />
@@ -958,40 +984,46 @@ function CheckoutContent() {
                   ))}
                 </div>
 
-                <div className="border-t border-[#0F1A26]/10 pt-4 space-y-2">
+                <div className="bg-white rounded-2xl p-6 border border-[#0F1A26]/5 space-y-4">
                   <div className="flex justify-between text-sm">
                     <span className="text-[#0F1A26]/60">{t('summary.subtotal')}</span>
-                    <span className="text-[#0F1A26] font-medium">
-                      EGP {mounted ? checkoutSubtotal : "--"}
-                    </span>
+                    <span className="text-[#0F1A26] font-medium">EGP {mounted ? originalSubtotal : "--"}</span>
                   </div>
-                  {deliveryMethod === "delivery" && formData.city ? (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#0F1A26]/60">{t('summary.shipping')}</span>
-                      <span className="text-[#0F1A26] font-medium">
-                        {shipping === 0 
-                          ? `${t('summary.free')} ${t('summary.freeShippingOver1000') || '(Order > 1000 EGP)'}` 
-                          : `EGP ${shipping}`
-                        }
-                      </span>
-                    </div>
-                  ) : deliveryMethod === "delivery" ? (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#0F1A26]/60">{t('summary.shipping')}</span>
-                      <span className="text-[#0F1A26]/50 font-medium text-xs">{t('summary.selectCityForShipping')}</span>
-                    </div>
-                  ) : (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#0F1A26]/60">{t('summary.shipping')}</span>
-                      <span className="text-[#0F1A26] font-medium">{t('summary.free')}</span>
+                  {discount > 0 && (
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-sm text-green-600">
+                        <span>{t('summary.discount') || 'Discount'}</span>
+                        <span className="font-medium">-EGP {mounted ? discount : "--"}</span>
+                      </div>
+                      <div className="flex flex-col gap-0.5">
+                        {appliedDiscounts.map((desc, i) => (
+                          <span key={i} className="text-[10px] text-green-600/70 italic text-right block">
+                            • {desc}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   )}
+                  <div className="flex justify-between text-sm">
+                    <span className="text-[#0F1A26]/60">{t('summary.shipping')}</span>
+                    <span className="text-[#0F1A26] font-medium">
+                      {deliveryMethod === "delivery" && formData.city ? (
+                        shipping === 0 
+                          ? `${t('summary.free')} ${t('summary.freeShippingOver1000') || '(Order > 1000 EGP)'}` 
+                          : `EGP ${shipping}`
+                      ) : deliveryMethod === "delivery" ? (
+                        <span className="text-[#0F1A26]/50 font-medium text-xs">{t('summary.selectCityForShipping')}</span>
+                      ) : (
+                        t('summary.free')
+                      )}
+                    </span>
+                  </div>
                   <div className="border-t border-[#0F1A26]/10 pt-2 mt-2">
                     <div className="flex justify-between">
                       <span className="text-[#0F1A26] font-semibold">{t('summary.total')}</span>
                       <span className="text-[#0F1A26] font-bold text-lg">
                         EGP {mounted 
-                          ? (deliveryMethod === "delivery" && !formData.city ? checkoutSubtotal : total) 
+                          ? (deliveryMethod === "delivery" && !formData.city ? subtotal : total) 
                           : "--"
                         }
                       </span>

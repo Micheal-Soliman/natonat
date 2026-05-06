@@ -78,7 +78,7 @@ export default function CartPage() {
 
 function CartContent() {
   const t = useTranslations('cart');
-  const { items, removeFromCart, updateQuantity, subtotal, setBuyNowItem } = useCart();
+  const { items, removeFromCart, updateQuantity, subtotal, discount, originalSubtotal, appliedDiscounts, setBuyNowItem } = useCart();
   const groupedItems = groupCartItems(items);
   const shipping = subtotal > 1000 ? 0 : 75;
   const total = subtotal + shipping;
@@ -291,8 +291,23 @@ function CartContent() {
                   <div className="space-y-3 mb-6">
                     <div className="flex justify-between text-sm">
                       <span className="text-[#0F1A26]/60">{t('summary.subtotal')}</span>
-                      <span className="text-[#0F1A26] font-medium">EGP {subtotal}</span>
+                      <span className="text-[#0F1A26] font-medium">EGP {mounted ? originalSubtotal : "--"}</span>
                     </div>
+                    {discount > 0 && (
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-sm text-green-600">
+                          <span>{t('summary.discount') || 'Discount'}</span>
+                          <span className="font-medium">-EGP {mounted ? discount : "--"}</span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          {appliedDiscounts.map((desc, i) => (
+                            <span key={i} className="text-[10px] text-green-600/70 italic text-right block">
+                              • {desc}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     <div className="flex justify-between text-sm">
                       <span className="text-[#0F1A26]/60">{t('summary.shipping')}</span>
                       <span className="text-[#0F1A26] font-medium">

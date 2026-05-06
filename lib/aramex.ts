@@ -1,6 +1,8 @@
 // Aramex API Integration
 // API Documentation: https://www.aramex.com/developers
 
+import { logAramexRequest } from "./aramex-logger";
+
 type AramexEnv = "prod" | "dev";
 
 export function getAramexEnv(): AramexEnv {
@@ -281,20 +283,40 @@ export async function createShipment(
     ],
   };
 
-  const response = await fetch(`${ARAMEX_SHIPPING_JSON_BASE}/CreateShipments`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify(payload),
-    signal: AbortSignal.timeout(30000),
-  });
+  const startTime = Date.now();
+  let response: Response | undefined;
+  let rawText = "";
+  let error: string | undefined;
 
-  const rawText = await response.text();
+  try {
+    response = await fetch(`${ARAMEX_SHIPPING_JSON_BASE}/CreateShipments`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(30000),
+    });
 
-  if (!response.ok) {
-    throw new Error(`Aramex CreateShipments error: ${response.status} (${ARAMEX_SHIPPING_JSON_BASE}/CreateShipments) - ${rawText}`);
+    rawText = await response.text();
+
+    if (!response.ok) {
+      error = `Aramex CreateShipments error: ${response.status} (${ARAMEX_SHIPPING_JSON_BASE}/CreateShipments) - ${rawText}`;
+      throw new Error(error);
+    }
+  } catch (err) {
+    error = err instanceof Error ? err.message : String(err);
+    throw err;
+  } finally {
+    // Log request/response
+    logAramexRequest(
+      `${ARAMEX_SHIPPING_JSON_BASE}/CreateShipments`,
+      payload,
+      rawText ? JSON.parse(rawText) : null,
+      Date.now() - startTime,
+      error
+    );
   }
 
   const json = rawText ? (JSON.parse(rawText) as AramexShipmentResponse) : ({} as AramexShipmentResponse);
@@ -433,22 +455,41 @@ export async function validateAddress(address: AramexAddress): Promise<any> {
     Address: address,
   };
 
-  const response = await fetch(`${ARAMEX_LOCATION_JSON_BASE}/ValidateAddress`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify(payload),
-    signal: AbortSignal.timeout(30000),
-  });
+  const startTime = Date.now();
+  let response: Response | undefined;
+  let rawText = "";
+  let error: string | undefined;
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Aramex Address Validation error: ${response.status} - ${errorText}`);
+  try {
+    response = await fetch(`${ARAMEX_LOCATION_JSON_BASE}/ValidateAddress`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(30000),
+    });
+
+    rawText = await response.text();
+    if (!response.ok) {
+      error = `Aramex Address Validation error: ${response.status} (${ARAMEX_LOCATION_JSON_BASE}/ValidateAddress) - ${rawText}`;
+      throw new Error(error);
+    }
+  } catch (err) {
+    error = err instanceof Error ? err.message : String(err);
+    throw err;
+  } finally {
+    logAramexRequest(
+      `${ARAMEX_LOCATION_JSON_BASE}/ValidateAddress`,
+      payload,
+      rawText ? JSON.parse(rawText) : null,
+      Date.now() - startTime,
+      error
+    );
   }
 
-  return response.json();
+  return rawText ? JSON.parse(rawText) : {};
 }
 
 // Fetch all countries
@@ -502,22 +543,43 @@ export async function fetchCities(countryCode: string, nameStartsWith?: string):
     State: "",
   };
 
-  const response = await fetch(`${ARAMEX_LOCATION_JSON_BASE}/FetchCities`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify(payload),
-    signal: AbortSignal.timeout(30000),
-  });
+  const startTime = Date.now();
+  let response: Response | undefined;
+  let result: any;
+  let error: string | undefined;
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Aramex Fetch Cities error: ${response.status} - ${errorText}`);
+  try {
+    response = await fetch(`${ARAMEX_LOCATION_JSON_BASE}/FetchCities`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(30000),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      error = `Aramex Fetch Cities error: ${response.status} - ${errorText}`;
+      throw new Error(error);
+    }
+
+    result = await response.json();
+    return result;
+  } catch (err) {
+    error = err instanceof Error ? err.message : String(err);
+    throw err;
+  } finally {
+    // Log request/response
+    logAramexRequest(
+      `${ARAMEX_LOCATION_JSON_BASE}/FetchCities`,
+      payload,
+      result || null,
+      Date.now() - startTime,
+      error
+    );
   }
-
-  return response.json();
 }
 
 // Map lowercase city keys to Aramex-accepted city names.
@@ -530,11 +592,68 @@ const CITY_NAME_MAP: Record<string, string> = {
   alexandria: "Alexandria",
 };
 
-const CITY_STATE_MAP: Record<string, string> = {
-  cairo: "Cairo",
-  giza: "Giza",
-  alexandria: "Alexandria",
+// Smart mapping: detect district from address text for better Aramex validation
+const ADDRESS_TO_CITY_MAP: Record<string, string> = {
+  "dokki": "Dokki",
+  "mohandiseen": "Mohandiseen",
+  "nasr city": "Nasr City",
+  "maadi": "Maadi",
+  "new cairo": "New Cairo",
+  "5th settlement": "New Cairo",
+  "6th october": "October City",
+  "sheikh zayed": "Sheikh Zayed City",
+  "helwan": "Helwan",
+  "zamalek": "Zamalek",
+  "down town": "Down Town",
+  "fisal": "Fisal",
+  "ain shams": "Ain Shams",
+  "abbasiya": "Abasya",
+  "abasya": "Abasya",
+  "heliopolis": "Heliopolis",
+  "gesr suez": "Gesr El Suez",
+  "sheraton": "Sheraton",
 };
+
+const CITY_TO_GOVERNORATE_MAP: Record<string, string> = {
+  // Cairo governorate
+  "cairo": "Cairo",
+  "new cairo": "Cairo",
+  "nasr city": "Cairo",
+  "maadi": "Cairo",
+  "heliopolis": "Cairo",
+  "zamalek": "Cairo",
+  "down town": "Cairo",
+  "ain shams": "Cairo",
+  "abasya": "Cairo",
+  "el rehab": "Cairo",
+  // Giza governorate
+  "giza": "Giza",
+  "dokki": "Giza",
+  "mohandiseen": "Giza",
+  "agouza": "Giza",
+  "imbaba": "Giza",
+  "sheikh zayed city": "Giza",
+  "october city": "Giza",
+};
+
+function resolveGovernorateForCity(city: string): string {
+  const key = (city || "").trim().toLowerCase();
+  return CITY_TO_GOVERNORATE_MAP[key] || city;
+}
+
+function extractCityFromAddress(address: string, selectedCity: string): string {
+  const addressLower = address.toLowerCase();
+  
+  // Check if address contains a known district
+  for (const [key, city] of Object.entries(ADDRESS_TO_CITY_MAP)) {
+    if (addressLower.includes(key)) {
+      return city;
+    }
+  }
+  
+  // Return selected city if no match found
+  return selectedCity;
+}
 
 export function mapCityName(cityKey: string): string {
   // Now that we fetch cities directly from Aramex Location API in the frontend,
@@ -552,6 +671,8 @@ function getShipperConfig() {
   const env = getAramexEnv();
   const requiredInProd = env === "prod";
 
+  const credentials = getAramexCredentials();
+
   const getValue = (key: string, fallback: string) => {
     if (requiredInProd) return getRequiredEnv(key);
     return process.env[key] || fallback;
@@ -561,14 +682,15 @@ function getShipperConfig() {
     addressLine1: getValue("ARAMEX_SHIPPER_ADDRESS_LINE1", "5th Settlement"),
     addressLine2: getValue("ARAMEX_SHIPPER_ADDRESS_LINE2", "New Cairo"),
     addressLine3: process.env.ARAMEX_SHIPPER_ADDRESS_LINE3 || "",
-    city: env === "prod" ? "Cairo" : getValue("ARAMEX_SHIPPER_CITY", "Cairo"),
-    state: env === "prod" ? "Cairo" : getValue("ARAMEX_SHIPPER_STATE", "Cairo"),
+    city: env === "prod" ? "New Cairo" : getValue("ARAMEX_SHIPPER_CITY", "New Cairo"),
+    state: env === "prod" ? "New Cairo" : getValue("ARAMEX_SHIPPER_STATE", "New Cairo"),
     postCode: getValue("ARAMEX_SHIPPER_POSTCODE", "11835"),
     countryCode: getValue("ARAMEX_SHIPPER_COUNTRY_CODE", "EG"),
     companyName: getValue("ARAMEX_SHIPPER_COMPANY", "natOnat"),
     personName: getValue("ARAMEX_SHIPPER_PERSON", "Michael Soliman"),
     phone: getValue("ARAMEX_SHIPPER_PHONE", "+201070004227"),
     email: getValue("ARAMEX_SHIPPER_EMAIL", "natonateg@gmail.com"),
+    accountNumber: credentials.AccountNumber,
   };
 }
 
@@ -582,6 +704,7 @@ export function buildShipmentFromOrder(
     email: string;
     address: string;
     city: string;
+    postCode?: string;
   },
   items: Array<{
     name: string;
@@ -599,8 +722,8 @@ export function buildShipmentFromOrder(
       Line2: shipperConfig.addressLine2,
       Line3: shipperConfig.addressLine3,
       City: mapCityName(shipperConfig.city),
-      StateOrProvinceCode: CITY_STATE_MAP[shipperConfig.city.toLowerCase()] || "Cairo",
-      PostCode: "",
+      StateOrProvinceCode: resolveGovernorateForCity(shipperConfig.city),
+      PostCode: shipperConfig.postCode,
       CountryCode: shipperConfig.countryCode,
       Longitude: 0,
       Latitude: 0,
@@ -627,15 +750,18 @@ export function buildShipmentFromOrder(
     },
   };
 
+  // Extract specific district from address for better Aramex validation
+  const detectedCity = extractCityFromAddress(customer.address, customer.city);
+  
   const consignee: AramexParty = {
     Reference1: orderRef,
     PartyAddress: {
       Line1: customer.address,
       Line2: "",
       Line3: "",
-      City: mapCityName(customer.city),
-      StateOrProvinceCode: mapCityName(customer.city), // Standard Cairo/Giza for Egyptian gateway
-      PostCode: "11511",
+      City: detectedCity,
+      StateOrProvinceCode: resolveGovernorateForCity(detectedCity),
+      PostCode: customer.postCode || "",
       CountryCode: "EG",
       Longitude: 0,
       Latitude: 0,
@@ -648,7 +774,7 @@ export function buildShipmentFromOrder(
     },
     Contact: {
       Department: "",
-      PersonName: `${customer.first_name} ${customer.last_name}`,
+      PersonName: `${customer.first_name} ${customer.last_name}`.trim(),
       Title: "",
       CompanyName: "",
       PhoneNumber1: customer.phone,
@@ -657,10 +783,10 @@ export function buildShipmentFromOrder(
       PhoneNumber2Ext: "",
       FaxNumber: "",
       CellPhone: customer.phone,
-      EmailAddress: customer.email,
+      EmailAddress: customer.email || "",
       Type: "",
     },
-    AccountNumber: "",
+    AccountNumber: shipperConfig.accountNumber,
   };
 
   const itemsDescription = items.map((i) => `${i.name} x${i.quantity}`).join(", ");
@@ -689,8 +815,8 @@ export function buildShipmentFromOrder(
       GoodsOriginCountry: "EG",
       NumberOfPieces: numberOfPieces,
       ProductGroup: "DOM", // Domestic
-      ProductType: "COM", // Commercial
-      PaymentType: cod ? "C" : "P", // C = COD, P = Prepaid
+      ProductType: cod ? "CDS" : "COM", // Use CDS for COD, COM for Prepaid
+      PaymentType: cod ? "C" : "P",     // Use C for COD, P for Prepaid
       CustomsValueAmount: {
         CurrencyCode: "EGP",
         Value: totalValue,

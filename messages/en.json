@@ -545,7 +545,8 @@
       "continueShopping": "Continue Shopping",
       "note": "Shipping and taxes calculated at checkout",
       "egyptOnly": "🚚 Egypt delivery only",
-      "shippingAtCheckout": "Shipping calculated at checkout"
+      "shippingAtCheckout": "Shipping calculated at checkout",
+      "discount": "Discount"
     },
     "savings": "You're saving EGP {amount}"
   },
@@ -579,6 +580,8 @@
         "city": "City",
         "cityPlaceholder": "Select City",
         "loadingCities": "Loading cities...",
+        "postCode": "Post Code",
+        "postCodePlaceholder": "Postal Code",
         "phone": "Phone Number",
         "phonePlaceholder": "01xxxxxxxxx"
       },
@@ -652,6 +655,7 @@
       "title": "Order Summary",
       "qty": "Qty: {quantity}",
       "subtotal": "Subtotal",
+      "discount": "Discount",
       "shipping": "Shipping",
       "free": "Free",
       "freeShippingOver1000": "(Order > 1000 EGP)",

@@ -535,7 +535,8 @@
       "continueShopping": "مواصلة التسوق",
       "note": "يتم حساب الشحن والضرائب عند الدفع",
       "egyptOnly": "🚚 توصيل لجميع محافظات مصر فقط",
-      "shippingAtCheckout": "سيتم حساب الشحن عند الدفع"
+      "shippingAtCheckout": "سيتم حساب الشحن عند الدفع",
+      "discount": "الخصم"
     },
     "savings": "سوف توفر {amount} جنيه"
   },
@@ -569,6 +570,8 @@
         "city": "المدينة",
         "cityPlaceholder": "اختر المدينة",
         "loadingCities": "جاري تحميل المدن...",
+        "postCode": "الرمز البريدي",
+        "postCodePlaceholder": "الرمز البريدي",
         "phone": "رقم الهاتف",
         "phonePlaceholder": "01xxxxxxxxx"
       },
@@ -642,6 +645,7 @@
       "title": "ملخص الطلب",
       "qty": "الكمية: {quantity}",
       "subtotal": "المجموع الفرعي",
+      "discount": "الخصم",
       "shipping": "الشحن",
       "free": "مجاني",
       "freeShippingOver1000": "(للطلبات أكثر من 1000 جنيه)",
