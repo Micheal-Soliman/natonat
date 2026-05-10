@@ -17,19 +17,10 @@ export function getAramexHost(): string {
 
 const ARAMEX_BASE_URL = "https://ws.aramex.net/ShippingAPI.V2"; 
 const ARAMEX_UAT_URL = "https://ws.uat.aramex.net/ShippingAPI.V2"; 
-const ARAMEX_DEV_URL = "https://ws.dev.aramex.net/ShippingAPI.V2";
-
-const getBaseUrl = () => {
-  const env = getAramexEnv();
-  if (env === "prod") return ARAMEX_BASE_URL;
-  // Try UAT first as it's usually more stable than dev
-  return ARAMEX_UAT_URL;
-};
-
-const ARAMEX_LOCATION_JSON_BASE = () => `${getBaseUrl()}/Location/Service_1_0.svc/json`;
-const ARAMEX_RATE_JSON_BASE = () => `${getBaseUrl()}/RateCalculator/Service_1_0.svc/json`;
-const ARAMEX_SHIPPING_JSON_BASE = () => `${getBaseUrl()}/Shipping/Service_1_0.svc/json`;
-const ARAMEX_TRACKING_JSON_BASE = () => `${getBaseUrl()}/Tracking/Service_1_0.svc/json`;
+const ARAMEX_LOCATION_JSON_BASE = `${ARAMEX_BASE_URL}/Location/Service_1_0.svc/json`;
+const ARAMEX_RATE_JSON_BASE = `${ARAMEX_BASE_URL}/RateCalculator/Service_1_0.svc/json`;
+const ARAMEX_SHIPPING_JSON_BASE = `${ARAMEX_BASE_URL}/Shipping/Service_1_0.svc/json`;
+const ARAMEX_TRACKING_JSON_BASE = `${ARAMEX_BASE_URL}/Tracking/Service_1_0.svc/json`;
 const ARAMEX_VALIDATE_ADDRESS_JSON_BASE = `${ARAMEX_BASE_URL}/Location/Service_1_0.svc/json/ValidateAddress`; // Updated to match Aramex support recommendation
 
 export interface AramexCredentials {
