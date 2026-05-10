@@ -28,6 +28,18 @@ export function logAramexRequest(
     error,
   };
 
+  const isServerless = process.env.VERCEL || process.env.NODE_ENV === 'production';
+
+  // Always log to console for visibility in Vercel logs
+  if (error) {
+    console.error(`[Aramex API Error] ${endpoint}:`, { durationMs, error, response: JSON.stringify(response).substring(0, 500) });
+  } else {
+    console.log(`[Aramex API Success] ${endpoint}:`, { durationMs });
+  }
+
+  // Skip file logging in serverless environments
+  if (isServerless) return;
+
   try {
     let logs: AramexLogEntry[] = [];
     if (fs.existsSync(LOG_FILE)) {
