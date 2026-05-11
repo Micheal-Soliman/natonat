@@ -81,35 +81,58 @@ export interface AramexShipmentDetails {
     Width: number;
     Height: number;
     Unit: string;
-  };
+  } | null;
   ActualWeight: {
     Value: number;
     Unit: string;
   };
-  ChargeableWeight?: {
+  ChargeableWeight: {
     Value: number;
     Unit: string;
-  };
+  } | null;
   DescriptionOfGoods?: string;
   GoodsOriginCountry: string;
   NumberOfPieces: number;
   ProductGroup: string; // DOM or EXP
-  ProductType: string; // COM, DOX, etc.
+  ProductType: string; // COM, DOX, CDS, etc.
   PaymentType: string; // P, C, 3
-  PaymentOptions?: string;
-  Services?: string;
-  CustomsValueAmount?: {
+  PaymentOptions: string | null;
+  Services: string;
+  CustomsValueAmount: {
     CurrencyCode: string;
     Value: number;
-  };
-  CashOnDeliveryAmount?: {
+  } | null;
+  CashOnDeliveryAmount: {
     Value: number;
     CurrencyCode: string;
-  };
-  Insurance?: {
-    InsuredValue: number;
+  } | null;
+  InsuranceAmount: {
+    Value: number;
     CurrencyCode: string;
-  };
+  } | null;
+  CashAdditionalAmount: {
+    Value: number;
+    CurrencyCode: string;
+  } | null;
+  CashAdditionalAmountDescription: string | null;
+  CollectAmount: {
+    Value: number;
+    CurrencyCode: string;
+  } | null;
+  Items: Array<{
+    PackageType: string;
+    Quantity: number;
+    Weight: {
+      Unit: string;
+      Value: number;
+    };
+    ChargeableWeight: {
+      Unit: string;
+      Value: number;
+    };
+    Comments: string;
+    Reference: string | null;
+  }>;
 }
 
 // Single shipment request for SOAP API (simplified structure)
@@ -160,6 +183,7 @@ export interface AramexShipmentResponse {
   }>;
   HasErrors: boolean;
   Shipments?: Array<{
+    ID?: string;
     Reference1?: string;
     Reference2?: string;
     Reference3?: string;
@@ -195,11 +219,11 @@ export function getAramexCredentials(): AramexCredentials {
   }
 
   return {
-    UserName: process.env.ARAMEX_USERNAME || "testingapi@aramex.com",
-    Password: process.env.ARAMEX_PASSWORD || "R123456789$r",
+    UserName: process.env.ARAMEX_USERNAME || "natonateg@gmail.com",
+    Password: process.env.ARAMEX_PASSWORD || "Z336600@m",
     Version: process.env.ARAMEX_VERSION || "v1",
-    AccountNumber: process.env.ARAMEX_ACCOUNT_NUMBER || "987654",
-    AccountPin: process.env.ARAMEX_ACCOUNT_PIN || "226321",
+    AccountNumber: process.env.ARAMEX_ACCOUNT_NUMBER || "72751426",
+    AccountPin: process.env.ARAMEX_ACCOUNT_PIN || "765780",
     AccountEntity: process.env.ARAMEX_ACCOUNT_ENTITY || "CAI",
     AccountCountryCode: process.env.ARAMEX_ACCOUNT_COUNTRY_CODE || "EG",
     Source: Number(process.env.ARAMEX_SOURCE || 24),
@@ -232,52 +256,142 @@ export async function createShipment(
       Reference5: "",
     },
     LabelInfo: {
-      ReportID: 9201,
+      ReportID: 9729,
       ReportType: "URL",
     },
     Shipments: [
       {
-        Reference1: shipmentData.Reference1 || "",
-        Reference2: shipmentData.Reference2 || "",
-        Reference3: shipmentData.Reference3 || "",
+        Reference1: "",
+        Reference2: "",
+        Reference3: "",
         Shipper: {
-          ...shipmentData.Shipper,
+          Reference1: shipmentData.Shipper.Reference1 || "",
+          Reference2: shipmentData.Shipper.Reference2 || "",
           AccountNumber: credentials.AccountNumber,
+          PartyAddress: {
+            Line1: shipmentData.Shipper.PartyAddress.Line1,
+            Line2: "",
+            Line3: "",
+            City: shipmentData.Shipper.PartyAddress.City,
+            StateOrProvinceCode: "",
+            PostCode: "00000",
+            CountryCode: "EG",
+            Longitude: 0.0,
+            Latitude: 0.0,
+            BuildingNumber: "",
+            BuildingName: "",
+            Floor: "",
+            Apartment: "",
+            POBox: "",
+            Description: "",
+          },
+          Contact: {
+            Department: "",
+            PersonName: shipmentData.Shipper.Contact.PersonName,
+            Title: "",
+            CompanyName: shipmentData.Shipper.Contact.CompanyName,
+            PhoneNumber1: shipmentData.Shipper.Contact.PhoneNumber1,
+            PhoneNumber1Ext: "",
+            PhoneNumber2: "",
+            PhoneNumber2Ext: "",
+            FaxNumber: "",
+            CellPhone: shipmentData.Shipper.Contact.CellPhone || shipmentData.Shipper.Contact.PhoneNumber1,
+            EmailAddress: shipmentData.Shipper.Contact.EmailAddress,
+            Type: "",
+          },
         },
         Consignee: {
-          Reference1: shipmentData.Consignee.Reference1,
-          PartyAddress: shipmentData.Consignee.PartyAddress,
-          Contact: shipmentData.Consignee.Contact,
-          AccountNumber: credentials.AccountNumber,
-        },
-        ThirdParty: {
-          Reference1: "",
+          Reference1: shipmentData.Consignee.Reference1 || "",
           Reference2: "",
-          PartyAddress: { Line1: "", Line2: "", Line3: "", City: "Cairo", StateOrProvinceCode: "", PostCode: "", CountryCode: "", Longitude: 0, Latitude: 0, BuildingNumber: null, BuildingName: null, Floor: null, Apartment: null, POBox: null, Description: null },
-          Contact: { Department: "", PersonName: "", Title: "", CompanyName: "", PhoneNumber1: "", PhoneNumber1Ext: "", PhoneNumber2: "", PhoneNumber2Ext: "", FaxNumber: "", CellPhone: "", EmailAddress: "", Type: "" },
-          AccountNumber: credentials.AccountNumber,
-        },
-        ShippingDateTime: shipmentData.ShippingDateTime,
-        DueDate: shipmentData.DueDate || shipmentData.ShippingDateTime,
-        Comments: shipmentData.Comments,
-        PickupLocation: shipmentData.PickupLocation,
-        OperationsInstructions: shipmentData.OperationsInstructions,
-        AccountingInstrcutions: shipmentData.AccountingInstrcutions,
-        Details: {
-          ...shipmentData.Details,
-          ChargeableWeight: shipmentData.Details.ChargeableWeight || {
-            Value: shipmentData.Details.ActualWeight.Value,
-            Unit: shipmentData.Details.ActualWeight.Unit,
+          AccountNumber: "",
+          PartyAddress: {
+            Line1: shipmentData.Consignee.PartyAddress.Line1,
+            Line2: "",
+            Line3: "",
+            City: shipmentData.Consignee.PartyAddress.City,
+            StateOrProvinceCode: "",
+            PostCode: "00000",
+            CountryCode: "EG",
+            Longitude: 0.0,
+            Latitude: 0.0,
+            BuildingNumber: "",
+            BuildingName: "",
+            Floor: "",
+            Apartment: "",
+            POBox: "",
+            Description: "",
           },
-          PaymentOptions: shipmentData.Details.PaymentOptions || "",
-          CashOnDeliveryAmount: shipmentData.Details.CashOnDeliveryAmount || null,
-          CustomsValueAmount: shipmentData.Details.CustomsValueAmount || null,
+          Contact: {
+            Department: "",
+            PersonName: shipmentData.Consignee.Contact.PersonName,
+            Title: "",
+            CompanyName: shipmentData.Consignee.Contact.CompanyName || shipmentData.Consignee.Contact.PersonName,
+            PhoneNumber1: shipmentData.Consignee.Contact.PhoneNumber1,
+            PhoneNumber1Ext: "",
+            PhoneNumber2: "",
+            PhoneNumber2Ext: "",
+            FaxNumber: "",
+            CellPhone: shipmentData.Consignee.Contact.CellPhone || shipmentData.Consignee.Contact.PhoneNumber1,
+            EmailAddress: shipmentData.Consignee.Contact.EmailAddress || "",
+            Type: "",
+          },
         },
-        Attachments: [],
-        ForeignHAWB: shipmentData.ForeignHAWB || "",
+        ThirdParty: null,
+        ShippingDateTime: shipmentData.ShippingDateTime,
+        DueDate: shipmentData.DueDate || null,
+        Comments: "",
+        PickupLocation: "Reception",
+        OperationsInstructions: "",
+        AccountingInstrcutions: "",
+        Details: {
+          Dimensions: null,
+          ActualWeight: {
+            Unit: "KG",
+            Value: shipmentData.Details.ActualWeight.Value,
+          },
+          ChargeableWeight: null,
+          DescriptionOfGoods: shipmentData.Details.DescriptionOfGoods || "",
+          GoodsOriginCountry: "EG",
+          NumberOfPieces: shipmentData.Details.NumberOfPieces || 1,
+          ProductGroup: "DOM",
+          ProductType: "CDS",
+          PaymentType: "P",
+          PaymentOptions: "",
+          CustomsValueAmount: {
+            Value: 0,
+            CurrencyCode: "EGP",
+          },
+          CashOnDeliveryAmount: {
+            Value: shipmentData.Details.CashOnDeliveryAmount?.Value || 0.0,
+            CurrencyCode: "EGP",
+          },
+          InsuranceAmount: null,
+          CashAdditionalAmount: null,
+          CashAdditionalAmountDescription: "",
+          CollectAmount: null,
+          Services: "",
+          Items: [
+            {
+              PackageType: "Box",
+              Quantity: shipmentData.Details.Items?.[0]?.Quantity || 1,
+              Weight: {
+                Unit: "KG",
+                Value: shipmentData.Details.Items?.[0]?.Weight?.Value || 1.0,
+              },
+              ChargeableWeight: {
+                Unit: "KG",
+                Value: shipmentData.Details.Items?.[0]?.ChargeableWeight?.Value || 1.0,
+              },
+              Comments: shipmentData.Details.Items?.[0]?.Comments || "",
+              Reference: "",
+            },
+          ],
+        },
+        Attachments: null,
+        ForeignHAWB: "",
         TransportType: 0,
-        PickupGUID: shipmentData.PickupGUID || "",
-        Number: null,
+        PickupGUID: "",
+        Number: "",
         ScheduledDelivery: null,
       },
     ],
@@ -296,45 +410,57 @@ export async function createShipment(
         Accept: "application/json",
       },
       body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(30000),
+      signal: AbortSignal.timeout(60000), // Increased to 60s
     });
 
     rawText = await response.text();
 
     if (!response.ok) {
       error = `Aramex CreateShipments error: ${response.status} (${ARAMEX_SHIPPING_JSON_BASE}/CreateShipments) - ${rawText}`;
+      // Log as raw text if not JSON to avoid SyntaxError
+      logAramexRequest(
+        `${ARAMEX_SHIPPING_JSON_BASE}/CreateShipments`,
+        payload,
+        rawText.startsWith("{") ? JSON.parse(rawText) : { rawResponse: rawText },
+        Date.now() - startTime,
+        error
+      );
       throw new Error(error);
     }
   } catch (err) {
     error = err instanceof Error ? err.message : String(err);
+    if (!response) {
+       // Log connection errors
+       logAramexRequest(
+         `${ARAMEX_SHIPPING_JSON_BASE}/CreateShipments`,
+         payload,
+         null,
+         Date.now() - startTime,
+         error
+       );
+    }
     throw err;
-  } finally {
-    // Log request/response
-    logAramexRequest(
-      `${ARAMEX_SHIPPING_JSON_BASE}/CreateShipments`,
-      payload,
-      rawText ? JSON.parse(rawText) : null,
-      Date.now() - startTime,
-      error
-    );
   }
 
-  const json = rawText ? (JSON.parse(rawText) as AramexShipmentResponse) : ({} as AramexShipmentResponse);
+  const json = rawText && rawText.startsWith("{") ? (JSON.parse(rawText) as AramexShipmentResponse) : ({} as AramexShipmentResponse);
   const hasErrors = !!json?.HasErrors;
   const shipment = json?.Shipments?.[0];
 
+  // Combine notifications from top-level and shipment-level
+  const allNotifications = [
+    ...(json?.Notifications || []),
+    ...(shipment?.Notifications || [])
+  ];
+
   return {
     success: !hasErrors && !shipment?.HasErrors,
-    trackingNumber: shipment?.ShipmentLabel?.TrackingNumber,
+    trackingNumber: shipment?.ID || shipment?.ShipmentLabel?.TrackingNumber,
     labelUrl: shipment?.ShipmentLabel?.LabelURL,
     guid: shipment?.GUID,
     raw: rawText,
-    error:
-      hasErrors
-        ? json?.Notifications?.map((n) => n.Message).join(", ") || "Unknown error"
-        : shipment?.HasErrors
-          ? shipment?.Notifications?.map((n) => n.Message).join(", ") || "Unknown error"
-          : undefined,
+    error: allNotifications.length > 0 
+      ? allNotifications.map((n) => n.Message).join(", ") 
+      : hasErrors || shipment?.HasErrors ? "Unknown Aramex Error" : undefined,
   };
 }
 
@@ -362,7 +488,7 @@ export async function trackShipment(trackingNumber: string): Promise<any> {
       Accept: "application/json",
     },
     body: JSON.stringify(payload),
-    signal: AbortSignal.timeout(30000),
+    signal: AbortSignal.timeout(60000),
   });
 
   const rawText = await response.text();
@@ -435,7 +561,7 @@ export async function calculateRate(rateData: AramexRateRequest): Promise<any> {
       Accept: "application/json",
     },
     body: JSON.stringify(payload),
-    signal: AbortSignal.timeout(30000),
+    signal: AbortSignal.timeout(60000),
   });
 
   const rawText = await response.text();
@@ -793,40 +919,63 @@ export function buildShipmentFromOrder(
   const numberOfPieces = items.length > 0 ? items.reduce((sum, i) => sum + (i.quantity || 1), 0) : 1;
   const actualWeight = Math.max(0.5, 0.5 * numberOfPieces);
 
+  const now = Date.now();
+  const offset = "+0300";
+  const shippingDate = `/Date(${now}${offset})/`;
+  const dueDate = `/Date(${now + 7 * 24 * 60 * 60 * 1000}${offset})/`;
+
   return {
     Reference1: orderRef,
-    Reference2: `NAT-${Date.now()}`,
+    Reference2: `NAT-${now}`,
     Shipper: shipper,
     Consignee: consignee,
-    ShippingDateTime: `/Date(${Date.now()})/`,
+    ShippingDateTime: shippingDate,
+    DueDate: dueDate,
     Comments: `Order: ${orderRef}`,
     Details: {
-      Dimensions: {
-        Length: 30,
-        Width: 20,
-        Height: 10,
-        Unit: "cm",
-      },
+      Dimensions: null,
       ActualWeight: {
         Value: actualWeight,
-        Unit: "Kg",
+        Unit: "KG",
+      },
+      ChargeableWeight: {
+        Value: actualWeight,
+        Unit: "KG",
       },
       DescriptionOfGoods: itemsDescription,
       GoodsOriginCountry: "EG",
       NumberOfPieces: numberOfPieces,
-      ProductGroup: "DOM", // Domestic
-      ProductType: cod ? "CDS" : "COM", // Use CDS for COD, COM for Prepaid
-      PaymentType: cod ? "C" : "P",     // Use C for COD, P for Prepaid
+      ProductGroup: "DOM",
+      ProductType: cod ? "CDS" : "COM",
+      PaymentType: cod ? "C" : "P",
+      PaymentOptions: null,
+      Services: "",
       CustomsValueAmount: {
         CurrencyCode: "EGP",
         Value: totalValue,
       },
-      ...(cod && {
-        CashOnDeliveryAmount: {
-          Value: codAmount,
-          CurrencyCode: "EGP",
+      CashOnDeliveryAmount: cod ? {
+        Value: codAmount,
+        CurrencyCode: "EGP",
+      } : { Value: 0, CurrencyCode: "EGP" },
+      InsuranceAmount: null,
+      CashAdditionalAmount: null,
+      CashAdditionalAmountDescription: null,
+      CollectAmount: null,
+      Items: items.map((item) => ({
+        PackageType: "Box",
+        Quantity: item.quantity,
+        Weight: {
+          Unit: "KG",
+          Value: actualWeight / numberOfPieces, // Approximate per item weight
         },
-      }),
+        ChargeableWeight: {
+          Unit: "KG",
+          Value: actualWeight / numberOfPieces,
+        },
+        Comments: item.name,
+        Reference: null,
+      })),
     },
   };
 }
