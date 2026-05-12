@@ -517,10 +517,16 @@ function ShopContent() {
                         {product.name}
                       </h3>
                       <div className="flex flex-col gap-0.5 sm:gap-1">
-                        <div className="flex items-baseline gap-1 sm:gap-2">
-                          <span className="text-[#0F1A26] font-bold text-sm sm:text-lg">EGP {product.price}</span>
-                          <span className="text-[#0F1A26]/50 text-xs sm:text-sm line-through font-medium">EGP {product.originalPrice}</span>
-                        </div>
+                        {product.dynamicPricing ? (
+                          <div className="flex items-baseline gap-1 sm:gap-2">
+                            <span className="text-[#EEBC3F] font-bold text-sm sm:text-lg">Price calculated on selection</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-baseline gap-1 sm:gap-2">
+                            <span className="text-[#0F1A26] font-bold text-sm sm:text-lg">EGP {product.price}</span>
+                            <span className="text-[#0F1A26]/50 text-xs sm:text-sm line-through font-medium">EGP {product.originalPrice}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </Link>

@@ -262,7 +262,11 @@ export function Navigation() {
                             <p className="text-[#0F1A26] font-medium text-sm truncate">{product.name}</p>
                             <p className="text-[#0F1A26]/50 text-xs">{product.type}</p>
                           </div>
-                          <span className="text-[#EEBC3F] font-bold text-sm">EGP {product.price}</span>
+                          {product.dynamicPricing ? (
+                            <span className="text-[#EEBC3F] font-bold text-xs">Dynamic</span>
+                          ) : (
+                            <span className="text-[#EEBC3F] font-bold text-sm">EGP {product.price}</span>
+                          )}
                         </Link>
                       ))}
                       <button

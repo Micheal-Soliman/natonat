@@ -14,6 +14,7 @@ import { ShoppingBag, ChevronRight, Shield, Sparkles, Ruler, Heart, Share2, Chec
 import { FAQSection } from "@/app/components/faq-section";
 import { SwipeableProductImage } from "@/app/components/swipeable-product-image";
 import { type Product, products } from "@/lib/products";
+import { calculateBundlePrice, getPricingRuleKey } from "@/lib/bundle-pricing";
 
 // Separate component for detailed product description
 interface ProductDetailedDescriptionProps {
@@ -366,7 +367,29 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
     return { price: product.price, originalPrice: product.originalPrice };
   };
 
-  const currentPrice = getPriceBySize(selectedSize);
+  // Calculate dynamic bundle price using the pricing system
+  const calculateDynamicBundlePrice = useCallback(() => {
+    if (!product.dynamicPricing || !product.bundleItems) {
+      return { price: product.price, originalPrice: product.originalPrice };
+    }
+
+    const pricingRuleKey = getPricingRuleKey(product);
+    if (!pricingRuleKey) {
+      return { price: product.price, originalPrice: product.originalPrice };
+    }
+
+    // Convert bundleSelections to the format expected by the pricing system
+    const selections = product.bundleItems.map((item, index) => ({
+      productId: bundleSelections[index]?.productId,
+      size: bundleSelections[index]?.size,
+      color: bundleSelections[index]?.color,
+      quantity: item.quantity,
+    }));
+
+    return calculateBundlePrice(product.bundleItems, selections, products, pricingRuleKey);
+  }, [product, bundleSelections, products]);
+
+  const currentPrice = product.dynamicPricing ? calculateDynamicBundlePrice() : getPriceBySize(selectedSize);
   
   // Filter images based on selected color - memoized to prevent infinite loops
   const colorImages = useMemo(() => {
@@ -1171,8 +1194,14 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                   <div className="mt-3">
                     <h3 className="text-[#0F1A26] font-bold group-hover:text-[#EEBC3F] transition-colors duration-300 text-sm sm:text-lg line-clamp-1">{relatedProduct.name}</h3>
                     <div className="flex items-baseline gap-2 sm:gap-3 mt-1 sm:mt-2">
-                      <span className="text-[#0F1A26] font-bold text-sm sm:text-lg">EGP {relatedProduct.price}</span>
-                      <span className="text-[#0F1A26]/30 text-xs sm:text-sm line-through">EGP {relatedProduct.originalPrice}</span>
+                      {relatedProduct.dynamicPricing ? (
+                        <span className="text-[#EEBC3F] font-bold text-sm sm:text-lg">Price calculated on selection</span>
+                      ) : (
+                        <>
+                          <span className="text-[#0F1A26] font-bold text-sm sm:text-lg">EGP {relatedProduct.price}</span>
+                          <span className="text-[#0F1A26]/30 text-xs sm:text-sm line-through">EGP {relatedProduct.originalPrice}</span>
+                        </>
+                      )}
                     </div>
                   </div>
                 </Link>

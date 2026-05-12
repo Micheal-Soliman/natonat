@@ -152,11 +152,13 @@ export function SwipeableProductImage({ product }: SwipeableProductImageProps) {
                       product.tag === 'Limited' ? t('limited') : product.tag}
         </span>
       )}
-      
+
       {/* Discount Badge */}
-      <span className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-[#EEBC3F] text-[#1e3a5f] text-xs sm:text-sm font-bold px-2 py-1 sm:px-3 sm:py-1.5 rounded-full z-30 shadow-lg">
-        -{Math.round((1 - product.price / product.originalPrice) * 100)}%
-      </span>
+      {!product.dynamicPricing && product.originalPrice > 0 && product.price > 0 && (
+        <span className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-[#EEBC3F] text-[#1e3a5f] text-xs sm:text-sm font-bold px-2 py-1 sm:px-3 sm:py-1.5 rounded-full z-30 shadow-lg">
+          -{Math.round((1 - product.price / product.originalPrice) * 100)}%
+        </span>
+      )}
 
       {/* Mobile Dots Indicator - Enhanced */}
       {hasMultipleImages && (

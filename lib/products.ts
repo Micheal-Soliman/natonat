@@ -39,6 +39,9 @@ export interface Product {
   gender?: "male" | "female" | "unisex" | ("male" | "female" | "unisex")[];
   collection?: "sports" | "pharaoh" | null;
   printType?: "plain" | "printed";
+  // Dynamic pricing for bundles
+  dynamicPricing?: boolean;
+  pricingRule?: string;
 }
 
 export const products: Product[] = [
@@ -1081,7 +1084,7 @@ export const products: Product[] = [
   },
   
   // Bundles - Updated with new discount structure
-  // 1. Three Sizes Bundle - 15% off
+  // 1. Three Sizes Bundle - 8% off on total (dynamic pricing)
   {
     id: 101,
     slug: "three-sizes-bundle",
@@ -1089,8 +1092,8 @@ export const products: Product[] = [
     category: "bundles",
     size: null,
     theme: "mixed",
-    price: 1650,
-    originalPrice: 1947,
+    price: 0,
+    originalPrice: 0,
     type: "Bundle",
     tag: "Best Value",
     image: "/bundles/Three%20Sizes%20Bundle/6o.png",
@@ -1098,14 +1101,16 @@ export const products: Product[] = [
       "/bundles/Three%20Sizes%20Bundle/6o.png",
       "/bundles/Three%20Sizes%20Bundle/7o.png"
     ],
-    description: "Complete set with S, M, and L size covers for all your luggage",
+    description: "Complete set with S, M, and L size covers for all your luggage (8% off on total)",
     isBundle: true,
+    dynamicPricing: true,
+    pricingRule: "total_8_percent_off",
     bundleItems: [
       { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30], quantity: 1, label: "First Cover" },
       { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30], quantity: 1, label: "Second Cover" },
       { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30], quantity: 1, label: "Third Cover" }
     ],
-    features: ["3 Different sizes (S, M, L)", "Save 15%", "Perfect for families", "Complete luggage protection"]
+    features: ["3 Different sizes (S, M, L)", "8% off on total", "Perfect for families", "Complete luggage protection"]
   },
   // 2. All Set Bundle - 18% off (Passport + Cover + PackOnat)
   {
@@ -1115,8 +1120,8 @@ export const products: Product[] = [
     category: "bundles",
     size: null,
     theme: "mixed",
-    price: 1649,
-    originalPrice: 2012,
+    price: 2889,
+    originalPrice: 3200,
     type: "Bundle",
     tag: "Popular",
     image: "/bundles/All%20Set%20Bundel/1%20o.png",
@@ -1133,7 +1138,7 @@ export const products: Product[] = [
     ],
     features: ["Cover + Packing Folder + Passport", "Save 18%", "Complete travel kit", "Ready to go"]
   },
-  // 3. PackOnat with Cover - 12% off
+  // 3. PackOnat with Cover - 8% off on cover (dynamic pricing)
   {
     id: 103,
     slug: "packonat-cover-bundle",
@@ -1141,8 +1146,8 @@ export const products: Product[] = [
     category: "bundles",
     size: null,
     theme: "minimal",
-    price: 1275,
-    originalPrice: 1448,
+    price: 0,
+    originalPrice: 0,
     type: "Bundle",
     tag: null,
     image: "/bundles/PackOnat%20%2B%20Cover/3o.png",
@@ -1150,15 +1155,17 @@ export const products: Product[] = [
       "/bundles/PackOnat%20%2B%20Cover/3o.png",
       "/bundles/PackOnat%20%2B%20Cover/4o.png"
     ],
-    description: "Travel in style with packing folder and matching cover",
+    description: "Travel in style with packing folder and matching cover (8% off on cover)",
     isBundle: true,
+    dynamicPricing: true,
+    pricingRule: "cover_8_percent_off",
     bundleItems: [
       { productIds: [50, 51, 52], quantity: 1, label: "Select PackOnat Color" },
       { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30], quantity: 1, label: "Select Luggage Cover" }
     ],
-    features: ["Packing Folder + Cover combo", "Save 12%", "Modern design", "Travel essentials"]
+    features: ["Packing Folder + Cover combo", "8% off on cover", "Modern design", "Travel essentials"]
   },
-  // 4. 2 Covers + PackOnat - 15% off
+  // 4. 2 Covers + PackOnat - 10% off on PackOnat (price calculated in bundle page)
   {
     id: 104,
     slug: "double-cover-packonat-bundle",
@@ -1166,8 +1173,8 @@ export const products: Product[] = [
     category: "bundles",
     size: null,
     theme: "mixed",
-    price: 1799,
-    originalPrice: 2117,
+    price: 0,
+    originalPrice: 0,
     type: "Bundle",
     tag: "Best Seller",
     image: "/bundles/2%20Covers%20%2B%20packOnat/5o.png",
@@ -1175,14 +1182,16 @@ export const products: Product[] = [
       "/bundles/2%20Covers%20%2B%20packOnat/5o.png",
       "/bundles/2%20Covers%20%2B%20packOnat/8o.png"
     ],
-    description: "Perfect for couples - two covers and a shared packing folder",
+    description: "Perfect for couples - two covers and a shared packing folder (10% off on PackOnat)",
     isBundle: true,
+    dynamicPricing: true,
+    pricingRule: "packonat_10_percent_off",
     bundleItems: [
       { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30], quantity: 1, label: "First Cover" },
       { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30], quantity: 1, label: "Second Cover" },
       { productIds: [50, 51, 52], quantity: 1, label: "Select PackOnat Color" }
     ],
-    features: ["2 Covers + Packing Folder", "Save 15%", "Perfect for couples", "Travel together"]
+    features: ["2 Covers + Packing Folder", "10% off on PackOnat", "Perfect for couples", "Travel together"]
   },
   // 5. 2 PackOnat - 12% off
   {
@@ -1192,8 +1201,8 @@ export const products: Product[] = [
     category: "bundles",
     size: null,
     theme: "minimal",
-    price: 1399,
-    originalPrice: 1598,
+    price: 1669,
+    originalPrice: 1850,
     type: "Bundle",
     tag: null,
     image: "/bundles/2%20PackOnat%20Bundle/10o.png",
@@ -1209,7 +1218,32 @@ export const products: Product[] = [
     ],
     features: ["2 PackOnat packing folders", "Save 12%", "His & Hers", "Matching set"]
   },
-  // 6. Passport + Any Item - 15% off (Passport + Cover combo)
+  // 6. 2 Passport Wallets - Fixed price bundle
+  {
+    id: 110,
+    slug: "double-passport-wallets-bundle",
+    name: "2 Passport Wallets",
+    category: "bundles",
+    size: null,
+    theme: "minimal",
+    price: 3149,
+    originalPrice: 3578,
+    type: "Bundle",
+    tag: "Best Value",
+    image: "/passport%20wallet/Cognac%20brown/1.png",
+    images: [
+      "/passport%20wallet/Cognac%20brown/1.png",
+      "/passport%20wallet/Espresso%20brown/1.png"
+    ],
+    description: "Perfect for couples - two premium passport wallets",
+    isBundle: true,
+    bundleItems: [
+      { productIds: [107, 108, 109], quantity: 1, label: "First Passport Wallet Color" },
+      { productIds: [107, 108, 109], quantity: 1, label: "Second Passport Wallet Color" }
+    ],
+    features: ["2 Passport Wallets", "RFID Protection", "His & Hers", "Premium Leather"]
+  },
+  // 7. Passport + Cover - 15% off on cover (dynamic pricing)
   {
     id: 106,
     slug: "passport-cover-bundle",
@@ -1217,8 +1251,8 @@ export const products: Product[] = [
     category: "bundles",
     size: null,
     theme: "mixed",
-    price: 999,
-    originalPrice: 1173,
+    price: 0,
+    originalPrice: 0,
     type: "Bundle",
     tag: "Essential",
     image: "/bundles/Passport%20_%20cover/9o.png",
@@ -1226,13 +1260,73 @@ export const products: Product[] = [
       "/bundles/Passport%20_%20cover/9o.png",
       "/bundles/Passport%20_%20cover/9o.png"
     ],
-    description: "Essential travel combo - passport wallet and luggage cover",
+    description: "Essential travel combo - passport wallet and luggage cover (15% off on cover)",
     isBundle: true,
+    dynamicPricing: true,
+    pricingRule: "passport_cover_15_percent_off",
     bundleItems: [
       { productIds: [107, 108, 109], quantity: 1, label: "Select Passport Wallet Color" },
       { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30], quantity: 1, label: "Select Luggage Cover" }
     ],
-    features: ["Passport + Cover combo", "Save 15%", "Travel ready", "Perfect pair"]
+    features: ["Passport + Cover combo", "15% off on cover", "Travel ready", "Perfect pair"]
+  },
+  // 7. 2 Covers - 5% off on 2nd cheapest (dynamic pricing)
+  {
+    id: 111,
+    slug: "double-covers-bundle",
+    name: "2 Covers",
+    category: "bundles",
+    size: null,
+    theme: "mixed",
+    price: 0,
+    originalPrice: 0,
+    type: "Bundle",
+    tag: null,
+    image: "/octopus%20photo/Black/1.png",
+    images: [
+      "/octopus%20photo/Black/1.png",
+      "/octopus%20photo/Green/021A9832.jpg"
+    ],
+    description: "Perfect for couples - two luggage covers (5% off on 2nd cheapest)",
+    isBundle: true,
+    dynamicPricing: true,
+    pricingRule: "second_cheapest_5_percent_off",
+    bundleItems: [
+      { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30], quantity: 1, label: "First Cover" },
+      { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30], quantity: 1, label: "Second Cover" }
+    ],
+    features: ["2 Luggage Covers", "5% off on 2nd cheapest", "Perfect for couples", "Travel together"]
+  },
+  // 8. 4 Covers - 10% off on total (dynamic pricing)
+  {
+    id: 112,
+    slug: "quad-covers-bundle",
+    name: "4 Covers",
+    category: "bundles",
+    size: null,
+    theme: "mixed",
+    price: 0,
+    originalPrice: 0,
+    type: "Bundle",
+    tag: "Best Value",
+    image: "/octopus%20photo/Black/1.png",
+    images: [
+      "/octopus%20photo/Black/1.png",
+      "/octopus%20photo/Green/021A9832.jpg",
+      "/octopus%20photo/Red/021A9832.jpg",
+      "/octopus%20photo/ACCORD/1.png"
+    ],
+    description: "Complete family set - four luggage covers (10% off on total)",
+    isBundle: true,
+    dynamicPricing: true,
+    pricingRule: "total_10_percent_off",
+    bundleItems: [
+      { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30], quantity: 1, label: "First Cover" },
+      { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30], quantity: 1, label: "Second Cover" },
+      { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30], quantity: 1, label: "Third Cover" },
+      { productIds: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30], quantity: 1, label: "Fourth Cover" }
+    ],
+    features: ["4 Luggage Covers", "10% off on total", "Perfect for families", "Complete protection"]
   },
   // Eoehro Passport Holder - 3 Separate Products by Color
   {

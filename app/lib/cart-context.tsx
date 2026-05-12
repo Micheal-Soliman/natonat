@@ -155,187 +155,28 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const [buyNowItem, setBuyNowItem] = useState<CartItem | null>(null);
 
-  // Helper to calculate complex discounts based on Tarek's rules
+  // Simple total calculation - bundle prices are already calculated by bundle-pricing system
   const calculateTotals = useCallback((cartItems: CartItem[]) => {
-    let currentSubtotal = 0;
-    let totalDiscount = 0;
+    let subtotal = 0;
+    let originalSubtotal = 0;
     const appliedDiscounts: string[] = [];
-    
-    // 1. Create a flat list of all items for easier rule application
-    interface FlatItem {
-      id: number;
-      type: string;
-      price: number;
-      name: string;
-    }
-    
-    const flatItems: FlatItem[] = [];
+
     cartItems.forEach(item => {
-      let type = item.type?.toLowerCase() || "";
-      const name = item.name.toLowerCase();
-      
-      if (!type) {
-        if (name.includes("cover")) type = "cover";
-        else if (name.includes("packonat")) type = "packonat";
-        else if (name.includes("passport")) type = "passport";
-        else if (name.includes("bundle") || name.includes("set")) type = "bundle";
-      }
-
-      for (let i = 0; i < item.quantity; i++) {
-        flatItems.push({
-          id: item.id,
-          type,
-          price: item.price,
-          name: item.name
-        });
+      subtotal += item.price * item.quantity;
+      if (item.originalPrice) {
+        originalSubtotal += item.originalPrice * item.quantity;
+      } else {
+        originalSubtotal += item.price * item.quantity;
       }
     });
 
-    const usedIndices = new Set<number>();
-    let finalTotal = 0;
+    const discount = originalSubtotal - subtotal;
 
-    // RULE 1: All Set Bundle = 2889 (Fixed Price)
-    let allSetCount = 0;
-    flatItems.forEach((item, idx) => {
-      if (!usedIndices.has(idx) && item.name.toLowerCase().includes("all set")) {
-        const discount = item.price - 2889;
-        if (discount > 0) {
-          totalDiscount += discount;
-          allSetCount++;
-        }
-        finalTotal += 2889;
-        usedIndices.add(idx);
-      }
-    });
-    if (allSetCount > 0) appliedDiscounts.push("All Set Bundle Offer");
-
-    // RULE 2: 2 Passport Wallets = 3149 (Fixed Price)
-    const passportIndices = flatItems
-      .map((item, idx) => ({ item, idx }))
-      .filter(({ item, idx }) => !usedIndices.has(idx) && item.type.includes("passport"))
-      .map(({ idx }) => idx);
-    
-    let passportBundles = 0;
-    while (passportIndices.length >= 2) {
-      const idx1 = passportIndices.shift()!;
-      const idx2 = passportIndices.shift()!;
-      usedIndices.add(idx1); usedIndices.add(idx2);
-      const pairOriginalPrice = flatItems[idx1].price + flatItems[idx2].price;
-      const discount = pairOriginalPrice - 3149;
-      if (discount > 0) {
-        totalDiscount += discount;
-        passportBundles++;
-      }
-      finalTotal += 3149;
-    }
-    if (passportBundles > 0) appliedDiscounts.push(`2 Passport Wallets Offer x${passportBundles}`);
-
-    // RULE 3: 2 PackOnat Bundle = 1669 (Fixed Price)
-    const packOnatIndices = flatItems
-      .map((item, idx) => ({ item, idx }))
-      .filter(({ item, idx }) => !usedIndices.has(idx) && item.type.includes("packonat"))
-      .map(({ idx }) => idx);
-    
-    let packOnatBundles = 0;
-    while (packOnatIndices.length >= 2) {
-      const idx1 = packOnatIndices.shift()!;
-      const idx2 = packOnatIndices.shift()!;
-      usedIndices.add(idx1); usedIndices.add(idx2);
-      const pairOriginalPrice = flatItems[idx1].price + flatItems[idx2].price;
-      const discount = pairOriginalPrice - 1669;
-      if (discount > 0) {
-        totalDiscount += discount;
-        packOnatBundles++;
-      }
-      finalTotal += 1669;
-    }
-    if (packOnatBundles > 0) appliedDiscounts.push(`2 PackOnat Bundle Offer x${packOnatBundles}`);
-
-    // RULE 4: 4 covers = 10% off on total covers
-    const coverIndices = flatItems
-      .map((item, idx) => ({ item, idx }))
-      .filter(({ item, idx }) => !usedIndices.has(idx) && item.type.includes("cover"))
-      .map(({ idx }) => idx);
-    
-    if (coverIndices.length >= 4) {
-      let coversPrice = 0;
-      coverIndices.forEach(idx => {
-        coversPrice += flatItems[idx].price;
-        usedIndices.add(idx);
-      });
-      const discount = coversPrice * 0.10;
-      totalDiscount += discount;
-      finalTotal += (coversPrice - discount);
-      appliedDiscounts.push("4 Covers: 10% Off on Total");
-    } 
-    // RULE 5: 2 covers = 5% off on 2nd cheapest one
-    else if (coverIndices.length >= 2) {
-      coverIndices.sort((a, b) => flatItems[a].price - flatItems[b].price);
-      const cheapestIdx = coverIndices[0];
-      const otherIdx = coverIndices[1];
-      usedIndices.add(cheapestIdx); usedIndices.add(otherIdx);
-      const discount = flatItems[cheapestIdx].price * 0.05;
-      totalDiscount += discount;
-      finalTotal += (flatItems[cheapestIdx].price + flatItems[otherIdx].price - discount);
-      appliedDiscounts.push("2 Covers: 5% Off Cheapest");
-    }
-
-    // RULE 6: Three Sizes Bundle = 8% OFF ON TOTAL
-    let threeSizesCount = 0;
-    flatItems.forEach((item, idx) => {
-      if (!usedIndices.has(idx) && item.name.toLowerCase().includes("three sizes")) {
-        const discount = item.price * 0.08;
-        totalDiscount += discount;
-        finalTotal += (item.price - discount);
-        usedIndices.add(idx);
-        threeSizesCount++;
-      }
-    });
-    if (threeSizesCount > 0) appliedDiscounts.push("Three Sizes Bundle: 8% Off");
-
-    // RULE 7: Passport + Cover = 15% off on cover
-    // RULE 8: PackOnat + Cover = 8% OFF ON COVER
-    const remainingCovers = flatItems.map((item, idx) => ({ item, idx })).filter(({ idx }) => !usedIndices.has(idx) && flatItems[idx].type.includes("cover"));
-    const remainingPassports = flatItems.map((item, idx) => ({ item, idx })).filter(({ idx }) => !usedIndices.has(idx) && flatItems[idx].type.includes("passport"));
-    const remainingPackOnats = flatItems.map((item, idx) => ({ item, idx })).filter(({ idx }) => !usedIndices.has(idx) && flatItems[idx].type.includes("packonat"));
-
-    let passportCoverMatches = 0;
-    while (remainingPassports.length > 0 && remainingCovers.length > 0) {
-      const pIdx = remainingPassports.shift()!.idx;
-      const cIdx = remainingCovers.shift()!.idx;
-      usedIndices.add(pIdx); usedIndices.add(cIdx);
-      const discount = flatItems[cIdx].price * 0.15;
-      totalDiscount += discount;
-      finalTotal += (flatItems[pIdx].price + flatItems[cIdx].price - discount);
-      passportCoverMatches++;
-    }
-    if (passportCoverMatches > 0) appliedDiscounts.push(`Passport + Cover: 15% Off Cover x${passportCoverMatches}`);
-
-    let packOnatCoverMatches = 0;
-    while (remainingPackOnats.length > 0 && remainingCovers.length > 0) {
-      const poIdx = remainingPackOnats.shift()!.idx;
-      const cIdx = remainingCovers.shift()!.idx;
-      usedIndices.add(poIdx); usedIndices.add(cIdx);
-      const discount = flatItems[cIdx].price * 0.08;
-      totalDiscount += discount;
-      finalTotal += (flatItems[poIdx].price + flatItems[cIdx].price - discount);
-      packOnatCoverMatches++;
-    }
-    if (packOnatCoverMatches > 0) appliedDiscounts.push(`PackOnat + Cover: 8% Off Cover x${packOnatCoverMatches}`);
-
-    // Add remaining items
-    flatItems.forEach((item, idx) => {
-      currentSubtotal += item.price;
-      if (!usedIndices.has(idx)) {
-        finalTotal += item.price;
-      }
-    });
-
-    return { subtotal: currentSubtotal, discount: totalDiscount, total: finalTotal, appliedDiscounts };
+    return { subtotal, discount, originalSubtotal, appliedDiscounts };
   }, []);
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-  const { subtotal: originalSubtotal, discount, total: subtotal, appliedDiscounts } = calculateTotals(items);
+  const { subtotal, discount, originalSubtotal, appliedDiscounts } = calculateTotals(items);
 
   return (
     <CartContext.Provider
