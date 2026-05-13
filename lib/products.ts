@@ -1419,6 +1419,21 @@ export const getProductsByCategory = (category: string): Product[] => {
   return products.filter(p => p.category === category);
 };
 
+// Extract discount percentage from pricing rule
+export const getDiscountPercentage = (product: Product): number | null => {
+  if (!product.pricingRule) return null;
+  
+  const rule = product.pricingRule.toLowerCase();
+  
+  if (rule.includes('total_8_percent_off') || rule.includes('cover_8_percent_off')) return 8;
+  if (rule.includes('packonat_10_percent_off')) return 10;
+  if (rule.includes('passport_cover_15_percent_off')) return 15;
+  if (rule.includes('second_cheapest_5_percent_off')) return 5;
+  if (rule.includes('total_10_percent_off')) return 10;
+  
+  return null;
+};
+
 export const getLuggageCovers = (): Product[] => {
   return products.filter(p => p.category === "luggage-covers");
 };

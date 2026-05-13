@@ -4,7 +4,7 @@ import Image from "next/image";
 import { Link } from "@/i18n/routing";
 import { useTranslations } from 'next-intl';
 import { Button } from "@/components/ui/button";
-import { products } from "@/lib/products";
+import { products, getDiscountPercentage } from "@/lib/products";
 
 // Get bundle products from lib/products
 const bundles = products.filter(p => p.category === "bundles").slice(0, 3);
@@ -46,7 +46,14 @@ export function TravelSets() {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                   <div className="absolute bottom-4 left-4 right-4 z-10">
                     <span className="text-[#EEBC3F] text-xs font-bold tracking-wider uppercase bg-[#0F1A26]/80 px-3 py-1 rounded-full">
-                      {t('save', { amount: bundle.originalPrice - bundle.price })}
+                      {(() => {
+                        const discountPercent = getDiscountPercentage(bundle);
+                        if (discountPercent) {
+                          return `${discountPercent}% OFF`;
+                        }
+                        const saveAmount = bundle.originalPrice - bundle.price;
+                        return saveAmount > 0 ? t('save', { amount: saveAmount }) : '';
+                      })()}
                     </span>
                   </div>
                 </div>
@@ -61,12 +68,22 @@ export function TravelSets() {
                 </p>
 
                 <div className="flex items-baseline gap-2 mb-4">
-                  <span className="text-xl font-bold text-[#0F1A26]">
-                    EGP {bundle.price}
-                  </span>
-                  <span className="text-sm text-[#0F1A26]/40 line-through">
-                    EGP {bundle.originalPrice}
-                  </span>
+                  {(() => {
+                    const discountPercent = getDiscountPercentage(bundle);
+                    if (discountPercent && bundle.price === 0) {
+                      return <span className="text-xl font-bold text-[#EEBC3F]">Get {discountPercent}% Discount</span>;
+                    }
+                    return (
+                      <>
+                        <span className="text-xl font-bold text-[#0F1A26]">
+                          EGP {bundle.price}
+                        </span>
+                        <span className="text-sm text-[#0F1A26]/40 line-through">
+                          EGP {bundle.originalPrice}
+                        </span>
+                      </>
+                    );
+                  })()}
                 </div>
 
                 <Button

@@ -16,7 +16,7 @@
     "passportWalletsDesc": "RFID-blocking organizers",
     "packOnat": "PackOnat",
     "packOnatDesc": "Smart packing organizers",
-    "travelSets": "Travel Sets",
+    "travelSets": "Travel Set Bundles",
     "travelSetsDesc": "Curated bundles",
     "bestSellers": "Best Sellers",
     "sizeGuide": "Size Guide",
@@ -288,7 +288,7 @@
         "luggageCovers": "Luggage Covers",
         "passportWallets": "Passport Wallets",
         "packOnat": "PackOnat",
-        "travelSets": "Travel Sets",
+        "travelSets": "Travel Set Bundles",
         "allProducts": "All Products"
       },
       "company": {

@@ -147,7 +147,7 @@ function CheckoutContent() {
           });
         }
 
-        const amountCents = Math.round(total * 100);
+        const amountCents = Math.round(finalTotal * 100);
         const itemsSum = intentionItems.reduce((sum, it) => sum + it.amount, 0);
         if (itemsSum !== amountCents) {
           throw new Error("Invalid amount: items sum does not match total");
@@ -179,7 +179,9 @@ function CheckoutContent() {
               order_ref: orderRef,
               customer_email: formData.email,
               customer_phone: formData.phone,
-              total_egp: total,
+              total_egp: finalTotal,
+              payment_discount: paymentDiscount > 0 ? paymentDiscount : null,
+              payment_discount_percent: paymentDiscount > 0 ? 2 : null,
             },
             special_reference: orderRef,
             notification_url: notificationUrl,
@@ -215,7 +217,7 @@ function CheckoutContent() {
             payment_method: "paymob_card",
             status: "created",
             payment_status: "Pending",
-            amount_egp: total,
+            amount_egp: finalTotal,
             amount_cents: amountCents,
             shipping_egp: shipping,
             delivery_method: deliveryMethod,
@@ -288,9 +290,9 @@ function CheckoutContent() {
             name: item.name,
             quantity: item.quantity,
           })),
-          totalValue: total,
+          totalValue: finalTotal,
           cod: paymentMethod === "cod",
-          codAmount: paymentMethod === "cod" ? total : 0,
+          codAmount: paymentMethod === "cod" ? finalTotal : 0,
         };
 
         const shipmentRes = await fetch("/api/aramex/shipment", {
@@ -358,8 +360,8 @@ function CheckoutContent() {
           payment_method: paymentMethod,
           status: "confirmed",
           payment_status: paymentMethod === "cod" ? "Cash on Delivery" : "Confirmed",
-          amount_egp: total,
-          amount_cents: Math.round(total * 100),
+          amount_egp: finalTotal,
+          amount_cents: Math.round(finalTotal * 100),
           shipping_egp: shipping,
           delivery_method: deliveryMethod,
           customer: {
@@ -387,6 +389,8 @@ function CheckoutContent() {
             subtotal_egp: checkoutSubtotal,
             free_shipping_threshold: 1000,
             bank_name: paymentMethod === "card" ? "Eligible Banks: NBE, CIB, Banque Misr" : null,
+            payment_discount: paymentDiscount > 0 ? paymentDiscount : null,
+            payment_discount_percent: paymentDiscount > 0 ? 2 : null,
           },
           created_at: new Date().toISOString(),
         }),
@@ -421,6 +425,10 @@ function CheckoutContent() {
   };
   const shipping = getShippingCost();
   const total = checkoutSubtotal + shipping;
+  
+  // 2% discount for non-COD payment methods (card, instapay)
+  const paymentDiscount = paymentMethod !== "cod" ? Math.round((checkoutSubtotal + shipping) * 0.02) : 0;
+  const finalTotal = total - paymentDiscount;
 
   if (isSuccess) {
     return (
@@ -852,6 +860,7 @@ function CheckoutContent() {
                       <div className="flex-1">
                         <span className="font-medium text-[#0F1A26]">{t('form.payment.card.title')}</span>
                         <p className="text-xs text-[#0F1A26]/50">{t('form.payment.card.subtitle')}</p>
+                        <p className="text-xs text-green-600 font-medium mt-1">2% OFF</p>
                       </div>
                     </label>
 
@@ -873,6 +882,7 @@ function CheckoutContent() {
                       <div className="flex-1">
                         <span className="font-medium text-[#0F1A26]">{t('form.payment.instapay.title')}</span>
                         <p className="text-xs text-[#0F1A26]/50">{t('form.payment.instapay.subtitle')}</p>
+                        <p className="text-xs text-green-600 font-medium mt-1">2% OFF</p>
                       </div>
                     </label>
 
@@ -913,7 +923,7 @@ function CheckoutContent() {
                     : mounted 
                       ? deliveryMethod === "delivery" && !formData.city
                         ? `${t('form.completeOrder', { total: checkoutSubtotal.toString() })} (${t('form.selectCity')})`
-                        : t('form.completeOrder', { total: total.toString() })
+                        : t('form.completeOrder', { total: finalTotal.toString() })
                       : t('form.completeOrder', { total: "--" })
                   }
                 </Button>
@@ -1018,12 +1028,18 @@ function CheckoutContent() {
                       )}
                     </span>
                   </div>
+                  {paymentDiscount > 0 && (
+                    <div className="flex justify-between text-sm text-green-600">
+                      <span>Payment Method Discount (2%)</span>
+                      <span className="font-medium">-EGP {paymentDiscount}</span>
+                    </div>
+                  )}
                   <div className="border-t border-[#0F1A26]/10 pt-2 mt-2">
                     <div className="flex justify-between">
                       <span className="text-[#0F1A26] font-semibold">{t('summary.total')}</span>
                       <span className="text-[#0F1A26] font-bold text-lg">
                         EGP {mounted 
-                          ? (deliveryMethod === "delivery" && !formData.city ? subtotal : total) 
+                          ? (deliveryMethod === "delivery" && !formData.city ? subtotal : finalTotal) 
                           : "--"
                         }
                       </span>

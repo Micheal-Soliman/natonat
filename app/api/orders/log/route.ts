@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { sendOrderEmail } from "@/lib/email";
+import { sendOrderEmail, sendCustomerConfirmationEmail } from "@/lib/email";
 
 type OrderLogBody = Record<string, unknown>;
 
@@ -81,6 +81,7 @@ export async function POST(req: Request) {
     if (body.source === "checkout") {
       // Don't await to avoid blocking the response
       sendOrderEmail(updatedOrder).catch(err => console.error("Failed to send order email:", err));
+      sendCustomerConfirmationEmail(updatedOrder).catch(err => console.error("Failed to send customer confirmation email:", err));
     }
 
     // Forward the ENTIRE updated order to Google Sheets
