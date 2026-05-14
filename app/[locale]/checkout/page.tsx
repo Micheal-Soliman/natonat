@@ -147,7 +147,16 @@ function CheckoutContent() {
           });
         }
 
-        const amountCents = Math.round(finalTotal * 100);
+        // Add payment discount as negative item (2% for card payment)
+        const paymentDiscount = Math.round((checkoutSubtotal + shipping) * 0.02);
+        intentionItems.push({
+          name: "Payment Method Discount (2%)",
+          amount: -Math.round(paymentDiscount * 100),
+          description: "discount",
+          quantity: 1,
+        });
+
+        const amountCents = Math.round((checkoutSubtotal + shipping - paymentDiscount) * 100);
         const itemsSum = intentionItems.reduce((sum, it) => sum + it.amount, 0);
         if (itemsSum !== amountCents) {
           throw new Error("Invalid amount: items sum does not match total");
