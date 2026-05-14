@@ -395,7 +395,10 @@ function CheckoutContent() {
           created_at: new Date().toISOString(),
         }),
       });
-    } catch {}
+      console.log("Order logged to Google Sheets:", orderRef);
+    } catch (error) {
+      console.error("Failed to log order to Google Sheets:", error);
+    }
 
     // Step 3: Show success page
     setIsSubmitting(false);
@@ -816,8 +819,8 @@ function CheckoutContent() {
                 )}
 
                 {/* Payment */}
-                <div className="bg-white rounded-2xl p-6 border border-[#0F1A26]/5">
-                  <h2 className="text-lg font-semibold text-[#0F1A26] mb-4 flex items-center gap-2">
+                <div className="bg-white rounded-2xl p-6 border border-[#0F1A26]/10 shadow-sm">
+                  <h2 className="text-lg font-bold text-[#0F1A26] mb-4 flex items-center gap-2">
                     <CreditCard className="w-5 h-5 text-[#EEBC3F]" />
                     {t('form.payment.title')}
                   </h2>
@@ -825,8 +828,8 @@ function CheckoutContent() {
                     <label 
                       className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
                         paymentMethod === "cod" 
-                          ? "border-[#EEBC3F] bg-[#EEBC3F]/5" 
-                          : "border-[#0F1A26]/10"
+                          ? "border-[#EEBC3F] bg-[#EEBC3F]/10" 
+                          : "border-[#0F1A26]/20 hover:border-[#0F1A26]/30"
                       }`}
                     >
                       <input
@@ -835,18 +838,18 @@ function CheckoutContent() {
                         value="cod"
                         checked={paymentMethod === "cod"}
                         onChange={(e) => setPaymentMethod(e.target.value)}
-                        className="w-4 h-4 accent-[#EEBC3F]"
+                        className="w-5 h-5 accent-[#EEBC3F]"
                       />
                       <div className="flex-1">
-                        <span className="font-medium text-[#0F1A26]">{t('form.payment.cod.title')}</span>
-                        <p className="text-xs text-[#0F1A26]/50">{t('form.payment.cod.subtitle')}</p>
+                        <span className="font-semibold text-[#0F1A26] text-base">{t('form.payment.cod.title')}</span>
+                        <p className="text-sm text-[#0F1A26]/70 mt-1">{t('form.payment.cod.subtitle')}</p>
                       </div>
                     </label>
                     <label 
                       className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
                         paymentMethod === "card" 
-                          ? "border-[#EEBC3F] bg-[#EEBC3F]/5" 
-                          : "border-[#0F1A26]/10"
+                          ? "border-[#EEBC3F] bg-[#EEBC3F]/10" 
+                          : "border-[#0F1A26]/20 hover:border-[#0F1A26]/30"
                       }`}
                     >
                       <input
@@ -855,20 +858,20 @@ function CheckoutContent() {
                         value="card"
                         checked={paymentMethod === "card"}
                         onChange={(e) => setPaymentMethod(e.target.value)}
-                        className="w-4 h-4 accent-[#EEBC3F]"
+                        className="w-5 h-5 accent-[#EEBC3F]"
                       />
                       <div className="flex-1">
-                        <span className="font-medium text-[#0F1A26]">{t('form.payment.card.title')}</span>
-                        <p className="text-xs text-[#0F1A26]/50">{t('form.payment.card.subtitle')}</p>
-                        <p className="text-xs text-green-600 font-medium mt-1">2% OFF</p>
+                        <span className="font-semibold text-[#0F1A26] text-base">{t('form.payment.card.title')}</span>
+                        <p className="text-sm text-[#0F1A26]/70 mt-1">{t('form.payment.card.subtitle')}</p>
+                        <p className="text-sm text-green-600 font-bold mt-1">2% OFF</p>
                       </div>
                     </label>
 
                     <label 
                       className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
                         paymentMethod === "instapay" 
-                          ? "border-[#EEBC3F] bg-[#EEBC3F]/5" 
-                          : "border-[#0F1A26]/10"
+                          ? "border-[#EEBC3F] bg-[#EEBC3F]/10" 
+                          : "border-[#0F1A26]/20 hover:border-[#0F1A26]/30"
                       }`}
                     >
                       <input
@@ -877,12 +880,12 @@ function CheckoutContent() {
                         value="instapay"
                         checked={paymentMethod === "instapay"}
                         onChange={(e) => setPaymentMethod(e.target.value)}
-                        className="w-4 h-4 accent-[#EEBC3F]"
+                        className="w-5 h-5 accent-[#EEBC3F]"
                       />
                       <div className="flex-1">
-                        <span className="font-medium text-[#0F1A26]">{t('form.payment.instapay.title')}</span>
-                        <p className="text-xs text-[#0F1A26]/50">{t('form.payment.instapay.subtitle')}</p>
-                        <p className="text-xs text-green-600 font-medium mt-1">2% OFF</p>
+                        <span className="font-semibold text-[#0F1A26] text-base">{t('form.payment.instapay.title')}</span>
+                        <p className="text-sm text-[#0F1A26]/70 mt-1">{t('form.payment.instapay.subtitle')}</p>
+                        <p className="text-sm text-green-600 font-bold mt-1">2% OFF</p>
                       </div>
                     </label>
 
@@ -999,11 +1002,11 @@ function CheckoutContent() {
                     <span className="text-[#0F1A26]/60">{t('summary.subtotal')}</span>
                     <span className="text-[#0F1A26] font-medium">EGP {mounted ? originalSubtotal : "--"}</span>
                   </div>
-                  {discount > 0 && (
+                  {mounted && discount > 0 && (
                     <div className="space-y-1">
                       <div className="flex justify-between text-sm text-green-600">
                         <span>{t('summary.discount') || 'Discount'}</span>
-                        <span className="font-medium">-EGP {mounted ? discount : "--"}</span>
+                        <span className="font-medium">-EGP {discount}</span>
                       </div>
                       <div className="flex flex-col gap-0.5">
                         {appliedDiscounts.map((desc, i) => (
