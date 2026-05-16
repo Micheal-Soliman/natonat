@@ -1,346 +1,365 @@
-/**
- * Google Apps Script for Enhanced Order Logging
- * 
- * Instructions:
- * 1. Go to https://script.google.com
- * 2. Create new project
- * 3. Paste this code
- * 4. Deploy as Web App (Execute as: Me, Access: Anyone)
- * 5. Copy the Web App URL to your .env.local as GOOGLE_SHEETS_WEBHOOK_URL
- */
-
-const SHEET_NAME = "orders";
+const SPREADSHEET_ID = "1dNjh5Bu_-OylUS2TSLjS9tx6t6Lnj49DBdcKljd4Ldo";
+const SHEET_NAME = "cod_orders";
 
 function doPost(e) {
   try {
+    if (!e || !e.postData || !e.postData.contents) {
+      return jsonOutput({ success: false, error: "No post data received" });
+    }
+
     const data = JSON.parse(e.postData.contents);
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    const paymentMethod = String(data.payment_method || "").toLowerCase();
+    const isCOD =
+      paymentMethod === "cod" ||
+      paymentMethod === "cash on delivery";
+
+    if (!isCOD) {
+      return jsonOutput({
+        success: true,
+        skipped: true,
+        reason: "Not a COD order",
+        payment_method: data.payment_method || ""
+      });
+    }
+
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+
     let sheet = ss.getSheetByName(SHEET_NAME);
-    
     if (!sheet) {
       sheet = ss.insertSheet(SHEET_NAME);
       createHeaders(sheet);
     }
-    
+
+    if (sheet.getLastRow() === 0) {
+      createHeaders(sheet);
+    }
+
+    const orderRef = data.order_ref || "";
+    if (!orderRef) {
+      return jsonOutput({ success: false, error: "Missing order_ref" });
+    }
+
     const row = buildOrderRow(data);
+
+    const existingRow = findOrderRow(sheet, orderRef);
+
+    if (existingRow) {
+      sheet.getRange(existingRow, 1, 1, row.length).setValues([row]);
+      formatRow(sheet, existingRow, data);
+
+      return jsonOutput({
+        success: true,
+        updated: true,
+        row: existingRow,
+        order_ref: orderRef
+      });
+    }
+
     sheet.appendRow(row);
-    
-    // Format the new row
     const lastRow = sheet.getLastRow();
     formatRow(sheet, lastRow, data);
-    
-    return ContentService
-      .createTextOutput(JSON.stringify({ success: true, rowAdded: true }))
-      .setMimeType(ContentService.MimeType.JSON);
-      
+
+    return jsonOutput({
+      success: true,
+      inserted: true,
+      row: lastRow,
+      order_ref: orderRef
+    });
+
   } catch (error) {
-    return ContentService
-      .createTextOutput(JSON.stringify({ success: false, error: error.toString() }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return jsonOutput({
+      success: false,
+      error: error.toString(),
+      stack: error.stack || ""
+    });
   }
 }
 
 function createHeaders(sheet) {
   const headers = [
-    // Timestamp & Source
     "Timestamp",
     "Source",
-    
-    // Order Reference
     "Order Ref",
-    "Special Reference (Paymob)",
-    "Intention Order ID",
-    "Paymob Client Secret",
-    
-    // Order Status
     "Status",
     "Payment Status",
-    
-    // Financial Summary
+
+    "Aramex Tracking Number",
+    "Aramex Tracking Link",
+
     "Subtotal (EGP)",
     "Shipping (EGP)",
     "Total (EGP)",
-    "Total Cents",
-    
-    // Customer Info
-    "First Name",
-    "Last Name",
-    "Email",
-    "Phone",
-    "Address",
+    "COD Amount (EGP)",
+
+    "Customer Full Name",
+    "Customer Phone",
+    "Customer Email",
+    "Full Address",
     "City",
-    "City Key",
-    
-    // Delivery Method
+
     "Delivery Method",
-    "Shipping Cost Rule",
-    
-    // Payment Method
     "Payment Method",
-    "Bank Name (Card only)",
-    
-    // Locale & Language
-    "Locale",
-    
-    // Items Summary
+
     "Items Count",
-    "Items Summary",
-    
-    // Item 1 Details
+    "Total Items Quantity",
+    "Items Description",
+
     "Item 1 Name",
-    "Item 1 Quantity",
-    "Item 1 Price",
+    "Item 1 Qty",
     "Item 1 Size",
     "Item 1 Color",
+    "Item 1 Unit Price",
     "Item 1 Total",
-    
-    // Item 2 Details
+
     "Item 2 Name",
-    "Item 2 Quantity",
-    "Item 2 Price",
+    "Item 2 Qty",
     "Item 2 Size",
     "Item 2 Color",
+    "Item 2 Unit Price",
     "Item 2 Total",
-    
-    // Item 3 Details
+
     "Item 3 Name",
-    "Item 3 Quantity",
-    "Item 3 Price",
+    "Item 3 Qty",
     "Item 3 Size",
     "Item 3 Color",
+    "Item 3 Unit Price",
     "Item 3 Total",
-    
-    // Item 4 Details
+
     "Item 4 Name",
-    "Item 4 Quantity",
-    "Item 4 Price",
+    "Item 4 Qty",
     "Item 4 Size",
     "Item 4 Color",
+    "Item 4 Unit Price",
     "Item 4 Total",
-    
-    // Item 5 Details
+
     "Item 5 Name",
-    "Item 5 Quantity",
-    "Item 5 Price",
+    "Item 5 Qty",
     "Item 5 Size",
     "Item 5 Color",
+    "Item 5 Unit Price",
     "Item 5 Total",
-    
-    // Additional Items (JSON if more than 5)
-    "Additional Items (JSON)",
-    
-    // Customer Full Data (JSON)
-    "Customer (Full JSON)",
-    
-    // Paymob Data (JSON)
-    "Paymob Data (JSON)",
-    
-    // Extras (JSON)
-    "Extras (JSON)",
-    
-    // Raw Payload
-    "Raw Payload"
+
+    "Additional Items"
   ];
-  
+
+  sheet.clear();
   sheet.appendRow(headers);
-  
-  // Format headers
+
   const headerRange = sheet.getRange(1, 1, 1, headers.length);
   headerRange.setFontWeight("bold");
-  headerRange.setBackground("#EEBC3F");
+  headerRange.setBackground("#FF9800");
   headerRange.setFontColor("#0F1A26");
   headerRange.setHorizontalAlignment("center");
-  
-  // Freeze header row
+
   sheet.setFrozenRows(1);
-  
-  // Auto-resize columns
   sheet.autoResizeColumns(1, headers.length);
 }
 
 function buildOrderRow(data) {
   const now = new Date();
   const timestamp = Utilities.formatDate(now, "Africa/Cairo", "yyyy-MM-dd HH:mm:ss");
-  
-  // Extract data safely
+
   const source = data.source || "";
   const orderRef = data.order_ref || "";
   const status = data.status || "";
-  const amountEgp = data.amount_egp || 0;
-  const shippingEgp = data.shipping_egp || 0;
-  const amountCents = data.amount_cents || 0;
+  const paymentStatus = data.payment_status || "";
+
+  const amountEgp = Number(data.amount_egp || 0);
+  const shippingEgp = Number(data.shipping_egp || 0);
+  const subtotal = amountEgp - shippingEgp;
+
   const deliveryMethod = data.delivery_method || "";
   const paymentMethod = data.payment_method || "";
-  const locale = data.locale || "";
-  
-  // Customer data
+
   const customer = data.customer || {};
-  const firstName = customer.first_name || "";
-  const lastName = customer.last_name || "";
-  const email = customer.email || "";
+  const fullName = `${customer.first_name || ""} ${customer.last_name || ""}`.trim();
+
   const phone = customer.phone || "";
+  const email = customer.email || "";
   const address = customer.address || "";
   const city = customer.city || "";
-  
-  // Items data
-  const items = data.items || [];
+
+  const aramex = data.aramex || {};
+  const trackingNumber = aramex.trackingNumber || "";
+  const trackingLink =
+    data.tracking_link ||
+    (trackingNumber
+      ? `https://www.aramex.com/eg/ar/track/results?mode=0&ShipmentNumber=${trackingNumber}`
+      : "");
+
+  const items = Array.isArray(data.items) ? data.items : [];
+
   const itemsCount = items.length;
-  const itemsSummary = items.map(item => 
-    `${item.name} (x${item.quantity}) - EGP ${item.price_egp || item.price}` 
-  ).join(" | ");
-  
-  // Build item details for first 5 items
-  const itemRows = [];
+  const totalQuantity = items.reduce((sum, item) => {
+    return sum + Number(item.quantity || 0);
+  }, 0);
+
+  const itemsDescription = items
+    .map(item => {
+      const name = item.name || "";
+      const qty = item.quantity || 0;
+      const size = item.size || "";
+      const color = item.color || "";
+      const variant = [size, color].filter(Boolean).join(", ");
+      return variant ? `${name} x${qty} (${variant})` : `${name} x${qty}`;
+    })
+    .join(" | ");
+
+  const itemColumns = [];
+
   for (let i = 0; i < 5; i++) {
-    if (items[i]) {
-      const item = items[i];
-      itemRows.push(
+    const item = items[i];
+
+    if (item) {
+      const unitPrice = Number(item.price_egp || item.price || 0);
+      const qty = Number(item.quantity || 0);
+
+      itemColumns.push(
         item.name || "",
-        item.quantity || 0,
-        item.price_egp || item.price || 0,
+        qty,
         item.size || "",
         item.color || "",
-        (item.price_egp || item.price || 0) * (item.quantity || 0)
+        unitPrice,
+        unitPrice * qty
       );
     } else {
-      itemRows.push("", "", "", "", "", "");
+      itemColumns.push("", "", "", "", "", "");
     }
   }
-  
-  // Additional items as JSON if more than 5
-  const additionalItems = items.length > 5 ? JSON.stringify(items.slice(5)) : "";
-  
-  // Paymob data
-  const paymob = data.paymob || {};
-  const specialReference = paymob.special_reference || data.special_reference || "";
-  const intentionOrderId = paymob.intention_order_id || "";
-  const clientSecret = paymob.client_secret || "";
-  
-  // Extras
-  const extras = data.extras || {};
-  const bankName = extras.bank_name || "";
-  const cityKey = extras.city_key || "";
-  const shippingRule = extras.shipping_rule || "";
-  
-  // Payment status from webhook (if available)
-  const paymentStatus = data.payment_status || (status === "created" ? "Pending" : status);
-  
+
+  const additionalItems =
+    items.length > 5
+      ? items.slice(5).map(item => `${item.name || ""} x${item.quantity || 0}`).join(" | ")
+      : "";
+
+  const codAmount =
+    String(paymentMethod).toLowerCase() === "cod" ||
+    String(paymentMethod).toLowerCase() === "cash on delivery"
+      ? amountEgp
+      : 0;
+
   return [
-    // Timestamp & Source
     timestamp,
     source,
-    
-    // Order Reference
     orderRef,
-    specialReference,
-    intentionOrderId,
-    clientSecret,
-    
-    // Order Status
     status,
     paymentStatus,
-    
-    // Financial Summary
-    amountEgp - shippingEgp, // Subtotal
+
+    trackingNumber,
+    trackingLink,
+
+    subtotal,
     shippingEgp,
-    amountEgp, // Total
-    amountCents,
-    
-    // Customer Info
-    firstName,
-    lastName,
-    email,
+    amountEgp,
+    codAmount,
+
+    fullName,
     phone,
+    email,
     address,
     city,
-    cityKey,
-    
-    // Delivery Method
+
     deliveryMethod,
-    shippingRule,
-    
-    // Payment Method
     paymentMethod,
-    bankName,
-    
-    // Locale
-    locale,
-    
-    // Items Summary
+
     itemsCount,
-    itemsSummary,
-    
-    // Item 1 Details
-    ...itemRows[0],
-    
-    // Item 2 Details
-    ...itemRows[1],
-    
-    // Item 3 Details
-    ...itemRows[2],
-    
-    // Item 4 Details
-    ...itemRows[3],
-    
-    // Item 5 Details
-    ...itemRows[4],
-    
-    // Additional Items
-    additionalItems,
-    
-    // Full JSON columns
-    JSON.stringify(customer),
-    JSON.stringify(paymob),
-    JSON.stringify(extras),
-    
-    // Raw payload
-    JSON.stringify(data)
+    totalQuantity,
+    itemsDescription,
+
+    ...itemColumns,
+
+    additionalItems
   ];
 }
 
+function findOrderRow(sheet, orderRef) {
+  const lastRow = sheet.getLastRow();
+
+  if (lastRow < 2) return null;
+
+  const orderRefs = sheet.getRange(2, 3, lastRow - 1, 1).getValues();
+
+  for (let i = 0; i < orderRefs.length; i++) {
+    if (String(orderRefs[i][0]) === String(orderRef)) {
+      return i + 2;
+    }
+  }
+
+  return null;
+}
+
 function formatRow(sheet, rowNum, data) {
-  // Highlight COD orders
-  const paymentMethod = data.payment_method || "";
-  if (paymentMethod.toLowerCase() === "cod" || paymentMethod.toLowerCase() === "cash on delivery") {
-    const rowRange = sheet.getRange(rowNum, 1, 1, sheet.getLastColumn());
-    rowRange.setBackground("#FFF3E0"); // Light orange for COD
+  const lastColumn = sheet.getLastColumn();
+  const rowRange = sheet.getRange(rowNum, 1, 1, lastColumn);
+
+  const paymentMethod = String(data.payment_method || "").toLowerCase();
+  const status = String(data.status || "").toLowerCase();
+
+  if (paymentMethod === "cod" || paymentMethod === "cash on delivery") {
+    rowRange.setBackground("#FFF3E0");
   }
-  
-  // Highlight paid orders
-  const status = data.status || "";
+
   if (status === "paid" || status === "success") {
-    const rowRange = sheet.getRange(rowNum, 1, 1, sheet.getLastColumn());
-    rowRange.setBackground("#E8F5E9"); // Light green for paid
+    rowRange.setBackground("#E8F5E9");
   }
-  
-  // Highlight pending orders
+
   if (status === "pending" || status === "created") {
-    const rowRange = sheet.getRange(rowNum, 1, 1, sheet.getLastColumn());
-    rowRange.setBackground("#FFF9C4"); // Light yellow for pending
+    rowRange.setBackground("#FFF9C4");
   }
-  
-  // Format currency columns
-  const currencyColumns = [9, 10, 11, 12]; // Subtotal, Shipping, Total, Total Cents
+
+  const aramex = data.aramex || {};
+  if (aramex.trackingNumber) {
+    const trackingCell = sheet.getRange(rowNum, 6);
+    trackingCell.setFontWeight("bold");
+    trackingCell.setFontColor("#0F1A26");
+    trackingCell.setBackground("#C8E6C9");
+  }
+
+  const trackingLink = data.tracking_link || "";
+  const trackingNumber = aramex.trackingNumber || "";
+
+  if (trackingLink || trackingNumber) {
+    const finalLink =
+      trackingLink ||
+      `https://www.aramex.com/eg/ar/track/results?mode=0&ShipmentNumber=${trackingNumber}`;
+
+    const linkCell = sheet.getRange(rowNum, 7);
+    linkCell.setFormula(`=HYPERLINK("${finalLink}", "Track")`);
+    linkCell.setFontColor("#1155CC");
+    linkCell.setFontLine("underline");
+  }
+
+  // Currency columns:
+  // 8 subtotal, 9 shipping, 10 total, 11 COD amount
+  // item prices: 26,27 / 32,33 / 38,39 / 44,45 / 50,51
+  const currencyColumns = [8, 9, 10, 11, 26, 27, 32, 33, 38, 39, 44, 45, 50, 51];
   currencyColumns.forEach(col => {
-    const cell = sheet.getRange(rowNum, col);
-    cell.setNumberFormat("#,##0.00");
+    sheet.getRange(rowNum, col).setNumberFormat("#,##0.00");
   });
-  
-  // Format item quantity columns
-  const quantityColumns = [20, 26, 32, 38, 44]; // Item quantities
+
+  // Qty columns: 23, 29, 35, 41, 47
+  const quantityColumns = [23, 29, 35, 41, 47];
   quantityColumns.forEach(col => {
     const cell = sheet.getRange(rowNum, col);
     cell.setHorizontalAlignment("center");
+    cell.setFontWeight("bold");
+  });
+
+  sheet.autoResizeColumns(1, lastColumn);
+}
+
+function doGet(e) {
+  return jsonOutput({
+    success: true,
+    message: "COD order logging webhook is active",
+    sheet: SHEET_NAME,
+    timestamp: new Date().toISOString()
   });
 }
 
-// For testing - doGet handler
-function doGet(e) {
+function jsonOutput(obj) {
   return ContentService
-    .createTextOutput(JSON.stringify({ 
-      message: "Order logging webhook is active", 
-      timestamp: new Date().toISOString(),
-      sheet: SHEET_NAME
-    }))
+    .createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
 }

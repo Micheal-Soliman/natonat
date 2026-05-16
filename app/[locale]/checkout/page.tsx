@@ -31,10 +31,10 @@ function CheckoutContent() {
   const t = useTranslations('checkout');
   const locale = useLocale();
   const { items, subtotal, discount, originalSubtotal, appliedDiscounts, clearCart, buyNowItem, setBuyNowItem } = useCart();
-  
+
   // Use buyNowItem if exists (direct purchase), otherwise use cart items
   const rawCheckoutItems = buyNowItem ? [buyNowItem] : items;
-  
+
   // Group duplicate items (same id + size + color) and sum quantities
   const checkoutItems = rawCheckoutItems.reduce((acc: typeof rawCheckoutItems, item) => {
     const existing = acc.find(
@@ -47,11 +47,11 @@ function CheckoutContent() {
     }
     return acc;
   }, []);
-  
-  const checkoutSubtotal = buyNowItem 
-    ? (buyNowItem.price || 0) * (buyNowItem.quantity || 1) 
+
+  const checkoutSubtotal = buyNowItem
+    ? (buyNowItem.price || 0) * (buyNowItem.quantity || 1)
     : subtotal;
-  
+
   // Debug logging for buyNow issues
   useEffect(() => {
     if (buyNowItem) {
@@ -102,7 +102,7 @@ function CheckoutContent() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [orderId, setOrderId] = useState<string>("");
   const [trackingNumber, setTrackingNumber] = useState<string>("");
-  const [aramexStatus, setAramexStatus] = useState<"idle"|"pending"|"success"|"failed"|"skipped">("idle");
+  const [aramexStatus, setAramexStatus] = useState<"idle" | "pending" | "success" | "failed" | "skipped">("idle");
   const [aramexError, setAramexError] = useState<string>("");
   const [submitError, setSubmitError] = useState<string>("");
   const [mounted, setMounted] = useState(false);
@@ -208,12 +208,12 @@ function CheckoutContent() {
           throw new Error("Paymob response missing client_secret");
         }
 
-        const shippingRule = deliveryMethod === "pickup" 
-          ? "pickup_free" 
-          : checkoutSubtotal > 1000 
-            ? "subtotal_over_1000_free" 
-            : formData.city === "cairo" || formData.city === "giza" || formData.city === "alexandria" 
-              ? "cairo_giza_alex_75" 
+        const shippingRule = deliveryMethod === "pickup"
+          ? "pickup_free"
+          : checkoutSubtotal > 1000
+            ? "subtotal_over_1000_free"
+            : formData.city === "cairo" || formData.city === "giza" || formData.city === "alexandria"
+              ? "cairo_giza_alex_75"
               : "other_governorates_100";
 
         await fetch("/api/orders/log", {
@@ -278,11 +278,18 @@ function CheckoutContent() {
     }
 
     // --- Delivery Order Flow ---
-    // Step 1: Create Aramex shipment FIRST (before showing success)
+
+    let aramexPayload: {
+      trackingNumber: string;
+      labelUrl?: string;
+      guid?: string;
+    } | null = null;
+
+    // Step 1: Create Aramex shipment FIRST
     if (deliveryMethod === "delivery") {
       setAramexStatus("pending");
       console.log("[Checkout] Creating Aramex shipment for order:", orderRef);
-      
+
       try {
         const shipmentPayload = {
           orderRef,
@@ -312,29 +319,18 @@ function CheckoutContent() {
 
         const shipmentData = await shipmentRes.json();
         console.log("[Checkout] Shipment response:", shipmentData);
-        
+
         if (shipmentData.success) {
           setTrackingNumber(shipmentData.trackingNumber);
           setAramexStatus("success");
+
+          aramexPayload = {
+            trackingNumber: shipmentData.trackingNumber,
+            labelUrl: shipmentData.labelUrl,
+            guid: shipmentData.guid,
+          };
+
           console.log("[Aramex] Shipment created! Tracking:", shipmentData.trackingNumber);
-          
-          // Update order with tracking info
-          try {
-            await fetch("/api/orders/log", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                source: "aramex_shipment",
-                order_ref: orderRef,
-                aramex: {
-                  trackingNumber: shipmentData.trackingNumber,
-                  labelUrl: shipmentData.labelUrl,
-                  guid: shipmentData.guid,
-                },
-                updated_at: new Date().toISOString(),
-              }),
-            });
-          } catch {}
         } else {
           setAramexStatus("failed");
           setAramexError(shipmentData.details || shipmentData.error || "Unknown error");
@@ -349,17 +345,20 @@ function CheckoutContent() {
       setAramexStatus("skipped");
     }
 
-    // Step 2: Log order
-    const shippingRuleCOD = deliveryMethod === "pickup" 
-      ? "pickup_free" 
-      : checkoutSubtotal > 1000 
-        ? "subtotal_over_1000_free" 
-        : formData.city === "cairo" || formData.city === "giza" || formData.city === "alexandria" 
-          ? "cairo_giza_alex_75" 
-          : "other_governorates_100";
+    // Step 2: Log order ONCE
+    const shippingRuleCOD =
+      deliveryMethod === "pickup"
+        ? "pickup_free"
+        : checkoutSubtotal > 1000
+          ? "subtotal_over_1000_free"
+          : formData.city === "cairo" ||
+            formData.city === "giza" ||
+            formData.city === "alexandria"
+            ? "cairo_giza_alex_75"
+            : "other_governorates_100";
 
     try {
-      await fetch("/api/orders/log", {
+      const logRes = await fetch("/api/orders/log", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -373,6 +372,9 @@ function CheckoutContent() {
           amount_cents: Math.round(finalTotal * 100),
           shipping_egp: shipping,
           delivery_method: deliveryMethod,
+
+          aramex: aramexPayload,
+
           customer: {
             email: formData.email,
             phone: formData.phone,
@@ -380,7 +382,9 @@ function CheckoutContent() {
             last_name: formData.lastName,
             city: formData.city,
             address: formData.address,
+            postCode: formData.postCode,
           },
+
           items: checkoutItems.map((item) => ({
             id: item.id,
             name: item.name,
@@ -392,22 +396,32 @@ function CheckoutContent() {
             type: item.type,
             image: item.image,
           })),
+
           extras: {
             shipping_rule: shippingRuleCOD,
             city_key: formData.city,
             subtotal_egp: checkoutSubtotal,
             free_shipping_threshold: 1000,
-            bank_name: paymentMethod === "card" ? "Eligible Banks: NBE, CIB, Banque Misr" : null,
             payment_discount: paymentDiscount > 0 ? paymentDiscount : null,
             payment_discount_percent: paymentDiscount > 0 ? 2 : null,
           },
+
           created_at: new Date().toISOString(),
         }),
       });
-      console.log("Order logged to Google Sheets:", orderRef);
+
+      const logData = await logRes.json();
+
+      if (!logRes.ok) {
+        console.error("Failed to log order:", logData);
+        throw new Error(logData?.error || "Failed to log order");
+      }
+
+      console.log("Order logged:", logData);
     } catch (error) {
       console.error("Failed to log order to Google Sheets:", error);
     }
+
 
     // Step 3: Show success page
     setIsSubmitting(false);
@@ -421,26 +435,36 @@ function CheckoutContent() {
   const getShippingCost = () => {
     if (deliveryMethod === "pickup") return 0;
     if (checkoutSubtotal > 1000) return 0;
-    
+
     // Use the same mapping logic as the backend to identify governorates
     const cairoDistricts = ["cairo", "new cairo", "nasr city", "maadi", "heliopolis", "zamalek", "down town", "ain shams", "abasya", "el rehab"];
     const gizaDistricts = ["giza", "dokki", "mohandiseen", "agouza", "imbaba", "sheikh zayed city", "october city"];
     const alexDistricts = ["alexandria"];
-    
+
     const cityLower = (formData.city || "").toLowerCase();
-    const isCairoGizaAlex = 
-      cairoDistricts.includes(cityLower) || 
-      gizaDistricts.includes(cityLower) || 
+    const isCairoGizaAlex =
+      cairoDistricts.includes(cityLower) ||
+      gizaDistricts.includes(cityLower) ||
       alexDistricts.includes(cityLower);
 
     return isCairoGizaAlex ? 75 : 100;
   };
   const shipping = getShippingCost();
   const total = checkoutSubtotal + shipping;
-  
+
   // 2% discount for non-COD payment methods (card, instapay)
   const paymentDiscount = paymentMethod !== "cod" ? Math.round((checkoutSubtotal + shipping) * 0.02) : 0;
   const finalTotal = total - paymentDiscount;
+
+  const controlBase =
+    "border border-[#0F1A26]/10 bg-white text-[#0F1A26] placeholder:text-[#0F1A26]/40 caret-[#0F1A26] focus:border-[#EEBC3F] focus:outline-none transition-colors [color-scheme:light]";
+
+  const inputClass = `w-full px-4 py-3 rounded-xl ${controlBase}`;
+  const inputIconClass = `w-full px-4 py-3 pl-11 rounded-xl ${controlBase}`;
+  const inputSmallClass = `w-full px-3 py-2.5 rounded-lg text-sm ${controlBase}`;
+  const inputSmallIconClass = `w-full px-3 py-2.5 pl-10 rounded-lg text-sm ${controlBase}`;
+  const selectClass = `w-full px-4 py-3 pl-11 rounded-xl ${controlBase} font-medium appearance-none disabled:opacity-50`;
+
 
   if (isSuccess) {
     return (
@@ -459,33 +483,30 @@ function CheckoutContent() {
               <div className="bg-white rounded-2xl p-6 border border-[#0F1A26]/5 mb-6">
                 <p className="text-sm text-[#0F1A26]/60 mb-1">{t('success.orderNumber')}</p>
                 <p className="text-lg font-semibold text-[#0F1A26] mb-4">#NAT-{orderId}</p>
-                
+
                 {/* Aramex Status Indicator */}
                 {aramexStatus !== "idle" && aramexStatus !== "skipped" && (
-                  <div className={`border-t border-[#0F1A26]/10 pt-4 ${
-                    aramexStatus === "success" ? "" : aramexStatus === "pending" ? "animate-pulse" : ""
-                  }`}>
+                  <div className={`border-t border-[#0F1A26]/10 pt-4 ${aramexStatus === "success" ? "" : aramexStatus === "pending" ? "animate-pulse" : ""
+                    }`}>
                     <div className="flex items-center gap-2 mb-1">
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                        aramexStatus === "success" 
-                          ? "bg-green-100 text-green-600" 
-                          : aramexStatus === "pending" 
-                            ? "bg-[#EEBC3F]/20 text-[#EEBC3F]" 
-                            : "bg-red-100 text-red-600"
-                      }`}>
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${aramexStatus === "success"
+                        ? "bg-green-100 text-green-600"
+                        : aramexStatus === "pending"
+                          ? "bg-[#EEBC3F]/20 text-[#EEBC3F]"
+                          : "bg-red-100 text-red-600"
+                        }`}>
                         {aramexStatus === "success" ? "\u2713" : aramexStatus === "pending" ? "\u2022" : "\u2717"}
                       </div>
-                      <p className={`text-sm font-semibold ${
-                        aramexStatus === "success" 
-                          ? "text-green-600" 
-                          : aramexStatus === "pending" 
-                            ? "text-[#EEBC3F]" 
-                            : "text-red-600"
-                      }`}>
-                        {aramexStatus === "success" 
-                          ? "Aramex Shipment Created" 
-                          : aramexStatus === "pending" 
-                            ? "Creating Aramex Shipment..." 
+                      <p className={`text-sm font-semibold ${aramexStatus === "success"
+                        ? "text-green-600"
+                        : aramexStatus === "pending"
+                          ? "text-[#EEBC3F]"
+                          : "text-red-600"
+                        }`}>
+                        {aramexStatus === "success"
+                          ? "Aramex Shipment Created"
+                          : aramexStatus === "pending"
+                            ? "Creating Aramex Shipment..."
                             : "Aramex Shipment Failed"
                         }
                       </p>
@@ -535,8 +556,8 @@ function CheckoutContent() {
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <Link 
-            href="/cart" 
+          <Link
+            href="/cart"
             className="text-sm text-[#EEBC3F] hover:text-[#0F1A26] font-medium flex items-center gap-2 transition-colors mb-8"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -551,31 +572,39 @@ function CheckoutContent() {
                 <div className="bg-white rounded-2xl p-6 border border-[#0F1A26]/5">
                   <h2 className="text-lg font-semibold text-[#0F1A26] mb-4 flex items-center gap-2">
                     <Mail className="w-5 h-5 text-[#EEBC3F]" />
-                    {t('form.contact.title')}
+                    {t("form.contact.title")}
                   </h2>
+
                   <div className="space-y-4">
                     <div>
-                      <label className="text-sm text-[#0F1A26]/60 mb-1 block">{t('form.contact.email')}</label>
+                      <label className="text-sm text-[#0F1A26]/60 mb-1 block">
+                        {t("form.contact.email")}
+                      </label>
                       <input
                         type="email"
                         required
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className="w-full px-4 py-3 rounded-xl border border-[#0F1A26]/10 focus:border-[#EEBC3F] focus:outline-none transition-colors"
+                        className={inputClass}
                         placeholder="your@email.com"
                       />
                     </div>
+
                     {/* Newsletter Subscribe */}
                     <label className="flex items-center gap-3 p-4 rounded-xl border-2 border-[#EEBC3F]/20 cursor-pointer transition-all hover:bg-[#EEBC3F]/5 hover:border-[#EEBC3F]/40">
                       <input
                         type="checkbox"
                         checked={formData.newsletter}
-                        onChange={(e) => setFormData({ ...formData, newsletter: e.target.checked })}
-                        className="w-5 h-5 accent-[#EEBC3F] rounded"
+                        onChange={(e) =>
+                          setFormData({ ...formData, newsletter: e.target.checked })
+                        }
+                        className="w-5 h-5 accent-[#EEBC3F] rounded [color-scheme:light]"
                       />
                       <div className="flex items-center gap-2">
                         <Newspaper className="w-4 h-4 text-[#EEBC3F]" />
-                        <span className="text-sm font-medium text-[#0F1A26]">{t('form.contact.newsletter')}</span>
+                        <span className="text-sm font-medium text-[#0F1A26]">
+                          {t("form.contact.newsletter")}
+                        </span>
                       </div>
                     </label>
                   </div>
@@ -585,15 +614,15 @@ function CheckoutContent() {
                 <div className="bg-white rounded-2xl p-6 border border-[#0F1A26]/5">
                   <h2 className="text-lg font-semibold text-[#0F1A26] mb-4 flex items-center gap-2">
                     <Package className="w-5 h-5 text-[#EEBC3F]" />
-                    {t('form.delivery.title')}
+                    {t("form.delivery.title")}
                   </h2>
+
                   <div className="space-y-3">
-                    <label 
-                      className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                        deliveryMethod === "delivery" 
-                          ? "border-[#EEBC3F] bg-[#EEBC3F]/5" 
-                          : "border-[#0F1A26]/10"
-                      }`}
+                    <label
+                      className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${deliveryMethod === "delivery"
+                        ? "border-[#EEBC3F] bg-[#EEBC3F]/5"
+                        : "border-[#0F1A26]/10"
+                        }`}
                     >
                       <input
                         type="radio"
@@ -601,19 +630,23 @@ function CheckoutContent() {
                         value="delivery"
                         checked={deliveryMethod === "delivery"}
                         onChange={(e) => setDeliveryMethod(e.target.value)}
-                        className="w-4 h-4 accent-[#EEBC3F]"
+                        className="w-4 h-4 accent-[#EEBC3F] [color-scheme:light]"
                       />
                       <div className="flex-1">
-                        <span className="font-medium text-[#0F1A26]">{t('form.delivery.deliveryOption.title')}</span>
-                        <p className="text-xs text-[#0F1A26]/50">{t('form.delivery.deliveryOption.subtitle')}</p>
+                        <span className="font-medium text-[#0F1A26]">
+                          {t("form.delivery.deliveryOption.title")}
+                        </span>
+                        <p className="text-xs text-[#0F1A26]/50">
+                          {t("form.delivery.deliveryOption.subtitle")}
+                        </p>
                       </div>
                     </label>
-                    <label 
-                      className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                        deliveryMethod === "pickup" 
-                          ? "border-[#EEBC3F] bg-[#EEBC3F]/5" 
-                          : "border-[#0F1A26]/10"
-                      }`}
+
+                    <label
+                      className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${deliveryMethod === "pickup"
+                        ? "border-[#EEBC3F] bg-[#EEBC3F]/5"
+                        : "border-[#0F1A26]/10"
+                        }`}
                     >
                       <input
                         type="radio"
@@ -621,11 +654,15 @@ function CheckoutContent() {
                         value="pickup"
                         checked={deliveryMethod === "pickup"}
                         onChange={(e) => setDeliveryMethod(e.target.value)}
-                        className="w-4 h-4 accent-[#EEBC3F]"
+                        className="w-4 h-4 accent-[#EEBC3F] [color-scheme:light]"
                       />
                       <div className="flex-1">
-                        <span className="font-medium text-[#0F1A26]">{t('form.delivery.pickupOption.title')}</span>
-                        <p className="text-xs text-[#0F1A26]/50">{t('form.delivery.pickupOption.subtitle')}</p>
+                        <span className="font-medium text-[#0F1A26]">
+                          {t("form.delivery.pickupOption.title")}
+                        </span>
+                        <p className="text-xs text-[#0F1A26]/50">
+                          {t("form.delivery.pickupOption.subtitle")}
+                        </p>
                       </div>
                     </label>
 
@@ -636,63 +673,89 @@ function CheckoutContent() {
                           <div className="w-8 h-8 rounded-full bg-[#EEBC3F] flex items-center justify-center">
                             <Store className="w-4 h-4 text-white" />
                           </div>
-                          <p className="text-sm font-semibold text-[#0F1A26]">{t('form.delivery.pickupLocation.title')}</p>
+                          <p className="text-sm font-semibold text-[#0F1A26]">
+                            {t("form.delivery.pickupLocation.title")}
+                          </p>
                         </div>
+
                         <div className="space-y-3">
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
-                              <label className="text-sm text-[#0F1A26]/60 mb-1 block">{t('form.shipping.firstName')}</label>
+                              <label className="text-sm text-[#0F1A26]/60 mb-1 block">
+                                {t("form.shipping.firstName")}
+                              </label>
                               <input
                                 type="text"
                                 required
                                 value={formData.firstName}
-                                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                                className="w-full px-3 py-2.5 rounded-lg border border-[#0F1A26]/10 focus:border-[#EEBC3F] focus:outline-none transition-colors text-sm"
-                                placeholder={t('form.shipping.firstNamePlaceholder')}
+                                onChange={(e) =>
+                                  setFormData({ ...formData, firstName: e.target.value })
+                                }
+                                className={inputSmallClass}
+                                placeholder={t("form.shipping.firstNamePlaceholder")}
                               />
                             </div>
+
                             <div>
-                              <label className="text-sm text-[#0F1A26]/60 mb-1 block">{t('form.shipping.lastName')}</label>
+                              <label className="text-sm text-[#0F1A26]/60 mb-1 block">
+                                {t("form.shipping.lastName")}
+                              </label>
                               <input
                                 type="text"
                                 required
                                 value={formData.lastName}
-                                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                                className="w-full px-3 py-2.5 rounded-lg border border-[#0F1A26]/10 focus:border-[#EEBC3F] focus:outline-none transition-colors text-sm"
-                                placeholder={t('form.shipping.lastNamePlaceholder')}
+                                onChange={(e) =>
+                                  setFormData({ ...formData, lastName: e.target.value })
+                                }
+                                className={inputSmallClass}
+                                placeholder={t("form.shipping.lastNamePlaceholder")}
                               />
                             </div>
                           </div>
+
                           <div>
-                            <label className="text-sm text-[#0F1A26]/60 mb-1 block">{t('form.shipping.phone')}</label>
+                            <label className="text-sm text-[#0F1A26]/60 mb-1 block">
+                              {t("form.shipping.phone")}
+                            </label>
                             <div className="relative">
-                              <Phone className="w-4 h-4 text-[#0F1A26]/40 absolute left-3 top-1/2 -translate-y-1/2" />
+                              <Phone className="w-4 h-4 text-[#0F1A26]/40 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                               <input
                                 type="tel"
                                 required
                                 value={formData.phone}
-                                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                className="w-full px-3 py-2.5 pl-10 rounded-lg border border-[#0F1A26]/10 focus:border-[#EEBC3F] focus:outline-none transition-colors text-sm"
-                                placeholder={t('form.shipping.phonePlaceholder')}
+                                onChange={(e) =>
+                                  setFormData({ ...formData, phone: e.target.value })
+                                }
+                                className={inputSmallIconClass}
+                                placeholder={t("form.shipping.phonePlaceholder")}
                               />
                             </div>
                           </div>
+
                           <div className="flex flex-col p-3 bg-white rounded-lg mt-3">
-                            <span className="text-sm text-[#0F1A26]/60 mb-1">{t('form.delivery.pickupLocation.addressLabel')}</span>
-                            <span className="text-sm font-medium text-[#0F1A26]">{t('form.pickupLocation.name')}</span>
-                            <span className="text-sm font-medium text-[#0F1A26]">{t('form.pickupLocation.address')}</span>
+                            <span className="text-sm text-[#0F1A26]/60 mb-1">
+                              {t("form.delivery.pickupLocation.addressLabel")}
+                            </span>
+                            <span className="text-sm font-medium text-[#0F1A26]">
+                              {t("form.pickupLocation.name")}
+                            </span>
+                            <span className="text-sm font-medium text-[#0F1A26]">
+                              {t("form.pickupLocation.address")}
+                            </span>
                           </div>
-                          <a 
-                            href={t('form.pickupLocation.mapUrl')} 
-                            target="_blank" 
+
+                          <a
+                            href={t("form.pickupLocation.mapUrl")}
+                            target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center justify-center gap-2 p-2 bg-white rounded-lg text-sm font-medium text-[#0F1A26] hover:bg-[#EEBC3F]/20 transition-colors"
                           >
                             <MapPin className="w-4 h-4 text-[#EEBC3F]" />
-                            {t('form.delivery.pickupLocation.viewOnMap')}
+                            {t("form.delivery.pickupLocation.viewOnMap")}
                           </a>
+
                           <p className="text-xs text-[#0F1A26]/60 text-center">
-                            {t('form.delivery.pickupLocation.instruction')}
+                            {t("form.delivery.pickupLocation.instruction")}
                           </p>
                         </div>
                       </div>
@@ -705,121 +768,161 @@ function CheckoutContent() {
                   <div className="bg-white rounded-2xl p-6 border border-[#0F1A26]/5">
                     <h2 className="text-lg font-semibold text-[#0F1A26] mb-4 flex items-center gap-2">
                       <Truck className="w-5 h-5 text-[#EEBC3F]" />
-                      {t('form.shipping.title')}
+                      {t("form.shipping.title")}
                     </h2>
+
                     <p className="text-sm text-[#EEBC3F] mb-4 font-medium">
-                      {t('form.shipping.egyptOnly')}
+                      {t("form.shipping.egyptOnly")}
                     </p>
-                    <div className="grid grid-cols-2 gap-4">
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm text-[#0F1A26]/60 mb-1 block">{t('form.shipping.firstName')}</label>
+                        <label className="text-sm text-[#0F1A26]/60 mb-1 block">
+                          {t("form.shipping.firstName")}
+                        </label>
                         <input
                           type="text"
                           required
                           value={formData.firstName}
-                          onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                          className="w-full px-4 py-3 rounded-xl border border-[#0F1A26]/10 focus:border-[#EEBC3F] focus:outline-none transition-colors"
-                          placeholder={t('form.shipping.firstNamePlaceholder')}
+                          onChange={(e) =>
+                            setFormData({ ...formData, firstName: e.target.value })
+                          }
+                          className={inputClass}
+                          placeholder={t("form.shipping.firstNamePlaceholder")}
                         />
                       </div>
+
                       <div>
-                        <label className="text-sm text-[#0F1A26]/60 mb-1 block">{t('form.shipping.lastName')}</label>
+                        <label className="text-sm text-[#0F1A26]/60 mb-1 block">
+                          {t("form.shipping.lastName")}
+                        </label>
                         <input
                           type="text"
                           required
                           value={formData.lastName}
-                          onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                          className="w-full px-4 py-3 rounded-xl border border-[#0F1A26]/10 focus:border-[#EEBC3F] focus:outline-none transition-colors"
-                          placeholder={t('form.shipping.lastNamePlaceholder')}
+                          onChange={(e) =>
+                            setFormData({ ...formData, lastName: e.target.value })
+                          }
+                          className={inputClass}
+                          placeholder={t("form.shipping.lastNamePlaceholder")}
                         />
                       </div>
-                      <div className="col-span-2">
-                        <label className="text-sm text-[#0F1A26]/60 mb-1 block">{t('form.shipping.address')}</label>
-                        <div className="flex gap-2">
+
+                      <div className="sm:col-span-2">
+                        <label className="text-sm text-[#0F1A26]/60 mb-1 block">
+                          {t("form.shipping.address")}
+                        </label>
+
+                        <div className="flex flex-col sm:flex-row gap-2">
                           <div className="relative flex-1">
-                            <MapPin className="w-4 h-4 text-[#0F1A26]/40 absolute left-4 top-1/2 -translate-y-1/2" />
+                            <MapPin className="w-4 h-4 text-[#0F1A26]/40 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
                             <input
                               type="text"
                               required
                               value={formData.address}
-                              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                              className="w-full px-4 py-3 pl-11 rounded-xl border border-[#0F1A26]/10 focus:border-[#EEBC3F] focus:outline-none transition-colors"
-                              placeholder={t('form.shipping.addressPlaceholder')}
+                              onChange={(e) =>
+                                setFormData({ ...formData, address: e.target.value })
+                              }
+                              className={inputIconClass}
+                              placeholder={t("form.shipping.addressPlaceholder")}
                             />
                           </div>
+
                           <button
                             type="button"
                             onClick={() => {
                               if (navigator.geolocation) {
                                 navigator.geolocation.getCurrentPosition(
                                   (position) => {
-                                    setFormData({ 
-                                      ...formData, 
-                                      address: `Lat: ${position.coords.latitude.toFixed(6)}, Lng: ${position.coords.longitude.toFixed(6)}` 
+                                    setFormData({
+                                      ...formData,
+                                      address: `Lat: ${position.coords.latitude.toFixed(
+                                        6
+                                      )}, Lng: ${position.coords.longitude.toFixed(6)}`,
                                     });
                                   },
                                   (error) => {
-                                    console.error('Error getting location:', error);
-                                    alert(t('form.location.error'));
+                                    console.error("Error getting location:", error);
+                                    alert(t("form.location.error"));
                                   }
                                 );
                               } else {
-                                alert(t('form.location.notSupported'));
+                                alert(t("form.location.notSupported"));
                               }
                             }}
-                            className="px-4 py-3 rounded-xl border-2 border-[#EEBC3F]/30 bg-[#EEBC3F]/5 hover:bg-[#EEBC3F]/10 hover:border-[#EEBC3F] transition-all flex items-center gap-2 whitespace-nowrap"
+                            className="w-full sm:w-auto px-4 py-3 rounded-xl border-2 border-[#EEBC3F]/30 bg-[#EEBC3F]/5 hover:bg-[#EEBC3F]/10 hover:border-[#EEBC3F] transition-all flex items-center justify-center gap-2 whitespace-nowrap text-[#0F1A26]"
                           >
                             <MapPin className="w-4 h-4 text-[#EEBC3F]" />
-                            <span className="text-sm font-medium text-[#0F1A26]">{t('form.location.detect')}</span>
+                            <span className="text-sm font-medium text-[#0F1A26]">
+                              {t("form.location.detect")}
+                            </span>
                           </button>
                         </div>
                       </div>
+
                       <div>
-                        <label className="text-sm text-[#0F1A26]/60 mb-1 block">{t('form.shipping.city')}</label>
+                        <label className="text-sm text-[#0F1A26]/60 mb-1 block">
+                          {t("form.shipping.city")}
+                        </label>
                         <div className="relative">
                           <Building className="w-4 h-4 text-[#0F1A26]/40 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
                           <select
                             required
                             value={formData.city}
-                            onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                            className="w-full px-4 py-3 pl-11 rounded-xl border border-[#0F1A26]/10 focus:border-[#EEBC3F] focus:outline-none transition-colors bg-white text-[#0F1A26] font-medium appearance-none disabled:opacity-50"
+                            onChange={(e) =>
+                              setFormData({ ...formData, city: e.target.value })
+                            }
+                            className={selectClass}
                             disabled={loadingCities}
                           >
-                            <option value="" className="text-[#0F1A26]">
-                              {loadingCities ? t('form.shipping.loadingCities') || "Loading cities..." : t('form.shipping.cityPlaceholder')}
+                            <option value="" className="text-[#0F1A26] bg-white">
+                              {loadingCities
+                                ? t("form.shipping.loadingCities") || "Loading cities..."
+                                : t("form.shipping.cityPlaceholder")}
                             </option>
+
                             {aramexCities.map((city) => (
-                              <option key={city} value={city} className="text-[#0F1A26]">
+                              <option key={city} value={city} className="text-[#0F1A26] bg-white">
                                 {city}
                               </option>
                             ))}
                           </select>
                         </div>
                       </div>
+
                       <div>
-                        <label className="text-sm text-[#0F1A26]/60 mb-1 block">{t('form.shipping.postCode')}</label>
+                        <label className="text-sm text-[#0F1A26]/60 mb-1 block">
+                          {t("form.shipping.postCode")}
+                        </label>
                         <div className="relative">
-                          <MapPin className="w-4 h-4 text-[#0F1A26]/40 absolute left-4 top-1/2 -translate-y-1/2" />
+                          <MapPin className="w-4 h-4 text-[#0F1A26]/40 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
                           <input
                             type="text"
                             value={formData.postCode}
-                            onChange={(e) => setFormData({ ...formData, postCode: e.target.value })}
-                            className="w-full px-4 py-3 pl-11 rounded-xl border border-[#0F1A26]/10 focus:border-[#EEBC3F] focus:outline-none transition-colors"
-                            placeholder={t('form.shipping.postCodePlaceholder')}
+                            onChange={(e) =>
+                              setFormData({ ...formData, postCode: e.target.value })
+                            }
+                            className={inputIconClass}
+                            placeholder={t("form.shipping.postCodePlaceholder")}
                           />
                         </div>
                       </div>
+
                       <div>
-                        <label className="text-sm text-[#0F1A26]/60 mb-1 block">{t('form.shipping.phone')}</label>
+                        <label className="text-sm text-[#0F1A26]/60 mb-1 block">
+                          {t("form.shipping.phone")}
+                        </label>
                         <div className="relative">
-                          <Phone className="w-4 h-4 text-[#0F1A26]/40 absolute left-4 top-1/2 -translate-y-1/2" />
+                          <Phone className="w-4 h-4 text-[#0F1A26]/40 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
                           <input
                             type="tel"
                             required
                             value={formData.phone}
-                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                            className="w-full px-4 py-3 pl-11 rounded-xl border border-[#0F1A26]/10 focus:border-[#EEBC3F] focus:outline-none transition-colors"
-                            placeholder={t('form.shipping.phonePlaceholder')}
+                            onChange={(e) =>
+                              setFormData({ ...formData, phone: e.target.value })
+                            }
+                            className={inputIconClass}
+                            placeholder={t("form.shipping.phonePlaceholder")}
                           />
                         </div>
                       </div>
@@ -831,15 +934,15 @@ function CheckoutContent() {
                 <div className="bg-white rounded-2xl p-6 border border-[#0F1A26]/10 shadow-sm">
                   <h2 className="text-lg font-bold text-[#0F1A26] mb-4 flex items-center gap-2">
                     <CreditCard className="w-5 h-5 text-[#EEBC3F]" />
-                    {t('form.payment.title')}
+                    {t("form.payment.title")}
                   </h2>
+
                   <div className="space-y-3">
-                    <label 
-                      className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                        paymentMethod === "cod" 
-                          ? "border-[#EEBC3F] bg-[#EEBC3F]/10" 
-                          : "border-[#0F1A26]/20 hover:border-[#0F1A26]/30"
-                      }`}
+                    <label
+                      className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === "cod"
+                        ? "border-[#EEBC3F] bg-[#EEBC3F]/10"
+                        : "border-[#0F1A26]/20 hover:border-[#0F1A26]/30"
+                        }`}
                     >
                       <input
                         type="radio"
@@ -847,19 +950,23 @@ function CheckoutContent() {
                         value="cod"
                         checked={paymentMethod === "cod"}
                         onChange={(e) => setPaymentMethod(e.target.value)}
-                        className="w-5 h-5 accent-[#EEBC3F]"
+                        className="w-5 h-5 accent-[#EEBC3F] [color-scheme:light]"
                       />
                       <div className="flex-1">
-                        <span className="font-semibold text-[#0F1A26] text-base">{t('form.payment.cod.title')}</span>
-                        <p className="text-sm text-[#0F1A26]/70 mt-1">{t('form.payment.cod.subtitle')}</p>
+                        <span className="font-semibold text-[#0F1A26] text-base">
+                          {t("form.payment.cod.title")}
+                        </span>
+                        <p className="text-sm text-[#0F1A26]/70 mt-1">
+                          {t("form.payment.cod.subtitle")}
+                        </p>
                       </div>
                     </label>
-                    <label 
-                      className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                        paymentMethod === "card" 
-                          ? "border-[#EEBC3F] bg-[#EEBC3F]/10" 
-                          : "border-[#0F1A26]/20 hover:border-[#0F1A26]/30"
-                      }`}
+
+                    <label
+                      className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === "card"
+                        ? "border-[#EEBC3F] bg-[#EEBC3F]/10"
+                        : "border-[#0F1A26]/20 hover:border-[#0F1A26]/30"
+                        }`}
                     >
                       <input
                         type="radio"
@@ -867,21 +974,24 @@ function CheckoutContent() {
                         value="card"
                         checked={paymentMethod === "card"}
                         onChange={(e) => setPaymentMethod(e.target.value)}
-                        className="w-5 h-5 accent-[#EEBC3F]"
+                        className="w-5 h-5 accent-[#EEBC3F] [color-scheme:light]"
                       />
                       <div className="flex-1">
-                        <span className="font-semibold text-[#0F1A26] text-base">{t('form.payment.card.title')}</span>
-                        <p className="text-sm text-[#0F1A26]/70 mt-1">{t('form.payment.card.subtitle')}</p>
+                        <span className="font-semibold text-[#0F1A26] text-base">
+                          {t("form.payment.card.title")}
+                        </span>
+                        <p className="text-sm text-[#0F1A26]/70 mt-1">
+                          {t("form.payment.card.subtitle")}
+                        </p>
                         <p className="text-sm text-green-600 font-bold mt-1">2% OFF</p>
                       </div>
                     </label>
 
-                    <label 
-                      className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                        paymentMethod === "instapay" 
-                          ? "border-[#EEBC3F] bg-[#EEBC3F]/10" 
-                          : "border-[#0F1A26]/20 hover:border-[#0F1A26]/30"
-                      }`}
+                    <label
+                      className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === "instapay"
+                        ? "border-[#EEBC3F] bg-[#EEBC3F]/10"
+                        : "border-[#0F1A26]/20 hover:border-[#0F1A26]/30"
+                        }`}
                     >
                       <input
                         type="radio"
@@ -889,11 +999,15 @@ function CheckoutContent() {
                         value="instapay"
                         checked={paymentMethod === "instapay"}
                         onChange={(e) => setPaymentMethod(e.target.value)}
-                        className="w-5 h-5 accent-[#EEBC3F]"
+                        className="w-5 h-5 accent-[#EEBC3F] [color-scheme:light]"
                       />
                       <div className="flex-1">
-                        <span className="font-semibold text-[#0F1A26] text-base">{t('form.payment.instapay.title')}</span>
-                        <p className="text-sm text-[#0F1A26]/70 mt-1">{t('form.payment.instapay.subtitle')}</p>
+                        <span className="font-semibold text-[#0F1A26] text-base">
+                          {t("form.payment.instapay.title")}
+                        </span>
+                        <p className="text-sm text-[#0F1A26]/70 mt-1">
+                          {t("form.payment.instapay.subtitle")}
+                        </p>
                         <p className="text-sm text-green-600 font-bold mt-1">2% OFF</p>
                       </div>
                     </label>
@@ -905,39 +1019,53 @@ function CheckoutContent() {
                           <div className="w-8 h-8 rounded-full bg-[#EEBC3F] flex items-center justify-center">
                             <span className="text-white text-sm font-bold">i</span>
                           </div>
-                          <p className="text-sm font-semibold text-[#0F1A26]">{t('form.payment.instapay.transferDetails')}</p>
+                          <p className="text-sm font-semibold text-[#0F1A26]">
+                            {t("form.payment.instapay.transferDetails")}
+                          </p>
                         </div>
+
                         <div className="space-y-2">
-                          <div className="flex justify-between items-center p-3 bg-white rounded-lg">
-                            <span className="text-sm text-[#0F1A26]/60">{t('form.payment.instapay.accountName')}</span>
-                            <span className="text-sm font-medium text-[#0F1A26]">{t('form.instapayAccount.name')}</span>
+                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 p-3 bg-white rounded-lg">
+                            <span className="text-sm text-[#0F1A26]/60">
+                              {t("form.payment.instapay.accountName")}
+                            </span>
+                            <span className="text-sm font-medium text-[#0F1A26]">
+                              {t("form.instapayAccount.name")}
+                            </span>
                           </div>
-                          <div className="flex justify-between items-center p-3 bg-white rounded-lg">
-                            <span className="text-sm text-[#0F1A26]/60">{t('form.payment.instapay.accountNumber')}</span>
-                            <span className="text-sm font-medium text-[#0F1A26] dir-ltr">{t('form.instapayAccount.number')}</span>
+
+                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 p-3 bg-white rounded-lg">
+                            <span className="text-sm text-[#0F1A26]/60">
+                              {t("form.payment.instapay.accountNumber")}
+                            </span>
+                            <span className="text-sm font-medium text-[#0F1A26] dir-ltr">
+                              {t("form.instapayAccount.number")}
+                            </span>
                           </div>
                         </div>
+
                         <p className="text-xs text-[#0F1A26]/60 mt-3 text-center">
-                          {t('form.payment.instapay.instruction')}
+                          {t("form.payment.instapay.instruction")}
                         </p>
                       </div>
                     )}
                   </div>
                 </div>
 
-                <Button 
+                <Button
                   type="submit"
                   disabled={isSubmitting}
                   className="w-full bg-[#EEBC3F] text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white rounded-full h-14 font-bold text-base transition-all duration-300 disabled:opacity-50"
                 >
-                  {isSubmitting 
-                    ? t('form.processing') 
-                    : mounted 
+                  {isSubmitting
+                    ? t("form.processing")
+                    : mounted
                       ? deliveryMethod === "delivery" && !formData.city
-                        ? `${t('form.completeOrder', { total: checkoutSubtotal.toString() })} (${t('form.selectCity')})`
-                        : t('form.completeOrder', { total: finalTotal.toString() })
-                      : t('form.completeOrder', { total: "--" })
-                  }
+                        ? `${t("form.completeOrder", {
+                          total: checkoutSubtotal.toString(),
+                        })} (${t("form.selectCity")})`
+                        : t("form.completeOrder", { total: finalTotal.toString() })
+                      : t("form.completeOrder", { total: "--" })}
                 </Button>
 
                 {submitError ? (
@@ -955,7 +1083,7 @@ function CheckoutContent() {
                 ) : (
                   <p className="text-xs text-[#0F1A26]/60 mb-4">{t('summary.cartMode') || '🛍️ From Cart'}</p>
                 )}
-                
+
                 {/* Items */}
                 <div className="space-y-4 mb-6">
                   {!mounted ? (
@@ -974,8 +1102,8 @@ function CheckoutContent() {
                       prefetch={false}
                     >
                       <div className="w-24 h-24 rounded-lg overflow-hidden bg-[#F8F6F3] flex-shrink-0 relative">
-                        <Image 
-                          src={item.image} 
+                        <Image
+                          src={item.image}
                           alt={item.name}
                           fill
                           sizes="64px"
@@ -1030,8 +1158,8 @@ function CheckoutContent() {
                     <span className="text-[#0F1A26]/60">{t('summary.shipping')}</span>
                     <span className="text-[#0F1A26] font-medium">
                       {deliveryMethod === "delivery" && formData.city ? (
-                        shipping === 0 
-                          ? `${t('summary.free')} ${t('summary.freeShippingOver1000') || '(Order > 1000 EGP)'}` 
+                        shipping === 0
+                          ? `${t('summary.free')} ${t('summary.freeShippingOver1000') || '(Order > 1000 EGP)'}`
                           : `EGP ${shipping}`
                       ) : deliveryMethod === "delivery" ? (
                         <span className="text-[#0F1A26]/50 font-medium text-xs">{t('summary.selectCityForShipping')}</span>
@@ -1050,8 +1178,8 @@ function CheckoutContent() {
                     <div className="flex justify-between">
                       <span className="text-[#0F1A26] font-semibold">{t('summary.total')}</span>
                       <span className="text-[#0F1A26] font-bold text-lg">
-                        EGP {mounted 
-                          ? (deliveryMethod === "delivery" && !formData.city ? subtotal : finalTotal) 
+                        EGP {mounted
+                          ? (deliveryMethod === "delivery" && !formData.city ? subtotal : finalTotal)
                           : "--"
                         }
                       </span>

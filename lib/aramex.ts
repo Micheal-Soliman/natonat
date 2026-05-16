@@ -1,7 +1,6 @@
 // Aramex API Integration
 // API Documentation: https://www.aramex.com/developers
 
-import { logAramexRequest } from "./aramex-logger";
 
 type AramexEnv = "prod" | "dev";
 
@@ -15,8 +14,8 @@ export function getAramexHost(): string {
   return getAramexEnv() === "prod" ? "ws.aramex.net" : "ws.dev.aramex.net";
 }
 
-const ARAMEX_BASE_URL = "https://ws.aramex.net/ShippingAPI.V2"; 
-const ARAMEX_UAT_URL = "https://ws.uat.aramex.net/ShippingAPI.V2"; 
+const ARAMEX_BASE_URL = "https://ws.aramex.net/ShippingAPI.V2";
+const ARAMEX_UAT_URL = "https://ws.uat.aramex.net/ShippingAPI.V2";
 const ARAMEX_LOCATION_JSON_BASE = `${ARAMEX_BASE_URL}/Location/Service_1_0.svc/json`;
 const ARAMEX_RATE_JSON_BASE = `${ARAMEX_BASE_URL}/RateCalculator/Service_1_0.svc/json`;
 const ARAMEX_SHIPPING_JSON_BASE = `${ARAMEX_BASE_URL}/Shipping/Service_1_0.svc/json`;
@@ -418,26 +417,12 @@ export async function createShipment(
     if (!response.ok) {
       error = `Aramex CreateShipments error: ${response.status} (${ARAMEX_SHIPPING_JSON_BASE}/CreateShipments) - ${rawText}`;
       // Log as raw text if not JSON to avoid SyntaxError
-      logAramexRequest(
-        `${ARAMEX_SHIPPING_JSON_BASE}/CreateShipments`,
-        payload,
-        rawText.startsWith("{") ? JSON.parse(rawText) : { rawResponse: rawText },
-        Date.now() - startTime,
-        error
-      );
       throw new Error(error);
     }
   } catch (err) {
     error = err instanceof Error ? err.message : String(err);
     if (!response) {
-       // Log connection errors
-       logAramexRequest(
-         `${ARAMEX_SHIPPING_JSON_BASE}/CreateShipments`,
-         payload,
-         null,
-         Date.now() - startTime,
-         error
-       );
+      // Log connection errors
     }
     throw err;
   }
@@ -458,8 +443,8 @@ export async function createShipment(
     labelUrl: shipment?.ShipmentLabel?.LabelURL,
     guid: shipment?.GUID,
     raw: rawText,
-    error: allNotifications.length > 0 
-      ? allNotifications.map((n) => n.Message).join(", ") 
+    error: allNotifications.length > 0
+      ? allNotifications.map((n) => n.Message).join(", ")
       : hasErrors || shipment?.HasErrors ? "Unknown Aramex Error" : undefined,
   };
 }
@@ -606,13 +591,9 @@ export async function validateAddress(address: AramexAddress): Promise<any> {
     error = err instanceof Error ? err.message : String(err);
     throw err;
   } finally {
-    logAramexRequest(
-      `${ARAMEX_LOCATION_JSON_BASE}/ValidateAddress`,
-      payload,
-      rawText ? JSON.parse(rawText) : null,
-      Date.now() - startTime,
-      error
-    );
+    if (error) {
+      console.error("[Aramex ValidateAddress]", error);
+    }
   }
 
   return rawText ? JSON.parse(rawText) : {};
@@ -697,14 +678,9 @@ export async function fetchCities(countryCode: string, nameStartsWith?: string):
     error = err instanceof Error ? err.message : String(err);
     throw err;
   } finally {
-    // Log request/response
-    logAramexRequest(
-      `${ARAMEX_LOCATION_JSON_BASE}/FetchCities`,
-      payload,
-      result || null,
-      Date.now() - startTime,
-      error
-    );
+    if (error) {
+      console.error("[Aramex FetchCities]", error);
+    }
   }
 }
 
@@ -769,14 +745,14 @@ function resolveGovernorateForCity(city: string): string {
 
 function extractCityFromAddress(address: string, selectedCity: string): string {
   const addressLower = address.toLowerCase();
-  
+
   // Check if address contains a known district
   for (const [key, city] of Object.entries(ADDRESS_TO_CITY_MAP)) {
     if (addressLower.includes(key)) {
       return city;
     }
   }
-  
+
   // Return selected city if no match found
   return selectedCity;
 }
@@ -878,7 +854,7 @@ export function buildShipmentFromOrder(
 
   // Extract specific district from address for better Aramex validation
   const detectedCity = extractCityFromAddress(customer.address, customer.city);
-  
+
   const consignee: AramexParty = {
     Reference1: orderRef,
     PartyAddress: {
