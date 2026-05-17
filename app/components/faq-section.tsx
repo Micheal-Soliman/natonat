@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from 'next-intl';
+import { useTranslations } from "next-intl";
 import { ChevronDown, ChevronUp, HelpCircle } from "lucide-react";
 
 interface FAQItem {
@@ -17,20 +17,25 @@ interface FAQSectionProps {
   className?: string;
 }
 
-export function FAQSection({ 
+export function FAQSection({
   title,
   faqs,
-  translationNamespace = 'product',
+  translationNamespace = "product",
   showIcon = true,
-  className = ""
+  className = "",
 }: FAQSectionProps) {
   const t = useTranslations(translationNamespace);
-  const [openItems, setOpenItems] = useState<number[]>([0]); // First item open by default
+  const [openItems, setOpenItems] = useState<number[]>([0]);
 
   const toggleItem = (index: number) => {
     setOpenItems((prev) =>
       prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
     );
+  };
+
+  const getRawAnswer = (key: string) => {
+    const value = t.raw(key);
+    return typeof value === "string" ? value : "";
   };
 
   return (
@@ -41,6 +46,7 @@ export function FAQSection({
           {title}
         </h3>
       )}
+
       <div className="space-y-3">
         {faqs.map((faq, index) => (
           <div
@@ -54,11 +60,14 @@ export function FAQSection({
               <span className="font-semibold text-[#0F1A26] text-sm pr-4 group-hover:text-[#EEBC3F] transition-colors duration-300">
                 {t(faq.questionKey)}
               </span>
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-300 ${
-                openItems.includes(index) 
-                  ? 'bg-[#EEBC3F] text-[#0F1A26]' 
-                  : 'bg-[#F8F6F3] text-[#0F1A26]/40 group-hover:bg-[#EEBC3F]/10 group-hover:text-[#EEBC3F]'
-              }`}>
+
+              <div
+                className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-300 ${
+                  openItems.includes(index)
+                    ? "bg-[#EEBC3F] text-[#0F1A26]"
+                    : "bg-[#F8F6F3] text-[#0F1A26]/40 group-hover:bg-[#EEBC3F]/10 group-hover:text-[#EEBC3F]"
+                }`}
+              >
                 {openItems.includes(index) ? (
                   <ChevronUp className="w-4 h-4" />
                 ) : (
@@ -66,13 +75,15 @@ export function FAQSection({
                 )}
               </div>
             </button>
+
             {openItems.includes(index) && (
-              <div className="animate-in slide-in-from-top-2 duration-200">
-                <div 
-                  className="text-[#0F1A26]/60 text-sm leading-relaxed pt-2 pb-1 pl-0"
-                  dangerouslySetInnerHTML={{ __html: t.raw(faq.answerKey) }}
-                />
-              </div>
+              <div
+                className="mt-2 pr-10 text-[#0F1A26]/70 text-sm leading-relaxed
+                [&_strong]:font-bold [&_strong]:text-[#0F1A26]
+                [&_a]:text-[#EEBC3F] [&_a]:font-medium [&_a]:transition-colors
+                [&_a:hover]:text-[#0F1A26]"
+                dangerouslySetInnerHTML={{ __html: getRawAnswer(faq.answerKey) }}
+              />
             )}
           </div>
         ))}
