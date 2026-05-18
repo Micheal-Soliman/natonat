@@ -48,19 +48,19 @@ function SizeCalculator({ t }: { t: (key: string) => string }) {
 
   const calculateSize = () => {
     if (!height || height <= 0) return;
-    
+
     setIsAnimating(true);
     setResult(null);
     setIsOutOfRange(false);
-    
+
     const inches = unit === "cm" ? height / 2.54 : height;
-    
+
     let recommended = null;
     if (inches >= 18 && inches < 22) recommended = sizes[0];
     else if (inches >= 22 && inches < 26) recommended = sizes[1];
     else if (inches >= 26 && inches < 30) recommended = sizes[2];
     else if (inches >= 30 && inches <= 32) recommended = sizes[3];
-    
+
     setTimeout(() => {
       if (!recommended) {
         setIsOutOfRange(true);
@@ -96,7 +96,7 @@ function SizeCalculator({ t }: { t: (key: string) => string }) {
             {unit === "inches" ? "in" : "cm"}
           </span>
         </div>
-        
+
         <div className="flex gap-2">
           <button
             onClick={() => {
@@ -104,11 +104,10 @@ function SizeCalculator({ t }: { t: (key: string) => string }) {
               setHeight("");
               setResult(null);
             }}
-            className={`px-4 py-4 rounded-2xl font-medium transition-all ${
-              unit === "inches" 
-                ? "bg-[#0F1A26] text-white" 
+            className={`px-4 py-4 rounded-2xl font-medium transition-all ${unit === "inches"
+                ? "bg-[#0F1A26] text-white"
                 : "bg-white text-[#0F1A26]/60 border border-[#0F1A26]/10"
-            }`}
+              }`}
           >
             {t('calculator.inches')}
           </button>
@@ -118,11 +117,10 @@ function SizeCalculator({ t }: { t: (key: string) => string }) {
               setHeight("");
               setResult(null);
             }}
-            className={`px-4 py-4 rounded-2xl font-medium transition-all ${
-              unit === "cm" 
-                ? "bg-[#0F1A26] text-white" 
+            className={`px-4 py-4 rounded-2xl font-medium transition-all ${unit === "cm"
+                ? "bg-[#0F1A26] text-white"
                 : "bg-white text-[#0F1A26]/60 border border-[#0F1A26]/10"
-            }`}
+              }`}
           >
             {t('calculator.cm')}
           </button>
@@ -236,11 +234,10 @@ function HowItWorksContent() {
         <div ref={ref} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 md:-mt-10 relative z-10">
           <div className="grid md:grid-cols-3 gap-4 md:gap-6">
             {steps.map((step, index) => (
-              <div 
-                key={index} 
-                className={`group bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-lg shadow-[#0F1A26]/5 border border-[#0F1A26]/5 transition-all duration-700 hover:shadow-xl hover:shadow-[#0F1A26]/10 ${
-                  isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-                }`}
+              <div
+                key={index}
+                className={`group bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-lg shadow-[#0F1A26]/5 border border-[#0F1A26]/5 transition-all duration-700 hover:shadow-xl hover:shadow-[#0F1A26]/10 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                  }`}
                 style={{ transitionDelay: `${index * 150}ms` }}
               >
                 <div className="flex items-start justify-between mb-4 md:mb-6">
@@ -274,7 +271,7 @@ function HowItWorksContent() {
             {/* Size Cards - Dark Theme */}
             <div className="bg-[#0F1A26] rounded-3xl p-6 md:p-8">
               <h3 className="text-xl font-bold text-white mb-4 text-center">{t('sizeGuide.title')}</h3>
-              
+
               <div className="grid grid-cols-2 gap-3">
                 {[
                   { size: "S", cm: "45–53", inch: "18–21", type: t('sizes.s.type') },
@@ -323,43 +320,63 @@ function HowItWorksContent() {
         <div className="bg-white py-12 md:py-20">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-8 md:mb-12">
-              <span className="text-[#EEBC3F] text-xs font-semibold tracking-[0.3em] uppercase">{t('video.label')}</span>
-              <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-[#0F1A26] mt-2 md:mt-3">{t('video.title')}</h2>
+              <span className="text-[#EEBC3F] text-xs font-semibold tracking-[0.3em] uppercase">
+                {t('video.label')}
+              </span>
+
+              <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-[#0F1A26] mt-2 md:mt-3">
+                {t('video.title')}
+              </h2>
+
               <p className="text-[#0F1A26]/50 mt-2 md:mt-3 max-w-xl mx-auto text-sm md:text-base">
                 {t('video.subtitle')}
               </p>
             </div>
+
             <div className="bg-[#0F1A26] rounded-3xl overflow-hidden">
-              {/* Video/Image Placeholder */}
-              <div className="aspect-video relative">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#1a2a3a] to-[#0F1A26]" />
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-8">
-                  <div className="w-24 h-24 rounded-full bg-[#EEBC3F]/20 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform cursor-pointer hover:bg-[#EEBC3F]/30">
-                    <Play className="w-10 h-10 text-[#EEBC3F] ml-1" />
-                  </div>
-                  <p className="text-white/80 text-xl font-semibold mb-2">{t('video.comingSoon')}</p>
-                  <p className="text-white/50 text-sm max-w-md">
-                    {t('video.description')}
-                  </p>
-                </div>
+              {/* Video */}
+              <div className="aspect-video relative bg-black">
+                <video
+                  className="w-full h-full object-contain"
+                  controls
+                  playsInline
+                  preload="metadata"
+                  poster="/videos/measurement-poster.jpg"
+                >
+                  <source src="/size.mp4" type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+
                 {/* Measurement Tips Overlay */}
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-8">
-                  <div className="flex flex-wrap gap-4 justify-center">
-                    <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2">
+                <div className="pointer-events-none absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 md:p-8">
+                  <div className="flex flex-wrap gap-3 md:gap-4 justify-center">
+                    <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-3 md:px-4 py-2">
                       <Ruler className="w-4 h-4 text-[#EEBC3F]" />
-                      <span className="text-white text-sm">{t('video.tip1')}</span>
+                      <span className="text-white text-xs md:text-sm">
+                        {t('video.tip1')}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2">
+
+                    <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-3 md:px-4 py-2">
                       <Luggage className="w-4 h-4 text-[#EEBC3F]" />
-                      <span className="text-white text-sm">{t('video.tip2')}</span>
+                      <span className="text-white text-xs md:text-sm">
+                        {t('video.tip2')}
+                      </span>
                     </div>
                   </div>
                 </div>
               </div>
+
               {/* CM to Inches Conversion Table */}
               <div className="p-8 border-t border-white/10">
-                <h3 className="text-xl font-bold text-white mb-2 text-center">{t('conversionChart.title')}</h3>
-                <p className="text-white/50 text-xs text-center mb-6">{t('sizeGuide.note')}</p>
+                <h3 className="text-xl font-bold text-white mb-2 text-center">
+                  {t('conversionChart.title')}
+                </h3>
+
+                <p className="text-white/50 text-xs text-center mb-6">
+                  {t('sizeGuide.note')}
+                </p>
+
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {[
                     { size: "S", inches: "18-21\"", cm: "45-53 cm", type: t('sizes.s.type') },
@@ -367,12 +384,29 @@ function HowItWorksContent() {
                     { size: "L", inches: "26-28\"", cm: "65-70 cm", type: t('sizes.l.type') },
                     { size: "XL", inches: "29-32\"", cm: "72-81 cm", type: t('sizes.xl.type') },
                   ].map((item) => (
-                    <div key={item.size} className="bg-white/5 rounded-xl p-4 text-center border border-white/10 hover:border-[#EEBC3F]/30 transition-all duration-300">
-                      <span className="text-2xl font-bold text-[#EEBC3F]">{item.size}</span>
-                      <p className="text-white font-semibold mt-1">{item.inches}</p>
-                      <p className="text-[#EEBC3F] text-sm">{item.cm}</p>
-                      <p className="text-white/40 text-xs mt-1">{item.type}</p>
-                      <p className="text-white/30 text-[14px] mt-2">({t('sizeGuide.heightOnly')})</p>
+                    <div
+                      key={item.size}
+                      className="bg-white/5 rounded-xl p-4 text-center border border-white/10 hover:border-[#EEBC3F]/30 transition-all duration-300"
+                    >
+                      <span className="text-2xl font-bold text-[#EEBC3F]">
+                        {item.size}
+                      </span>
+
+                      <p className="text-white font-semibold mt-1">
+                        {item.inches}
+                      </p>
+
+                      <p className="text-[#EEBC3F] text-sm">
+                        {item.cm}
+                      </p>
+
+                      <p className="text-white/40 text-xs mt-1">
+                        {item.type}
+                      </p>
+
+                      <p className="text-white/30 text-[14px] mt-2">
+                        ({t('sizeGuide.heightOnly')})
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -390,8 +424,8 @@ function HowItWorksContent() {
           </div>
           <div className="grid md:grid-cols-3 gap-4 md:gap-6">
             {[0, 1, 2, 3, 4].map((index) => (
-              <div 
-                key={index} 
+              <div
+                key={index}
                 className="text-center group bg-white p-5 rounded-xl border border-[#0F1A26]/5 shadow-sm hover:shadow-md transition-all"
               >
                 <div className="w-12 h-12 rounded-full bg-[#EEBC3F]/10 flex items-center justify-center mx-auto mb-3">
@@ -413,8 +447,8 @@ function HowItWorksContent() {
             </div>
             <div className="space-y-3">
               {faqs.map((faq, index) => (
-                <div 
-                  key={index} 
+                <div
+                  key={index}
                   className="border border-[#0F1A26]/10 rounded-xl md:rounded-2xl overflow-hidden"
                 >
                   <button
@@ -437,8 +471,8 @@ function HowItWorksContent() {
               ))}
             </div>
             <div className="text-center mt-8">
-              <Link 
-                href="/faqs" 
+              <Link
+                href="/faqs"
                 className="inline-flex items-center gap-2 text-[#EEBC3F] hover:text-[#0F1A26] font-medium transition-colors group"
               >
                 {t('faq.viewAll')}
@@ -453,8 +487,8 @@ function HowItWorksContent() {
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-3 md:mb-4">{t('cta.title')}</h2>
             <p className="text-white/50 mb-6 md:mb-8 max-w-lg mx-auto text-sm md:text-base">{t('cta.subtitle')}</p>
-            <Button 
-              asChild 
+            <Button
+              asChild
               className="bg-[#EEBC3F] text-[#0F1A26] hover:bg-white rounded-full px-6 md:px-8 py-4 md:py-6 text-base md:text-lg font-bold"
             >
               <Link href="/shop/luggage-covers" className="inline-flex items-center gap-2">

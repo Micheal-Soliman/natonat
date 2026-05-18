@@ -1036,7 +1036,8 @@ export const products: Product[] = [
       "/packOnat/Black/1.png",
       "/packOnat/Black/2.png",
       "/packOnat/Black/3.png",
-      "/packOnat/Black/4.png"
+      "/packOnat/Black/4.png",
+      "/packOnat/Black/5.png",
     ],
     description: "Upgrade your travel experience with the PackOnat Garment Folder by natOnat, designed to keep your clothes perfectly folded, organized, and wrinkle-free wherever you go. Whether you're traveling for business or leisure, PackOnat ensures your suits, shirts, dresses, and outfits stay flat and ready to wear straight out of your luggage."
   },
@@ -1057,7 +1058,8 @@ export const products: Product[] = [
       "/packOnat/Green/1.png",
       "/packOnat/Green/2.png",
       "/packOnat/Green/3.png",
-      "/packOnat/Green/4.png"
+      "/packOnat/Green/4.png",
+      "/packOnat/Green/5.png",
     ],
     description: "Upgrade your travel experience with the PackOnat Garment Folder by natOnat, designed to keep your clothes perfectly folded, organized, and wrinkle-free wherever you go. Whether you're traveling for business or leisure, PackOnat ensures your suits, shirts, dresses, and outfits stay flat and ready to wear straight out of your luggage."
   },
@@ -1078,7 +1080,8 @@ export const products: Product[] = [
       "/packOnat/Red/1.png",
       "/packOnat/Red/2.png",
       "/packOnat/Red/3.png",
-      "/packOnat/Red/4.png"
+      "/packOnat/Red/4.png",
+      "/packOnat/Red/5.png",
     ],
     description: "Upgrade your travel experience with the PackOnat Garment Folder by natOnat, designed to keep your clothes perfectly folded, organized, and wrinkle-free wherever you go. Whether you're traveling for business or leisure, PackOnat ensures your suits, shirts, dresses, and outfits stay flat and ready to wear straight out of your luggage."
   },
