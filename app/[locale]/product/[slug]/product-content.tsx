@@ -46,12 +46,14 @@ function ProductVideoSection({
   poster,
   src,
   fullWidth,
+  videoFit = "cover",
 }: {
   title: string;
   subtitle: string;
   poster: string;
   src: string;
   fullWidth?: boolean;
+  videoFit?: "cover" | "contain";
 }) {
   const wrapperClassName = fullWidth
     ? "mt-6 lg:mt-8 relative left-1/2 right-1/2 -mx-[50vw] w-screen"
@@ -69,6 +71,7 @@ function ProductVideoSection({
             <Sparkles className="w-5 h-5 text-[#EEBC3F]" />
             {title}
           </h3>
+
           <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-[#F1EBE3]">
             <video
               autoPlay
@@ -77,7 +80,8 @@ function ProductVideoSection({
               playsInline
               controls
               preload="metadata"
-              className="w-full h-full object-cover"
+              className={`w-full h-full ${videoFit === "contain" ? "object-contain" : "object-cover"
+                }`}
               poster={poster}
             >
               <source src={src} type="video/mp4" />
@@ -85,7 +89,10 @@ function ProductVideoSection({
               Your browser does not support the video tag.
             </video>
           </div>
-          <p className="text-[#0F1A26]/60 text-sm mt-4 text-center">{subtitle}</p>
+
+          <p className="text-[#0F1A26]/60 text-sm mt-4 text-center">
+            {subtitle}
+          </p>
         </div>
       </div>
     </div>
@@ -96,7 +103,7 @@ function ProductVideoSection({
 function ProductDetailedDescriptionIntro({ product, onExpand }: ProductDetailedDescriptionIntroProps) {
   const tp = useTranslations('products');
   const t = useTranslations('product');
-  
+
   // Check if this product has detailed description data
   const hasDetailedDescription = () => {
     try {
@@ -142,7 +149,7 @@ function ProductDetailedDescriptionIntro({ product, onExpand }: ProductDetailedD
 // Component for showing intro text only (no button) when expanded
 function ProductDetailedDescriptionTextOnly({ product }: { product: Product }) {
   const tp = useTranslations('products');
-  
+
   // Check if this product has detailed description data
   const hasDetailedDescription = () => {
     try {
@@ -169,7 +176,7 @@ function ProductDetailedDescriptionTextOnly({ product }: { product: Product }) {
 // Component for showing full content when expanded
 function ProductDetailedDescriptionFull({ product, selectedSize, quantity, t, addToCart }: ProductDetailedDescriptionProps) {
   const tp = useTranslations('products');
-  
+
   // Helper to safely get array data
   const getArray = (path: string): string[] => {
     try {
@@ -288,7 +295,7 @@ function ProductDetailedDescriptionFull({ product, selectedSize, quantity, t, ad
       <div className="p-5 bg-gradient-to-r from-[#EEBC3F]/20 to-[#EEBC3F]/5 rounded-xl border border-[#EEBC3F]/30 text-center">
         <h4 className="font-bold text-[#0F1A26] mb-1 text-sm">{tp(`${product.slug}.cta.title`)}</h4>
         <p className="text-[#0F1A26]/70 text-sm mb-3">{tp(`${product.slug}.cta.content`)}</p>
-        <Button 
+        <Button
           onClick={() => {
             addToCart({
               id: Number(product.id),
@@ -390,7 +397,7 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
   }, [product, bundleSelections, products]);
 
   const currentPrice = product.dynamicPricing ? calculateDynamicBundlePrice() : getPriceBySize(selectedSize);
-  
+
   // Filter images based on selected color - memoized to prevent infinite loops
   const colorImages = useMemo(() => {
     if (!product.colors || !selectedColor) return product.images || [product.image];
@@ -401,7 +408,7 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
     const endIdx = startIdx + 3;
     return product.images?.slice(startIdx, endIdx) || [product.image];
   }, [product.colors, product.images, product.image, selectedColor]);
-  
+
   const [activeImage, setActiveImage] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
   const [showShareToast, setShowShareToast] = useState(false);
@@ -465,7 +472,7 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
   return (
     <>
       <Navigation />
-      
+
       {/* Share Toast Notification */}
       {showShareToast && (
         <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-[#0F1A26] text-white px-6 py-3 rounded-full shadow-xl flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
@@ -473,14 +480,14 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
           <span className="font-medium">{t('linkCopied')}</span>
         </div>
       )}
-      
+
       <main className="min-h-screen bg-[#F1EBE3] overflow-x-hidden pb-20 lg:pb-0" ref={ref}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12">
           {/* Product Navigation - Top */}
           <div className="flex items-center justify-between mb-8">
             {/* Left side - Previous or Back to Shop */}
             {prevProduct ? (
-              <Link 
+              <Link
                 href={`/product/${prevProduct.slug}`}
                 className="flex items-center gap-3 px-4 py-3 bg-white border border-[#0F1A26]/10 rounded-full text-[#0F1A26] hover:border-[#EEBC3F] hover:bg-[#EEBC3F] hover:text-[#1e3a5f] transition-all duration-300 group shadow-sm"
               >
@@ -493,8 +500,8 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                 </div>
               </Link>
             ) : (
-              <Link 
-                href="/shop" 
+              <Link
+                href="/shop"
                 className="flex items-center gap-3 px-4 py-3 bg-white border border-[#0F1A26]/10 rounded-full text-[#0F1A26] hover:border-[#EEBC3F] hover:bg-[#EEBC3F] hover:text-[#1e3a5f] transition-all duration-300 group shadow-sm"
               >
                 <div className="w-8 h-8 rounded-full bg-[#0F1A26]/5 group-hover:bg-white/20 flex items-center justify-center transition-all">
@@ -506,7 +513,7 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                 </div>
               </Link>
             )}
-            
+
             {/* Center - Product counter */}
             <div className="hidden md:flex flex-col items-center">
               <span className="text-xs text-[#0F1A26]/40 uppercase tracking-wider">{t('nav.browsing')}</span>
@@ -516,10 +523,10 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                 <span className="text-[#0F1A26]/50">{products.length}</span>
               </div>
             </div>
-            
+
             {/* Right side - Next or nothing */}
             {nextProduct ? (
-              <Link 
+              <Link
                 href={`/product/${nextProduct.slug}`}
                 className="flex items-center gap-3 px-4 py-3 bg-white border border-[#0F1A26]/10 rounded-full text-[#0F1A26] hover:border-[#EEBC3F] hover:bg-[#EEBC3F] hover:text-[#1e3a5f] transition-all duration-300 group shadow-sm"
               >
@@ -541,7 +548,7 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
             {/* Section 1: Gallery */}
             <div className={`space-y-4 sm:space-y-6 transition-all duration-700 w-full max-w-full overflow-hidden ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'}`}>
               {/* Main Image - Premium with Navigation Arrows + Swipe Support */}
-              <div 
+              <div
                 className="relative aspect-square bg-white/50 backdrop-blur-sm rounded-2xl sm:rounded-3xl flex items-center justify-center overflow-hidden border border-[#0F1A26]/10 shadow-2xl shadow-[#0F1A26]/10 touch-pan-y"
                 onTouchStart={(e) => {
                   const touch = e.touches[0];
@@ -564,8 +571,8 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(238,188,63,0.15),transparent_60%)]" />
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(255,255,255,0.05),transparent_50%)]" />
                 <div className="absolute inset-0 sm:p-4">
-                  <Image 
-                    src={colorImages[activeImage] || product.image} 
+                  <Image
+                    src={colorImages[activeImage] || product.image}
                     alt={product.name}
                     fill
                     sizes="(max-width: 768px) 100vw, 50vw"
@@ -607,12 +614,12 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                       key={idx}
                       onClick={() => setActiveImage(idx)}
                       className={`flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-lg sm:rounded-xl bg-white/80 flex items-center justify-center transition-all duration-300 border-2 overflow-hidden ${activeImage === idx
-                          ? "border-[#EEBC3F] shadow-lg shadow-[#EEBC3F]/20"
-                          : "border-transparent opacity-80 hover:opacity-100"
+                        ? "border-[#EEBC3F] shadow-lg shadow-[#EEBC3F]/20"
+                        : "border-transparent opacity-80 hover:opacity-100"
                         }`}
                     >
-                      <Image 
-                        src={img} 
+                      <Image
+                        src={img}
                         alt={`${product.name} view ${idx + 1}`}
                         width={96}
                         height={96}
@@ -622,29 +629,28 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                     </button>
                   ))}
                 </div>
-                
+
                 {/* Index Indicator with Dots */}
                 <div className="flex items-center justify-center gap-2 sm:gap-4 max-w-full">
                   <span className="text-xs sm:text-sm font-bold text-[#EEBC3F] min-w-[16px] sm:min-w-[20px]">
                     {String(activeImage + 1).padStart(2, '0')}
                   </span>
-                  
+
                   {/* Dots */}
                   <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto max-w-[180px] sm:max-w-[280px] px-1">
                     {(colorImages || [product.image]).map((_, idx) => (
                       <button
                         key={idx}
                         onClick={() => setActiveImage(idx)}
-                        className={`h-1 sm:h-1.5 rounded-full transition-all duration-300 ${
-                          activeImage === idx 
-                            ? "w-4 sm:w-6 bg-[#EEBC3F]" 
-                            : "w-1.5 sm:w-1.5 bg-[#0F1A26]/20 hover:bg-[#0F1A26]/40"
-                        }`}
+                        className={`h-1 sm:h-1.5 rounded-full transition-all duration-300 ${activeImage === idx
+                          ? "w-4 sm:w-6 bg-[#EEBC3F]"
+                          : "w-1.5 sm:w-1.5 bg-[#0F1A26]/20 hover:bg-[#0F1A26]/40"
+                          }`}
                         aria-label={t('aria.goToImage', { number: idx + 1 })}
                       />
                     ))}
                   </div>
-                  
+
                   <span className="text-xs sm:text-sm text-[#0F1A26]/60 min-w-[16px] sm:min-w-[20px]">
                     {String(colorImages.length || 1).padStart(2, '0')}
                   </span>
@@ -656,284 +662,281 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
             <div className={`lg:pl-8 transition-all duration-700 delay-100 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'}`}>
               {/* Buy Box - Price + Size + Add to Cart */}
               <div className="space-y-4">
-              {/* Category & Actions */}
-              <div className="flex items-start justify-between mb-4 sm:mb-6">
-                <div className="flex-1 min-w-0">
-                  <span className="text-[#EEBC3F] text-xs font-bold tracking-[0.3em] uppercase">{product.type}</span>
-                  <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#0F1A26] mt-1 sm:mt-2 tracking-tight">{product.name}</h1>
-                </div>
-                <div className="flex gap-2 sm:gap-3 ml-4">
-                  <button 
-                    onClick={() => {
-                      if (isInWishlist(product.id)) {
-                        removeFromWishlist(product.id);
-                      } else {
-                        addToWishlist(product);
-                      }
-                    }}
-                    className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white border border-[#0F1A26]/10 flex items-center justify-center transition-all duration-300 hover:shadow-lg hover:scale-110 ${
-                      isInWishlist(product.id) 
-                        ? 'text-[#EEBC3F] border-[#EEBC3F]' 
+                {/* Category & Actions */}
+                <div className="flex items-start justify-between mb-4 sm:mb-6">
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[#EEBC3F] text-xs font-bold tracking-[0.3em] uppercase">{product.type}</span>
+                    <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#0F1A26] mt-1 sm:mt-2 tracking-tight">{product.name}</h1>
+                  </div>
+                  <div className="flex gap-2 sm:gap-3 ml-4">
+                    <button
+                      onClick={() => {
+                        if (isInWishlist(product.id)) {
+                          removeFromWishlist(product.id);
+                        } else {
+                          addToWishlist(product);
+                        }
+                      }}
+                      className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white border border-[#0F1A26]/10 flex items-center justify-center transition-all duration-300 hover:shadow-lg hover:scale-110 ${isInWishlist(product.id)
+                        ? 'text-[#EEBC3F] border-[#EEBC3F]'
                         : 'text-[#0F1A26]/40 hover:text-[#EEBC3F] hover:border-[#EEBC3F]'
-                    }`}
-                  >
-                    <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${isInWishlist(product.id) ? 'fill-[#EEBC3F]' : ''}`} strokeWidth={1.5} />
-                  </button>
-                  <button 
-                    onClick={() => {
-                      navigator.clipboard.writeText(window.location.href);
-                      setShowShareToast(true);
-                      setTimeout(() => setShowShareToast(false), 2000);
-                    }}
-                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white border border-[#0F1A26]/10 flex items-center justify-center text-[#0F1A26]/40 hover:text-[#EEBC3F] hover:border-[#EEBC3F] transition-all duration-300 hover:shadow-lg hover:scale-110"
-                  >
-                    <Share2 className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={1.5} />
-                  </button>
-                </div>
-              </div>
-
-              {/* Rating - Premium */}
-              <div className="flex items-center gap-2 sm:gap-4 mb-6 sm:mb-8 flex-wrap">
-                <div className="flex items-center gap-1 bg-white rounded-full px-3 sm:px-4 py-1.5 sm:py-2 border border-[#0F1A26]/5">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star key={star} className="w-3 h-3 sm:w-4 sm:h-4 fill-[#EEBC3F] text-[#EEBC3F]" strokeWidth={1.5} />
-                  ))}
-                  <span className="text-xs sm:text-sm font-bold text-[#0F1A26] ml-1 sm:ml-2">4.9</span>
-                </div>
-                <span className="text-xs sm:text-sm text-[#0F1A26]/50 underline decoration-[#0F1A26]/20 underline-offset-4">127 verified reviews</span>
-              </div>
-
-              {/* Price - Premium */}
-              <div className="flex flex-wrap items-baseline gap-2 sm:gap-4 mb-6 sm:mb-8 p-3 sm:p-6 bg-gradient-to-r from-[#EEBC3F]/20 to-[#EEBC3F]/5 rounded-xl sm:rounded-2xl border-2 border-[#EEBC3F]/30">
-                <span className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#0F1A26] tracking-tight">EGP {currentPrice.price}</span>
-                <span className="text-lg sm:text-xl md:text-2xl text-[#0F1A26]/50 line-through font-medium">EGP {currentPrice.originalPrice}</span>
-                <span className="bg-[#EEBC3F] text-[#0F1A26] text-xs sm:text-sm font-bold px-3 sm:px-4 py-1 sm:py-2 rounded-full shadow-lg">Save {Math.round((1 - currentPrice.price / currentPrice.originalPrice) * 100)}%</span>
-              </div>
-
-              {/* Size Selection */}
-              {product.size && (
-                <div className="mb-6 sm:mb-8">
-                  <div className="flex items-center justify-between mb-2 sm:mb-3">
-                    <label className="text-xs sm:text-sm font-bold text-[#0F1A26] tracking-[0.1em] uppercase flex items-center gap-2">
-                      <Award className="w-3 h-3 sm:w-4 sm:h-4 text-[#EEBC3F]" />
-                      {t('size.select')}
-                    </label>
-                    <Link href="/how-it-works" className="text-xs sm:text-sm bg-[#EEBC3F] hover:bg-[#d4a535] text-[#0F1A26] transition-all flex items-center gap-1.5 font-bold px-3 sm:px-4 py-2 rounded-lg shadow-md hover:shadow-lg hover:scale-105">
-                      <Ruler className="w-3 h-3 sm:w-4 sm:h-4" />
-                      {t('size.howToMeasure')}
-                    </Link>
+                        }`}
+                    >
+                      <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${isInWishlist(product.id) ? 'fill-[#EEBC3F]' : ''}`} strokeWidth={1.5} />
+                    </button>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(window.location.href);
+                        setShowShareToast(true);
+                        setTimeout(() => setShowShareToast(false), 2000);
+                      }}
+                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white border border-[#0F1A26]/10 flex items-center justify-center text-[#0F1A26]/40 hover:text-[#EEBC3F] hover:border-[#EEBC3F] transition-all duration-300 hover:shadow-lg hover:scale-110"
+                    >
+                      <Share2 className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={1.5} />
+                    </button>
                   </div>
-                  <div className="flex items-center gap-2 mb-3 sm:mb-4 bg-[#EEBC3F]/10 rounded-lg px-3 py-2">
-                    <Ruler className="w-4 h-4 text-[#EEBC3F] flex-shrink-0" />
-                    <p className="text-[#0F1A26] text-xs font-semibold">{t('size.heightNote')}</p>
+                </div>
+
+                {/* Rating - Premium */}
+                <div className="flex items-center gap-2 sm:gap-4 mb-6 sm:mb-8 flex-wrap">
+                  <div className="flex items-center gap-1 bg-white rounded-full px-3 sm:px-4 py-1.5 sm:py-2 border border-[#0F1A26]/5">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star key={star} className="w-3 h-3 sm:w-4 sm:h-4 fill-[#EEBC3F] text-[#EEBC3F]" strokeWidth={1.5} />
+                    ))}
+                    <span className="text-xs sm:text-sm font-bold text-[#0F1A26] ml-1 sm:ml-2">4.9</span>
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
-                    {sizes.map((size) => (
-                      <button
-                        key={size.id}
-                        onClick={() => setSelectedSize(size.id)}
-                        className={`py-3 sm:py-5 rounded-xl sm:rounded-2xl border-2 text-center transition-all duration-300 ${selectedSize === size.id
+                  <span className="text-xs sm:text-sm text-[#0F1A26]/50 underline decoration-[#0F1A26]/20 underline-offset-4">127 verified reviews</span>
+                </div>
+
+                {/* Price - Premium */}
+                <div className="flex flex-wrap items-baseline gap-2 sm:gap-4 mb-6 sm:mb-8 p-3 sm:p-6 bg-gradient-to-r from-[#EEBC3F]/20 to-[#EEBC3F]/5 rounded-xl sm:rounded-2xl border-2 border-[#EEBC3F]/30">
+                  <span className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#0F1A26] tracking-tight">EGP {currentPrice.price}</span>
+                  <span className="text-lg sm:text-xl md:text-2xl text-[#0F1A26]/50 line-through font-medium">EGP {currentPrice.originalPrice}</span>
+                  <span className="bg-[#EEBC3F] text-[#0F1A26] text-xs sm:text-sm font-bold px-3 sm:px-4 py-1 sm:py-2 rounded-full shadow-lg">Save {Math.round((1 - currentPrice.price / currentPrice.originalPrice) * 100)}%</span>
+                </div>
+
+                {/* Size Selection */}
+                {product.size && (
+                  <div className="mb-6 sm:mb-8">
+                    <div className="flex items-center justify-between mb-2 sm:mb-3">
+                      <label className="text-xs sm:text-sm font-bold text-[#0F1A26] tracking-[0.1em] uppercase flex items-center gap-2">
+                        <Award className="w-3 h-3 sm:w-4 sm:h-4 text-[#EEBC3F]" />
+                        {t('size.select')}
+                      </label>
+                      <Link href="/how-it-works" className="text-xs sm:text-sm bg-[#EEBC3F] hover:bg-[#d4a535] text-[#0F1A26] transition-all flex items-center gap-1.5 font-bold px-3 sm:px-4 py-2 rounded-lg shadow-md hover:shadow-lg hover:scale-105">
+                        <Ruler className="w-3 h-3 sm:w-4 sm:h-4" />
+                        {t('size.howToMeasure')}
+                      </Link>
+                    </div>
+                    <div className="flex items-center gap-2 mb-3 sm:mb-4 bg-[#EEBC3F]/10 rounded-lg px-3 py-2">
+                      <Ruler className="w-4 h-4 text-[#EEBC3F] flex-shrink-0" />
+                      <p className="text-[#0F1A26] text-xs font-semibold">{t('size.heightNote')}</p>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+                      {sizes.map((size) => (
+                        <button
+                          key={size.id}
+                          onClick={() => setSelectedSize(size.id)}
+                          className={`py-3 sm:py-5 rounded-xl sm:rounded-2xl border-2 text-center transition-all duration-300 ${selectedSize === size.id
                             ? "border-[#EEBC3F] bg-[#EEBC3F] text-white shadow-xl shadow-[#EEBC3F]/30 scale-105"
                             : "border-[#0F1A26]/10 hover:border-[#EEBC3F]/50 bg-white hover:shadow-lg"
-                          }`}
-                      >
-                        <span className={`block font-bold text-base sm:text-lg ${selectedSize === size.id ? "text-white" : "text-[#0F1A26]"}`}>{size.label}</span>
-                        <span className={`block text-[10px] uppercase tracking-wider mt-0.5 ${selectedSize === size.id ? "text-white/60" : "text-[#0F1A26]/40"}`}>{t('size.heightLabel')}</span>
-                        <span className={`block text-xs mt-0.5 ${selectedSize === size.id ? "text-white/70" : "text-[#0F1A26]/50"}`}>{size.range}</span>
-                      </button>
-                    ))}
+                            }`}
+                        >
+                          <span className={`block font-bold text-base sm:text-lg ${selectedSize === size.id ? "text-white" : "text-[#0F1A26]"}`}>{size.label}</span>
+                          <span className={`block text-[10px] uppercase tracking-wider mt-0.5 ${selectedSize === size.id ? "text-white/60" : "text-[#0F1A26]/40"}`}>{t('size.heightLabel')}</span>
+                          <span className={`block text-xs mt-0.5 ${selectedSize === size.id ? "text-white/70" : "text-[#0F1A26]/50"}`}>{size.range}</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {isBundle && product.bundleItems && (
-                <div className="mb-6 sm:mb-8">
-                  <h4 className="font-bold text-[#0F1A26] text-sm mb-4 flex items-center gap-2">
-                    <span className="w-8 h-8 rounded-full bg-[#EEBC3F] text-[#0F1A26] flex items-center justify-center text-xs font-bold">
-                      {product.bundleItems.length}
-                    </span>
-                    {t("bundleItemsTitle")}
-                  </h4>
-                  <div className="space-y-4">
-                    {product.bundleItems.map((item, index) => {
-                      const selection = bundleSelections[index] || {};
-                      const selectedProductId = selection.productId || item.productId || item.productIds?.[0];
-                      const bundleProduct = selectedProductId ? getBundleProduct(selectedProductId) : undefined;
-                      const sizeOptions = bundleProduct ? getBundleSizeOptions(bundleProduct) : [];
+                {isBundle && product.bundleItems && (
+                  <div className="mb-6 sm:mb-8">
+                    <h4 className="font-bold text-[#0F1A26] text-sm mb-4 flex items-center gap-2">
+                      <span className="w-8 h-8 rounded-full bg-[#EEBC3F] text-[#0F1A26] flex items-center justify-center text-xs font-bold">
+                        {product.bundleItems.length}
+                      </span>
+                      {t("bundleItemsTitle")}
+                    </h4>
+                    <div className="space-y-4">
+                      {product.bundleItems.map((item, index) => {
+                        const selection = bundleSelections[index] || {};
+                        const selectedProductId = selection.productId || item.productId || item.productIds?.[0];
+                        const bundleProduct = selectedProductId ? getBundleProduct(selectedProductId) : undefined;
+                        const sizeOptions = bundleProduct ? getBundleSizeOptions(bundleProduct) : [];
 
-                      // Get available product options for this bundle item
-                      const productOptions = item.productIds
-                        ? item.productIds.map(id => {
+                        // Get available product options for this bundle item
+                        const productOptions = item.productIds
+                          ? item.productIds.map(id => {
                             const p = getBundleProduct(id);
                             return p ? { id: p.id, name: p.name, image: p.image } : null;
                           }).filter(Boolean)
-                        : item.productId && bundleProduct
-                          ? [{ id: bundleProduct.id, name: bundleProduct.name, image: bundleProduct.image }]
-                          : [];
+                          : item.productId && bundleProduct
+                            ? [{ id: bundleProduct.id, name: bundleProduct.name, image: bundleProduct.image }]
+                            : [];
 
-                      return (
-                        <div key={index} className="bg-white rounded-xl p-4 border border-[#0F1A26]/10">
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="w-12 h-12 rounded-lg bg-[#F1EBE3] flex items-center justify-center overflow-hidden">
-                              {bundleProduct ? (
-                                <img src={bundleProduct.image} alt={bundleProduct.name} className="w-full h-full object-contain" />
-                              ) : (
-                                <div className="w-full h-full bg-[#EEBC3F]/20" />
-                              )}
-                            </div>
-                            <div className="flex-1">
-                              {item.label && <p className="text-[#0F1A26]/50 text-xs mb-0.5">{item.label}</p>}
-                              {productOptions.length > 1 ? (
-                                <select
-                                  value={selectedProductId || ""}
-                                  onChange={(e) => {
-                                    const newProductId = parseInt(e.target.value);
-                                    const newProduct = getBundleProduct(newProductId);
-                                    const newSizeOptions = newProduct ? getBundleSizeOptions(newProduct) : [];
-                                    setBundleSelections((prev) => ({
-                                      ...prev,
-                                      [index]: {
-                                        ...prev[index],
-                                        productId: newProductId,
-                                        size: newSizeOptions[0],
-                                        color: newProduct?.colors?.[0]?.id,
-                                      },
-                                    }));
-                                  }}
-                                  className="w-full text-sm font-semibold text-[#0F1A26] bg-transparent border border-[#0F1A26]/20 rounded-lg px-2 py-1 focus:border-[#EEBC3F] focus:outline-none"
-                                >
-                                  <option value="">Select product...</option>
-                                  {productOptions.map((opt) => opt && (
-                                    <option key={opt.id} value={opt.id}>{opt.name}</option>
-                                  ))}
-                                </select>
-                              ) : bundleProduct ? (
-                                <h5 className="font-semibold text-[#0F1A26] text-sm">{bundleProduct.name}</h5>
-                              ) : null}
-                              <span className="text-[#EEBC3F] text-xs font-medium block mt-1">Qty: {item.quantity}</span>
-                            </div>
-                          </div>
-
-                          {sizeOptions.length > 0 && (
-                            <div className="mb-3">
-                              <label className="text-[#0F1A26]/60 text-xs mb-2 block">{t("size.select")}</label>
-                              <div className="flex flex-wrap gap-2">
-                                {sizeOptions.map((size: string) => (
-                                  <button
-                                    key={size}
-                                    onClick={() =>
+                        return (
+                          <div key={index} className="bg-white rounded-xl p-4 border border-[#0F1A26]/10">
+                            <div className="flex items-center gap-3 mb-3">
+                              <div className="w-12 h-12 rounded-lg bg-[#F1EBE3] flex items-center justify-center overflow-hidden">
+                                {bundleProduct ? (
+                                  <img src={bundleProduct.image} alt={bundleProduct.name} className="w-full h-full object-contain" />
+                                ) : (
+                                  <div className="w-full h-full bg-[#EEBC3F]/20" />
+                                )}
+                              </div>
+                              <div className="flex-1">
+                                {item.label && <p className="text-[#0F1A26]/50 text-xs mb-0.5">{item.label}</p>}
+                                {productOptions.length > 1 ? (
+                                  <select
+                                    value={selectedProductId || ""}
+                                    onChange={(e) => {
+                                      const newProductId = parseInt(e.target.value);
+                                      const newProduct = getBundleProduct(newProductId);
+                                      const newSizeOptions = newProduct ? getBundleSizeOptions(newProduct) : [];
                                       setBundleSelections((prev) => ({
                                         ...prev,
-                                        [index]: { ...prev[index], size },
-                                      }))
-                                    }
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                                      selection.size === size
+                                        [index]: {
+                                          ...prev[index],
+                                          productId: newProductId,
+                                          size: newSizeOptions[0],
+                                          color: newProduct?.colors?.[0]?.id,
+                                        },
+                                      }));
+                                    }}
+                                    className="w-full text-sm font-semibold text-[#0F1A26] bg-transparent border border-[#0F1A26]/20 rounded-lg px-2 py-1 focus:border-[#EEBC3F] focus:outline-none"
+                                  >
+                                    <option value="">Select product...</option>
+                                    {productOptions.map((opt) => opt && (
+                                      <option key={opt.id} value={opt.id}>{opt.name}</option>
+                                    ))}
+                                  </select>
+                                ) : bundleProduct ? (
+                                  <h5 className="font-semibold text-[#0F1A26] text-sm">{bundleProduct.name}</h5>
+                                ) : null}
+                                <span className="text-[#EEBC3F] text-xs font-medium block mt-1">Qty: {item.quantity}</span>
+                              </div>
+                            </div>
+
+                            {sizeOptions.length > 0 && (
+                              <div className="mb-3">
+                                <label className="text-[#0F1A26]/60 text-xs mb-2 block">{t("size.select")}</label>
+                                <div className="flex flex-wrap gap-2">
+                                  {sizeOptions.map((size: string) => (
+                                    <button
+                                      key={size}
+                                      onClick={() =>
+                                        setBundleSelections((prev) => ({
+                                          ...prev,
+                                          [index]: { ...prev[index], size },
+                                        }))
+                                      }
+                                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${selection.size === size
                                         ? "bg-[#EEBC3F] text-[#0F1A26]"
                                         : "bg-white text-[#0F1A26]/70 hover:bg-[#EEBC3F]/20"
-                                    }`}
-                                  >
-                                    {size.toUpperCase()}
-                                  </button>
-                                ))}
+                                        }`}
+                                    >
+                                      {size.toUpperCase()}
+                                    </button>
+                                  ))}
+                                </div>
                               </div>
-                            </div>
-                          )}
+                            )}
 
-                          {bundleProduct?.colors && bundleProduct.colors.length > 0 && (
-                            <div>
-                              <label className="text-[#0F1A26]/60 text-xs mb-2 block">{t("color.select")}</label>
-                              <div className="flex flex-wrap gap-2">
-                                {bundleProduct.colors.map((color) => (
-                                  <button
-                                    key={color.id}
-                                    onClick={() =>
-                                      setBundleSelections((prev) => ({
-                                        ...prev,
-                                        [index]: { ...prev[index], color: color.id },
-                                      }))
-                                    }
-                                    className={`w-8 h-8 rounded-full border-2 transition-all overflow-hidden ${
-                                      selection.color === color.id
+                            {bundleProduct?.colors && bundleProduct.colors.length > 0 && (
+                              <div>
+                                <label className="text-[#0F1A26]/60 text-xs mb-2 block">{t("color.select")}</label>
+                                <div className="flex flex-wrap gap-2">
+                                  {bundleProduct.colors.map((color) => (
+                                    <button
+                                      key={color.id}
+                                      onClick={() =>
+                                        setBundleSelections((prev) => ({
+                                          ...prev,
+                                          [index]: { ...prev[index], color: color.id },
+                                        }))
+                                      }
+                                      className={`w-8 h-8 rounded-full border-2 transition-all overflow-hidden ${selection.color === color.id
                                         ? "border-[#EEBC3F] ring-2 ring-[#EEBC3F]/30"
                                         : "border-[#0F1A26]/10 hover:border-[#EEBC3F]/50"
-                                    }`}
-                                    title={color.name}
-                                  >
-                                    <img src={color.image} alt={color.name} className="w-full h-full object-cover" />
-                                  </button>
-                                ))}
+                                        }`}
+                                      title={color.name}
+                                    >
+                                      <img src={color.image} alt={color.name} className="w-full h-full object-cover" />
+                                    </button>
+                                  ))}
+                                </div>
                               </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Color Selection */}
-              {product.colors && product.colors.length > 0 && (
-                <div className="mb-4 sm:mb-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <label className="text-[#0F1A26] font-semibold text-sm sm:text-base flex items-center gap-2">
-                      {t('color.select') || 'Select Color'}
-                      <span className="text-[#EEBC3F]">·</span>
-                      <span className="text-[#0F1A26]/60 font-normal">{product.colors.find(c => c.id === selectedColor)?.name}</span>
-                    </label>
-                  </div>
-                  <div className="flex flex-wrap gap-3">
-                    {product.colors.map((color) => (
-                      <button
-                        key={color.id}
-                        onClick={() => {
-                          setSelectedColor(color.id);
-                          setActiveImage(0); // Reset to first image of new color
-                        }}
-                        className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl border-2 overflow-hidden transition-all duration-300 ${selectedColor === color.id
+                {/* Color Selection */}
+                {product.colors && product.colors.length > 0 && (
+                  <div className="mb-4 sm:mb-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="text-[#0F1A26] font-semibold text-sm sm:text-base flex items-center gap-2">
+                        {t('color.select') || 'Select Color'}
+                        <span className="text-[#EEBC3F]">·</span>
+                        <span className="text-[#0F1A26]/60 font-normal">{product.colors.find(c => c.id === selectedColor)?.name}</span>
+                      </label>
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      {product.colors.map((color) => (
+                        <button
+                          key={color.id}
+                          onClick={() => {
+                            setSelectedColor(color.id);
+                            setActiveImage(0); // Reset to first image of new color
+                          }}
+                          className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl border-2 overflow-hidden transition-all duration-300 ${selectedColor === color.id
                             ? "border-[#EEBC3F] shadow-lg shadow-[#EEBC3F]/30 scale-105 ring-2 ring-[#EEBC3F]/20"
                             : "border-[#0F1A26]/10 hover:border-[#EEBC3F]/50 hover:shadow-md"
-                          }`}
-                      >
-                        <img
-                          src={color.image}
-                          alt={color.name}
-                          className="w-full h-full object-cover"
-                        />
-                        {selectedColor === color.id && (
-                          <div className="absolute inset-0 bg-[#EEBC3F]/20 flex items-center justify-center">
-                            <Check className="w-5 h-5 sm:w-6 sm:h-6 text-[#0F1A26] bg-white rounded-full p-1" />
-                          </div>
-                        )}
-                      </button>
-                    ))}
+                            }`}
+                        >
+                          <img
+                            src={color.image}
+                            alt={color.name}
+                            className="w-full h-full object-cover"
+                          />
+                          {selectedColor === color.id && (
+                            <div className="absolute inset-0 bg-[#EEBC3F]/20 flex items-center justify-center">
+                              <Check className="w-5 h-5 sm:w-6 sm:h-6 text-[#0F1A26] bg-white rounded-full p-1" />
+                            </div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Quantity & Add to Cart - Premium */}
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6 sm:mb-8">
-                <div className="flex items-center bg-white border-2 border-[#0F1A26]/10 rounded-2xl overflow-hidden hover:border-[#EEBC3F]/30 transition-colors w-full sm:w-auto">
-                  <button
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="flex-1 sm:flex-none sm:w-12 h-14 sm:h-16 flex items-center justify-center text-[#0F1A26]/60 hover:bg-[#EEBC3F]/10 hover:text-[#EEBC3F] transition-all text-lg sm:text-xl font-bold"
-                  >
-                    -
-                  </button>
-                  <span className="flex-1 sm:flex-none sm:w-12 text-center font-bold text-[#0F1A26] text-lg sm:text-xl">{quantity}</span>
-                  <button
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="flex-1 sm:flex-none sm:w-12 h-14 sm:h-16 flex items-center justify-center text-[#0F1A26]/60 hover:bg-[#EEBC3F]/10 hover:text-[#EEBC3F] transition-all text-lg sm:text-xl font-bold"
-                  >
-                    +
-                  </button>
-                </div>
-                <Button
-                  onClick={() => {
-                    const cartBundleSelections =
-                      isBundle && product.bundleItems
-                        ? product.bundleItems.map((item, index) => {
+                {/* Quantity & Add to Cart - Premium */}
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6 sm:mb-8">
+                  <div className="flex items-center bg-white border-2 border-[#0F1A26]/10 rounded-2xl overflow-hidden hover:border-[#EEBC3F]/30 transition-colors w-full sm:w-auto">
+                    <button
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      className="flex-1 sm:flex-none sm:w-12 h-14 sm:h-16 flex items-center justify-center text-[#0F1A26]/60 hover:bg-[#EEBC3F]/10 hover:text-[#EEBC3F] transition-all text-lg sm:text-xl font-bold"
+                    >
+                      -
+                    </button>
+                    <span className="flex-1 sm:flex-none sm:w-12 text-center font-bold text-[#0F1A26] text-lg sm:text-xl">{quantity}</span>
+                    <button
+                      onClick={() => setQuantity(quantity + 1)}
+                      className="flex-1 sm:flex-none sm:w-12 h-14 sm:h-16 flex items-center justify-center text-[#0F1A26]/60 hover:bg-[#EEBC3F]/10 hover:text-[#EEBC3F] transition-all text-lg sm:text-xl font-bold"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      const cartBundleSelections =
+                        isBundle && product.bundleItems
+                          ? product.bundleItems.map((item, index) => {
                             const selection = bundleSelections[index] || {};
                             const selectedProductId = selection.productId || item.productId || item.productIds?.[0];
                             const bundleProduct = selectedProductId ? getBundleProduct(selectedProductId) : undefined;
@@ -945,41 +948,41 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                               quantity: item.quantity,
                             };
                           })
-                        : undefined;
+                          : undefined;
 
-                    addToCart({
-                      id: product.id,
-                      name: product.name,
-                      slug: product.slug,
-                      type: product.type,
-                      price: currentPrice.price,
-                      originalPrice: currentPrice.originalPrice,
-                      image: product.colors && selectedColor 
-                        ? product.colors.find(c => c.id === selectedColor)?.image || product.image 
-                        : product.image,
-                      size: product.size ? selectedSize : undefined,
-                      color: product.colors && selectedColor ? selectedColor : undefined,
-                      quantity: quantity,
-                      isBundle,
-                      bundleSelections: cartBundleSelections,
-                    });
-                  }}
-                  className="flex-1 bg-[#0F1A26] text-white hover:bg-[#EEBC3F] hover:text-[#0F1A26] h-14 sm:h-16 rounded-2xl font-bold text-base sm:text-lg transition-all duration-300 hover:shadow-xl hover:shadow-[#EEBC3F]/20 group"
-                >
-                  {t('addToCart')}
-                </Button>
-                <Button 
-                  onClick={() => {
-                    const priceToUse = currentPrice?.price || product?.price || 0;
-                    if (!priceToUse || priceToUse === 0) {
-                      console.error("[Product] Cannot buy now - invalid price:", { currentPrice, product });
-                      alert("Error: Product price not loaded. Please refresh the page.");
-                      return;
-                    }
+                      addToCart({
+                        id: product.id,
+                        name: product.name,
+                        slug: product.slug,
+                        type: product.type,
+                        price: currentPrice.price,
+                        originalPrice: currentPrice.originalPrice,
+                        image: product.colors && selectedColor
+                          ? product.colors.find(c => c.id === selectedColor)?.image || product.image
+                          : product.image,
+                        size: product.size ? selectedSize : undefined,
+                        color: product.colors && selectedColor ? selectedColor : undefined,
+                        quantity: quantity,
+                        isBundle,
+                        bundleSelections: cartBundleSelections,
+                      });
+                    }}
+                    className="flex-1 bg-[#0F1A26] text-white hover:bg-[#EEBC3F] hover:text-[#0F1A26] h-14 sm:h-16 rounded-2xl font-bold text-base sm:text-lg transition-all duration-300 hover:shadow-xl hover:shadow-[#EEBC3F]/20 group"
+                  >
+                    {t('addToCart')}
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      const priceToUse = currentPrice?.price || product?.price || 0;
+                      if (!priceToUse || priceToUse === 0) {
+                        console.error("[Product] Cannot buy now - invalid price:", { currentPrice, product });
+                        alert("Error: Product price not loaded. Please refresh the page.");
+                        return;
+                      }
 
-                    const cartBundleSelections =
-                      isBundle && product.bundleItems
-                        ? product.bundleItems.map((item, index) => {
+                      const cartBundleSelections =
+                        isBundle && product.bundleItems
+                          ? product.bundleItems.map((item, index) => {
                             const selection = bundleSelections[index] || {};
                             const selectedProductId = selection.productId || item.productId || item.productIds?.[0];
                             const bundleProduct = selectedProductId ? getBundleProduct(selectedProductId) : undefined;
@@ -991,31 +994,31 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                               quantity: item.quantity,
                             };
                           })
-                        : undefined;
+                          : undefined;
 
-                    setBuyNowItem({
-                      id: product.id,
-                      name: product.name,
-                      slug: product.slug,
-                      type: product.type,
-                      price: priceToUse,
-                      originalPrice: currentPrice?.originalPrice || product?.originalPrice || priceToUse,
-                      image: product.colors && selectedColor 
-                        ? product.colors.find(c => c.id === selectedColor)?.image || product.image 
-                        : product.image,
-                      size: product.size ? selectedSize : undefined,
-                      color: product.colors && selectedColor ? selectedColor : undefined,
-                      quantity: quantity,
-                      isBundle,
-                      bundleSelections: cartBundleSelections,
-                    });
-                    router.push("/checkout");
-                  }}
-                  className="flex-1 sm:flex-none bg-gradient-to-r from-[#EEBC3F] to-[#d4a535] text-[#0F1A26] hover:shadow-xl hover:shadow-[#EEBC3F]/30 h-14 sm:h-16 px-4 sm:px-10 rounded-2xl font-bold text-base sm:text-lg transition-all duration-300 group"
-                >
-                  {t('buyNow')}
-                </Button>
-              </div>
+                      setBuyNowItem({
+                        id: product.id,
+                        name: product.name,
+                        slug: product.slug,
+                        type: product.type,
+                        price: priceToUse,
+                        originalPrice: currentPrice?.originalPrice || product?.originalPrice || priceToUse,
+                        image: product.colors && selectedColor
+                          ? product.colors.find(c => c.id === selectedColor)?.image || product.image
+                          : product.image,
+                        size: product.size ? selectedSize : undefined,
+                        color: product.colors && selectedColor ? selectedColor : undefined,
+                        quantity: quantity,
+                        isBundle,
+                        bundleSelections: cartBundleSelections,
+                      });
+                      router.push("/checkout");
+                    }}
+                    className="flex-1 sm:flex-none bg-gradient-to-r from-[#EEBC3F] to-[#d4a535] text-[#0F1A26] hover:shadow-xl hover:shadow-[#EEBC3F]/30 h-14 sm:h-16 px-4 sm:px-10 rounded-2xl font-bold text-base sm:text-lg transition-all duration-300 group"
+                  >
+                    {t('buyNow')}
+                  </Button>
+                </div>
               </div>{/* End Sticky Buy Box */}
 
               {/* Benefits Grid */}
@@ -1067,6 +1070,20 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
             />
           )}
 
+          {product.category === "luggage-covers" && (
+            <ProductVideoSection
+              title={t('videoSection.title') || 'See It In Action'}
+              subtitle={
+                t('videoSection.subtitle') ||
+                'Watch how PackOnat keeps your clothes organized and wrinkle-free'
+              }
+              poster="/octopus photo/Black/1.png"
+              src="/octopus photo/Wear.mp4"
+              fullWidth
+              videoFit="contain"
+            />
+          )}
+
           {/* Detailed Product Description - Partially open (intro only) */}
           <div className="mt-6 lg:mt-8">
             <button
@@ -1089,10 +1106,10 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
               <div className="mt-4 space-y-4">
                 <ProductDetailedDescriptionTextOnly product={product} />
                 <div className="animate-in slide-in-from-top-2 duration-300">
-                  <ProductDetailedDescriptionFull 
-                    product={product} 
-                    selectedSize={selectedSize} 
-                    quantity={quantity} 
+                  <ProductDetailedDescriptionFull
+                    product={product}
+                    selectedSize={selectedSize}
+                    quantity={quantity}
                     t={t}
                     addToCart={addToCart}
                   />
@@ -1225,17 +1242,17 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                 const cartBundleSelections =
                   isBundle && product.bundleItems
                     ? product.bundleItems.map((item, index) => {
-                        const selection = bundleSelections[index] || {};
-                        const selectedProductId = selection.productId || item.productId || item.productIds?.[0];
-                        const bundleProduct = selectedProductId ? getBundleProduct(selectedProductId) : undefined;
-                        return {
-                          productId: selectedProductId || 0,
-                          productName: bundleProduct?.name || "",
-                          size: selection.size,
-                          color: selection.color,
-                          quantity: item.quantity,
-                        };
-                      })
+                      const selection = bundleSelections[index] || {};
+                      const selectedProductId = selection.productId || item.productId || item.productIds?.[0];
+                      const bundleProduct = selectedProductId ? getBundleProduct(selectedProductId) : undefined;
+                      return {
+                        productId: selectedProductId || 0,
+                        productName: bundleProduct?.name || "",
+                        size: selection.size,
+                        color: selection.color,
+                        quantity: item.quantity,
+                      };
+                    })
                     : undefined;
 
                 addToCart({
