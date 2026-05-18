@@ -1350,9 +1350,7 @@ export const products: Product[] = [
       "/passport%20wallet/Cognac%20brown/2.png",
       "/passport%20wallet/Cognac%20brown/3.png",
       "/passport%20wallet/Cognac%20brown/4.png",
-      "/passport%20wallet/Cognac%20brown/5.png",
-      "/passport%20wallet/Cognac%20brown/6.png",
-      "/passport%20wallet/Cognac%20brown/7.png"
+      "/passport%20wallet/Cognac%20brown/5.png"
     ],
     description: "RFID Protected faux leather passport wallet in Cognac Brown with magnetic clasp, vaccine card slot, and 5 pockets for cards, tickets, and SIM cards.",
     features: ["RFID Blocking", "Magnetic Clasp", "Vaccine Card Slot", "5 Card Pockets", "Faux Leather", "Cognac Brown Color"]
@@ -1375,9 +1373,7 @@ export const products: Product[] = [
       "/passport%20wallet/Espresso%20brown/2.png",
       "/passport%20wallet/Espresso%20brown/3.png",
       "/passport%20wallet/Espresso%20brown/4.png",
-      "/passport%20wallet/Espresso%20brown/5.png",
-      "/passport%20wallet/Espresso%20brown/6.png",
-      "/passport%20wallet/Espresso%20brown/7.png"
+      "/passport%20wallet/Espresso%20brown/5.png"
     ],
     description: "RFID Protected faux leather passport wallet in Espresso Brown with magnetic clasp, vaccine card slot, and 5 pockets for cards, tickets, and SIM cards.",
     features: ["RFID Blocking", "Magnetic Clasp", "Vaccine Card Slot", "5 Card Pockets", "Faux Leather", "Espresso Brown Color"]
@@ -1400,9 +1396,7 @@ export const products: Product[] = [
       "/passport%20wallet/Honey%20brown/2.png",
       "/passport%20wallet/Honey%20brown/3.png",
       "/passport%20wallet/Honey%20brown/4.png",
-      "/passport%20wallet/Honey%20brown/5.png",
-      "/passport%20wallet/Honey%20brown/6.png",
-      "/passport%20wallet/Honey%20brown/7.png"
+      "/passport%20wallet/Honey%20brown/5.png"
     ],
     description: "RFID Protected faux leather passport wallet in Honey Brown with magnetic clasp, vaccine card slot, and 5 pockets for cards, tickets, and SIM cards.",
     features: ["RFID Blocking", "Magnetic Clasp", "Vaccine Card Slot", "5 Card Pockets", "Faux Leather", "Honey Brown Color"]
