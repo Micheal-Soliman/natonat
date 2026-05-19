@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useEffect, useId, type ReactNode } from "react";
 import Image from "next/image";
-import { Link } from "@/i18n/routing";
+import { Link, useRouter } from "@/i18n/routing";
 import { useTranslations, useLocale } from 'next-intl';
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
@@ -85,6 +85,7 @@ export default function CheckoutPage() {
 function CheckoutContent() {
   const t = useTranslations('checkout');
   const locale = useLocale();
+  const router = useRouter();
   const { items, subtotal, discount, originalSubtotal, appliedDiscounts, clearCart, buyNowItem, setBuyNowItem } = useCart();
 
   // Use buyNowItem if exists (direct purchase), otherwise use cart items
@@ -184,7 +185,7 @@ function CheckoutContent() {
 
         const origin = window.location.origin;
         const notificationUrl = `${origin}/api/paymob/webhook`;
-        const redirectionUrl = `${origin}/${locale}/payment/return?order_ref=${encodeURIComponent(orderRef)}`;
+        const redirectionUrl = `${origin}/${locale}/order-confirmed?order_ref=${encodeURIComponent(orderRef)}&method=card`;
 
         const intentionItems = checkoutItems.map((item) => ({
           name: item.name,
@@ -478,12 +479,14 @@ function CheckoutContent() {
     }
 
 
-    // Step 3: Show success page
+    // Step 3: Redirect to Order Confirmed page for tracking
     setIsSubmitting(false);
-    setOrderId(generateOrderId());
-    setIsSuccess(true);
     clearCart();
     setBuyNowItem(null);
+
+    router.push(
+      `/order-confirmed?order_ref=${encodeURIComponent(orderRef)}&method=${encodeURIComponent(paymentMethod)}&success=true`
+    );
   };
 
   // Shipping: 75 EGP for Cairo, Giza & Alexandria, 100 EGP for other cities, free for orders > 1000, pickup = 0

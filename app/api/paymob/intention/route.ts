@@ -45,6 +45,7 @@ export async function POST(req: Request) {
   }
 
   let body: Partial<CreateIntentionBody>;
+
   try {
     body = (await req.json()) as Partial<CreateIntentionBody>;
   } catch {
@@ -56,12 +57,23 @@ export async function POST(req: Request) {
   }
 
   if (!body.billing_data) {
-    return NextResponse.json({ error: "billing_data is required" }, { status: 400 });
+    return NextResponse.json(
+      { error: "billing_data is required" },
+      { status: 400 }
+    );
   }
 
-  if (!body.billing_data.first_name || !body.billing_data.last_name || !body.billing_data.email || !body.billing_data.phone_number) {
+  if (
+    !body.billing_data.first_name ||
+    !body.billing_data.last_name ||
+    !body.billing_data.email ||
+    !body.billing_data.phone_number
+  ) {
     return NextResponse.json(
-      { error: "billing_data.first_name, last_name, email, phone_number are required" },
+      {
+        error:
+          "billing_data.first_name, last_name, email, phone_number are required",
+      },
       { status: 400 }
     );
   }
@@ -80,14 +92,40 @@ export async function POST(req: Request) {
 
   if (!payment_methods || payment_methods.length === 0) {
     return NextResponse.json(
-      { error: "payment_methods is required (or set PAYMOB_INTEGRATION_IDS env)" },
+      {
+        error:
+          "payment_methods is required (or set PAYMOB_INTEGRATION_IDS env)",
+      },
       { status: 400 }
     );
   }
 
-  const origin = req.headers.get("origin") || process.env.APP_ORIGIN || "";
-  const notification_url = body.notification_url || (origin ? `${origin}/api/paymob/webhook` : undefined);
-  const redirection_url = body.redirection_url || (origin ? `${origin}/payment/return` : undefined);
+  const requestOrigin = req.headers.get("origin") || "";
+  const origin =
+    process.env.APP_ORIGIN ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    requestOrigin;
+
+  const locale =
+    typeof body.extras?.locale === "string" && body.extras.locale
+      ? body.extras.locale
+      : "en";
+
+  const orderRef = body.special_reference || "";
+
+  const notification_url =
+    body.notification_url ||
+    (origin ? `${origin}/api/paymob/webhook` : undefined);
+
+  const redirection_url =
+    body.redirection_url ||
+    (origin
+      ? `${origin}/${locale}/order-confirmed${
+          orderRef
+            ? `?order_ref=${encodeURIComponent(orderRef)}&method=card`
+            : "?method=card"
+        }`
+      : undefined);
 
   const payload: CreateIntentionBody = {
     amount: body.amount,
@@ -122,16 +160,22 @@ export async function POST(req: Request) {
   });
 
   const text = await res.text();
+
   let data: unknown = text;
+
   try {
     data = JSON.parse(text);
   } catch {
-    // keep as text
+    // Keep as text
   }
 
   if (!res.ok) {
     return NextResponse.json(
-      { error: "Paymob request failed", status: res.status, data },
+      {
+        error: "Paymob request failed",
+        status: res.status,
+        data,
+      },
       { status: 502 }
     );
   }
