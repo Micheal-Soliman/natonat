@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect, useId } from "react";
+import { Suspense, useState, useEffect, useId, type ReactNode } from "react";
 import Image from "next/image";
 import { Link } from "@/i18n/routing";
 import { useTranslations, useLocale } from 'next-intl';
@@ -17,6 +17,61 @@ function generateOrderId() {
 
 function generateOrderRef() {
   return `NAT-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+}
+
+const paymentLogos = [
+  {
+    src: "/visa.png",
+    alt: "Visa",
+    width: 30,
+    height: 18,
+  },
+  {
+    src: "/master.png",
+    alt: "Mastercard",
+    width: 30,
+    height: 18,
+  },
+  {
+    src: "/mezza.png",
+    alt: "Meeza",
+    width: 30,
+    height: 18,
+  },
+  {
+    src: "/apple.png",
+    alt: "Apple Pay",
+    width: 30,
+    height: 18,
+  },
+  {
+    src: "/sympl.png",
+    alt: "Sympl Pay",
+    width: 30,
+    height: 18,
+  },
+];
+
+function PaymentLogoImages() {
+  return (
+    <div className="flex items-center gap-1.5 flex-wrap justify-start sm:justify-end max-w-[380px]">
+      {paymentLogos.map((logo) => (
+        <span
+          key={logo.alt}
+          className="h-8 min-w-[52px] px-2 rounded-md border border-[#0F1A26]/10 bg-white flex items-center justify-center shadow-sm"
+        >
+          <Image
+            src={logo.src}
+            alt={logo.alt}
+            width={logo.width}
+            height={logo.height}
+            className="object-contain max-h-[22px] w-auto"
+          />
+        </span>
+      ))}
+
+    </div>
+  );
 }
 
 export default function CheckoutPage() {
@@ -939,26 +994,34 @@ function CheckoutContent() {
 
                   <div className="space-y-3">
                     <label
-                      className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === "cod"
-                        ? "border-[#EEBC3F] bg-[#EEBC3F]/10"
-                        : "border-[#0F1A26]/20 hover:border-[#0F1A26]/30"
+                      className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === "card"
+                          ? "border-[#EEBC3F] bg-[#EEBC3F]/10"
+                          : "border-[#0F1A26]/20 hover:border-[#0F1A26]/30"
                         }`}
                     >
                       <input
                         type="radio"
                         name="payment"
-                        value="cod"
-                        checked={paymentMethod === "cod"}
+                        value="card"
+                        checked={paymentMethod === "card"}
                         onChange={(e) => setPaymentMethod(e.target.value)}
-                        className="w-5 h-5 accent-[#EEBC3F] [color-scheme:light]"
+                        className="w-5 h-5 mt-1 accent-[#EEBC3F] [color-scheme:light]"
                       />
-                      <div className="flex-1">
-                        <span className="font-semibold text-[#0F1A26] text-base">
-                          {t("form.payment.cod.title")}
-                        </span>
-                        <p className="text-sm text-[#0F1A26]/70 mt-1">
-                          {t("form.payment.cod.subtitle")}
-                        </p>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                          <div>
+                            <span className="font-semibold text-[#0F1A26] text-base">
+                              {t("form.payment.card.title")}
+                            </span>
+                            <p className="text-sm text-[#0F1A26]/70 mt-1">
+                              {t("form.payment.card.subtitle")}
+                            </p>
+                            <p className="text-sm text-green-600 font-bold mt-1">2% OFF</p>
+                          </div>
+
+                          <PaymentLogoImages />
+                        </div>
                       </div>
                     </label>
 
