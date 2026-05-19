@@ -184,7 +184,7 @@ function CheckoutContent() {
 
         const origin = window.location.origin;
         const notificationUrl = `${origin}/api/paymob/webhook`;
-        const redirectionUrl = `${origin}/${locale}/payment/return`;
+        const redirectionUrl = `${origin}/${locale}/payment/return?order_ref=${encodeURIComponent(orderRef)}`;
 
         const intentionItems = checkoutItems.map((item) => ({
           name: item.name,
@@ -995,8 +995,8 @@ function CheckoutContent() {
                   <div className="space-y-3">
                     <label
                       className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === "card"
-                          ? "border-[#EEBC3F] bg-[#EEBC3F]/10"
-                          : "border-[#0F1A26]/20 hover:border-[#0F1A26]/30"
+                        ? "border-[#EEBC3F] bg-[#EEBC3F]/10"
+                        : "border-[#0F1A26]/20 hover:border-[#0F1A26]/30"
                         }`}
                     >
                       <input
