@@ -1285,10 +1285,11 @@ export const products: Product[] = [
     originalPrice: 0,
     type: "Bundle",
     tag: null,
-    image: "/octopus%20photo/Black/1.png",
+    image: "/bundles/2 Cover/1.png",
     images: [
-      "/octopus%20photo/Black/1.png",
-      "/octopus%20photo/Green/021A9832.jpg"
+      "/bundles/2 Cover/1.png",
+      "/bundles/2 Cover/2.png",
+      "/bundles/2 Cover/3.png"
     ],
     description: "Perfect for couples - two luggage covers (5% off on 2nd cheapest)",
     isBundle: true,
@@ -1312,12 +1313,10 @@ export const products: Product[] = [
     originalPrice: 0,
     type: "Bundle",
     tag: "Best Value",
-    image: "/octopus%20photo/Black/1.png",
+    image: "/bundles/4 Cover/2.png",
     images: [
-      "/octopus%20photo/Black/1.png",
-      "/octopus%20photo/Green/021A9832.jpg",
-      "/octopus%20photo/Red/021A9832.jpg",
-      "/octopus%20photo/ACCORD/1.png"
+      "/bundles/4 Cover/1.png",
+      "/bundles/4 Cover/2.png",
     ],
     description: "Complete family set - four luggage covers (10% off on total)",
     isBundle: true,

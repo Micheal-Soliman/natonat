@@ -258,66 +258,10 @@ function HowItWorksContent() {
         </div>
 
         {/* Size Guide + Calculator Section */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
-          <div className="text-center mb-8 md:mb-12">
-            <span className="text-[#EEBC3F] text-xs font-semibold tracking-[0.3em] uppercase">{t('sizeGuide.label')}</span>
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-[#0F1A26] mt-2 md:mt-3">{t('sizeGuide.title')}</h2>
-            <p className="text-[#0F1A26]/50 mt-2 md:mt-3 max-w-xl mx-auto text-sm md:text-base">
-              {t('sizeGuide.subtitle')}
-            </p>
-          </div>
 
-          <div className="grid lg:grid-cols-2 gap-8">
-            {/* Size Cards - Dark Theme */}
-            <div className="bg-[#0F1A26] rounded-3xl p-6 md:p-8">
-              <h3 className="text-xl font-bold text-white mb-4 text-center">{t('sizeGuide.title')}</h3>
-
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { size: "S", cm: "45–53", inch: "18–21", type: t('sizes.s.type') },
-                  { size: "M", cm: "55–63", inch: "22–25", type: t('sizes.m.type') },
-                  { size: "L", cm: "65–70", inch: "26–28", type: t('sizes.l.type') },
-                  { size: "XL", cm: "72–81", inch: "29–32", type: t('sizes.xl.type') },
-                ].map((item) => (
-                  <div
-                    key={item.size}
-                    className="bg-white/10 rounded-xl p-4 border border-white/10 hover:border-[#EEBC3F]/30 transition-all duration-300 text-center"
-                  >
-                    {/* Size Letter */}
-                    <span className="text-[#EEBC3F] font-bold text-3xl">{item.size}</span>
-
-                    {/* Type */}
-                    <p className="text-white font-medium text-sm mt-1">{item.type}</p>
-
-                    {/* Main Measurement */}
-                    <div className="mt-2">
-                      <p className="text-[#EEBC3F] font-bold text-lg">
-                        {item.cm} <span className="text-white/60 text-sm font-normal">{t('calculator.cm')}</span>
-                      </p>
-                      <p className="text-white/50 text-xs">{item.inch} {t('calculator.inches')}</p>
-                    </div>
-
-                    {/* Height Only - Without Wheels */}
-                    <div className="mt-3 pt-3 border-t border-white/20">
-                      <p className="text-white/60 text-xs">{t('sizeGuide.heightOnly')}</p>
-                      <p className="text-white/80 text-xs font-medium">({item.cm} {t('calculator.cm')})</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <p className="text-white/70 text-xs text-center font-medium mt-4">
-                {t('sizeGuide.note')}
-              </p>
-            </div>
-
-            {/* Calculator */}
-            <SizeCalculator t={t} />
-          </div>
-        </div>
 
         {/* Video/Image Measurement Guide - Enhanced */}
-        <div className="bg-white py-12 md:py-20">
+        <div className="bg-white mt-10 py-12 md:py-20">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-8 md:mb-12">
               <span className="text-[#EEBC3F] text-xs font-semibold tracking-[0.3em] uppercase">

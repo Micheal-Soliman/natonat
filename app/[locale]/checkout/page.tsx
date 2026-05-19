@@ -883,7 +883,7 @@ function CheckoutContent() {
                             />
                           </div>
 
-                          <button
+                          {/* <button
                             type="button"
                             onClick={() => {
                               if (navigator.geolocation) {
@@ -911,7 +911,7 @@ function CheckoutContent() {
                             <span className="text-sm font-medium text-[#0F1A26]">
                               {t("form.location.detect")}
                             </span>
-                          </button>
+                          </button> */}
                         </div>
                       </div>
 
