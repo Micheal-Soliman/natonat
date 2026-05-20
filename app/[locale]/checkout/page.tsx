@@ -19,60 +19,131 @@ function generateOrderRef() {
   return `NAT-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 }
 
-const paymentLogos = [
+type PaymentLogo = {
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
+};
+
+function PaymentLogoBox({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <span
+      className={`h-8 min-w-[52px] px-2 rounded-md border border-[#0F1A26]/10 bg-white flex items-center justify-center shadow-sm ${className}`}
+    >
+      {children}
+    </span>
+  );
+}
+
+function PaymentLogoImage({ logo }: { logo: PaymentLogo }) {
+  return (
+    <PaymentLogoBox>
+      <Image
+        src={logo.src}
+        alt={logo.alt}
+        width={logo.width}
+        height={logo.height}
+        className="object-contain max-h-[22px] w-auto"
+      />
+    </PaymentLogoBox>
+  );
+}
+
+function PaymentLogoStrip({
+  logos,
+  more,
+  className = "",
+}: {
+  logos: PaymentLogo[];
+  more?: string;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`flex items-center gap-1.5 flex-wrap justify-start sm:justify-end max-w-[420px] ${className}`}
+    >
+      {logos.map((logo) => (
+        <PaymentLogoImage key={logo.alt} logo={logo} />
+      ))}
+    </div>
+  );
+}
+
+const cardPaymentLogos: PaymentLogo[] = [
   {
     src: "/visa.png",
     alt: "Visa",
-    width: 30,
+    width: 34,
     height: 18,
   },
   {
     src: "/master.png",
     alt: "Mastercard",
-    width: 30,
+    width: 34,
     height: 18,
   },
   {
     src: "/mezza.png",
     alt: "Meeza",
-    width: 30,
+    width: 38,
     height: 18,
   },
   {
     src: "/apple.png",
     alt: "Apple Pay",
-    width: 30,
+    width: 42,
     height: 18,
   },
   {
     src: "/sympl.png",
     alt: "Sympl Pay",
-    width: 30,
+    width: 46,
     height: 18,
   },
 ];
 
-function PaymentLogoImages() {
-  return (
-    <div className="flex items-center gap-1.5 flex-wrap justify-start sm:justify-end max-w-[380px]">
-      {paymentLogos.map((logo) => (
-        <span
-          key={logo.alt}
-          className="h-8 min-w-[52px] px-2 rounded-md border border-[#0F1A26]/10 bg-white flex items-center justify-center shadow-sm"
-        >
-          <Image
-            src={logo.src}
-            alt={logo.alt}
-            width={logo.width}
-            height={logo.height}
-            className="object-contain max-h-[22px] w-auto"
-          />
-        </span>
-      ))}
+const instapayPaymentLogos: PaymentLogo[] = [
+  {
+    src: "/instapay.png",
+    alt: "InstaPay",
+    width: 54,
+    height: 20,
+  },
+  {
+    src: "/etisalat.png",
+    alt: "etisalat",
+    width: 54,
+    height: 20,
+  },
+  {
+    src: "/vodafone.png",
+    alt: "vodafone",
+    width: 54,
+    height: 20,
+  },
+  {
+    src: "/orange.png",
+    alt: "orange",
+    width: 54,
+    height: 20,
+  }
+];
 
-    </div>
-  );
+function CardPaymentLogoImages() {
+  return <PaymentLogoStrip logos={cardPaymentLogos} more="+8" />;
 }
+
+function InstaPayLogoImages() {
+  return <PaymentLogoStrip logos={instapayPaymentLogos} />;
+}
+
 
 function SymplPromoBanner() {
   return (
@@ -1040,7 +1111,7 @@ function CheckoutContent() {
                             <p className="text-sm text-green-600 font-bold mt-1">2% OFF</p>
                           </div>
 
-                          <PaymentLogoImages />
+                          <CardPaymentLogoImages />
 
                         </div>
                       </div>
@@ -1071,7 +1142,7 @@ function CheckoutContent() {
                     </label>
 
                     <label
-                      className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === "instapay"
+                      className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === "instapay"
                         ? "border-[#EEBC3F] bg-[#EEBC3F]/10"
                         : "border-[#0F1A26]/20 hover:border-[#0F1A26]/30"
                         }`}
@@ -1082,16 +1153,23 @@ function CheckoutContent() {
                         value="instapay"
                         checked={paymentMethod === "instapay"}
                         onChange={(e) => setPaymentMethod(e.target.value)}
-                        className="w-5 h-5 accent-[#EEBC3F] [color-scheme:light]"
+                        className="w-5 h-5 mt-1 accent-[#EEBC3F] [color-scheme:light]"
                       />
-                      <div className="flex-1">
-                        <span className="font-semibold text-[#0F1A26] text-base">
-                          {t("form.payment.instapay.title")}
-                        </span>
-                        <p className="text-sm text-[#0F1A26]/70 mt-1">
-                          {t("form.payment.instapay.subtitle")}
-                        </p>
-                        <p className="text-sm text-green-600 font-bold mt-1">2% OFF</p>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                          <div>
+                            <span className="font-semibold text-[#0F1A26] text-base">
+                              {t("form.payment.instapay.title")}
+                            </span>
+                            <p className="text-sm text-[#0F1A26]/70 mt-1">
+                              {t("form.payment.instapay.subtitle")}
+                            </p>
+                            <p className="text-sm text-green-600 font-bold mt-1">2% OFF</p>
+                          </div>
+
+                          <InstaPayLogoImages />
+                        </div>
                       </div>
                     </label>
 

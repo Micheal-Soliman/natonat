@@ -35,7 +35,8 @@
     "tagline": "Pack Smart. Travel Bold.",
     "cta": "Shop Now",
     "freeShipping": "Free shipping on orders over 1000 EGP",
-    "egyptOnly": "Egypt Only"
+    "egyptOnly": "Egypt Only",
+    "symplCashback": "Pay with Sympl and get 30% cashback up to 100 EGP"
   },
   "benefits": {
     "sectionLabel": "Features",
@@ -642,8 +643,8 @@
           "eligibleBanksNote": "Card payment available for these banks only"
         },
         "instapay": {
-          "title": "InstaPay",
-          "subtitle": "Pay via InstaPay transfer",
+          "title": "InstaPay or Wallets",
+          "subtitle": "Pay via InstaPay or Wallets transfer",
           "transferDetails": "Transfer Details",
           "accountName": "Account Name",
           "accountNumber": "Account Number",

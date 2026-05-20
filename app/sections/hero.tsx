@@ -92,6 +92,10 @@ export function Hero() {
                 {t('freeShipping')} - {t('egyptOnly')}
               </span>
               <span className="text-[#0F1A26]/30">|</span>
+              <span className="text-[#0F1A26] font-semibold text-sm tracking-wide uppercase px-8">
+                {t('symplCashback')}
+              </span>
+              <span className="text-[#0F1A26]/30">|</span>
             </div>
           ))}
         </div>
