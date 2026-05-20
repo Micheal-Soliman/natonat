@@ -1065,7 +1065,7 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                 'Watch how PackOnat keeps your clothes organized and wrinkle-free'
               }
               poster="/packOnat/Black/1.png"
-              src="/packOnat/Cloth%20case%20landscape%20without%20logo.mp4"
+              src="/packOnat/Cloth%20case%20landscape%20without%20logo.mov"
               fullWidth
               videoFit="contain"
             />
