@@ -74,6 +74,21 @@ function PaymentLogoImages() {
   );
 }
 
+function SymplPromoBanner() {
+  return (
+    <div className="mb-5 overflow-hidden rounded-2xl border border-[#0F1A26]/10 bg-white shadow-sm">
+      <Image
+        src="/banner-payment.png"
+        alt="Sympl Cashback Banner"
+        width={1200}
+        height={1200}
+        className="w-full h-auto object-cover"
+        priority
+      />
+    </div>
+  );
+}
+
 export default function CheckoutPage() {
   return (
     <Suspense fallback={<Loading />}>
@@ -995,6 +1010,8 @@ function CheckoutContent() {
                     {t("form.payment.title")}
                   </h2>
 
+                  <SymplPromoBanner />
+
                   <div className="space-y-3">
                     <label
                       className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === "card"
@@ -1024,6 +1041,7 @@ function CheckoutContent() {
                           </div>
 
                           <PaymentLogoImages />
+
                         </div>
                       </div>
                     </label>
