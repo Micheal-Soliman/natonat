@@ -40,6 +40,12 @@ interface ProductDetailedDescriptionIntroProps {
   onExpand: () => void;
 }
 
+type ProductVideoItem = {
+  poster: string;
+  src: string;
+  label?: string;
+};
+
 function ProductVideoSection({
   title,
   subtitle,
@@ -47,13 +53,15 @@ function ProductVideoSection({
   src,
   fullWidth,
   videoFit = "cover",
+  videos,
 }: {
   title: string;
   subtitle: string;
-  poster: string;
-  src: string;
+  poster?: string;
+  src?: string;
   fullWidth?: boolean;
   videoFit?: "cover" | "contain";
+  videos?: ProductVideoItem[];
 }) {
   const wrapperClassName = fullWidth
     ? "mt-6 lg:mt-8 relative left-1/2 right-1/2 -mx-[50vw] w-screen"
@@ -62,6 +70,9 @@ function ProductVideoSection({
   const innerClassName = fullWidth
     ? "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
     : undefined;
+
+  const videoClassName = `w-full h-full ${videoFit === "contain" ? "object-contain" : "object-cover"
+    }`;
 
   return (
     <div className={wrapperClassName}>
@@ -72,23 +83,56 @@ function ProductVideoSection({
             {title}
           </h3>
 
-          <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-[#F1EBE3]">
-            <video
-              autoPlay
-              muted
-              loop
-              playsInline
-              controls
-              preload="metadata"
-              className={`w-full h-full ${videoFit === "contain" ? "object-contain" : "object-cover"
-                }`}
-              poster={poster}
-            >
-              <source src={src} type="video/mp4" />
-              <source src={src} type="video/quicktime" />
-              Your browser does not support the video tag.
-            </video>
-          </div>
+          {videos && videos.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
+              {videos.map((video, index) => (
+                <div
+                  key={`${video.src}-${index}`}
+                  className="rounded-2xl overflow-hidden bg-[#F1EBE3] border border-[#0F1A26]/5 shadow-sm"
+                >
+                  <div className="relative w-full aspect-[9/16] rounded-2xl overflow-hidden bg-[#F1EBE3]">
+                    <video
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      controls
+                      preload="metadata"
+                      className={videoClassName}
+                      poster={video.poster}
+                    >
+                      <source src={video.src} type="video/mp4" />
+                      <source src={video.src} type="video/quicktime" />
+                      Your browser does not support the video tag.
+                    </video>
+                  </div>
+
+                  {video.label && (
+                    <p className="text-[#0F1A26]/60 text-xs sm:text-sm mt-3 text-center px-3 pb-3">
+                      {video.label}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-[#F1EBE3]">
+              <video
+                autoPlay
+                muted
+                loop
+                playsInline
+                controls
+                preload="metadata"
+                className={videoClassName}
+                poster={poster}
+              >
+                {src && <source src={src} type="video/mp4" />}
+                {src && <source src={src} type="video/quicktime" />}
+                Your browser does not support the video tag.
+              </video>
+            </div>
+          )}
 
           <p className="text-[#0F1A26]/60 text-sm mt-4 text-center">
             {subtitle}
@@ -1076,12 +1120,27 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
               title={t('videoSection.title') || 'See It In Action'}
               subtitle={
                 t('videoSection.subtitle') ||
-                'Watch how PackOnat keeps your clothes organized and wrinkle-free'
+                'Watch how our luggage covers protect your suitcase in style'
               }
-              poster="/octopus photo/Black/1.png"
-              src="/octopus photo/Wear.mp4"
               fullWidth
               videoFit="contain"
+              videos={[
+                {
+                  poster: "/octopus photo/Black/1.png",
+                  src: "/octopus photo/Wear2.mp4",
+                  label: "Premium suitcase protection",
+                },
+                {
+                  poster: "/octopus photo/Green/1.png",
+                  src: "/octopus photo/Wear.mp4",
+                  label: "Easy to wear in seconds",
+                },
+                {
+                  poster: "/octopus photo/Black/1.png",
+                  src: "/octopus photo/Wear3.mp4",
+                  label: "Travel-ready secure fit",
+                },
+              ]}
             />
           )}
 
