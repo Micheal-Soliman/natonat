@@ -107,15 +107,6 @@ const cardPaymentLogos: PaymentLogo[] = [
     width: 46,
     height: 18,
   },
-];
-
-const instapayPaymentLogos: PaymentLogo[] = [
-  {
-    src: "/instapay.png",
-    alt: "InstaPay",
-    width: 54,
-    height: 20,
-  },
   {
     src: "/etisalat.png",
     alt: "etisalat",
@@ -131,6 +122,15 @@ const instapayPaymentLogos: PaymentLogo[] = [
   {
     src: "/orange.png",
     alt: "orange",
+    width: 54,
+    height: 20,
+  }
+];
+
+const instapayPaymentLogos: PaymentLogo[] = [
+  {
+    src: "/instapay.png",
+    alt: "InstaPay",
     width: 54,
     height: 20,
   }

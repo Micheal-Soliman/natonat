@@ -104,6 +104,9 @@ export function HowItWorks() {
                 <video
                   className="w-full h-full object-contain"
                   controls
+                  autoPlay
+                  muted
+                  loop
                   playsInline
                   preload="metadata"
                 >

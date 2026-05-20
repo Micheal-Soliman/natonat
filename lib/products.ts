@@ -1285,11 +1285,11 @@ export const products: Product[] = [
     originalPrice: 0,
     type: "Bundle",
     tag: null,
-    image: "/bundles/2 Cover/1.png",
+    image: "/bundles/2 Cover/1.jpeg",
     images: [
-      "/bundles/2 Cover/1.png",
-      "/bundles/2 Cover/2.png",
-      "/bundles/2 Cover/3.png"
+      "/bundles/2 Cover/1.jpeg",
+      "/bundles/2 Cover/2.jpeg",
+      "/bundles/2 Cover/3.jpeg"
     ],
     description: "Perfect for couples - two luggage covers (5% off on 2nd cheapest)",
     isBundle: true,
@@ -1313,10 +1313,10 @@ export const products: Product[] = [
     originalPrice: 0,
     type: "Bundle",
     tag: "Best Value",
-    image: "/bundles/4 Cover/2.png",
+    image: "/bundles/4 Cover/2.jpeg",
     images: [
-      "/bundles/4 Cover/1.png",
-      "/bundles/4 Cover/2.png",
+      "/bundles/4 Cover/1.jpeg",
+      "/bundles/4 Cover/2.jpeg",
     ],
     description: "Complete family set - four luggage covers (10% off on total)",
     isBundle: true,
