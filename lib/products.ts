@@ -1313,10 +1313,10 @@ export const products: Product[] = [
     originalPrice: 0,
     type: "Bundle",
     tag: "Best Value",
-    image: "/bundles/4 Cover/2.jpeg",
+    image: "/bundles/4 Covers/2.jpeg",
     images: [
-      "/bundles/4 Cover/1.jpeg",
-      "/bundles/4 Cover/2.jpeg",
+      "/bundles/4 Covers/1.jpeg",
+      "/bundles/4 Covers/2.jpeg",
     ],
     description: "Complete family set - four luggage covers (10% off on total)",
     isBundle: true,
