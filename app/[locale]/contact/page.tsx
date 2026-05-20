@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
-import { Mail, Phone, MapPin, MessageCircle, Send, Check, Clock, ArrowRight, Sparkles, Instagram, Facebook } from "lucide-react";
+import { Mail, Phone, MapPin, MessageCircle, Send, Check, Clock, ArrowRight, Sparkles, Instagram, Facebook, Youtube } from "lucide-react";
 import { Loading } from "@/app/components/loading";
 
 export default function ContactPage() {
@@ -85,7 +85,7 @@ function ContactContent() {
               <div className={`bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 border border-[#0F1A26]/5 shadow-lg shadow-[#0F1A26]/5 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
                 <span className="text-[#EEBC3F] text-xs font-semibold tracking-[0.2em] uppercase">{t('info.label')}</span>
                 <h2 className="text-2xl font-bold text-[#0F1A26] mt-3 mb-8 tracking-tight">{t('info.title')}</h2>
-                
+
                 <div className="space-y-4 md:space-y-6">
                   <a href="mailto:info@natonat.com" className="flex items-start gap-3 md:gap-4 group">
                     <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-[#EEBC3F]/10 flex items-center justify-center group-hover:bg-[#EEBC3F] transition-all duration-300">
@@ -146,8 +146,8 @@ function ContactContent() {
                     { href: "/legal/warranty", label: t('help.returns') },
                   ].map((link, index) => (
                     <li key={index}>
-                      <Link 
-                        href={link.href} 
+                      <Link
+                        href={link.href}
                         className="text-white/60 hover:text-[#EEBC3F] transition-colors flex items-center gap-3 group"
                       >
                         <ArrowRight className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
@@ -162,36 +162,48 @@ function ContactContent() {
               <div className={`bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 border border-[#0F1A26]/5 shadow-lg shadow-[#0F1A26]/5 transition-all duration-700 delay-150 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
                 <span className="text-[#EEBC3F] text-xs font-semibold tracking-[0.2em] uppercase">{t('social.label')}</span>
                 <h2 className="text-2xl font-bold text-[#0F1A26] mt-3 mb-8 tracking-tight">{t('social.title')}</h2>
-                
-                <div className="grid grid-cols-3 gap-2 md:gap-4">
-                  <a 
-                    href="https://www.facebook.com/natOnatofficial" 
-                    target="_blank" 
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 md:gap-4">
+                  <a
+                    href="https://www.facebook.com/natOnatofficial"
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="flex flex-col items-center gap-2 md:gap-3 p-3 md:p-4 rounded-xl md:rounded-2xl bg-[#1877F2]/10 hover:bg-[#1877F2] group transition-all duration-300"
                   >
                     <Facebook className="w-6 h-6 md:w-8 md:h-8 text-[#1877F2] group-hover:text-white transition-colors" strokeWidth={1.5} />
                     <span className="text-xs md:text-sm font-medium text-[#0F1A26]/70 group-hover:text-white transition-colors">{t('social.facebook')}</span>
                   </a>
-                  
-                  <a 
-                    href="https://www.instagram.com/natonatofficial/" 
-                    target="_blank" 
+
+                  <a
+                    href="https://www.instagram.com/natonatofficial/"
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="flex flex-col items-center gap-2 md:gap-3 p-3 md:p-4 rounded-xl md:rounded-2xl bg-gradient-to-br from-[#833AB4]/10 via-[#E1306C]/10 to-[#F77737]/10 hover:from-[#833AB4] hover:via-[#E1306C] hover:to-[#F77737] group transition-all duration-300"
                   >
                     <Instagram className="w-6 h-6 md:w-8 md:h-8 text-[#E1306C] group-hover:text-white transition-colors" strokeWidth={1.5} />
                     <span className="text-xs md:text-sm font-medium text-[#0F1A26]/70 group-hover:text-white transition-colors">{t('social.instagram')}</span>
                   </a>
-                  
-                  <a 
-                    href="https://www.tiktok.com/@natonatofficial" 
-                    target="_blank" 
+
+                  <a
+                    href="https://www.youtube.com/@natOnatofficial"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex flex-col items-center gap-2 md:gap-3 p-3 md:p-4 rounded-xl md:rounded-2xl bg-red-500/10 hover:bg-red-600 group transition-all duration-300"
+                  >
+                    <Youtube className="w-6 h-6 md:w-8 md:h-8 text-red-600 group-hover:text-white transition-colors" strokeWidth={1.5} />
+                    <span className="text-xs md:text-sm font-medium text-[#0F1A26]/70 group-hover:text-white transition-colors">
+                      YouTube
+                    </span>
+                  </a>
+
+                  <a
+                    href="https://www.tiktok.com/@natonatofficial"
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="flex flex-col items-center gap-2 md:gap-3 p-3 md:p-4 rounded-xl md:rounded-2xl bg-black/5 hover:bg-black group transition-all duration-300"
                   >
                     <svg className="w-6 h-6 md:w-8 md:h-8 text-[#0F1A26] group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+                      <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" />
                     </svg>
                     <span className="text-xs md:text-sm font-medium text-[#0F1A26]/70 group-hover:text-white transition-colors">{t('social.tiktok')}</span>
                   </a>
@@ -234,9 +246,8 @@ function ContactContent() {
                           onChange={handleChange}
                           onFocus={() => setFocusedField('name')}
                           onBlur={() => setFocusedField(null)}
-                          className={`w-full px-5 py-4 rounded-2xl border-2 outline-none transition-all bg-white text-[#0F1A26] placeholder:text-[#0F1A26]/30 ${
-                            focusedField === 'name' ? 'border-[#EEBC3F]' : 'border-[#0F1A26]/10'
-                          }`}
+                          className={`w-full px-5 py-4 rounded-2xl border-2 outline-none transition-all bg-white text-[#0F1A26] placeholder:text-[#0F1A26]/30 ${focusedField === 'name' ? 'border-[#EEBC3F]' : 'border-[#0F1A26]/10'
+                            }`}
                           placeholder={t('form.namePlaceholder')}
                         />
                       </div>
@@ -250,9 +261,8 @@ function ContactContent() {
                           onChange={handleChange}
                           onFocus={() => setFocusedField('email')}
                           onBlur={() => setFocusedField(null)}
-                          className={`w-full px-5 py-4 rounded-2xl border-2 outline-none transition-all bg-white text-[#0F1A26] placeholder:text-[#0F1A26]/30 ${
-                            focusedField === 'email' ? 'border-[#EEBC3F]' : 'border-[#0F1A26]/10'
-                          }`}
+                          className={`w-full px-5 py-4 rounded-2xl border-2 outline-none transition-all bg-white text-[#0F1A26] placeholder:text-[#0F1A26]/30 ${focusedField === 'email' ? 'border-[#EEBC3F]' : 'border-[#0F1A26]/10'
+                            }`}
                           placeholder={t('form.emailPlaceholder')}
                         />
                       </div>
@@ -268,9 +278,8 @@ function ContactContent() {
                           onChange={handleChange}
                           onFocus={() => setFocusedField('orderNumber')}
                           onBlur={() => setFocusedField(null)}
-                          className={`w-full px-5 py-4 rounded-2xl border-2 outline-none transition-all bg-white text-[#0F1A26] placeholder:text-[#0F1A26]/30 ${
-                            focusedField === 'orderNumber' ? 'border-[#EEBC3F]' : 'border-[#0F1A26]/10'
-                          }`}
+                          className={`w-full px-5 py-4 rounded-2xl border-2 outline-none transition-all bg-white text-[#0F1A26] placeholder:text-[#0F1A26]/30 ${focusedField === 'orderNumber' ? 'border-[#EEBC3F]' : 'border-[#0F1A26]/10'
+                            }`}
                           placeholder={t('form.orderPlaceholder')}
                         />
                       </div>
@@ -304,15 +313,14 @@ function ContactContent() {
                         onChange={handleChange}
                         onFocus={() => setFocusedField('message')}
                         onBlur={() => setFocusedField(null)}
-                        className={`w-full px-5 py-4 rounded-2xl border-2 outline-none transition-all resize-none bg-white text-[#0F1A26] placeholder:text-[#0F1A26]/30 ${
-                          focusedField === 'message' ? 'border-[#EEBC3F]' : 'border-[#0F1A26]/10'
-                        }`}
+                        className={`w-full px-5 py-4 rounded-2xl border-2 outline-none transition-all resize-none bg-white text-[#0F1A26] placeholder:text-[#0F1A26]/30 ${focusedField === 'message' ? 'border-[#EEBC3F]' : 'border-[#0F1A26]/10'
+                          }`}
                         placeholder={t('form.messagePlaceholder')}
                       />
                     </div>
 
-                    <Button 
-                      type="submit" 
+                    <Button
+                      type="submit"
                       className="w-full bg-[#0F1A26] text-white hover:bg-[#EEBC3F] hover:text-[#0F1A26] h-14 rounded-2xl font-semibold text-lg transition-all duration-300"
                     >
                       <Send className="w-5 h-5 mr-2" />
