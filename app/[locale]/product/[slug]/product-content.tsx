@@ -474,9 +474,311 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
     { id: 4, alt: "Fabric detail" },
   ];
 
-  const relatedProducts = products
-    .filter(p => p.theme === product.theme && p.id !== product.id)
-    .slice(0, 3);
+  const relatedProducts = useMemo(() => {
+    const RELATED_LIMIT = 4;
+
+    const toArray = <T,>(value?: T | T[] | null): T[] => {
+      if (!value) return [];
+      return Array.isArray(value) ? value.filter(Boolean) : [value];
+    };
+
+    const productById = new Map(products.map((item) => [item.id, item]));
+
+    const unique = <T,>(items: T[]): T[] => Array.from(new Set(items));
+
+    const getCategories = (item: Product): string[] => {
+      return toArray(item.category);
+    };
+
+    const getBundleProductIds = (item: Product): number[] => {
+      if (!item.bundleItems?.length) return [];
+
+      return item.bundleItems.flatMap((bundleItem) => {
+        const ids: number[] = [];
+
+        if (bundleItem.productId) ids.push(bundleItem.productId);
+        if (bundleItem.productIds?.length) ids.push(...bundleItem.productIds);
+
+        return ids;
+      });
+    };
+
+    const isBundleProduct = (item: Product): boolean => {
+      return (
+        item.isBundle === true ||
+        getCategories(item).includes("bundles") ||
+        Boolean(item.bundleItems?.length)
+      );
+    };
+
+    const getBundleCategories = (item: Product): string[] => {
+      const bundleProductIds = getBundleProductIds(item);
+
+      const categories = bundleProductIds.flatMap((id) => {
+        const bundleProduct = productById.get(id);
+        return bundleProduct ? getCategories(bundleProduct) : [];
+      });
+
+      return unique(categories);
+    };
+
+    const getAllProductCategories = (item: Product): string[] => {
+      return unique([...getCategories(item), ...getBundleCategories(item)]);
+    };
+
+    const hasIntersection = (a: string[], b: string[]): boolean => {
+      return a.some((value) => b.includes(value));
+    };
+
+    const sameGender = (item: Product): boolean => {
+      const currentGender = toArray(product.gender);
+      const itemGender = toArray(item.gender);
+
+      if (!currentGender.length || !itemGender.length) return false;
+
+      return currentGender.some(
+        (gender) =>
+          itemGender.includes(gender) ||
+          gender === "unisex" ||
+          itemGender.includes("unisex")
+      );
+    };
+
+    const getSharedFeaturesCount = (item: Product): number => {
+      if (!product.features?.length || !item.features?.length) return 0;
+
+      const currentFeatures = product.features.map((feature) =>
+        feature.toLowerCase()
+      );
+
+      return item.features.filter((feature) =>
+        currentFeatures.includes(feature.toLowerCase())
+      ).length;
+    };
+
+    const tagScore = (tag?: string | null): number => {
+      if (!tag) return 0;
+
+      const normalizedTag = tag.toLowerCase();
+
+      if (normalizedTag.includes("best seller")) return 12;
+      if (normalizedTag.includes("best value")) return 10;
+      if (normalizedTag.includes("popular")) return 9;
+      if (normalizedTag.includes("essential")) return 7;
+      if (normalizedTag.includes("new")) return 6;
+
+      return 4;
+    };
+
+    // Build smart cross-sell relationships from bundles automatically.
+    // Example: All Set Bundle links cover + PackOnat + passport.
+    const categoryAffinityMap = new Map<string, Map<string, number>>();
+
+    const addCategoryAffinity = (from: string, to: string, points: number) => {
+      if (from === to) return;
+
+      const currentMap = categoryAffinityMap.get(from) || new Map<string, number>();
+      currentMap.set(to, (currentMap.get(to) || 0) + points);
+      categoryAffinityMap.set(from, currentMap);
+    };
+
+    products.forEach((item) => {
+      if (!isBundleProduct(item)) return;
+
+      const bundleCategories = getBundleCategories(item);
+
+      bundleCategories.forEach((fromCategory) => {
+        bundleCategories.forEach((toCategory) => {
+          addCategoryAffinity(fromCategory, toCategory, 45);
+        });
+      });
+    });
+
+    const currentDirectCategories = getCategories(product);
+    const currentBundleCategories = getBundleCategories(product);
+    const currentAllCategories = getAllProductCategories(product);
+    const currentIsBundle = isBundleProduct(product);
+
+    const getAffinityScore = (item: Product): number => {
+      const itemCategories = getAllProductCategories(item);
+
+      return currentAllCategories.reduce((total, currentCategory) => {
+        const affinity = categoryAffinityMap.get(currentCategory);
+
+        if (!affinity) return total;
+
+        const categoryScore = itemCategories.reduce((sum, itemCategory) => {
+          return sum + (affinity.get(itemCategory) || 0);
+        }, 0);
+
+        return total + categoryScore;
+      }, 0);
+    };
+
+    const scoreProduct = (item: Product): number => {
+      if (item.id === product.id) return -9999;
+
+      let score = 0;
+
+      const itemDirectCategories = getCategories(item);
+      const itemBundleCategories = getBundleCategories(item);
+      const itemAllCategories = getAllProductCategories(item);
+      const itemIsBundle = isBundleProduct(item);
+
+      // Same visible category
+      if (hasIntersection(currentDirectCategories, itemDirectCategories)) {
+        score += 120;
+      }
+
+      // Same real product family, even if one of them is a bundle
+      if (hasIntersection(currentAllCategories, itemAllCategories)) {
+        score += 70;
+      }
+
+      // Current normal product -> bundle containing this product category
+      if (!currentIsBundle && itemIsBundle && hasIntersection(currentAllCategories, itemBundleCategories)) {
+        score += 100;
+      }
+
+      // Current bundle -> products from inside the bundle categories
+      if (currentIsBundle && !itemIsBundle && hasIntersection(currentBundleCategories, itemAllCategories)) {
+        score += 100;
+      }
+
+      // Bundle to bundle with shared components
+      if (currentIsBundle && itemIsBundle && hasIntersection(currentBundleCategories, itemBundleCategories)) {
+        score += 85;
+      }
+
+      // Cross-sell relation learned from bundles
+      score += getAffinityScore(item);
+
+      // Similar style
+      if (
+        product.theme &&
+        item.theme &&
+        product.theme !== "mixed" &&
+        item.theme !== "mixed" &&
+        product.theme === item.theme
+      ) {
+        score += 28;
+      }
+
+      if (
+        product.collection &&
+        item.collection &&
+        product.collection === item.collection
+      ) {
+        score += 24;
+      }
+
+      if (
+        product.printType &&
+        item.printType &&
+        product.printType === item.printType
+      ) {
+        score += 14;
+      }
+
+      if (sameGender(item)) {
+        score += 12;
+      }
+
+      if (product.color && item.color && product.color === item.color) {
+        score += 10;
+      }
+
+      if (product.type && item.type && product.type === item.type) {
+        score += 18;
+      }
+
+      score += tagScore(item.tag);
+      score += Math.min(getSharedFeaturesCount(item) * 4, 16);
+
+      return score;
+    };
+
+    const scoredProducts = products
+      .filter((item) => item.id !== product.id)
+      .map((item) => ({
+        item,
+        score: scoreProduct(item),
+      }))
+      .filter(({ score }) => score > 0)
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return a.item.id - b.item.id;
+      });
+
+    const selected = new Map<number, Product>();
+
+    const addProducts = (
+      predicate: (item: Product) => boolean,
+      count: number
+    ) => {
+      scoredProducts
+        .filter(({ item }) => !selected.has(item.id))
+        .filter(({ item }) => predicate(item))
+        .slice(0, count)
+        .forEach(({ item }) => selected.set(item.id, item));
+    };
+
+    const affinityCategories = unique(
+      currentAllCategories.flatMap((category) =>
+        Array.from(categoryAffinityMap.get(category)?.keys() || [])
+      )
+    );
+
+    if (currentIsBundle) {
+      // لو المنتج Bundle: اعرض منتجات من مكونات الباندل + باندل شبهه
+      currentBundleCategories.forEach((category) => {
+        addProducts(
+          (item) =>
+            !isBundleProduct(item) &&
+            getAllProductCategories(item).includes(category),
+          1
+        );
+      });
+
+      addProducts((item) => isBundleProduct(item), 1);
+    } else {
+      // 1) منتج من نفس الـ category
+      currentDirectCategories.forEach((category) => {
+        addProducts(
+          (item) =>
+            !isBundleProduct(item) &&
+            getCategories(item).includes(category),
+          1
+        );
+      });
+
+      // 2) Bundle فيه نفس نوع المنتج الحالي
+      addProducts(
+        (item) =>
+          isBundleProduct(item) &&
+          hasIntersection(getBundleCategories(item), currentAllCategories),
+        1
+      );
+
+      // 3) Cross-sell categories متعلمة من الباندلز
+      affinityCategories.forEach((category) => {
+        addProducts(
+          (item) =>
+            !isBundleProduct(item) &&
+            getAllProductCategories(item).includes(category),
+          1
+        );
+      });
+    }
+
+    // Fallback: كمل العدد بأقوى منتجات حسب السكور
+    scoredProducts
+      .filter(({ item }) => !selected.has(item.id))
+      .slice(0, RELATED_LIMIT - selected.size)
+      .forEach(({ item }) => selected.set(item.id, item));
+
+    return Array.from(selected.values()).slice(0, RELATED_LIMIT);
+  }, [product]);
 
   // Lazy load thumbnails when they come into view
   const handleThumbnailInView = useCallback((idx: number) => {

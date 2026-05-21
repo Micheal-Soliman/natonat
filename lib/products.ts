@@ -1346,9 +1346,9 @@ export const products: Product[] = [
     image: "/passport%20wallet/Cognac%20brown/1.png",
     images: [
       "/passport%20wallet/Cognac%20brown/1.png",
-      "/passport%20wallet/Cognac%20brown/2.png",
-      "/passport%20wallet/Cognac%20brown/3.png",
-      "/passport%20wallet/Cognac%20brown/4.png",
+      "/passport%20wallet/Cognac%20brown/2.jpg",
+      "/passport%20wallet/Cognac%20brown/3.jpg",
+      "/passport%20wallet/Cognac%20brown/4.jpg",
       "/passport%20wallet/Cognac%20brown/5.png"
     ],
     description: "RFID Protected faux leather passport wallet in Cognac Brown with magnetic clasp, vaccine card slot, and 5 pockets for cards, tickets, and SIM cards.",
