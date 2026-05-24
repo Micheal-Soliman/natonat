@@ -9,12 +9,15 @@ const transporter = nodemailer.createTransport({
 });
 
 function renderItemHtml(item: any) {
-  const optionsHtml = item.options?.map((opt: any) => `<div style="font-size: 14px; color: #555; margin-top: 2px;">${opt.size || ''} ${opt.design || ''}</div>`).join('') || '';
+  const optionsHtml = item.size
+    ? `<div style="font-size: 14px; color: #555;">Size: ${item.size}</div>`
+    : '';
+
   return `
     <tr>
       <td style="padding: 10px; border-bottom: 1px solid #eee;">
-        ${item.name}
-        ${optionsHtml ? `<div>${optionsHtml}</div>` : ''}
+        <strong>${item.name}</strong>
+        ${optionsHtml}
       </td>
       <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.quantity}</td>
       <td style="padding: 10px; border-bottom: 1px solid #eee;">EGP ${item.price_egp || item.price || 0}</td>
