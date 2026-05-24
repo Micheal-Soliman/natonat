@@ -789,7 +789,7 @@ function getShipperConfig() {
     postCode: getValue("ARAMEX_SHIPPER_POSTCODE", "11835"),
     countryCode: getValue("ARAMEX_SHIPPER_COUNTRY_CODE", "EG"),
     companyName: getValue("ARAMEX_SHIPPER_COMPANY", "natOnat"),
-    personName: getValue("ARAMEX_SHIPPER_PERSON", "Michael Soliman"),
+    personName: getValue("ARAMEX_SHIPPER_PERSON", "natOnat"),
     phone: getValue("ARAMEX_SHIPPER_PHONE", "+201070004227"),
     email: getValue("ARAMEX_SHIPPER_EMAIL", "natonateg@gmail.com"),
     accountNumber: credentials.AccountNumber,
