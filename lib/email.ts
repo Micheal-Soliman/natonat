@@ -10,16 +10,22 @@ const transporter = nodemailer.createTransport({
 
 function renderItemHtml(item: any) {
   const optionsHtml = item.size
-    ? `<div style="font-size: 14px; color: #555;">Size: ${item.size}</div>`
+    ? `<div style="font-size: 14px; color: #555;">Size: ${item.size.toUpperCase()}</div>`
     : '';
 
-  const typeLabel = item.isBundleItem ? `Bundle: ${item.bundleName}` : 'Single';
+  const colorHtml = item.color
+    ? `<div style="font-size: 14px; color: #555;">Color: ${item.color}</div>`
+    : '';
+
+  // Use item.type which is always present in the payload (e.g. "Luggage Cover", "Bundle", etc.)
+  const typeLabel = item.type || 'Product';
 
   return `
     <tr>
       <td style="padding: 10px; border-bottom: 1px solid #eee;">
         <strong>${item.name}</strong>
         ${optionsHtml}
+        ${colorHtml}
         <div style="font-size: 12px; color: #777; margin-top: 2px;">${typeLabel}</div>
       </td>
       <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.quantity}</td>
@@ -29,9 +35,29 @@ function renderItemHtml(item: any) {
   `;
 }
 
+function renderTotalsHtml(orderData: any) {
+  const subtotal = orderData.extras?.subtotal_egp ?? (orderData.amount_egp - (orderData.shipping_egp || 0));
+  const shipping = orderData.shipping_egp || 0;
+  const paymentDiscount = orderData.extras?.payment_discount || 0;
+  const paymentDiscountPercent = orderData.extras?.payment_discount_percent || 2;
+  const total = orderData.amount_egp;
+
+  const discountRow = paymentDiscount > 0
+    ? `<p><strong>Payment Discount (${paymentDiscountPercent}%):</strong> <span style="color: #27ae60;">-EGP ${paymentDiscount}</span></p>`
+    : '';
+
+  return `
+    <p><strong>Subtotal:</strong> EGP ${subtotal}</p>
+    <p><strong>Shipping:</strong> EGP ${shipping}</p>
+    ${discountRow}
+    <p style="font-size: 18px; color: #EEBC3F;"><strong>Total: EGP ${total}</strong></p>
+  `;
+}
+
 export async function sendOrderEmail(orderData: any) {
   const adminEmail = 'natonateg@gmail.com';
   const itemsHtml = orderData.items.map(renderItemHtml).join('');
+  const totalsHtml = renderTotalsHtml(orderData);
 
   const mailOptions = {
     from: process.env.EMAIL_USER,
@@ -40,6 +66,7 @@ export async function sendOrderEmail(orderData: any) {
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 10px;">
         <h2 style="color: #0F1A26; text-align: center;">New Order Received!</h2>
+
         <p style="font-size: 16px;"><strong>Order Reference:</strong> ${orderData.order_ref}</p>
         <p style="font-size: 16px;"><strong>Customer Name:</strong> ${orderData.customer.first_name} ${orderData.customer.last_name}</p>
         <p style="font-size: 16px;"><strong>Phone:</strong> ${orderData.customer.phone}</p>
@@ -65,9 +92,7 @@ export async function sendOrderEmail(orderData: any) {
         </table>
 
         <div style="margin-top: 20px; text-align: right;">
-          <p><strong>Subtotal:</strong> EGP ${orderData.extras?.subtotal_egp || (orderData.amount_egp - (orderData.shipping_egp || 0))}</p>
-          <p><strong>Shipping:</strong> EGP ${orderData.shipping_egp || 0}</p>
-          <p style="font-size: 18px; color: #EEBC3F;"><strong>Total: EGP ${orderData.amount_egp}</strong></p>
+          ${totalsHtml}
         </div>
 
         <div style="margin-top: 10px; font-size: 12px; color: #777; text-align: center; border-top: 1px solid #eee; padding-top: 10px;">
@@ -95,6 +120,7 @@ export async function sendOrderEmail(orderData: any) {
 export async function sendCustomerConfirmationEmail(orderData: any) {
   const customerEmail = orderData.customer.email;
   const itemsHtml = orderData.items.map(renderItemHtml).join('');
+  const totalsHtml = renderTotalsHtml(orderData);
 
   const mailOptions = {
     from: process.env.EMAIL_USER,
@@ -130,9 +156,7 @@ export async function sendCustomerConfirmationEmail(orderData: any) {
         </table>
 
         <div style="margin-top: 20px; text-align: right;">
-          <p><strong>Subtotal:</strong> EGP ${orderData.extras?.subtotal_egp || (orderData.amount_egp - (orderData.shipping_egp || 0))}</p>
-          <p><strong>Shipping:</strong> EGP ${orderData.shipping_egp || 0}</p>
-          <p style="font-size: 18px; color: #EEBC3F;"><strong>Total: EGP ${orderData.amount_egp}</strong></p>
+          ${totalsHtml}
         </div>
 
         <div style="margin-top: 10px; font-size: 12px; color: #777; text-align: center; border-top: 1px solid #eee; padding-top: 10px;">
