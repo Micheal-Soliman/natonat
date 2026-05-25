@@ -76,6 +76,10 @@ export async function sendOrderEmail(orderData: any) {
         <p style="font-size: 16px;"><strong>Payment Method:</strong> ${orderData.payment_method}</p>
         <p style="font-size: 16px;"><strong>Delivery Method:</strong> ${orderData.delivery_method}</p>
 
+        <p style="font-size: 15px; background: #fff8e1; border-left: 4px solid #EEBC3F; padding: 10px; color: #333;">
+  <strong>Shipping Note:</strong> Aramex shipping will be available starting Monday, and pickup will be available starting Saturday.
+</p>
+
         <h3 style="margin-top: 30px; border-bottom: 2px solid #EEBC3F; padding-bottom: 5px;">Order Summary</h3>
         <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
           <thead>
@@ -139,6 +143,10 @@ export async function sendCustomerConfirmationEmail(orderData: any) {
         <p style="font-size: 16px;"><strong>Address:</strong> ${orderData.customer.address}</p>
         <p style="font-size: 16px;"><strong>Payment Method:</strong> ${orderData.payment_method}</p>
         <p style="font-size: 16px;"><strong>Delivery Method:</strong> ${orderData.delivery_method}</p>
+
+        <p style="font-size: 15px; background: #fff8e1; border-left: 4px solid #EEBC3F; padding: 10px; color: #333;">
+  <strong>Shipping Note:</strong> Aramex shipping will be available starting Monday, and pickup will be available starting Saturday.
+</p>
 
         <h3 style="margin-top: 30px; border-bottom: 2px solid #EEBC3F; padding-bottom: 5px;">Order Summary</h3>
         <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
