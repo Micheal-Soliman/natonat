@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useState, useEffect, useId, type ReactNode } from "react";
+import { products } from "@/lib/products";
 import Image from "next/image";
 import { Link, useRouter } from "@/i18n/routing";
 import { useTranslations, useLocale } from 'next-intl';
@@ -381,17 +382,21 @@ function CheckoutContent() {
               address: formData.address,
               postCode: formData.postCode,
             },
-            items: checkoutItems.map((item) => ({
-              id: item.id,
-              name: item.name,
-              slug: item.slug,
-              price_egp: item.price,
-              quantity: item.quantity,
-              size: item.size,
-              color: item.color,
-              type: item.type,
-              image: item.image,
-            })),
+            items: checkoutItems.map((item) => {
+              const catalogProduct = products.find((p) => p.id === item.id);
+
+              return {
+                id: item.id,
+                name: item.name,
+                slug: item.slug,
+                price_egp: item.price,
+                quantity: item.quantity,
+                size: item.size,
+                color: item.color,
+                type: catalogProduct?.type || item.type || "Product",
+                image: item.image,
+              };
+            }),
             paymob: {
               client_secret: clientSecret,
               intention_order_id: data?.intention_order_id,
