@@ -33,6 +33,7 @@ function ArticleContent() {
       ([entry]) => {
         if (entry.isIntersecting) {
           setIsVisible(true);
+          observer.disconnect();
         }
       },
       { threshold: 0.1 }
@@ -59,7 +60,7 @@ function ArticleContent() {
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
-      
+
       if (line.startsWith('## ')) {
         elements.push(
           <h2 key={key++} className="text-2xl font-bold text-[#0F1A26] mt-12 mb-6">
@@ -111,9 +112,10 @@ function ArticleContent() {
             sizes="100vw"
             className="w-full h-full object-cover"
             priority
+            quality={65}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#0F1A26] via-[#0F1A26]/50 to-transparent" />
-          
+
           {/* Back Button */}
           <div className="absolute top-24 left-4 sm:left-6 lg:left-8">
             <Link
@@ -154,12 +156,12 @@ function ArticleContent() {
 
         <div ref={ref} className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16">
           {/* Article Content */}
-          <article className={`bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 lg:p-12 shadow-lg shadow-[#0F1A26]/5 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+          <article className={`bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 lg:p-12 shadow-lg shadow-[#0F1A26]/5 transition-transform transition-opacity duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
             <div className="prose prose-lg max-w-none">
               <p className="text-xl text-[#0F1A26]/80 font-light leading-relaxed mb-8 border-l-4 border-[#EEBC3F] pl-6">
                 {article.excerpt}
               </p>
-              
+
               <div className="space-y-2">
                 {renderContent(article.content)}
               </div>
@@ -204,9 +206,8 @@ function ArticleContent() {
                 <Link
                   key={relatedArticle.id}
                   href={`/articles/${relatedArticle.slug}`}
-                  className={`group bg-white rounded-3xl overflow-hidden border border-[#0F1A26]/5 shadow-lg shadow-[#0F1A26]/5 hover:shadow-xl hover:shadow-[#0F1A26]/10 transition-all duration-500 ${
-                    isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-                  }`}
+                  className={`group bg-white rounded-3xl overflow-hidden border border-[#0F1A26]/5 shadow-lg shadow-[#0F1A26]/5 hover:shadow-xl hover:shadow-[#0F1A26]/10 transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                    }`}
                   style={{ transitionDelay: `${(index + 3) * 100}ms` }}
                 >
                   <div className="relative h-48 overflow-hidden">
@@ -214,9 +215,10 @@ function ArticleContent() {
                       src={relatedArticle.image}
                       alt={relatedArticle.title}
                       fill
-                      sizes="(max-width: 768px) 100vw, 33vw"
+                      sizes="(max-width: 640px) 92vw, (max-width: 1024px) 45vw, 30vw"
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                       loading="lazy"
+                      quality={55}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#0F1A26]/40 via-transparent to-transparent" />
                     <div className="absolute top-4 left-4">

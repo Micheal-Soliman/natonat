@@ -30,7 +30,7 @@ interface GroupedItem {
 
 function groupCartItems(items: ReturnType<typeof useCart>['items']): GroupedItem[] {
   const grouped = new Map<string, GroupedItem>();
-  
+
   items.forEach((item) => {
     const groupKey = item.isBundle ? `${item.id}:${item.bundleKey || ""}` : String(item.id);
 
@@ -47,7 +47,7 @@ function groupCartItems(items: ReturnType<typeof useCart>['items']): GroupedItem
         variants: [],
       });
     }
-    
+
     const group = grouped.get(groupKey)!;
     group.variants.push({
       size: item.size,
@@ -56,7 +56,7 @@ function groupCartItems(items: ReturnType<typeof useCart>['items']): GroupedItem
       bundleKey: item.bundleKey,
     });
   });
-  
+
   return Array.from(grouped.values());
 }
 
@@ -155,8 +155,8 @@ function CartContent() {
                   <h2 className="text-lg font-semibold text-[#0F1A26]">
                     {t('cartItems', { count: groupedItems.length })}
                   </h2>
-                  <Link 
-                    href="/shop" 
+                  <Link
+                    href="/shop"
                     className="text-sm text-[#EEBC3F] hover:text-[#0F1A26] font-medium flex items-center gap-2 transition-colors"
                   >
                     <ArrowLeft className="w-4 h-4" />
@@ -166,18 +166,20 @@ function CartContent() {
 
                 <div className="space-y-4">
                   {groupedItems.map((item) => (
-                    <div 
+                    <div
                       key={item.groupKey}
                       className="bg-white rounded-2xl p-4 border border-[#0F1A26]/5 flex gap-4"
                     >
                       {/* Image */}
                       <Link href={`/product/${item.slug}`} className="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 bg-[#F8F6F3] relative group">
-                        <Image 
-                          src={item.image} 
+                        <Image
+                          src={item.image}
                           alt={item.name}
                           fill
                           sizes="96px"
                           className="object-cover group-hover:scale-105 transition-transform"
+                          loading="lazy"
+                          quality={45}
                         />
                       </Link>
 
@@ -193,7 +195,7 @@ function CartContent() {
                                 <h3 className="text-[#0F1A26] font-medium mt-0.5 hover:text-[#EEBC3F] transition-colors cursor-pointer">{item.name}</h3>
                               </Link>
                             </div>
-                            <button 
+                            <button
                               onClick={() => {
                                 // Remove all variants of this item
                                 item.variants.forEach(v => {
@@ -205,7 +207,7 @@ function CartContent() {
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
-                          
+
                           {/* Variants with Individual Controls */}
                           {item.variants.length > 0 && (
                             <div className="mt-3 space-y-2">
@@ -221,13 +223,13 @@ function CartContent() {
                                       <span className="text-[#0F1A26]/60 text-xs">{variant.color}</span>
                                     )}
                                   </div>
-                                  
+
                                   <div className="flex items-center gap-2">
-                                    <button 
+                                    <button
                                       onClick={() => {
-                                        const originalItem = items.find(i => 
-                                          i.id === item.id && 
-                                          i.size === variant.size && 
+                                        const originalItem = items.find(i =>
+                                          i.id === item.id &&
+                                          i.size === variant.size &&
                                           i.color === variant.color
                                         );
                                         if (originalItem) {
@@ -241,11 +243,11 @@ function CartContent() {
                                     <span className="w-6 text-center font-medium text-[#0F1A26] text-sm">
                                       {variant.quantity}
                                     </span>
-                                    <button 
+                                    <button
                                       onClick={() => {
-                                        const originalItem = items.find(i => 
-                                          i.id === item.id && 
-                                          i.size === variant.size && 
+                                        const originalItem = items.find(i =>
+                                          i.id === item.id &&
+                                          i.size === variant.size &&
                                           i.color === variant.color
                                         );
                                         if (originalItem) {
@@ -283,11 +285,11 @@ function CartContent() {
               <div className="lg:w-96 order-first lg:order-last">
                 <div className="bg-white rounded-2xl p-6 border border-[#0F1A26]/5 lg:sticky lg:top-28">
                   <h2 className="text-lg font-semibold text-[#0F1A26] mb-6">{t('summary.title')}</h2>
-                  
+
                   <p className="text-xs text-[#EEBC3F] font-medium mb-4 text-center">
                     {t('summary.egyptOnly')}
                   </p>
-                  
+
                   <div className="space-y-3 mb-6">
                     <div className="flex justify-between text-sm">
                       <span className="text-[#0F1A26]/60">{t('summary.subtotal')}</span>

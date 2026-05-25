@@ -52,6 +52,8 @@ function PaymentLogoImage({ logo }: { logo: PaymentLogo }) {
         width={logo.width}
         height={logo.height}
         className="object-contain max-h-[22px] w-auto"
+        loading="lazy"
+        quality={35}
       />
     </PaymentLogoBox>
   );
@@ -150,12 +152,14 @@ function SymplPromoBanner() {
   return (
     <div className="mb-5 overflow-hidden rounded-2xl border border-[#0F1A26]/10 bg-white shadow-sm">
       <Image
-        src="/banner-payment.png"
+        src="/banner-payment.webp"
         alt="Sympl Cashback Banner"
         width={1200}
         height={1200}
         className="w-full h-auto object-cover"
-        priority
+        loading="lazy"
+        quality={55}
+        sizes="(max-width: 768px) 92vw, 600px"
       />
     </div>
   );
@@ -163,7 +167,7 @@ function SymplPromoBanner() {
 
 export default function CheckoutPage() {
   return (
-    <Suspense fallback={<Loading />}>
+    <Suspense fallback={null}>
       <CheckoutContent />
     </Suspense>
   );
@@ -1274,6 +1278,8 @@ function CheckoutContent() {
                           fill
                           sizes="64px"
                           className="object-contain"
+                          loading="lazy"
+                          quality={40}
                         />
                       </div>
                       <div className="flex-1 min-w-0">
