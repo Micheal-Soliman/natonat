@@ -276,8 +276,7 @@ function ContactContent() {
                           onChange={handleChange}
                           onFocus={() => setFocusedField('orderNumber')}
                           onBlur={() => setFocusedField(null)}
-                          className={`w-full px-5 py-4 rounded-2xl border-2 outline-none transition-all bg-white text-[#0F1A26] placeholder:text-[#0F1A26]/30 ${focusedField === 'orderNumber' ? 'border-[#EEBC3F]' : 'border-[#0F1A26]/10'
-                            }`}
+                          className="w-full px-5 py-4 rounded-2xl border-2 border-[#0F1A26]/10 focus:border-[#EEBC3F] outline-none transition-colors bg-white text-[#0F1A26] placeholder:text-[#0F1A26]/30"
                           placeholder={t('form.orderPlaceholder')}
                         />
                       </div>
