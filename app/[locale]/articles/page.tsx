@@ -45,7 +45,7 @@ function ArticlesContent() {
   const categories = getAllCategories(locale);
   const featuredArticles = getFeaturedArticles(locale);
   const articles = getArticlesByLocale(locale);
-  
+
   const filteredArticles = selectedCategory
     ? articles.filter(article => article.category === selectedCategory)
     : articles;
@@ -78,11 +78,10 @@ function ArticlesContent() {
           <div className={`flex flex-wrap gap-3 mb-12 justify-center transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
             <button
               onClick={() => setSelectedCategory(null)}
-              className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${
-                !selectedCategory
-                  ? 'bg-[#0F1A26] text-white'
-                  : 'bg-white text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white border border-[#0F1A26]/10'
-              }`}
+              className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${!selectedCategory
+                ? 'bg-[#0F1A26] text-white'
+                : 'bg-white text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white border border-[#0F1A26]/10'
+                }`}
             >
               {t('allArticles')}
             </button>
@@ -90,11 +89,10 @@ function ArticlesContent() {
               <button
                 key={category}
                 onClick={() => setSelectedCategory(category)}
-                className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${
-                  selectedCategory === category
-                    ? 'bg-[#0F1A26] text-white'
-                    : 'bg-white text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white border border-[#0F1A26]/10'
-                }`}
+                className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${selectedCategory === category
+                  ? 'bg-[#0F1A26] text-white'
+                  : 'bg-white text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white border border-[#0F1A26]/10'
+                  }`}
               >
                 {category}
               </button>
@@ -110,18 +108,19 @@ function ArticlesContent() {
                   <Link
                     key={article.id}
                     href={`/articles/${article.slug}`}
-                    className={`group bg-white rounded-3xl overflow-hidden border border-[#0F1A26]/5 shadow-lg shadow-[#0F1A26]/5 hover:shadow-xl hover:shadow-[#0F1A26]/10 transition-all duration-500 ${
-                      index === 0 ? 'md:row-span-2' : ''
-                    }`}
+                    className={`group bg-white rounded-3xl overflow-hidden border border-[#0F1A26]/5 shadow-lg shadow-[#0F1A26]/5 hover:shadow-xl hover:shadow-[#0F1A26]/10 transition-all duration-500 ${index === 0 ? 'md:row-span-2' : ''
+                      }`}
                   >
                     <div className={`relative overflow-hidden ${index === 0 ? 'h-64 md:h-80' : 'h-48'}`}>
                       <Image
                         src={article.image}
                         alt={article.title}
                         fill
-                        sizes="(max-width: 768px) 100vw, 50vw"
+                        sizes="(max-width: 640px) 92vw, (max-width: 1024px) 48vw, 42vw"
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                         loading={index === 0 ? "eager" : "lazy"}
+                        quality={60}
+                        priority={index === 0}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-[#0F1A26]/60 via-transparent to-transparent" />
                       <div className="absolute top-4 left-4">
@@ -159,7 +158,7 @@ function ArticlesContent() {
             <h2 className="text-2xl font-bold text-[#0F1A26] mb-8">
               {selectedCategory || t('latest')}
             </h2>
-            
+
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {sortedArticles.map((article, index) => (
                 <Link
@@ -173,9 +172,10 @@ function ArticlesContent() {
                       src={article.image}
                       alt={article.title}
                       fill
-                      sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      sizes="(max-width: 640px) 92vw, (max-width: 1024px) 45vw, 30vw"
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                       loading="lazy"
+                      quality={55}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#0F1A26]/40 via-transparent to-transparent" />
                     <div className="absolute top-4 left-4">

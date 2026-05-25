@@ -97,7 +97,7 @@ function ProductVideoSection({
                       loop
                       playsInline
                       controls
-                      preload="metadata"
+                      preload="none"
                       className={videoClassName}
                       poster={video.poster}
                     >
@@ -123,7 +123,7 @@ function ProductVideoSection({
                 loop
                 playsInline
                 controls
-                preload="metadata"
+                preload="none"
                 className={videoClassName}
                 poster={poster}
               >
@@ -458,7 +458,6 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
   const [showShareToast, setShowShareToast] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  const [loadedThumbnails, setLoadedThumbnails] = useState<Set<number>>(new Set());
 
   const sizes = [
     { id: "s", label: "S", range: "48-53 cm" },
@@ -467,12 +466,6 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
     { id: "xl", label: "XL", range: "72-80 cm" },
   ];
 
-  const productImages = [
-    { id: 1, alt: "Front view" },
-    { id: 2, alt: "Side view" },
-    { id: 3, alt: "On suitcase" },
-    { id: 4, alt: "Fabric detail" },
-  ];
 
   const relatedProducts = useMemo(() => {
     const RELATED_LIMIT = 4;
@@ -780,23 +773,12 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
     return Array.from(selected.values()).slice(0, RELATED_LIMIT);
   }, [product]);
 
-  // Lazy load thumbnails when they come into view
-  const handleThumbnailInView = useCallback((idx: number) => {
-    setLoadedThumbnails(prev => new Set([...prev, idx]));
-  }, []);
 
   // Reset active image when color changes
   useEffect(() => {
     setActiveImage(0);
   }, [selectedColor]);
 
-  useEffect(() => {
-    // Preload current image and adjacent ones
-    const imagesToPreload = [activeImage, activeImage - 1, activeImage + 1].filter(
-      i => i >= 0 && i < (colorImages.length || 1)
-    );
-    imagesToPreload.forEach(idx => handleThumbnailInView(idx));
-  }, [activeImage, colorImages, handleThumbnailInView]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -921,9 +903,10 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                     src={colorImages[activeImage] || product.image}
                     alt={product.name}
                     fill
-                    sizes="(max-width: 768px) 100vw, 50vw"
+                    sizes="(max-width: 768px) 92vw, (max-width: 1280px) 45vw, 40vw"
                     className="object-contain p-2 sm:p-4"
-                    priority
+                    priority={activeImage === 0}
+                    quality={65}
                   />
                 </div>
 
@@ -971,6 +954,7 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                         height={96}
                         className="w-full h-full object-contain p-1"
                         loading="lazy"
+                        quality={45}
                       />
                     </button>
                   ))}
@@ -1125,9 +1109,17 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                         return (
                           <div key={index} className="bg-white rounded-xl p-4 border border-[#0F1A26]/10">
                             <div className="flex items-center gap-3 mb-3">
-                              <div className="w-12 h-12 rounded-lg bg-[#F1EBE3] flex items-center justify-center overflow-hidden">
+                              <div className="relative w-12 h-12 rounded-lg bg-[#F1EBE3] flex items-center justify-center overflow-hidden">
                                 {bundleProduct ? (
-                                  <img src={bundleProduct.image} alt={bundleProduct.name} className="w-full h-full object-contain" />
+                                  <Image
+                                    src={bundleProduct.image}
+                                    alt={bundleProduct.name}
+                                    fill
+                                    sizes="48px"
+                                    className="object-contain"
+                                    loading="lazy"
+                                    quality={45}
+                                  />
                                 ) : (
                                   <div className="w-full h-full bg-[#EEBC3F]/20" />
                                 )}
@@ -1203,13 +1195,21 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                                           [index]: { ...prev[index], color: color.id },
                                         }))
                                       }
-                                      className={`w-8 h-8 rounded-full border-2 transition-all overflow-hidden ${selection.color === color.id
+                                      className={`relative w-8 h-8 rounded-full border-2 transition-all overflow-hidden ${selection.color === color.id
                                         ? "border-[#EEBC3F] ring-2 ring-[#EEBC3F]/30"
                                         : "border-[#0F1A26]/10 hover:border-[#EEBC3F]/50"
                                         }`}
                                       title={color.name}
                                     >
-                                      <img src={color.image} alt={color.name} className="w-full h-full object-cover" />
+                                      <Image
+                                        src={color.image}
+                                        alt={color.name}
+                                        fill
+                                        sizes="32px"
+                                        className="object-cover"
+                                        loading="lazy"
+                                        quality={45}
+                                      />
                                     </button>
                                   ))}
                                 </div>
@@ -1245,10 +1245,14 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                             : "border-[#0F1A26]/10 hover:border-[#EEBC3F]/50 hover:shadow-md"
                             }`}
                         >
-                          <img
+                          <Image
                             src={color.image}
                             alt={color.name}
-                            className="w-full h-full object-cover"
+                            fill
+                            sizes="(max-width: 640px) 64px, 80px"
+                            className="object-cover"
+                            loading="lazy"
+                            quality={45}
                           />
                           {selectedColor === color.id && (
                             <div className="absolute inset-0 bg-[#EEBC3F]/20 flex items-center justify-center">

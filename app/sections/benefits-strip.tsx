@@ -93,9 +93,8 @@ export function BenefitsStrip() {
           {benefits.map((benefit, index) => (
             <div
               key={index}
-              className={`group relative bg-white rounded-2xl overflow-hidden transition-all duration-700 shadow-lg shadow-[#0F1A26]/5 hover:shadow-xl hover:shadow-[#0F1A26]/10 ${
-                isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-              }`}
+              className={`group relative bg-white rounded-2xl overflow-hidden transition-all duration-700 shadow-lg shadow-[#0F1A26]/5 hover:shadow-xl hover:shadow-[#0F1A26]/10 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                }`}
               style={{ transitionDelay: `${index * 150}ms` }}
             >
               {/* Image Layer */}
@@ -104,9 +103,10 @@ export function BenefitsStrip() {
                   src={benefit.image}
                   alt={benefit.title}
                   fill
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                  sizes="(max-width: 640px) 92vw, (max-width: 1024px) 45vw, 22vw"
                   className="w-full h-full object-cover opacity-90 transition-all duration-700 group-hover:opacity-100 group-hover:scale-105"
                   loading="lazy"
+                  quality={55}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
               </div>

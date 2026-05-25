@@ -59,9 +59,8 @@ export function ArticlesSection() {
             <Link
               key={article.id}
               href={`/articles/${article.slug}`}
-              className={`group bg-white rounded-3xl overflow-hidden border border-[#0F1A26]/5 shadow-lg shadow-[#0F1A26]/5 hover:shadow-xl hover:shadow-[#0F1A26]/10 transition-all duration-500 h-full flex flex-col ${
-                isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-              }`}
+              className={`group bg-white rounded-3xl overflow-hidden border border-[#0F1A26]/5 shadow-lg shadow-[#0F1A26]/5 hover:shadow-xl hover:shadow-[#0F1A26]/10 transition-all duration-500 h-full flex flex-col ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                }`}
               style={{ transitionDelay: `${(index + 1) * 100}ms` }}
             >
               <div className="relative overflow-hidden flex-shrink-0 h-52 sm:h-60">
@@ -69,9 +68,10 @@ export function ArticlesSection() {
                   src={article.image}
                   alt={article.title}
                   fill
-                  sizes="(max-width: 768px) 100vw, 33vw"
+                  sizes="(max-width: 640px) 92vw, (max-width: 1024px) 50vw, 30vw"
                   className="object-cover transition-transform duration-700 group-hover:scale-105"
                   loading="lazy"
+                  quality={60}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0F1A26]/60 via-[#0F1A26]/20 to-transparent" />
                 <div className="absolute top-4 left-4">

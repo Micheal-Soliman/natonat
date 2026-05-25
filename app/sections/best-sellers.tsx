@@ -14,12 +14,12 @@ const getDisplayProducts = () => {
   const luggage = products.find(p => p.category === "luggage-covers" && !tagged.find(t => t.id === p.id));
   const passport = products.find(p => p.category === "passport-wallets" && !tagged.find(t => t.id === p.id));
   const packonat = products.find(p => p.category === "packonat" && !tagged.find(t => t.id === p.id));
-  
+
   const result = [...tagged];
   if (luggage) result.push(luggage);
   if (passport) result.push(passport);
   if (packonat) result.push(packonat);
-  
+
   const remaining = products.filter(p => !result.find(r => r.id === p.id)).slice(0, 8 - result.length);
   return [...result, ...remaining].slice(0, 8);
 };
@@ -54,12 +54,12 @@ export function BestSellers() {
     e.preventDefault();
     const x = e.pageX - scrollRef.current.offsetLeft;
     const walk = x - dragStartX.current;
-    
+
     // Only consider it a drag if moved more than 5px
     if (Math.abs(walk) > 5) {
       hasDraggedRef.current = true;
     }
-    
+
     scrollRef.current.scrollLeft = dragStartScrollLeft.current - walk;
   };
 
@@ -97,7 +97,7 @@ export function BestSellers() {
     if (scrollRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
       const maxScroll = scrollWidth - clientWidth;
-      
+
       if (isRTL) {
         // In RTL, scrollLeft is negative or starts from max
         setCanScrollLeft(scrollLeft < -5 || Math.abs(scrollLeft) < maxScroll - 5);
@@ -123,13 +123,13 @@ export function BestSellers() {
       const cardWidth = scrollRef.current.firstElementChild?.clientWidth || 280;
       const gap = 20;
       const scrollAmount = cardWidth + gap;
-      
+
       // For RTL: prev goes right (+), next goes left (-)
       // For LTR: prev goes left (-), next goes right (+)
-      const amount = isRTL 
+      const amount = isRTL
         ? (direction === 'prev' ? scrollAmount : -scrollAmount)
         : (direction === 'prev' ? -scrollAmount : scrollAmount);
-      
+
       scrollRef.current.scrollBy({ left: amount, behavior: 'smooth' });
     }
   };
@@ -161,8 +161,8 @@ export function BestSellers() {
           <div
             ref={scrollRef}
             className={`flex gap-4 md:gap-5 overflow-x-auto pb-4 scrollbar-hide cursor-grab ${isDraggingRef.current ? 'cursor-grabbing' : ''}`}
-            style={{ 
-              scrollbarWidth: 'none', 
+            style={{
+              scrollbarWidth: 'none',
               msOverflowStyle: 'none',
               WebkitOverflowScrolling: 'touch',
               touchAction: 'pan-x pinch-zoom',
@@ -177,9 +177,8 @@ export function BestSellers() {
             {displayProducts.map((product, index) => (
               <div
                 key={product.id}
-                className={`group flex-shrink-0 w-[260px] sm:w-[280px] md:w-[300px] transition-all duration-500 ${
-                  isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-                }`}
+                className={`group flex-shrink-0 w-[260px] sm:w-[280px] md:w-[300px] transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                  }`}
                 style={{ transitionDelay: `${(index + 1) * 80}ms` }}
               >
                 <Link
@@ -198,25 +197,26 @@ export function BestSellers() {
                       src={product.image}
                       alt={product.name}
                       fill
-                      sizes="300px"
+                      sizes="(max-width: 640px) 65vw, (max-width: 1024px) 33vw, 300px"
                       className="object-contain transition-transform duration-500 group-hover:scale-105"
                       loading="lazy"
+                      quality={55}
                     />
 
                     {product.tag && (
-                    <span className={`absolute top-2 left-2 sm:top-3 sm:left-3 z-10 text-[9px] sm:text-[10px] font-semibold tracking-wider uppercase px-2 sm:px-3 py-1 sm:py-1.5 rounded-full ${product.tag === 'Best Seller' ? 'bg-[#EEBC3F] text-[#0F1A26]' :
+                      <span className={`absolute top-2 left-2 sm:top-3 sm:left-3 z-10 text-[9px] sm:text-[10px] font-semibold tracking-wider uppercase px-2 sm:px-3 py-1 sm:py-1.5 rounded-full ${product.tag === 'Best Seller' ? 'bg-[#EEBC3F] text-[#0F1A26]' :
                         product.tag === 'New' ? 'bg-white text-[#0F1A26]' :
                           product.tag === 'Limited' ? 'bg-[#4B1F1F] text-[#F1EBE3]' :
                             'bg-[#EEBC3F]/20 text-[#EEBC3F] border border-[#EEBC3F]/30'
-                      }`}>
-                      {product.tag === 'Best Seller' ? t('bestSeller') :
-                        product.tag === 'Best Value' ? t('bestValue') :
-                          product.tag === 'Popular' ? t('popular') :
-                            product.tag === 'Bundle' ? t('bundle') :
-                              product.tag === 'Essential' ? t('essential') :
-                                product.tag === 'New' ? t('new') :
-                                  product.tag === 'Limited' ? t('limited') : product.tag}
-                    </span>
+                        }`}>
+                        {product.tag === 'Best Seller' ? t('bestSeller') :
+                          product.tag === 'Best Value' ? t('bestValue') :
+                            product.tag === 'Popular' ? t('popular') :
+                              product.tag === 'Bundle' ? t('bundle') :
+                                product.tag === 'Essential' ? t('essential') :
+                                  product.tag === 'New' ? t('new') :
+                                    product.tag === 'Limited' ? t('limited') : product.tag}
+                      </span>
                     )}
                   </div>
 

@@ -25,7 +25,7 @@ const values = [
 
 export default function AboutPage() {
   return (
-    <Suspense fallback={<Loading />}>
+    <Suspense fallback={null}>
       <AboutContent />
     </Suspense>
   );
@@ -41,6 +41,7 @@ function AboutContent() {
       ([entry]) => {
         if (entry.isIntersecting) {
           setIsVisible(true);
+          observer.disconnect();
         }
       },
       { threshold: 0.1 }
@@ -77,7 +78,7 @@ function AboutContent() {
               {stats.map((stat, index) => (
                 <div 
                   key={index}
-                  className={`text-center transition-all duration-700 ${statsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+                  className={`text-center transition-opacity transition-transform duration-700 ${statsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
                   style={{ transitionDelay: `${index * 100}ms` }}
                 >
                   <div className="w-12 h-12 rounded-2xl bg-[#EEBC3F]/10 flex items-center justify-center mx-auto mb-3">
@@ -133,9 +134,9 @@ function AboutContent() {
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
               {values.map((value, index) => (
-                <div 
-                  key={index} 
-                  className={`group bg-[#F8F6F3] rounded-2xl md:rounded-3xl p-6 md:p-8 transition-all duration-700 hover:bg-[#0F1A26] ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+                <div
+                  key={index}
+                  className={`group bg-[#F8F6F3] rounded-2xl md:rounded-3xl p-6 md:p-8 transition-opacity transition-transform duration-700 hover:bg-[#0F1A26] ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
                   style={{ transitionDelay: `${300 + index * 100}ms` }}
                 >
                   <div className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-[#EEBC3F]/10 flex items-center justify-center mb-4 md:mb-6 group-hover:bg-[#EEBC3F] transition-colors duration-300">
@@ -158,12 +159,12 @@ function AboutContent() {
           <div className="relative">
             {/* Center line */}
             <div className="absolute left-8 md:left-1/2 top-0 bottom-0 w-px bg-[#0F1A26]/10 -translate-x-1/2 hidden md:block" />
-            
+
             <div className="space-y-12">
               {milestones.map((milestone, index) => (
-                <div 
-                  key={index} 
-                  className={`flex flex-col md:flex-row gap-8 items-start transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+                <div
+                  key={index}
+                  className={`flex flex-col md:flex-row gap-8 items-start transition-opacity transition-transform duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
                   style={{ transitionDelay: `${500 + index * 100}ms` }}
                 >
                   {/* Year - Left on desktop */}
@@ -173,7 +174,7 @@ function AboutContent() {
                       <div className="w-4 h-4 rounded-full bg-[#EEBC3F] flex-shrink-0 hidden md:block" />
                     </div>
                   </div>
-                  
+
                   {/* Content - Right on desktop */}
                   <div className={`md:w-1/2 ${index % 2 === 0 ? '' : 'md:order-1 md:text-right'}`}>
                     <div className="bg-white rounded-2xl p-6 shadow-lg shadow-[#0F1A26]/5 border border-[#0F1A26]/5 hover:shadow-xl transition-shadow">

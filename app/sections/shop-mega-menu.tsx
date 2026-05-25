@@ -86,7 +86,7 @@ export function ShopMegaMenu({ scrolled }: ShopMegaMenuProps) {
   }, []);
 
   return (
-    <div 
+    <div
       ref={containerRef}
       className="relative"
       onMouseEnter={handleMouseEnter}
@@ -94,34 +94,31 @@ export function ShopMegaMenu({ scrolled }: ShopMegaMenuProps) {
     >
       {/* Shop Button */}
       <button
-        className={`relative px-5 py-2 text-sm font-medium transition-all duration-300 rounded-full flex items-center gap-1.5 cursor-pointer ${
-          isActive("/shop")
-            ? scrolled 
-              ? "text-white" 
+        className={`relative px-5 py-2 text-sm font-medium transition-all duration-300 rounded-full flex items-center gap-1.5 cursor-pointer ${isActive("/shop")
+            ? scrolled
+              ? "text-white"
               : "text-[#0F1A26]"
-            : scrolled 
-              ? "text-white/60 hover:text-white" 
+            : scrolled
+              ? "text-white/60 hover:text-white"
               : "text-[#0F1A26]/60 hover:text-[#0F1A26]"
-        }`}
+          }`}
       >
         {t('shop')}
-        <ChevronDown 
-          className={`w-4 h-4 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`} 
+        <ChevronDown
+          className={`w-4 h-4 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`}
         />
         {isActive("/shop") && (
-          <span className={`absolute inset-0 rounded-full -z-10 transition-all duration-300 ${
-            scrolled ? "bg-white/10" : "bg-[#0F1A26]/10"
-          }`} />
+          <span className={`absolute inset-0 rounded-full -z-10 transition-all duration-300 ${scrolled ? "bg-white/10" : "bg-[#0F1A26]/10"
+            }`} />
         )}
       </button>
 
       {/* Mega Menu Dropdown - Wide Horizontal Layout */}
-      <div 
-        className={`fixed top-[80px] left-1/2 -translate-x-1/2 w-[95vw] max-w-[1000px] transition-all duration-300 z-[50] ${
-          isOpen 
-            ? "opacity-100 translate-y-0 pointer-events-auto" 
+      <div
+        className={`fixed top-[80px] left-1/2 -translate-x-1/2 w-[95vw] max-w-[1000px] transition-all duration-300 z-[50] ${isOpen
+            ? "opacity-100 translate-y-0 pointer-events-auto"
             : "opacity-0 -translate-y-2 pointer-events-none"
-        }`}
+          }`}
       >
         <div className={`${scrolled ? 'bg-[#0a0f14] border-white/10' : 'bg-white border-[#0F1A26]/5'} rounded-3xl shadow-2xl shadow-[#0F1A26]/15 border overflow-hidden`}>
           {/* Header */}
@@ -144,12 +141,11 @@ export function ShopMegaMenu({ scrolled }: ShopMegaMenuProps) {
                 <Link
                   key={category.id}
                   href={category.href}
-                  className={`group relative flex flex-col overflow-hidden rounded-xl transition-all duration-500 ${
-                    isActive(category.href) && category.id !== "all"
+                  className={`group relative flex flex-col overflow-hidden rounded-xl transition-all duration-500 ${isActive(category.href) && category.id !== "all"
                       ? "ring-2 ring-[#EEBC3F]"
                       : "hover:shadow-lg hover:shadow-[#0F1A26]/5"
-                  }`}
-                  style={{ 
+                    }`}
+                  style={{
                     transitionDelay: isOpen ? `${index * 75}ms` : "0ms"
                   }}
                 >
@@ -159,12 +155,13 @@ export function ShopMegaMenu({ scrolled }: ShopMegaMenuProps) {
                       src={category.image}
                       alt={category.name}
                       fill
-                      sizes="250px"
+                      sizes="(max-width: 1024px) 25vw, 220px"
                       className="absolute inset-0 w-full h-full object-contain transition-all duration-700 group-hover:scale-110"
                       loading="lazy"
+                      quality={45}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#0F1A26]/60 via-[#0F1A26]/20 to-transparent" />
-                    
+
                     {/* Active Badge */}
                     {isActive(category.href) && category.id !== "all" && (
                       <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#EEBC3F] flex items-center justify-center">
@@ -184,11 +181,10 @@ export function ShopMegaMenu({ scrolled }: ShopMegaMenuProps) {
 
                   {/* Text Content - Compact */}
                   <div className={`p-3 border border-t-0 rounded-b-xl ${scrolled ? 'bg-[#0F1A26] border-white/10' : 'bg-white border-[#0F1A26]/5'}`}>
-                    <h4 className={`font-semibold text-sm transition-colors duration-300 ${
-                      isActive(category.href) && category.id !== "all" 
-                        ? "text-[#EEBC3F]" 
+                    <h4 className={`font-semibold text-sm transition-colors duration-300 ${isActive(category.href) && category.id !== "all"
+                        ? "text-[#EEBC3F]"
                         : scrolled ? 'text-white group-hover:text-[#EEBC3F]' : 'text-[#0F1A26] group-hover:text-[#EEBC3F]'
-                    }`}>
+                      }`}>
                       {category.name}
                     </h4>
                     <p className={`text-xs mt-0.5 truncate ${scrolled ? 'text-white/50' : 'text-[#0F1A26]/50'}`}>

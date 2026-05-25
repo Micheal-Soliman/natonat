@@ -171,21 +171,18 @@ export function Navigation() {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-[80] transition-all duration-700 ease-out ${
-        scrolled ? "py-3" : "py-6"
-      }`}
+      className={`fixed top-0 left-0 right-0 z-[80] transition-all duration-700 ease-out ${scrolled ? "py-3" : "py-6"
+        }`}
     >
       <nav
-        className={`mx-4 sm:mx-6 lg:mx-8 transition-all duration-700 ease-out ${
-          scrolled
-            ? "bg-[#0a0f14]/95 backdrop-blur-xl rounded-full shadow-2xl shadow-black/20 border border-white/10"
-            : "bg-white/80 backdrop-blur-md rounded-full border border-white/20"
-        }`}
+        className={`mx-4 sm:mx-6 lg:mx-8 transition-all duration-700 ease-out ${scrolled
+          ? "bg-[#0a0f14]/95 backdrop-blur-xl rounded-full shadow-2xl shadow-black/20 border border-white/10"
+          : "bg-white/80 backdrop-blur-md rounded-full border border-white/20"
+          }`}
       >
         <div
-          className={`flex items-center justify-between transition-all duration-700 ${
-            scrolled ? "h-14 px-6" : "h-16 px-8"
-          }`}
+          className={`flex items-center justify-between transition-all duration-700 ${scrolled ? "h-14 px-6" : "h-16 px-8"
+            }`}
         >
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
@@ -195,7 +192,9 @@ export function Navigation() {
               height={32}
               alt="logo"
               className="object-contain transition-all duration-500 w-auto h-6 md:h-8"
-              priority
+              priority={false}
+              loading="lazy"
+              quality={70}
             />
           </Link>
 
@@ -207,23 +206,21 @@ export function Navigation() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`relative px-5 py-2 text-sm font-medium transition-all duration-300 rounded-full ${
-                  isActive(link.href)
-                    ? scrolled
-                      ? "text-white"
-                      : "text-[#0F1A26]"
-                    : scrolled
-                      ? "text-white/60 hover:text-white"
-                      : "text-[#0F1A26]/60 hover:text-[#0F1A26]"
-                }`}
+                className={`relative px-5 py-2 text-sm font-medium transition-all duration-300 rounded-full ${isActive(link.href)
+                  ? scrolled
+                    ? "text-white"
+                    : "text-[#0F1A26]"
+                  : scrolled
+                    ? "text-white/60 hover:text-white"
+                    : "text-[#0F1A26]/60 hover:text-[#0F1A26]"
+                  }`}
               >
                 {link.label}
 
                 {isActive(link.href) && (
                   <span
-                    className={`absolute inset-0 rounded-full -z-10 transition-all duration-300 ${
-                      scrolled ? "bg-white/10" : "bg-[#0F1A26]/10"
-                    }`}
+                    className={`absolute inset-0 rounded-full -z-10 transition-all duration-300 ${scrolled ? "bg-white/10" : "bg-[#0F1A26]/10"
+                      }`}
                   />
                 )}
               </Link>
@@ -248,11 +245,10 @@ export function Navigation() {
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Search products..."
                       autoFocus
-                      className={`h-10 px-4 rounded-full text-sm outline-none transition-all duration-300 w-64 ${
-                        scrolled
-                          ? "bg-white/10 text-white placeholder-white/50"
-                          : "bg-[#0F1A26]/10 text-[#0F1A26] placeholder-[#0F1A26]/50"
-                      }`}
+                      className={`h-10 px-4 rounded-full text-sm outline-none transition-all duration-300 w-64 ${scrolled
+                        ? "bg-white/10 text-white placeholder-white/50"
+                        : "bg-[#0F1A26]/10 text-[#0F1A26] placeholder-[#0F1A26]/50"
+                        }`}
                     />
 
                     <button
@@ -261,11 +257,10 @@ export function Navigation() {
                         setSearchOpen(false);
                         setSearchQuery("");
                       }}
-                      className={`ml-2 rounded-full w-8 h-8 flex items-center justify-center transition-colors ${
-                        scrolled
-                          ? "text-white/60 hover:text-white hover:bg-white/10"
-                          : "text-[#0F1A26]/60 hover:text-[#0F1A26] hover:bg-[#0F1A26]/10"
-                      }`}
+                      className={`ml-2 rounded-full w-8 h-8 flex items-center justify-center transition-colors ${scrolled
+                        ? "text-white/60 hover:text-white hover:bg-white/10"
+                        : "text-[#0F1A26]/60 hover:text-[#0F1A26] hover:bg-[#0F1A26]/10"
+                        }`}
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -290,6 +285,8 @@ export function Navigation() {
                               fill
                               sizes="48px"
                               className="object-cover"
+                              loading="lazy"
+                              quality={40}
                             />
                           </div>
 
@@ -327,11 +324,10 @@ export function Navigation() {
               ) : (
                 <button
                   onClick={() => setSearchOpen(true)}
-                  className={`rounded-full flex items-center justify-center transition-all duration-300 cursor-pointer ${
-                    scrolled
-                      ? "w-10 h-10 text-white/60 hover:text-white hover:bg-white/10"
-                      : "w-10 h-10 text-[#0F1A26]/60 hover:text-[#0F1A26] hover:bg-[#0F1A26]/10"
-                  }`}
+                  className={`rounded-full flex items-center justify-center transition-all duration-300 cursor-pointer ${scrolled
+                    ? "w-10 h-10 text-white/60 hover:text-white hover:bg-white/10"
+                    : "w-10 h-10 text-[#0F1A26]/60 hover:text-[#0F1A26] hover:bg-[#0F1A26]/10"
+                    }`}
                 >
                   <Search className="w-5 h-5" />
                 </button>
@@ -342,17 +338,15 @@ export function Navigation() {
 
             <Link
               href="/wishlist"
-              className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
-                scrolled
-                  ? "text-white/70 hover:text-white hover:bg-white/15"
-                  : "text-[#0F1A26]/70 hover:text-[#0F1A26] hover:bg-[#0F1A26]/15"
-              } ${
-                pathname === "/wishlist"
+              className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${scrolled
+                ? "text-white/70 hover:text-white hover:bg-white/15"
+                : "text-[#0F1A26]/70 hover:text-[#0F1A26] hover:bg-[#0F1A26]/15"
+                } ${pathname === "/wishlist"
                   ? scrolled
                     ? "bg-white/10 text-white"
                     : "bg-[#0F1A26]/10 text-[#0F1A26]"
                   : ""
-              }`}
+                }`}
             >
               <Heart className="w-5 h-5" />
 
@@ -365,11 +359,10 @@ export function Navigation() {
 
             <button
               onClick={openCart}
-              className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 cursor-pointer ${
-                scrolled
-                  ? "text-white/70 hover:text-white hover:bg-white/15"
-                  : "text-[#0F1A26]/70 hover:text-[#0F1A26] hover:bg-[#0F1A26]/15"
-              }`}
+              className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 cursor-pointer ${scrolled
+                ? "text-white/70 hover:text-white hover:bg-white/15"
+                : "text-[#0F1A26]/70 hover:text-[#0F1A26] hover:bg-[#0F1A26]/15"
+                }`}
             >
               <ShoppingBag className="w-5 h-5" />
 
@@ -391,15 +384,13 @@ export function Navigation() {
           <div className="md:hidden flex items-center gap-2 sm:gap-3">
             <Link
               href="/wishlist"
-              className={`relative w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center cursor-pointer transition-all duration-300 ${
-                scrolled
-                  ? "bg-white/10 text-white hover:bg-white/20"
-                  : "bg-[#0F1A26]/10 text-[#0F1A26] hover:bg-[#0F1A26]/20"
-              } ${
-                pathname === "/wishlist"
+              className={`relative w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center cursor-pointer transition-all duration-300 ${scrolled
+                ? "bg-white/10 text-white hover:bg-white/20"
+                : "bg-[#0F1A26]/10 text-[#0F1A26] hover:bg-[#0F1A26]/20"
+                } ${pathname === "/wishlist"
                   ? "bg-[#EEBC3F] text-[#0F1A26]"
                   : ""
-              }`}
+                }`}
             >
               <Heart className="w-4 h-4 sm:w-5 sm:h-5" />
 
@@ -415,11 +406,10 @@ export function Navigation() {
                 openCart();
                 closeMobileMenu();
               }}
-              className={`relative w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center cursor-pointer transition-all duration-300 ${
-                scrolled
-                  ? "bg-white/10 text-white hover:bg-white/20"
-                  : "bg-[#0F1A26]/10 text-[#0F1A26] hover:bg-[#0F1A26]/20"
-              }`}
+              className={`relative w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center cursor-pointer transition-all duration-300 ${scrolled
+                ? "bg-white/10 text-white hover:bg-white/20"
+                : "bg-[#0F1A26]/10 text-[#0F1A26] hover:bg-[#0F1A26]/20"
+                }`}
             >
               <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
 
@@ -432,11 +422,10 @@ export function Navigation() {
 
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center cursor-pointer transition-all duration-300 ${
-                scrolled
-                  ? "bg-white/10 text-white"
-                  : "bg-[#0F1A26]/10 text-[#0F1A26]"
-              }`}
+              className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center cursor-pointer transition-all duration-300 ${scrolled
+                ? "bg-white/10 text-white"
+                : "bg-[#0F1A26]/10 text-[#0F1A26]"
+                }`}
             >
               {mobileMenuOpen ? (
                 <X className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -463,9 +452,8 @@ export function Navigation() {
                 className="relative"
               >
                 <Search
-                  className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 ${
-                    locale === "ar" ? "right-4" : "left-4"
-                  }`}
+                  className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 ${locale === "ar" ? "right-4" : "left-4"
+                    }`}
                 />
 
                 <input
@@ -473,11 +461,10 @@ export function Navigation() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search products..."
-                  className={`w-full h-12 rounded-xl bg-white/10 border border-white/10 text-white placeholder:text-white/40 text-sm outline-none ${
-                    locale === "ar"
-                      ? "pr-11 pl-4 text-right"
-                      : "pl-11 pr-4 text-left"
-                  }`}
+                  className={`w-full h-12 rounded-xl bg-white/10 border border-white/10 text-white placeholder:text-white/40 text-sm outline-none ${locale === "ar"
+                    ? "pr-11 pl-4 text-right"
+                    : "pl-11 pr-4 text-left"
+                    }`}
                 />
               </form>
 
@@ -501,6 +488,8 @@ export function Navigation() {
                           fill
                           sizes="44px"
                           className="object-cover"
+                          loading="lazy"
+                          quality={40}
                         />
                       </div>
 
@@ -541,20 +530,18 @@ export function Navigation() {
               {/* Shop Dropdown Toggle */}
               <button
                 onClick={() => setMobileShopOpen(!mobileShopOpen)}
-                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-colors cursor-pointer ${
-                  isShopSectionActive
-                    ? "bg-[#EEBC3F]/20 text-[#EEBC3F]"
-                    : "text-white/70 hover:bg-white/5 hover:text-white"
-                }`}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-colors cursor-pointer ${isShopSectionActive
+                  ? "bg-[#EEBC3F]/20 text-[#EEBC3F]"
+                  : "text-white/70 hover:bg-white/5 hover:text-white"
+                  }`}
               >
                 <span className={locale === "ar" ? "text-right" : "text-left"}>
                   {t("shop")}
                 </span>
 
                 <ChevronDown
-                  className={`w-4 h-4 transition-transform duration-300 ${
-                    mobileShopOpen ? "rotate-180" : ""
-                  }`}
+                  className={`w-4 h-4 transition-transform duration-300 ${mobileShopOpen ? "rotate-180" : ""
+                    }`}
                 />
               </button>
 
@@ -565,11 +552,10 @@ export function Navigation() {
                     <Link
                       key={category.id}
                       href={category.href}
-                      className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition-colors ms-4 ${
-                        isActive(category.href)
-                          ? "text-[#EEBC3F] bg-[#EEBC3F]/10"
-                          : "text-white/60 hover:text-white hover:bg-white/5"
-                      }`}
+                      className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition-colors ms-4 ${isActive(category.href)
+                        ? "text-[#EEBC3F] bg-[#EEBC3F]/10"
+                        : "text-white/60 hover:text-white hover:bg-white/5"
+                        }`}
                       onClick={closeMobileMenu}
                     >
                       <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-[#F1EBE3] flex-shrink-0">
@@ -579,22 +565,22 @@ export function Navigation() {
                           fill
                           sizes="40px"
                           className="object-cover"
+                          loading="lazy"
+                          quality={35}
                         />
                       </div>
 
                       <div className="flex-1 min-w-0">
                         <p
-                          className={`font-medium truncate ${
-                            locale === "ar" ? "text-right" : "text-left"
-                          }`}
+                          className={`font-medium truncate ${locale === "ar" ? "text-right" : "text-left"
+                            }`}
                         >
                           {category.name}
                         </p>
 
                         <p
-                          className={`text-xs text-white/35 truncate ${
-                            locale === "ar" ? "text-right" : "text-left"
-                          }`}
+                          className={`text-xs text-white/35 truncate ${locale === "ar" ? "text-right" : "text-left"
+                            }`}
                         >
                           {category.description}
                         </p>
@@ -609,13 +595,11 @@ export function Navigation() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
-                    locale === "ar" ? "text-right" : "text-left"
-                  } ${
-                    isActive(link.href)
+                  className={`px-4 py-3 rounded-xl text-sm font-medium transition-colors ${locale === "ar" ? "text-right" : "text-left"
+                    } ${isActive(link.href)
                       ? "bg-[#EEBC3F]/20 text-[#EEBC3F]"
                       : "text-white/70 hover:bg-white/5 hover:text-white"
-                  }`}
+                    }`}
                   onClick={closeMobileMenu}
                 >
                   {link.label}

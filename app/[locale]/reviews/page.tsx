@@ -131,11 +131,10 @@ export default function ReviewsPage() {
                   key={review.src}
                   type="button"
                   onClick={() => openLightbox(index)}
-                  className={`group text-left bg-white rounded-2xl md:rounded-3xl p-3 border border-[#0F1A26]/10 shadow-lg hover:shadow-xl transition-all duration-500 cursor-zoom-in ${
-                    isVisible
+                  className={`group text-left bg-white rounded-2xl md:rounded-3xl p-3 border border-[#0F1A26]/10 shadow-lg hover:shadow-xl transition-all duration-500 cursor-zoom-in ${isVisible
                       ? "opacity-100 translate-y-0"
                       : "opacity-0 translate-y-8"
-                  }`}
+                    }`}
                   style={{ transitionDelay: `${Math.min(index * 60, 600)}ms` }}
                   aria-label={`Open review image ${index + 1}`}
                 >
@@ -144,9 +143,10 @@ export default function ReviewsPage() {
                       src={review.src}
                       alt={review.alt}
                       fill
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                       className="object-contain p-2 transition-transform duration-500 group-hover:scale-[1.02]"
-                      priority={index < 4}
+                      loading="lazy"
+                      quality={55}
                     />
 
                     <div className="absolute inset-0 bg-[#0F1A26]/0 transition group-hover:bg-[#0F1A26]/5" />

@@ -170,9 +170,10 @@ export function SocialProof() {
                             src={review.src}
                             alt={review.alt}
                             fill
-                            sizes="(max-width: 640px) 78vw, (max-width: 1024px) 50vw, 25vw"
+                            sizes="(max-width: 640px) 65vw, (max-width: 1024px) 33vw, 22vw"
                             className="object-contain p-2 transition-transform duration-500 group-hover:scale-[1.02]"
-                            priority={index < 2}
+                            loading="lazy"
+                            quality={50}
                           />
 
                           <div className="absolute inset-0 bg-[#0F1A26]/0 transition group-hover:bg-[#0F1A26]/5" />
@@ -196,11 +197,10 @@ export function SocialProof() {
                       key={idx}
                       type="button"
                       onClick={() => api?.scrollTo(idx)}
-                      className={`h-1.5 rounded-full transition-all duration-300 ${
-                        current === idx
+                      className={`h-1.5 rounded-full transition-all duration-300 ${current === idx
                           ? "w-4 bg-[#EEBC3F]"
                           : "w-1.5 bg-[#0F1A26]/20"
-                      }`}
+                        }`}
                       aria-label={`Go to slide ${idx + 1}`}
                     />
                   ))}

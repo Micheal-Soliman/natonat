@@ -35,13 +35,14 @@ export function TravelSets() {
               {/* Bundle Image - Smaller aspect ratio */}
               <Link href={`/product/${bundle.slug}`} className="block">
                 <div className="relative overflow-hidden aspect-square">
-                  <Image 
-                    src={bundle.image} 
+                  <Image
+                    src={bundle.image}
                     alt={bundle.name}
                     fill
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    sizes="(max-width: 640px) 92vw, (max-width: 1024px) 45vw, 30vw"
                     className="object-contain transition-transform duration-700 group-hover:scale-105"
                     loading="lazy"
+                    quality={55}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                   <div className="absolute bottom-4 left-4 right-4 z-10">
