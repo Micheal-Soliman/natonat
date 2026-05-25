@@ -7,11 +7,10 @@ import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
 import { Mail, Phone, MapPin, MessageCircle, Send, Check, Clock, ArrowRight, Sparkles, Instagram, Facebook, Youtube } from "lucide-react";
-import { Loading } from "@/app/components/loading";
 
 export default function ContactPage() {
   return (
-    <Suspense fallback={<Loading />}>
+    <Suspense fallback={null}>
       <ContactContent />
     </Suspense>
   );
@@ -36,6 +35,7 @@ function ContactContent() {
       ([entry]) => {
         if (entry.isIntersecting) {
           setIsVisible(true);
+          observer.disconnect();
         }
       },
       { threshold: 0.1 }
@@ -82,13 +82,13 @@ function ContactContent() {
             {/* Contact Info Sidebar */}
             <div className="lg:col-span-2 space-y-6">
               {/* Contact Cards */}
-              <div className={`bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 border border-[#0F1A26]/5 shadow-lg shadow-[#0F1A26]/5 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+              <div className={`bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 border border-[#0F1A26]/5 shadow-lg shadow-[#0F1A26]/5 transition-transform transition-opacity duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
                 <span className="text-[#EEBC3F] text-xs font-semibold tracking-[0.2em] uppercase">{t('info.label')}</span>
                 <h2 className="text-2xl font-bold text-[#0F1A26] mt-3 mb-8 tracking-tight">{t('info.title')}</h2>
 
                 <div className="space-y-4 md:space-y-6">
                   <a href="mailto:info@natonat.com" className="flex items-start gap-3 md:gap-4 group">
-                    <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-[#EEBC3F]/10 flex items-center justify-center group-hover:bg-[#EEBC3F] transition-all duration-300">
+                    <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-[#EEBC3F]/10 flex items-center justify-center group-hover:bg-[#EEBC3F] transition-transform transition-colors duration-300">
                       <Mail className="w-5 h-5 md:w-6 md:h-6 text-[#EEBC3F] group-hover:text-[#0F1A26] transition-colors" strokeWidth={1.5} />
                     </div>
                     <div>
@@ -98,7 +98,7 @@ function ContactContent() {
                   </a>
 
                   <a href="https://wa.me/201070004227" target="_blank" rel="noopener noreferrer" className="flex items-start gap-3 md:gap-4 group">
-                    <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-[#EEBC3F]/10 flex items-center justify-center group-hover:bg-[#EEBC3F] transition-all duration-300">
+                    <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-[#EEBC3F]/10 flex items-center justify-center group-hover:bg-[#EEBC3F] transition-transform transition-colors duration-300">
                       <MessageCircle className="w-5 h-5 md:w-6 md:h-6 text-[#EEBC3F] group-hover:text-[#0F1A26] transition-colors" strokeWidth={1.5} />
                     </div>
                     <div>
@@ -135,7 +135,7 @@ function ContactContent() {
               </div>
 
               {/* Quick Links */}
-              <div className={`bg-gradient-to-br from-[#0F1A26] to-[#1a2a3a] rounded-2xl md:rounded-3xl p-6 md:p-8 transition-all duration-700 delay-100 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+              <div className={`bg-gradient-to-br from-[#0F1A26] to-[#1a2a3a] rounded-2xl md:rounded-3xl p-6 md:p-8 transition-transform transition-opacity duration-700 delay-100 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
                 <span className="text-[#EEBC3F] text-xs font-semibold tracking-[0.2em] uppercase">{t('help.label')}</span>
                 <h2 className="text-xl font-bold text-white mt-3 mb-6 tracking-tight">{t('help.title')}</h2>
                 <ul className="space-y-4">
@@ -159,7 +159,7 @@ function ContactContent() {
               </div>
 
               {/* Social Media Links */}
-              <div className={`bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 border border-[#0F1A26]/5 shadow-lg shadow-[#0F1A26]/5 transition-all duration-700 delay-150 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+              <div className={`bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 border border-[#0F1A26]/5 shadow-lg shadow-[#0F1A26]/5 transition-transform transition-opacity duration-700 delay-150 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
                 <span className="text-[#EEBC3F] text-xs font-semibold tracking-[0.2em] uppercase">{t('social.label')}</span>
                 <h2 className="text-2xl font-bold text-[#0F1A26] mt-3 mb-8 tracking-tight">{t('social.title')}</h2>
 
@@ -168,7 +168,7 @@ function ContactContent() {
                     href="https://www.facebook.com/natOnatofficial"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex flex-col items-center gap-2 md:gap-3 p-3 md:p-4 rounded-xl md:rounded-2xl bg-[#1877F2]/10 hover:bg-[#1877F2] group transition-all duration-300"
+                    className="flex flex-col items-center gap-2 md:gap-3 p-3 md:p-4 rounded-xl md:rounded-2xl bg-[#1877F2]/10 hover:bg-[#1877F2] group transition-transform transition-colors duration-300"
                   >
                     <Facebook className="w-6 h-6 md:w-8 md:h-8 text-[#1877F2] group-hover:text-white transition-colors" strokeWidth={1.5} />
                     <span className="text-xs md:text-sm font-medium text-[#0F1A26]/70 group-hover:text-white transition-colors">{t('social.facebook')}</span>
@@ -178,7 +178,7 @@ function ContactContent() {
                     href="https://www.instagram.com/natonatofficial/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex flex-col items-center gap-2 md:gap-3 p-3 md:p-4 rounded-xl md:rounded-2xl bg-gradient-to-br from-[#833AB4]/10 via-[#E1306C]/10 to-[#F77737]/10 hover:from-[#833AB4] hover:via-[#E1306C] hover:to-[#F77737] group transition-all duration-300"
+                    className="flex flex-col items-center gap-2 md:gap-3 p-3 md:p-4 rounded-xl md:rounded-2xl bg-gradient-to-br from-[#833AB4]/10 via-[#E1306C]/10 to-[#F77737]/10 hover:from-[#833AB4] hover:via-[#E1306C] hover:to-[#F77737] group transition-transform transition-colors duration-300"
                   >
                     <Instagram className="w-6 h-6 md:w-8 md:h-8 text-[#E1306C] group-hover:text-white transition-colors" strokeWidth={1.5} />
                     <span className="text-xs md:text-sm font-medium text-[#0F1A26]/70 group-hover:text-white transition-colors">{t('social.instagram')}</span>
@@ -188,7 +188,7 @@ function ContactContent() {
                     href="https://www.youtube.com/@natOnatofficial"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex flex-col items-center gap-2 md:gap-3 p-3 md:p-4 rounded-xl md:rounded-2xl bg-red-500/10 hover:bg-red-600 group transition-all duration-300"
+                    className="flex flex-col items-center gap-2 md:gap-3 p-3 md:p-4 rounded-xl md:rounded-2xl bg-red-500/10 hover:bg-red-600 group transition-transform transition-colors duration-300"
                   >
                     <Youtube className="w-6 h-6 md:w-8 md:h-8 text-red-600 group-hover:text-white transition-colors" strokeWidth={1.5} />
                     <span className="text-xs md:text-sm font-medium text-[#0F1A26]/70 group-hover:text-white transition-colors">
@@ -200,7 +200,7 @@ function ContactContent() {
                     href="https://www.tiktok.com/@natonatofficial"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex flex-col items-center gap-2 md:gap-3 p-3 md:p-4 rounded-xl md:rounded-2xl bg-black/5 hover:bg-black group transition-all duration-300"
+                    className="flex flex-col items-center gap-2 md:gap-3 p-3 md:p-4 rounded-xl md:rounded-2xl bg-black/5 hover:bg-black group transition-transform transition-colors duration-300"
                   >
                     <svg className="w-6 h-6 md:w-8 md:h-8 text-[#0F1A26] group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" />
@@ -213,7 +213,7 @@ function ContactContent() {
 
             {/* Contact Form */}
             <div className="lg:col-span-3">
-              <div className={`bg-white rounded-3xl p-8 md:p-12 border border-[#0F1A26]/5 shadow-xl shadow-[#0F1A26]/5 transition-all duration-700 delay-200 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+              <div className={`bg-white rounded-3xl p-8 md:p-12 border border-[#0F1A26]/5 shadow-xl shadow-[#0F1A26]/5 transition-transform transition-opacity duration-700 delay-200 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
                 <div className="flex items-center gap-4 mb-8">
                   <div className="w-14 h-14 rounded-2xl bg-[#EEBC3F]/10 flex items-center justify-center">
                     <Sparkles className="w-7 h-7 text-[#EEBC3F]" strokeWidth={1.5} />
@@ -227,7 +227,7 @@ function ContactContent() {
 
                 {submitted ? (
                   <div className="text-center py-20">
-                    <div className="w-24 h-24 rounded-full bg-[#EEBC3F]/10 flex items-center justify-center mx-auto mb-6 animate-bounce">
+                    <div className="w-24 h-24 rounded-full bg-[#EEBC3F]/10 flex items-center justify-center mx-auto mb-6 animate-pulse">
                       <Check className="w-12 h-12 text-[#EEBC3F]" strokeWidth={1.5} />
                     </div>
                     <h3 className="text-3xl font-bold text-[#0F1A26] mb-3 tracking-tight">{t('form.success.title')}</h3>
@@ -246,8 +246,7 @@ function ContactContent() {
                           onChange={handleChange}
                           onFocus={() => setFocusedField('name')}
                           onBlur={() => setFocusedField(null)}
-                          className={`w-full px-5 py-4 rounded-2xl border-2 outline-none transition-all bg-white text-[#0F1A26] placeholder:text-[#0F1A26]/30 ${focusedField === 'name' ? 'border-[#EEBC3F]' : 'border-[#0F1A26]/10'
-                            }`}
+                          className="w-full px-5 py-4 rounded-2xl border-2 border-[#0F1A26]/10 focus:border-[#EEBC3F] outline-none transition-colors bg-white text-[#0F1A26] placeholder:text-[#0F1A26]/30"
                           placeholder={t('form.namePlaceholder')}
                         />
                       </div>
@@ -261,8 +260,7 @@ function ContactContent() {
                           onChange={handleChange}
                           onFocus={() => setFocusedField('email')}
                           onBlur={() => setFocusedField(null)}
-                          className={`w-full px-5 py-4 rounded-2xl border-2 outline-none transition-all bg-white text-[#0F1A26] placeholder:text-[#0F1A26]/30 ${focusedField === 'email' ? 'border-[#EEBC3F]' : 'border-[#0F1A26]/10'
-                            }`}
+                          className="w-full px-5 py-4 rounded-2xl border-2 border-[#0F1A26]/10 focus:border-[#EEBC3F] outline-none transition-colors bg-white text-[#0F1A26] placeholder:text-[#0F1A26]/30"
                           placeholder={t('form.emailPlaceholder')}
                         />
                       </div>
@@ -321,7 +319,7 @@ function ContactContent() {
 
                     <Button
                       type="submit"
-                      className="w-full bg-[#0F1A26] text-white hover:bg-[#EEBC3F] hover:text-[#0F1A26] h-14 rounded-2xl font-semibold text-lg transition-all duration-300"
+                      className="w-full bg-[#0F1A26] text-white hover:bg-[#EEBC3F] hover:text-[#0F1A26] h-14 rounded-2xl font-semibold text-lg transition-transform transition-colors duration-300"
                     >
                       <Send className="w-5 h-5 mr-2" />
                       {t('form.send')}

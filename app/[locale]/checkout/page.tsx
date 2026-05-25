@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect, useId, type ReactNode } from "react";
+import { Suspense, useState, useEffect, useMemo, type ReactNode } from "react";
 import { products } from "@/lib/products";
 import Image from "next/image";
 import { Link, useRouter } from "@/i18n/routing";
@@ -8,13 +8,9 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, CreditCard, Truck, Shield, Check, MapPin, Phone, Mail, Building, Newspaper, Store, Package } from "lucide-react";
+import { ArrowLeft, CreditCard, Truck, Check, MapPin, Phone, Mail, Building, Newspaper, Store, Package } from "lucide-react";
 import { useCart } from "@/app/lib/cart-context";
-import { Loading } from "@/app/components/loading";
 
-function generateOrderId() {
-  return Math.random().toString(36).substring(2, 9).toUpperCase();
-}
 
 function generateOrderRef() {
   return `NAT-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
@@ -152,7 +148,7 @@ function SymplPromoBanner() {
   return (
     <div className="mb-5 overflow-hidden rounded-2xl border border-[#0F1A26]/10 bg-white shadow-sm">
       <Image
-        src="/banner-payment.webp"
+        src="/banner-payment.png"
         alt="Sympl Cashback Banner"
         width={1200}
         height={1200}
@@ -183,32 +179,26 @@ function CheckoutContent() {
   const rawCheckoutItems = buyNowItem ? [buyNowItem] : items;
 
   // Group duplicate items (same id + size + color) and sum quantities
-  const checkoutItems = rawCheckoutItems.reduce((acc: typeof rawCheckoutItems, item) => {
-    const existing = acc.find(
-      (i) => i.id === item.id && i.size === item.size && i.color === item.color
-    );
-    if (existing) {
-      existing.quantity += item.quantity;
-    } else {
-      acc.push({ ...item });
-    }
-    return acc;
-  }, []);
+  const checkoutItems = useMemo(() => {
+    return rawCheckoutItems.reduce((acc: typeof rawCheckoutItems, item) => {
+      const existing = acc.find(
+        (i) => i.id === item.id && i.size === item.size && i.color === item.color
+      );
+
+      if (existing) {
+        existing.quantity += item.quantity;
+      } else {
+        acc.push({ ...item });
+      }
+
+      return acc;
+    }, []);
+  }, [rawCheckoutItems]);
 
   const checkoutSubtotal = buyNowItem
     ? (buyNowItem.price || 0) * (buyNowItem.quantity || 1)
     : subtotal;
 
-  // Debug logging for buyNow issues
-  useEffect(() => {
-    if (buyNowItem) {
-      console.log("[Checkout] Buy Now Item:", buyNowItem);
-      console.log("[Checkout] Calculated subtotal:", checkoutSubtotal);
-      if (!buyNowItem.price || buyNowItem.price === 0) {
-        console.error("[Checkout] ERROR: Buy Now item has no price!", buyNowItem);
-      }
-    }
-  }, [buyNowItem, checkoutSubtotal]);
   const [formData, setFormData] = useState({
     email: "",
     firstName: "",
@@ -439,7 +429,6 @@ function CheckoutContent() {
     // Step 1: Create Aramex shipment FIRST
     if (deliveryMethod === "delivery") {
       setAramexStatus("pending");
-      console.log("[Checkout] Creating Aramex shipment for order:", orderRef);
 
       try {
         const shipmentPayload = {
@@ -469,7 +458,6 @@ function CheckoutContent() {
         });
 
         const shipmentData = await shipmentRes.json();
-        console.log("[Checkout] Shipment response:", shipmentData);
 
         if (shipmentData.success) {
           setTrackingNumber(shipmentData.trackingNumber);
@@ -481,16 +469,13 @@ function CheckoutContent() {
             guid: shipmentData.guid,
           };
 
-          console.log("[Aramex] Shipment created! Tracking:", shipmentData.trackingNumber);
         } else {
           setAramexStatus("failed");
           setAramexError(shipmentData.details || shipmentData.error || "Unknown error");
-          console.error("[Aramex] Failed:", shipmentData.error, shipmentData.details);
         }
       } catch (err) {
         setAramexStatus("failed");
         setAramexError(err instanceof Error ? err.message : "Network error");
-        console.error("[Aramex] Error:", err);
       }
     } else {
       setAramexStatus("skipped");
@@ -564,11 +549,9 @@ function CheckoutContent() {
       const logData = await logRes.json();
 
       if (!logRes.ok) {
-        console.error("Failed to log order:", logData);
         throw new Error(logData?.error || "Failed to log order");
       }
 
-      console.log("Order logged:", logData);
     } catch (error) {
       console.error("Failed to log order to Google Sheets:", error);
     }
@@ -602,12 +585,29 @@ function CheckoutContent() {
 
     return isCairoGizaAlex ? 75 : 100;
   };
-  const shipping = getShippingCost();
-  const total = checkoutSubtotal + shipping;
+  const shipping = useMemo(() => getShippingCost(), [
+    deliveryMethod,
+    checkoutSubtotal,
+    formData.city
+  ]);
+  const total = useMemo(
+    () => checkoutSubtotal + shipping,
+    [checkoutSubtotal, shipping]
+  );
 
-  // 2% discount for non-COD payment methods (card, instapay)
-  const paymentDiscount = paymentMethod !== "cod" ? Math.round((checkoutSubtotal + shipping) * 0.02) : 0;
-  const finalTotal = total - paymentDiscount;
+  // 2% discount for non-COD payment methods
+  const paymentDiscount = useMemo(
+    () =>
+      paymentMethod !== "cod"
+        ? Math.round((checkoutSubtotal + shipping) * 0.02)
+        : 0,
+    [paymentMethod, checkoutSubtotal, shipping]
+  );
+
+  const finalTotal = useMemo(
+    () => total - paymentDiscount,
+    [total, paymentDiscount]
+  );
 
   const controlBase =
     "border border-[#0F1A26]/10 bg-white text-[#0F1A26] placeholder:text-[#0F1A26]/40 caret-[#0F1A26] focus:border-[#EEBC3F] focus:outline-none transition-colors [color-scheme:light]";
