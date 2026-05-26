@@ -106,7 +106,7 @@ export function SizeModal({ isOpen, onClose, onConfirm, productName }: SizeModal
                   {size.cm} <span className="text-xs font-normal text-[#0F1A26]/50">cm</span>
                 </p>
                 <p className="text-xs text-[#0F1A26]/40">
-                  {size.inch}"
+                  {size.inch}&quot;
                 </p>
                 <p className="text-[#0F1A26]/30 text-[10px] italic">({tg('heightOnly')})</p>
               </div>

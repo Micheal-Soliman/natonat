@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Link } from "@/i18n/routing";
 import { useTranslations, useLocale } from 'next-intl';
@@ -35,6 +35,7 @@ export function BestSellers() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
+  const [isDragging, setIsDragging] = useState(false);
   const isDraggingRef = useRef(false);
   const hasDraggedRef = useRef(false);
   const dragStartX = useRef(0);
@@ -44,6 +45,7 @@ export function BestSellers() {
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!scrollRef.current) return;
     isDraggingRef.current = true;
+    setIsDragging(true);
     hasDraggedRef.current = false;
     dragStartX.current = e.pageX - scrollRef.current.offsetLeft;
     dragStartScrollLeft.current = scrollRef.current.scrollLeft;
@@ -65,6 +67,7 @@ export function BestSellers() {
 
   const handleMouseUp = () => {
     isDraggingRef.current = false;
+    setIsDragging(false);
     // Reset hasDragged after a short delay to prevent click
     setTimeout(() => {
       hasDraggedRef.current = false;
@@ -73,6 +76,7 @@ export function BestSellers() {
 
   const handleMouseLeave = () => {
     isDraggingRef.current = false;
+    setIsDragging(false);
     hasDraggedRef.current = false;
   };
 
@@ -93,7 +97,7 @@ export function BestSellers() {
     return () => observer.disconnect();
   }, []);
 
-  const checkScroll = () => {
+  const checkScroll = useCallback(() => {
     if (scrollRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
       const maxScroll = scrollWidth - clientWidth;
@@ -107,16 +111,19 @@ export function BestSellers() {
         setCanScrollRight(scrollLeft < maxScroll - 5);
       }
     }
-  };
+  }, [isRTL]);
 
   useEffect(() => {
     const el = scrollRef.current;
     if (el) {
       el.addEventListener('scroll', checkScroll, { passive: true });
-      checkScroll();
-      return () => el.removeEventListener('scroll', checkScroll);
+      const frameId = requestAnimationFrame(checkScroll);
+      return () => {
+        cancelAnimationFrame(frameId);
+        el.removeEventListener('scroll', checkScroll);
+      };
     }
-  }, [isRTL]);
+  }, [checkScroll]);
 
   const scroll = (direction: 'prev' | 'next') => {
     if (scrollRef.current) {
@@ -160,7 +167,7 @@ export function BestSellers() {
         <div className="relative">
           <div
             ref={scrollRef}
-            className={`flex gap-4 md:gap-5 overflow-x-auto pb-4 scrollbar-hide cursor-grab ${isDraggingRef.current ? 'cursor-grabbing' : ''}`}
+            className={`flex gap-4 md:gap-5 overflow-x-auto pb-4 scrollbar-hide cursor-grab ${isDragging ? 'cursor-grabbing' : ''}`}
             style={{
               scrollbarWidth: 'none',
               msOverflowStyle: 'none',
