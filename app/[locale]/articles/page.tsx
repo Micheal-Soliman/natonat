@@ -8,7 +8,7 @@ import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { getArticlesByLocale, getAllCategories, getFeaturedArticles } from "@/app/lib/articles-data";
 import { Loading } from "@/app/components/loading";
-import { Clock, ArrowRight, Tag, Calendar, User } from "lucide-react";
+import { Clock, ArrowRight, Calendar } from "lucide-react";
 
 export default function ArticlesPage() {
   return (

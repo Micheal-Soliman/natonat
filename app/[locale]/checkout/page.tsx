@@ -57,11 +57,9 @@ function PaymentLogoImage({ logo }: { logo: PaymentLogo }) {
 
 function PaymentLogoStrip({
   logos,
-  more,
   className = "",
 }: {
   logos: PaymentLogo[];
-  more?: string;
   className?: string;
 }) {
   return (
@@ -136,7 +134,7 @@ const instapayPaymentLogos: PaymentLogo[] = [
 ];
 
 function CardPaymentLogoImages() {
-  return <PaymentLogoStrip logos={cardPaymentLogos} more="+8" />;
+  return <PaymentLogoStrip logos={cardPaymentLogos} />;
 }
 
 function InstaPayLogoImages() {
@@ -175,11 +173,10 @@ function CheckoutContent() {
   const router = useRouter();
   const { items, subtotal, discount, originalSubtotal, appliedDiscounts, clearCart, buyNowItem, setBuyNowItem } = useCart();
 
-  // Use buyNowItem if exists (direct purchase), otherwise use cart items
-  const rawCheckoutItems = buyNowItem ? [buyNowItem] : items;
-
   // Group duplicate items (same id + size + color) and sum quantities
   const checkoutItems = useMemo(() => {
+    const rawCheckoutItems = buyNowItem ? [buyNowItem] : items;
+
     return rawCheckoutItems.reduce((acc: typeof rawCheckoutItems, item) => {
       const existing = acc.find(
         (i) => i.id === item.id && i.size === item.size && i.color === item.color
@@ -193,7 +190,7 @@ function CheckoutContent() {
 
       return acc;
     }, []);
-  }, [rawCheckoutItems]);
+  }, [buyNowItem, items]);
 
   const checkoutSubtotal = buyNowItem
     ? (buyNowItem.price || 0) * (buyNowItem.quantity || 1)
@@ -236,8 +233,8 @@ function CheckoutContent() {
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [deliveryMethod, setDeliveryMethod] = useState("delivery");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [orderId, setOrderId] = useState<string>("");
+  const [isSuccess] = useState(false);
+  const [orderId] = useState<string>("");
   const [trackingNumber, setTrackingNumber] = useState<string>("");
   const [aramexStatus, setAramexStatus] = useState<"idle" | "pending" | "success" | "failed" | "skipped">("idle");
   const [aramexError, setAramexError] = useState<string>("");
@@ -568,7 +565,7 @@ function CheckoutContent() {
   };
 
   // Shipping: 75 EGP for Cairo, Giza & Alexandria, 100 EGP for other cities, free for orders > 1000, pickup = 0
-  const getShippingCost = () => {
+  const shipping = useMemo(() => {
     if (deliveryMethod === "pickup") return 0;
     if (checkoutSubtotal > 1000) return 0;
 
@@ -584,8 +581,7 @@ function CheckoutContent() {
       alexDistricts.includes(cityLower);
 
     return isCairoGizaAlex ? 75 : 100;
-  };
-  const shipping = useMemo(() => getShippingCost(), [
+  }, [
     deliveryMethod,
     checkoutSubtotal,
     formData.city

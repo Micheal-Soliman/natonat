@@ -7,7 +7,6 @@ import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Award, Globe, Users, Target, TrendingUp, Check } from "lucide-react";
-import { Loading } from "@/app/components/loading";
 
 const milestones = [
   { year: "2019", key: "2019" },

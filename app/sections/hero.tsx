@@ -2,7 +2,6 @@
 
 import { Link } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
-import { ArrowDown, Truck } from "lucide-react";
 import { useTranslations } from 'next-intl';
 
 // Local Arthaus-Bold font

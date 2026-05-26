@@ -17,7 +17,7 @@ const getCategories = (t: (key: string) => string) => [
   { id: "returns", label: t('categories.returns'), icon: RotateCcw },
 ];
 
-const getFaqs = (t: (key: string) => string) => [
+const getFaqs = () => [
   // Luggage Covers
   { category: "covers", questionKey: "sizeCover" },
   { category: "covers", questionKey: "hardShell" },
@@ -56,7 +56,7 @@ function FAQsContent() {
   const ref = useRef<HTMLDivElement>(null);
 
   const categories = getCategories(t);
-  const faqs = getFaqs(t);
+  const faqs = getFaqs();
 
   useEffect(() => {
     const observer = new IntersectionObserver(

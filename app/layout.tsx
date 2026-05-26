@@ -1,20 +1,7 @@
 import type { Metadata } from "next";
-import { Montserrat, Quicksand } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "./lib/cart-context";
 import { ToastProvider } from "./components/toast-provider";
-
-const montserrat = Montserrat({
-  variable: "--font-montserrat",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-});
-
-const quicksand = Quicksand({
-  variable: "--font-quicksand",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-});
 
 export const metadata: Metadata = {
   title: "natOnat | Pack Smart. Travel Easy.",

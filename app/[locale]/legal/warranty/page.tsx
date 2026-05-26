@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useTranslations } from 'next-intl';
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
-import { ChevronRight, Shield, Check, AlertTriangle, Clock, Package, Sparkles, Mail, ArrowRight } from "lucide-react";
+import { Shield, Check, AlertTriangle, Clock, Package, Sparkles, Mail, ArrowRight } from "lucide-react";
 import { Loading } from "@/app/components/loading";
 
 const getClaimSteps = (t: (key: string) => string) => [

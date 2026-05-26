@@ -5,20 +5,9 @@ import Image from "next/image";
 import { useTranslations } from 'next-intl';
 import { Shield, Sparkles, Eye, Briefcase } from "lucide-react";
 
-const arthausFontStyle = `
-  @font-face {
-    font-family: 'Arthaus-Bold';
-    src: url('/Arthaus-Bold.ttf') format('truetype');
-    font-weight: bold;
-    font-style: normal;
-    font-display: swap;
-  }
-`;
-
 export function BenefitsStrip() {
   const t = useTranslations('benefits');
   const [isVisible, setIsVisible] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

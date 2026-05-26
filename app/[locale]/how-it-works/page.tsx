@@ -1,179 +1,26 @@
 "use client";
 
 import { Suspense, useState, useEffect, useRef } from "react";
-import NextImage from "next/image";
 import Link from "next/link";
 import { useTranslations } from 'next-intl';
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
-import { Ruler, Package, Check, Shield, Sparkles, Eye, HelpCircle, ArrowRight, Calculator, ChevronDown, ChevronUp, Luggage, Play } from "lucide-react";
+import { Ruler, Package, Check, Sparkles, ArrowRight, ChevronDown, ChevronUp, Luggage } from "lucide-react";
 import { Loading } from "@/app/components/loading";
 
-const getSteps = (t: (key: string) => string) => [
+const getSteps = () => [
   { icon: Ruler, key: "measure" },
   { icon: Package, key: "choose" },
   { icon: Check, key: "travel" },
 ];
 
-const getSizes = (t: (key: string) => string) => [
-  { size: "S", height: "18-21\"", cm: "45-53 cm", icon: "/s.png" },
-  { size: "M", height: "22-25\"", cm: "55-63 cm", icon: "/m.png" },
-  { size: "L", height: "26-28\"", cm: "65-70 cm", icon: "/l.png" },
-  { size: "XL", height: "29-32\"", cm: "72-81 cm", icon: "/xl.png" },
-];
-
-const getBenefits = (t: (key: string) => string) => [
-  { icon: Shield, key: "protection" },
-  { icon: Sparkles, key: "care" },
-  { icon: Eye, key: "recognition" },
-];
-
-const getFaqs = (t: (key: string) => string) => [
+const getFaqs = () => [
   { questionKey: "sizeCover" },
   { questionKey: "hardShell" },
   { questionKey: "dualZippers" },
   { questionKey: "washCover" },
 ];
-
-// Size Calculator Component
-function SizeCalculator({ t }: { t: (key: string) => string }) {
-  const [height, setHeight] = useState<number | "">("");
-  const [unit, setUnit] = useState<"inches" | "cm">("inches");
-  const [result, setResult] = useState<ReturnType<typeof getSizes>[0] | null>(null);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [isOutOfRange, setIsOutOfRange] = useState(false);
-
-  const sizes = getSizes(t);
-
-  const calculateSize = () => {
-    if (!height || height <= 0) return;
-
-    setIsAnimating(true);
-    setResult(null);
-    setIsOutOfRange(false);
-
-    const inches = unit === "cm" ? height / 2.54 : height;
-
-    let recommended = null;
-    if (inches >= 18 && inches < 22) recommended = sizes[0];
-    else if (inches >= 22 && inches < 26) recommended = sizes[1];
-    else if (inches >= 26 && inches < 30) recommended = sizes[2];
-    else if (inches >= 30 && inches <= 32) recommended = sizes[3];
-
-    setTimeout(() => {
-      if (!recommended) {
-        setIsOutOfRange(true);
-      }
-      setResult(recommended);
-      setIsAnimating(false);
-    }, 400);
-  };
-
-  return (
-    <div className="bg-gradient-to-br from-[#EEBC3F]/20 via-[#F8F6F3] to-white rounded-3xl p-6 md:p-8 border border-[#EEBC3F]/20 shadow-xl shadow-[#EEBC3F]/5">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-12 h-12 rounded-2xl bg-[#EEBC3F] flex items-center justify-center">
-          <Calculator className="w-6 h-6 text-[#0F1A26]" />
-        </div>
-        <div>
-          <h3 className="text-xl font-bold text-[#0F1A26]">{t('calculator.title')}</h3>
-          <p className="text-[#0F1A26]/50 text-sm">{t('calculator.subtitle')}</p>
-        </div>
-      </div>
-
-      {/* Input Section */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <div className="flex-1 relative">
-          <input
-            type="number"
-            value={height}
-            onChange={(e) => setHeight(e.target.value ? parseFloat(e.target.value) : "")}
-            placeholder={unit === "inches" ? t('calculator.placeholderInches') : t('calculator.placeholderCm')}
-            className="w-full px-5 py-4 rounded-2xl bg-white border-2 border-[#0F1A26]/10 text-[#0F1A26] placeholder:text-[#0F1A26]/30 focus:outline-none focus:border-[#EEBC3F] transition-colors text-lg"
-          />
-          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[#0F1A26]/30 font-medium">
-            {unit === "inches" ? "in" : "cm"}
-          </span>
-        </div>
-
-        <div className="flex gap-2">
-          <button
-            onClick={() => {
-              setUnit("inches");
-              setHeight("");
-              setResult(null);
-            }}
-            className={`px-4 py-4 rounded-2xl font-medium transition-all ${unit === "inches"
-                ? "bg-[#0F1A26] text-white"
-                : "bg-white text-[#0F1A26]/60 border border-[#0F1A26]/10"
-              }`}
-          >
-            {t('calculator.inches')}
-          </button>
-          <button
-            onClick={() => {
-              setUnit("cm");
-              setHeight("");
-              setResult(null);
-            }}
-            className={`px-4 py-4 rounded-2xl font-medium transition-all ${unit === "cm"
-                ? "bg-[#0F1A26] text-white"
-                : "bg-white text-[#0F1A26]/60 border border-[#0F1A26]/10"
-              }`}
-          >
-            {t('calculator.cm')}
-          </button>
-        </div>
-      </div>
-
-      <button
-        onClick={calculateSize}
-        disabled={!height || isAnimating}
-        className="w-full py-4 rounded-2xl bg-[#0F1A26] text-white font-semibold hover:bg-[#EEBC3F] hover:text-[#0F1A26] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {isAnimating ? (
-          <span className="flex items-center justify-center gap-2">
-            <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            {t('calculator.calculating')}
-          </span>
-        ) : (
-          t('calculator.button')
-        )}
-      </button>
-
-      {/* Result */}
-      {result && (
-        <div className="mt-6 p-6 rounded-2xl bg-[#0F1A26] animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-[#EEBC3F] flex items-center justify-center text-3xl">
-              {result.icon}
-            </div>
-            <div className="flex-1">
-              <p className="text-white/60 text-sm">{t('calculator.result')}</p>
-              <div className="flex items-baseline gap-3">
-                <span className="text-3xl font-bold text-[#EEBC3F]">{result.size}</span>
-                <span className="text-white font-medium">{t(`sizes.${result.size.toLowerCase()}.type`)}</span>
-              </div>
-              <p className="text-white/60 text-sm mt-1">{result.height} / {result.cm}</p>
-            </div>
-            <Button asChild className="bg-[#EEBC3F] text-[#0F1A26] hover:bg-white rounded-xl">
-              <Link href={`/shop?category=luggage-covers&size=${result.size}`}>
-                {t('calculator.shop')}
-              </Link>
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {isOutOfRange && (
-        <div className="mt-6 p-4 rounded-2xl bg-red-50 border border-red-100 text-red-600 text-sm animate-in fade-in">
-          {t('calculator.outOfRange')}
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default function HowItWorksPage() {
   return (
@@ -190,9 +37,8 @@ function HowItWorksContent() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
-  const steps = getSteps(t);
-  const sizes = getSizes(t);
-  const faqs = getFaqs(t);
+  const steps = getSteps();
+  const faqs = getFaqs();
 
   useEffect(() => {
     const observer = new IntersectionObserver(

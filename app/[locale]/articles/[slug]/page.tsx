@@ -9,7 +9,7 @@ import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { getArticleBySlug, getLatestArticles } from "@/app/lib/articles-data";
 import { Loading } from "@/app/components/loading";
-import { ArrowLeft, Clock, Calendar, User, Tag, Share2, Facebook, Twitter, Linkedin } from "lucide-react";
+import { ArrowLeft, Clock, Calendar, User, Share2, Facebook, Twitter } from "lucide-react";
 
 export default function ArticlePage() {
   return (

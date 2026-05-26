@@ -15,7 +15,6 @@ export function ShopMegaMenu({ scrolled }: ShopMegaMenuProps) {
   const t = useTranslations('navigation');
   const tc = useTranslations('collections');
   const [isOpen, setIsOpen] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pathname = usePathname();
@@ -66,12 +65,10 @@ export function ShopMegaMenu({ scrolled }: ShopMegaMenuProps) {
       clearTimeout(closeTimeoutRef.current);
       closeTimeoutRef.current = null;
     }
-    setIsHovered(true);
     setIsOpen(true);
   };
 
   const handleMouseLeave = () => {
-    setIsHovered(false);
     closeTimeoutRef.current = setTimeout(() => {
       setIsOpen(false);
     }, 150);

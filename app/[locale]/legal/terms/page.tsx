@@ -1,14 +1,13 @@
 "use client";
 
 import { Suspense, useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { useTranslations } from 'next-intl';
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { FileText, ShoppingBag, CreditCard, Truck, RotateCcw, Copyright, User, Scale, Gavel, RefreshCw, Mail } from "lucide-react";
 import { Loading } from "@/app/components/loading";
 
-const getTerms = (t: (key: string) => string) => [
+const getTerms = () => [
   { icon: FileText, key: "agreement" },
   { icon: ShoppingBag, key: "products" },
   { icon: CreditCard, key: "payment" },
@@ -34,7 +33,7 @@ function TermsContent() {
   const [isVisible, setIsVisible] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  const terms = getTerms(t);
+  const terms = getTerms();
 
   useEffect(() => {
     const observer = new IntersectionObserver(

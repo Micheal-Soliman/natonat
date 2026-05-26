@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 const SPREADSHEET_ID = "1dNjh5Bu_-OylUS2TSLjS9tx6t6Lnj49DBdcKljd4Ldo";
 const SHEET_NAME = "cod_orders";
 
