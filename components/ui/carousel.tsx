@@ -55,6 +55,7 @@ function Carousel({
     {
       ...opts,
       axis: orientation === "horizontal" ? "x" : "y",
+      direction: opts?.direction || "ltr",
     },
     plugins
   )
@@ -123,7 +124,7 @@ function Carousel({
     >
       <div
         onKeyDownCapture={handleKeyDown}
-        className={cn("relative", className)}
+        className={cn("relative w-full", className)}
         role="region"
         aria-roledescription="carousel"
         {...props}

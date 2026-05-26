@@ -1,10 +1,12 @@
+"use client";
+
+import { useTranslations } from "next-intl";
 import Image from "next/image";
 import { Link } from "@/i18n/routing";
-import { getTranslations } from "next-intl/server";
 import { Instagram, Facebook, MessageCircle, Mail, MapPin, Phone, Youtube } from "lucide-react";
 
-export async function Footer() {
-  const t = await getTranslations('footer');
+export function Footer() {
+  const t = useTranslations('footer');
   const currentYear = new Date().getFullYear();
 
   const footerLinks = {
