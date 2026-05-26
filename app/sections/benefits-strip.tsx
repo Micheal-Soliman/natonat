@@ -1,77 +1,55 @@
-"use client";
-
-import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { useTranslations } from 'next-intl';
+import { getTranslations } from "next-intl/server";
 import { Shield, Sparkles, Eye, Briefcase } from "lucide-react";
 
-export function BenefitsStrip() {
-  const t = useTranslations('benefits');
-  const [isVisible, setIsVisible] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
-      },
-      { threshold: 0.2 }
-    );
-
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
+export async function BenefitsStrip() {
+  const t = await getTranslations("benefits");
 
   const benefits = [
     {
-      number: t('items.protection.number'),
+      number: t("items.protection.number"),
       icon: Shield,
-      title: t('items.protection.title'),
-      subtitle: t('items.protection.subtitle'),
+      title: t("items.protection.title"),
+      subtitle: t("items.protection.subtitle"),
       image: "/8.png",
     },
     {
-      number: t('items.durability.number'),
+      number: t("items.durability.number"),
       icon: Sparkles,
-      title: t('items.durability.title'),
-      subtitle: t('items.durability.subtitle'),
+      title: t("items.durability.title"),
+      subtitle: t("items.durability.subtitle"),
       image: "/7.png",
     },
     {
-      number: t('items.recognition.number'),
+      number: t("items.recognition.number"),
       icon: Eye,
-      title: t('items.recognition.title'),
-      subtitle: t('items.recognition.subtitle'),
+      title: t("items.recognition.title"),
+      subtitle: t("items.recognition.subtitle"),
       image: "/1111.png",
     },
     {
-      number: t('items.ecosystem.number'),
+      number: t("items.ecosystem.number"),
       icon: Briefcase,
-      title: t('items.ecosystem.title'),
-      subtitle: t('items.ecosystem.subtitle'),
+      title: t("items.ecosystem.title"),
+      subtitle: t("items.ecosystem.subtitle"),
       image: "/15.png",
     },
   ];
 
   return (
-    <section ref={ref} className="py-24 bg-[#F5F0EB] overflow-hidden">
+    <section className="py-24 bg-[#F5F0EB] overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header - Minimal */}
-        <div className={`mb-20 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+        <div className="mb-20">
           <div className="flex items-end justify-between">
             <div>
-              <span className="text-[#EEBC3F] text-xs tracking-[0.3em] uppercase font-medium">{t('sectionLabel')}</span>
+              <span className="text-[#EEBC3F] text-xs tracking-[0.3em] uppercase font-medium">{t("sectionLabel")}</span>
               <h2 className="text-4xl md:text-5xl lg:text-6xl font-light text-[#0F1A26] mt-4 tracking-tight">
-                {t('title')} <span className="font-medium text-[#EEBC3F]" style={{ fontFamily: "'Arthaus-Bold', sans-serif" }}>natOnat</span>
+                {t("title")} <span className="font-medium text-[#EEBC3F]" style={{ fontFamily: "'Arthaus-Bold', sans-serif" }}>natOnat</span>
               </h2>
             </div>
             <p className="text-[#0F1A26]/50 text-sm max-w-xs text-right hidden md:block leading-relaxed">
-              {t('subtitle')}
+              {t("subtitle")}
             </p>
           </div>
           <div className="h-px bg-gradient-to-r from-[#EEBC3F]/50 via-[#0F1A26]/10 to-transparent mt-8" />
@@ -82,8 +60,7 @@ export function BenefitsStrip() {
           {benefits.map((benefit, index) => (
             <div
               key={index}
-              className={`group relative bg-white rounded-2xl overflow-hidden transition-all duration-700 shadow-lg shadow-[#0F1A26]/5 hover:shadow-xl hover:shadow-[#0F1A26]/10 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-                }`}
+              className="group relative bg-white rounded-2xl overflow-hidden transition-all duration-700 shadow-lg shadow-[#0F1A26]/5 hover:shadow-xl hover:shadow-[#0F1A26]/10"
               style={{ transitionDelay: `${index * 150}ms` }}
             >
               {/* Image Layer */}
@@ -129,10 +106,10 @@ export function BenefitsStrip() {
         </div>
 
         {/* Bottom Tagline */}
-        <div className={`mt-16 flex items-center justify-center gap-4 transition-all duration-1000 delay-700 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
+        <div className="mt-16 flex items-center justify-center gap-4">
           <div className="h-px w-16 bg-[#0F1A26]/30" />
           <span className="text-[#0F1A26]/70 text-xs tracking-[0.4em] uppercase font-medium">
-            {t('footer')}
+            {t("footer")}
           </span>
           <div className="h-px w-16 bg-[#0F1A26]/30" />
         </div>

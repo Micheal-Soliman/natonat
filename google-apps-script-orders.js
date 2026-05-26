@@ -214,13 +214,52 @@ function buildOrderRow(data) {
   ];
 }
 
-// For testing - doGet handler
 function doGet(e) {
-  return ContentService
-    .createTextOutput(JSON.stringify({ 
-      message: "Order logging webhook is active", 
+  const orderRef = e && e.parameter ? e.parameter.order_ref : "";
+
+  if (!orderRef) {
+    return jsonOutput({
+      success: true,
+      message: "Order logging webhook is active",
       timestamp: new Date().toISOString(),
       sheet: SHEET_NAME
-    }))
+    });
+  }
+
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(SHEET_NAME);
+
+    if (!sheet) {
+      return jsonOutput({ success: false, error: "Sheet not found" });
+    }
+
+    const values = sheet.getDataRange().getValues();
+
+    for (let rowIndex = values.length - 1; rowIndex >= 1; rowIndex--) {
+      const row = values[rowIndex];
+      const rowOrderRef = row[2];
+
+      if (rowOrderRef === orderRef) {
+        const rawPayload = row[30];
+        const order = rawPayload ? JSON.parse(rawPayload) : {};
+
+        return jsonOutput({
+          success: true,
+          order,
+          row: rowIndex + 1,
+        });
+      }
+    }
+
+    return jsonOutput({ success: false, error: "Order not found" });
+  } catch (error) {
+    return jsonOutput({ success: false, error: error.toString() });
+  }
+}
+
+function jsonOutput(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
 }

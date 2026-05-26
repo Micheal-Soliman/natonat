@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+import crypto from "crypto";
 
-type PaymobPayload = {
+type PaymobTransaction = {
   id?: string | number;
   order?: {
     id?: string | number;
@@ -29,8 +30,21 @@ type PaymobPayload = {
   created_at?: string;
   error_occured?: boolean;
   is_refunded?: boolean;
+  has_parent_transaction?: boolean;
+  integration_id?: string | number;
+  is_3d_secure?: boolean;
+  is_auth?: boolean;
+  is_capture?: boolean;
+  is_standalone_payment?: boolean;
+  is_voided?: boolean;
+  owner?: string | number;
   refunded_amount_cents?: number;
   captured_amount?: number;
+};
+
+type PaymobPayload = PaymobTransaction & {
+  hmac?: string;
+  obj?: PaymobTransaction;
 };
 
 type OrderLogResponse = {
@@ -45,6 +59,60 @@ type OrderLogResponse = {
   }>;
 };
 
+const PAYMOB_HMAC_FIELDS = [
+  "amount_cents",
+  "created_at",
+  "currency",
+  "error_occured",
+  "has_parent_transaction",
+  "id",
+  "integration_id",
+  "is_3d_secure",
+  "is_auth",
+  "is_capture",
+  "is_refunded",
+  "is_standalone_payment",
+  "is_voided",
+  "order.id",
+  "owner",
+  "pending",
+  "source_data.pan",
+  "source_data.sub_type",
+  "source_data.type",
+  "success",
+] as const;
+
+function getNestedValue(source: unknown, path: string): unknown {
+  return path.split(".").reduce<unknown>((current, key) => {
+    if (!current || typeof current !== "object") return undefined;
+    return (current as Record<string, unknown>)[key];
+  }, source);
+}
+
+function stringifyHmacValue(value: unknown) {
+  if (value === null || value === undefined) return "";
+  return String(value);
+}
+
+function calculatePaymobHmac(transaction: PaymobTransaction, secret: string) {
+  const message = PAYMOB_HMAC_FIELDS
+    .map((field) => stringifyHmacValue(getNestedValue(transaction, field)))
+    .join("");
+
+  return crypto.createHmac("sha512", secret).update(message).digest("hex");
+}
+
+function timingSafeEqualHex(a: string, b: string) {
+  try {
+    const aBuffer = Buffer.from(a, "hex");
+    const bBuffer = Buffer.from(b, "hex");
+
+    return aBuffer.length === bBuffer.length && crypto.timingSafeEqual(aBuffer, bBuffer);
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(req: Request) {
   let payload: PaymobPayload;
   try {
@@ -53,26 +121,46 @@ export async function POST(req: Request) {
     payload = {};
   }
 
-  console.log("Paymob webhook received:", payload);
+  const transaction = payload.obj || payload;
+  const receivedHmac = new URL(req.url).searchParams.get("hmac") || payload.hmac || "";
+  const hmacSecret = process.env.PAYMOB_HMAC_SECRET;
+
+  if (hmacSecret) {
+    const calculatedHmac = calculatePaymobHmac(transaction, hmacSecret);
+
+    if (!receivedHmac || !timingSafeEqualHex(calculatedHmac, receivedHmac)) {
+      console.error("Paymob webhook rejected: invalid HMAC");
+      return NextResponse.json({ error: "Invalid Paymob webhook signature" }, { status: 401 });
+    }
+  } else {
+    console.warn("Paymob webhook HMAC verification skipped: PAYMOB_HMAC_SECRET is not set");
+  }
+
+  console.log("Paymob webhook received:", {
+    transaction_id: transaction.id || "",
+    order_id: transaction.order?.id || transaction.order_id || "",
+    success: !!transaction.success,
+    pending: !!transaction.pending,
+  });
 
   // Extract key payment details from Paymob payload
   const paymentDetails = {
-    order_id: payload?.order?.id || payload?.order_id || "",
-    merchant_order_id: payload?.merchant_order_id || "",
-    special_reference: payload?.special_reference || payload?.payment_key_claims?.extra?.order_ref || "",
-    payment_status: payload?.success ? "Paid" : payload?.pending ? "Pending" : "Failed",
-    transaction_id: payload?.id || "",
-    amount_cents: payload?.amount_cents || payload?.order?.amount_cents || 0,
-    currency: payload?.currency || "EGP",
-    payment_method: payload?.source_data?.type || payload?.payment_method || "",
-    card_last_four: payload?.source_data?.pan || payload?.source_data?.last_four || "",
-    card_sub_type: payload?.source_data?.sub_type || "",
-    gateway_integration_id: payload?.gateway_integration_id || "",
-    created_at: payload?.created_at || new Date().toISOString(),
-    error_occured: payload?.error_occured || false,
-    is_refunded: payload?.is_refunded || false,
-    refunded_amount_cents: payload?.refunded_amount_cents || 0,
-    captured_amount: payload?.captured_amount || 0,
+    order_id: transaction?.order?.id || transaction?.order_id || "",
+    merchant_order_id: transaction?.merchant_order_id || "",
+    special_reference: transaction?.special_reference || transaction?.payment_key_claims?.extra?.order_ref || "",
+    payment_status: transaction?.success ? "Paid" : transaction?.pending ? "Pending" : "Failed",
+    transaction_id: transaction?.id || "",
+    amount_cents: transaction?.amount_cents || transaction?.order?.amount_cents || 0,
+    currency: transaction?.currency || "EGP",
+    payment_method: transaction?.source_data?.type || transaction?.payment_method || "",
+    card_last_four: transaction?.source_data?.pan || transaction?.source_data?.last_four || "",
+    card_sub_type: transaction?.source_data?.sub_type || "",
+    gateway_integration_id: transaction?.gateway_integration_id || transaction?.integration_id || "",
+    created_at: transaction?.created_at || new Date().toISOString(),
+    error_occured: transaction?.error_occured || false,
+    is_refunded: transaction?.is_refunded || false,
+    refunded_amount_cents: transaction?.refunded_amount_cents || 0,
+    captured_amount: transaction?.captured_amount || 0,
     source: "paymob_webhook",
     received_at: new Date().toISOString(),
     raw_payload: payload,
@@ -93,7 +181,7 @@ export async function POST(req: Request) {
   }
 
   // Create Aramex shipment for successful card payments with delivery
-  if (payload?.success && paymentDetails.special_reference) {
+  if (transaction?.success && paymentDetails.special_reference) {
     try {
       // Retrieve order details from order log
       const orderLogRes = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || ""}/api/orders/log?order_ref=${paymentDetails.special_reference}`, {

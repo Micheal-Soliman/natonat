@@ -1,12 +1,10 @@
-"use client";
-
 import Image from "next/image";
 import { Link } from "@/i18n/routing";
-import { useTranslations } from 'next-intl';
+import { getTranslations } from "next-intl/server";
 import { Instagram, Facebook, MessageCircle, Mail, MapPin, Phone, Youtube } from "lucide-react";
 
-export function Footer() {
-  const t = useTranslations('footer');
+export async function Footer() {
+  const t = await getTranslations('footer');
   const currentYear = new Date().getFullYear();
 
   const footerLinks = {
@@ -30,6 +28,7 @@ export function Footer() {
       { label: t('links.legal.warranty'), href: "/legal/warranty" },
     ],
   };
+
   return (
     <footer className="bg-[#0F1A26] text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">

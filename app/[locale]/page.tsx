@@ -11,15 +11,15 @@ import { ArticlesSection } from "@/app/sections/articles-section";
 import { Footer } from "@/app/sections/footer";
 import { Loading } from "@/app/components/loading";
 
-export default function Home() {
+export default function Home({ params }: { params: { locale: string } }) {
   return (
     <Suspense fallback={<Loading />}>
-      <HomeContent />
+      <HomeContent locale={params.locale} />
     </Suspense>
   );
 }
 
-function HomeContent() {
+function HomeContent({ locale }: { locale: string }) {
   return (
     <>
       <Navigation />
@@ -30,7 +30,7 @@ function HomeContent() {
         <BestSellers />
         <TravelSets />
         <HowItWorks />
-        <ArticlesSection />
+        <ArticlesSection locale={locale} />
         <SocialProof />
       </main>
       <Footer />

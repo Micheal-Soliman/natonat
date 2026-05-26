@@ -1,16 +1,15 @@
-"use client";
-
 import Image from "next/image";
 import { Link } from "@/i18n/routing";
-import { useTranslations } from 'next-intl';
+import { getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/button";
 import { products, getDiscountPercentage } from "@/lib/products";
 
 // Get bundle products from lib/products
-const bundles = products.filter(p => p.category === "bundles").slice(0, 3);
+const bundles = products.filter((p) => p.category === "bundles").slice(0, 3);
 
-export function TravelSets() {
-  const t = useTranslations('bundles');
+export async function TravelSets() {
+  const t = await getTranslations('bundles');
+
   return (
     <section className="py-20 bg-[#F1EBE3]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

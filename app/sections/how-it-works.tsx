@@ -1,15 +1,13 @@
-"use client";
-
 import { Link } from "@/i18n/routing";
-import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Ruler, Package, Check, PlayCircle } from "lucide-react";
 
-export function HowItWorks() {
-  const t = useTranslations("howItWorks");
-  const ts = useTranslations("howItWorks.steps");
-  const tg = useTranslations("howItWorks.sizeGuide");
-  const tc = useTranslations("howItWorks.calculator");
+export async function HowItWorks() {
+  const t = await getTranslations("howItWorks");
+  const ts = await getTranslations("howItWorks.steps");
+  const tg = await getTranslations("howItWorks.sizeGuide");
+  const tc = await getTranslations("howItWorks.calculator");
 
   const steps = [
     {

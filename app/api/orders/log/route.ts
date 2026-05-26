@@ -19,6 +19,28 @@ type StoredOrder = OrderLogBody & {
 // Simple in-memory store for orders (in production, use a database like Redis, Supabase, etc.)
 const orderStore = new Map<string, OrderLogBody>();
 
+async function fetchOrderFromGoogleSheets(orderRef: string) {
+  const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL;
+  if (!webhookUrl) return null;
+
+  const url = new URL(webhookUrl);
+  url.searchParams.set("order_ref", orderRef);
+
+  const res = await fetch(url.toString(), {
+    method: "GET",
+    cache: "no-store",
+  });
+
+  if (!res.ok) return null;
+
+  const data = (await res.json()) as {
+    success?: boolean;
+    order?: OrderLogBody;
+  };
+
+  return data.success && data.order ? data.order : null;
+}
+
 // GET endpoint to retrieve order by reference
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -31,7 +53,7 @@ export async function GET(req: Request) {
     );
   }
 
-  const order = orderStore.get(order_ref);
+  const order = orderStore.get(order_ref) || await fetchOrderFromGoogleSheets(order_ref);
   
   if (!order) {
     return NextResponse.json(

@@ -34,6 +34,7 @@ export function Hero() {
       <style dangerouslySetInnerHTML={{ __html: arthausFontStyle }} />
       <div className="absolute inset-0">
         <video
+          preload="metadata"
           autoPlay
           muted
           loop

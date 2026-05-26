@@ -1,41 +1,22 @@
-"use client";
-
-import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useTranslations, useLocale } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
 import { getLatestArticles } from "@/app/lib/articles-data";
 import { ArrowRight, Clock, Calendar } from "lucide-react";
 
-export function ArticlesSection() {
-  const t = useTranslations('articles');
-  const locale = useLocale();
-  const [isVisible, setIsVisible] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+export async function ArticlesSection({ locale }: { locale: string }) {
+  const t = await getTranslations('articles');
   const articles = getLatestArticles(3, locale);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
+  const dateFormatter = new Intl.DateTimeFormat(locale === 'ar' ? 'ar-EG' : 'en-US', {
+    month: 'short',
+    day: 'numeric',
+  });
 
   return (
-    <section ref={ref} className="py-20 md:py-32 bg-[#F1EBE3]">
+    <section className="py-20 md:py-32 bg-[#F1EBE3]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className={`flex items-end justify-between mb-12 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+        <div className="flex items-end justify-between mb-12">
           <div>
             <span className="text-[#EEBC3F] text-xs font-semibold tracking-[0.3em] uppercase mb-4 block">
               {t('label')}
@@ -59,8 +40,7 @@ export function ArticlesSection() {
             <Link
               key={article.id}
               href={`/articles/${article.slug}`}
-              className={`group bg-white rounded-3xl overflow-hidden border border-[#0F1A26]/5 shadow-lg shadow-[#0F1A26]/5 hover:shadow-xl hover:shadow-[#0F1A26]/10 transition-all duration-500 h-full flex flex-col ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-                }`}
+              className={`group bg-white rounded-3xl overflow-hidden border border-[#0F1A26]/5 shadow-lg shadow-[#0F1A26]/5 hover:shadow-xl hover:shadow-[#0F1A26]/10 transition-all duration-500 h-full flex flex-col`}
               style={{ transitionDelay: `${(index + 1) * 100}ms` }}
             >
               <div className="relative overflow-hidden flex-shrink-0 h-52 sm:h-60">
@@ -84,7 +64,7 @@ export function ArticlesSection() {
                 <div className="flex items-center gap-4 text-xs text-[#0F1A26]/40 mb-3">
                   <span className="flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
-                    {new Date(article.date).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US', { month: 'short', day: 'numeric' })}
+                    {dateFormatter.format(new Date(article.date))}
                   </span>
                   <span className="flex items-center gap-1">
                     <Clock className="w-3 h-3" />
