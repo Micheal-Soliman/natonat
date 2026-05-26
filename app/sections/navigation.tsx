@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@/i18n/routing";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
@@ -38,13 +38,13 @@ export function Navigation() {
   const [scrolled, setScrolled] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<typeof products>([]);
   const [mounted, setMounted] = useState(false);
 
   const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setMounted(true);
+    const frameId = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(frameId);
   }, []);
 
   useEffect(() => {
@@ -58,26 +58,22 @@ export function Navigation() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
+  const searchResults = useMemo(() => {
+    if (!searchQuery.trim()) return [];
 
-      const results = products
-        .filter((p) => {
-          const nameMatch = p.name.toLowerCase().includes(query);
-          const typeMatch = p.type.toLowerCase().includes(query);
-          const categoryMatch = Array.isArray(p.category)
-            ? p.category.some((c) => c.toLowerCase().includes(query))
-            : p.category.toLowerCase().includes(query);
+    const query = searchQuery.toLowerCase();
 
-          return nameMatch || typeMatch || categoryMatch;
-        })
-        .slice(0, 5);
+    return products
+      .filter((p) => {
+        const nameMatch = p.name.toLowerCase().includes(query);
+        const typeMatch = p.type.toLowerCase().includes(query);
+        const categoryMatch = Array.isArray(p.category)
+          ? p.category.some((c) => c.toLowerCase().includes(query))
+          : p.category.toLowerCase().includes(query);
 
-      setSearchResults(results);
-    } else {
-      setSearchResults([]);
-    }
+        return nameMatch || typeMatch || categoryMatch;
+      })
+      .slice(0, 5);
   }, [searchQuery]);
 
   useEffect(() => {

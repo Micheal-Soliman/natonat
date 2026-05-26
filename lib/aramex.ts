@@ -15,12 +15,10 @@ export function getAramexHost(): string {
 }
 
 const ARAMEX_BASE_URL = "https://ws.aramex.net/ShippingAPI.V2";
-const ARAMEX_UAT_URL = "https://ws.uat.aramex.net/ShippingAPI.V2";
 const ARAMEX_LOCATION_JSON_BASE = `${ARAMEX_BASE_URL}/Location/Service_1_0.svc/json`;
 const ARAMEX_RATE_JSON_BASE = `${ARAMEX_BASE_URL}/RateCalculator/Service_1_0.svc/json`;
 const ARAMEX_SHIPPING_JSON_BASE = `${ARAMEX_BASE_URL}/Shipping/Service_1_0.svc/json`;
 const ARAMEX_TRACKING_JSON_BASE = `${ARAMEX_BASE_URL}/Tracking/Service_1_0.svc/json`;
-const ARAMEX_VALIDATE_ADDRESS_JSON_BASE = `${ARAMEX_BASE_URL}/Location/Service_1_0.svc/json/ValidateAddress`; // Updated to match Aramex support recommendation
 
 export interface AramexCredentials {
   UserName: string;
@@ -154,7 +152,7 @@ export interface AramexShipmentRequest {
   ForeignHAWB?: string;
   Details: AramexShipmentDetails;
   // Legacy array structure (kept for compatibility)
-  Shipments?: Array<any>;
+  Shipments?: Array<unknown>;
   Transaction?: {
     Reference1?: string;
     Reference2?: string;
@@ -396,7 +394,6 @@ export async function createShipment(
     ],
   };
 
-  const startTime = Date.now();
   let response: Response | undefined;
   let rawText = "";
   let error: string | undefined;
@@ -450,7 +447,7 @@ export async function createShipment(
 }
 
 // Track shipment
-export async function trackShipment(trackingNumber: string): Promise<any> {
+export async function trackShipment(trackingNumber: string): Promise<unknown> {
   const credentials = getAramexCredentials();
 
   const payload = {
@@ -498,7 +495,7 @@ export interface AramexRateRequest {
   };
 }
 
-export async function calculateRate(rateData: AramexRateRequest): Promise<any> {
+export async function calculateRate(rateData: AramexRateRequest): Promise<unknown> {
   const credentials = getAramexCredentials();
 
   const payload = {
@@ -558,7 +555,7 @@ export async function calculateRate(rateData: AramexRateRequest): Promise<any> {
 }
 
 // Validate address
-export async function validateAddress(address: AramexAddress): Promise<any> {
+export async function validateAddress(address: AramexAddress): Promise<unknown> {
   const credentials = getAramexCredentials();
 
   const payload = {
@@ -566,7 +563,6 @@ export async function validateAddress(address: AramexAddress): Promise<any> {
     Address: address,
   };
 
-  const startTime = Date.now();
   let response: Response | undefined;
   let rawText = "";
   let error: string | undefined;
@@ -600,7 +596,7 @@ export async function validateAddress(address: AramexAddress): Promise<any> {
 }
 
 // Fetch all countries
-export async function fetchCountries(): Promise<any> {
+export async function fetchCountries(): Promise<unknown> {
   const credentials = getAramexCredentials();
 
   const payload = {
@@ -633,7 +629,7 @@ export async function fetchCountries(): Promise<any> {
 }
 
 // Fetch cities by country
-export async function fetchCities(countryCode: string, nameStartsWith?: string): Promise<any> {
+export async function fetchCities(countryCode: string, nameStartsWith?: string): Promise<unknown> {
   const credentials = getAramexCredentials();
 
   const payload = {
@@ -650,9 +646,8 @@ export async function fetchCities(countryCode: string, nameStartsWith?: string):
     State: "",
   };
 
-  const startTime = Date.now();
   let response: Response | undefined;
-  let result: any;
+  let result: unknown;
   let error: string | undefined;
 
   try {
@@ -688,12 +683,6 @@ export async function fetchCities(countryCode: string, nameStartsWith?: string):
 // IMPORTANT (EG): Aramex Egypt does NOT accept governorate names like "Cairo" / "Giza".
 // FetchCities(EG) returns districts/areas (e.g. Abdeen, Abasya, Abo Rawash). We map
 // common inputs to a valid district to avoid ERR52.
-const CITY_NAME_MAP: Record<string, string> = {
-  cairo: "Cairo",
-  giza: "Giza",
-  alexandria: "Alexandria",
-};
-
 // Smart mapping: detect district from address text for better Aramex validation
 const ADDRESS_TO_CITY_MAP: Record<string, string> = {
   "dokki": "Dokki",

@@ -1,7 +1,21 @@
 import { NextResponse } from "next/server";
 import { createShipment, buildShipmentFromOrder, validateAddress } from "@/lib/aramex";
 
-function tryExtractNormalizedAddress(validateResult: any) {
+type AramexAddressCandidate = {
+  City?: string;
+  StateOrProvinceCode?: string;
+  PostCode?: string;
+};
+
+type AramexValidationResult = {
+  Address?: AramexAddressCandidate;
+  ValidatedAddress?: AramexAddressCandidate;
+  SuggestedAddress?: AramexAddressCandidate;
+  SuggestedAddresses?: AramexAddressCandidate[];
+  Addresses?: AramexAddressCandidate[];
+};
+
+function tryExtractNormalizedAddress(validateResult: AramexValidationResult) {
   // Aramex responses may vary by account/version; keep this defensive.
   const candidates = [
     validateResult?.Address,
@@ -45,8 +59,8 @@ export async function POST(req: Request) {
       const shipperValidation = await validateAddress(shipmentData.Shipper.PartyAddress);
       const consigneeValidation = await validateAddress(shipmentData.Consignee.PartyAddress);
 
-      const normalizedShipper = tryExtractNormalizedAddress(shipperValidation);
-      const normalizedConsignee = tryExtractNormalizedAddress(consigneeValidation);
+      const normalizedShipper = tryExtractNormalizedAddress(shipperValidation as AramexValidationResult);
+      const normalizedConsignee = tryExtractNormalizedAddress(consigneeValidation as AramexValidationResult);
 
       if (normalizedShipper) {
         shipmentData.Shipper.PartyAddress = {

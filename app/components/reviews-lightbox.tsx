@@ -32,9 +32,13 @@ export function ReviewsLightbox({
   const activeImage = images[activeIndex];
 
   useEffect(() => {
-    if (open) {
+    if (!open) return;
+
+    const frameId = requestAnimationFrame(() => {
       setActiveIndex(initialIndex);
-    }
+    });
+
+    return () => cancelAnimationFrame(frameId);
   }, [open, initialIndex]);
 
   const goNext = useCallback(() => {

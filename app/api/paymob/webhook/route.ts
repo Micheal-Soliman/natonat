@@ -1,11 +1,56 @@
 import { NextResponse } from "next/server";
 
+type PaymobPayload = {
+  id?: string | number;
+  order?: {
+    id?: string | number;
+    amount_cents?: number;
+  };
+  order_id?: string | number;
+  merchant_order_id?: string;
+  special_reference?: string;
+  payment_key_claims?: {
+    extra?: {
+      order_ref?: string;
+    };
+  };
+  success?: boolean;
+  pending?: boolean;
+  amount_cents?: number;
+  currency?: string;
+  source_data?: {
+    type?: string;
+    pan?: string;
+    last_four?: string;
+    sub_type?: string;
+  };
+  payment_method?: string;
+  gateway_integration_id?: string | number;
+  created_at?: string;
+  error_occured?: boolean;
+  is_refunded?: boolean;
+  refunded_amount_cents?: number;
+  captured_amount?: number;
+};
+
+type OrderLogResponse = {
+  delivery_method?: string;
+  customer?: unknown;
+  aramex?: {
+    trackingNumber?: string;
+  };
+  items?: Array<{
+    name: string;
+    quantity: number;
+  }>;
+};
+
 export async function POST(req: Request) {
-  let payload: any;
+  let payload: PaymobPayload;
   try {
-    payload = await req.json();
+    payload = (await req.json()) as PaymobPayload;
   } catch {
-    payload = await req.text();
+    payload = {};
   }
 
   console.log("Paymob webhook received:", payload);
@@ -57,7 +102,7 @@ export async function POST(req: Request) {
       });
       
       if (orderLogRes.ok) {
-        const orderData = await orderLogRes.json();
+        const orderData = (await orderLogRes.json()) as OrderLogResponse;
         
         // --- PREVENT DUPLICATES ---
         // Only create shipment if it's a delivery order AND we haven't already created a tracking number for it

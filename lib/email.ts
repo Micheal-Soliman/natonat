@@ -8,7 +8,43 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-function renderItemHtml(item: any) {
+type OrderEmailItem = {
+  name: string;
+  quantity: number;
+  size?: string;
+  color?: string;
+  type?: string;
+  price?: number;
+  price_egp?: number;
+};
+
+type OrderEmailData = {
+  order_ref?: string;
+  payment_method?: string;
+  delivery_method?: string;
+  amount_egp?: number;
+  shipping_egp?: number;
+  created_at?: string;
+  customer?: {
+    first_name?: string;
+    last_name?: string;
+    phone?: string;
+    email?: string;
+    city?: string;
+    address?: string;
+  };
+  items?: OrderEmailItem[];
+  extras?: {
+    subtotal_egp?: number;
+    payment_discount?: number;
+    payment_discount_percent?: number;
+  };
+  aramex?: {
+    trackingNumber?: string;
+  };
+};
+
+function renderItemHtml(item: OrderEmailItem) {
   const optionsHtml = item.size
     ? `<div style="font-size: 14px; color: #555;">Size: ${item.size.toUpperCase()}</div>`
     : '';
@@ -35,12 +71,13 @@ function renderItemHtml(item: any) {
   `;
 }
 
-function renderTotalsHtml(orderData: any) {
-  const subtotal = orderData.extras?.subtotal_egp ?? (orderData.amount_egp - (orderData.shipping_egp || 0));
+function renderTotalsHtml(orderData: OrderEmailData) {
+  const amount = orderData.amount_egp || 0;
+  const subtotal = orderData.extras?.subtotal_egp ?? (amount - (orderData.shipping_egp || 0));
   const shipping = orderData.shipping_egp || 0;
   const paymentDiscount = orderData.extras?.payment_discount || 0;
   const paymentDiscountPercent = orderData.extras?.payment_discount_percent || 2;
-  const total = orderData.amount_egp;
+  const total = amount;
 
   const discountRow = paymentDiscount > 0
     ? `<p><strong>Payment Discount (${paymentDiscountPercent}%):</strong> <span style="color: #27ae60;">-EGP ${paymentDiscount}</span></p>`
@@ -54,9 +91,9 @@ function renderTotalsHtml(orderData: any) {
   `;
 }
 
-export async function sendOrderEmail(orderData: any) {
+export async function sendOrderEmail(orderData: OrderEmailData) {
   const adminEmail = 'natonateg@gmail.com';
-  const itemsHtml = orderData.items.map(renderItemHtml).join('');
+  const itemsHtml = (orderData.items || []).map(renderItemHtml).join('');
   const totalsHtml = renderTotalsHtml(orderData);
 
   const mailOptions = {
@@ -68,11 +105,11 @@ export async function sendOrderEmail(orderData: any) {
         <h2 style="color: #0F1A26; text-align: center;">New Order Received!</h2>
 
         <p style="font-size: 16px;"><strong>Order Reference:</strong> ${orderData.order_ref}</p>
-        <p style="font-size: 16px;"><strong>Customer Name:</strong> ${orderData.customer.first_name} ${orderData.customer.last_name}</p>
-        <p style="font-size: 16px;"><strong>Phone:</strong> ${orderData.customer.phone}</p>
-        <p style="font-size: 16px;"><strong>Email:</strong> ${orderData.customer.email}</p>
-        <p style="font-size: 16px;"><strong>City:</strong> ${orderData.customer.city}</p>
-        <p style="font-size: 16px;"><strong>Address:</strong> ${orderData.customer.address}</p>
+        <p style="font-size: 16px;"><strong>Customer Name:</strong> ${orderData.customer?.first_name || ''} ${orderData.customer?.last_name || ''}</p>
+        <p style="font-size: 16px;"><strong>Phone:</strong> ${orderData.customer?.phone || ''}</p>
+        <p style="font-size: 16px;"><strong>Email:</strong> ${orderData.customer?.email || ''}</p>
+        <p style="font-size: 16px;"><strong>City:</strong> ${orderData.customer?.city || ''}</p>
+        <p style="font-size: 16px;"><strong>Address:</strong> ${orderData.customer?.address || ''}</p>
         <p style="font-size: 16px;"><strong>Payment Method:</strong> ${orderData.payment_method}</p>
         <p style="font-size: 16px;"><strong>Delivery Method:</strong> ${orderData.delivery_method}</p>
 
@@ -121,9 +158,9 @@ export async function sendOrderEmail(orderData: any) {
   }
 }
 
-export async function sendCustomerConfirmationEmail(orderData: any) {
-  const customerEmail = orderData.customer.email;
-  const itemsHtml = orderData.items.map(renderItemHtml).join('');
+export async function sendCustomerConfirmationEmail(orderData: OrderEmailData) {
+  const customerEmail = orderData.customer?.email;
+  const itemsHtml = (orderData.items || []).map(renderItemHtml).join('');
   const totalsHtml = renderTotalsHtml(orderData);
 
   const mailOptions = {
@@ -136,11 +173,11 @@ export async function sendCustomerConfirmationEmail(orderData: any) {
         <p style="font-size: 16px; text-align: center;">Thank you for your order. We'll ship it right away!</p>
 
         <p style="font-size: 16px;"><strong>Order Reference:</strong> ${orderData.order_ref}</p>
-        <p style="font-size: 16px;"><strong>Customer Name:</strong> ${orderData.customer.first_name} ${orderData.customer.last_name}</p>
-        <p style="font-size: 16px;"><strong>Phone:</strong> ${orderData.customer.phone}</p>
-        <p style="font-size: 16px;"><strong>Email:</strong> ${orderData.customer.email}</p>
-        <p style="font-size: 16px;"><strong>City:</strong> ${orderData.customer.city}</p>
-        <p style="font-size: 16px;"><strong>Address:</strong> ${orderData.customer.address}</p>
+        <p style="font-size: 16px;"><strong>Customer Name:</strong> ${orderData.customer?.first_name || ''} ${orderData.customer?.last_name || ''}</p>
+        <p style="font-size: 16px;"><strong>Phone:</strong> ${orderData.customer?.phone || ''}</p>
+        <p style="font-size: 16px;"><strong>Email:</strong> ${orderData.customer?.email || ''}</p>
+        <p style="font-size: 16px;"><strong>City:</strong> ${orderData.customer?.city || ''}</p>
+        <p style="font-size: 16px;"><strong>Address:</strong> ${orderData.customer?.address || ''}</p>
         <p style="font-size: 16px;"><strong>Payment Method:</strong> ${orderData.payment_method}</p>
         <p style="font-size: 16px;"><strong>Delivery Method:</strong> ${orderData.delivery_method}</p>
 

@@ -1,13 +1,52 @@
 import { NextResponse } from "next/server";
 import { getAramexCredentials, calculateRate, getAramexEnv, getAramexHost } from "@/lib/aramex";
 
+type AramexNotification = {
+  Code?: string;
+  Message?: string;
+};
+
+type AramexDiagnosticResponse = {
+  Notifications?: AramexNotification[];
+  HasErrors?: boolean;
+  TotalAmount?: unknown;
+};
+
+type EndpointDiagnostic = {
+  reachable: boolean;
+  status?: number;
+  hasAuthError?: boolean;
+  notifications?: string[];
+  error?: string;
+  code?: unknown;
+};
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function getErrorCode(error: unknown) {
+  if (error && typeof error === "object") {
+    const err = error as { code?: unknown; cause?: { code?: unknown } };
+    return err.cause?.code || err.code || null;
+  }
+
+  return null;
+}
+
 export async function GET() {
   const env = getAramexEnv();
   if (env === "prod") {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const diagnostics: Record<string, any> = {};
+  const diagnostics: {
+    config?: Record<string, unknown>;
+    endpoints: Record<string, EndpointDiagnostic>;
+    rateTest?: unknown;
+  } = {
+    endpoints: {},
+  };
 
   const credentials = getAramexCredentials();
   diagnostics.config = {
@@ -24,7 +63,6 @@ export async function GET() {
     { label: "prod_rate", url: "https://ws.aramex.net/ShippingAPI.V2/RateCalculator/Service_1_0.svc/json/CalculateRate" },
   ];
 
-  diagnostics.endpoints = {};
   for (const { label, url } of testUrls) {
     try {
       const res = await fetch(url, {
@@ -34,27 +72,27 @@ export async function GET() {
         signal: AbortSignal.timeout(15000),
       });
       const text = await res.text();
-      let parsed: any = null;
-      try { parsed = JSON.parse(text); } catch {}
+      let parsed: AramexDiagnosticResponse | null = null;
+      try { parsed = JSON.parse(text) as AramexDiagnosticResponse; } catch {}
       const notifications = parsed?.Notifications || [];
-      const hasAuthError = notifications.some((n: any) => n.Code === "ERR75");
+      const hasAuthError = notifications.some((n) => n.Code === "ERR75");
       diagnostics.endpoints[label] = {
         reachable: true,
         status: res.status,
         hasAuthError,
-        notifications: notifications.map((n: any) => `${n.Code}: ${n.Message}`),
+        notifications: notifications.map((n) => `${n.Code}: ${n.Message}`),
       };
-    } catch (e: any) {
+    } catch (e: unknown) {
       diagnostics.endpoints[label] = {
         reachable: false,
-        error: e.message,
-        code: e.cause?.code || e.code || null,
+        error: getErrorMessage(e),
+        code: getErrorCode(e),
       };
     }
   }
 
   // Test actual rate calculation with configured environment
-  let rateTest: any = null;
+  let rateTest: unknown = null;
   try {
     const originCity = "Cairo";
     const destinationCity = "Alexandria";
@@ -101,14 +139,14 @@ export async function GET() {
         PaymentType: "P",
         NumberOfPieces: 1,
       },
-    });
+    }) as AramexDiagnosticResponse;
     rateTest = {
       success: !rateResult?.HasErrors,
       totalAmount: rateResult?.TotalAmount || null,
-      notifications: rateResult?.Notifications?.map((n: any) => `${n.Code}: ${n.Message}`) || [],
+      notifications: rateResult?.Notifications?.map((n) => `${n.Code}: ${n.Message}`) || [],
     };
-  } catch (e: any) {
-    rateTest = { success: false, error: e.message };
+  } catch (e: unknown) {
+    rateTest = { success: false, error: getErrorMessage(e) };
   }
   diagnostics.rateTest = rateTest;
 

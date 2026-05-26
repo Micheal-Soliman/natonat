@@ -2,6 +2,19 @@ import { NextResponse } from "next/server";
 import { sendOrderEmail, sendCustomerConfirmationEmail } from "@/lib/email";
 
 type OrderLogBody = Record<string, unknown>;
+type OrderHistoryEntry = {
+  status: string;
+  timestamp: string;
+  source: unknown;
+};
+
+type StoredOrder = OrderLogBody & {
+  status?: string;
+  history?: OrderHistoryEntry[];
+  aramex?: {
+    trackingNumber?: string;
+  };
+};
 
 // Simple in-memory store for orders (in production, use a database like Redis, Supabase, etc.)
 const orderStore = new Map<string, OrderLogBody>();
@@ -50,7 +63,7 @@ export async function POST(req: Request) {
   // Store in memory for retrieval by webhook
   const orderRef = body.order_ref as string | undefined;
   if (orderRef) {
-    const existing = orderStore.get(orderRef) as any;
+    const existing = orderStore.get(orderRef) as StoredOrder | undefined;
     
     // Build status history
     const newStatus = (body.status || existing?.status || "confirmed") as string;
@@ -63,7 +76,8 @@ export async function POST(req: Request) {
     const history = existing?.history ? [...existing.history, historyEntry] : [historyEntry];
     
     // Add Aramex tracking link if tracking number exists
-    const trackingNumber = (body.aramex as any)?.trackingNumber || (existing?.aramex as any)?.trackingNumber;
+    const bodyAramex = body.aramex as StoredOrder["aramex"] | undefined;
+    const trackingNumber = bodyAramex?.trackingNumber || existing?.aramex?.trackingNumber;
     const trackingLink = trackingNumber 
       ? `https://www.aramex.com/eg/ar/track/results?mode=0&ShipmentNumber=${trackingNumber}`
       : "";

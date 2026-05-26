@@ -10,7 +10,7 @@ import { useTranslations } from 'next-intl';
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
-import { ShoppingBag, ChevronRight, Shield, Sparkles, Ruler, Heart, Share2, Check, Star, Truck, RotateCcw, ArrowUpRight, Award, ArrowLeft, ChevronLeft, ChevronRight as ChevronRightIcon, ChevronDown } from "lucide-react";
+import { Shield, Sparkles, Ruler, Heart, Share2, Check, Star, Truck, RotateCcw, ArrowUpRight, Award, ArrowLeft, ChevronLeft, ChevronRight as ChevronRightIcon, ChevronDown } from "lucide-react";
 import { FAQSection } from "@/app/components/faq-section";
 import { SwipeableProductImage } from "@/app/components/swipeable-product-image";
 import { type Product, products } from "@/lib/products";
@@ -376,7 +376,6 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
   const [selectedSize, setSelectedSize] = useState("m");
   const [selectedColor, setSelectedColor] = useState<string | null>(product.colors?.[0]?.id || null);
   const [quantity, setQuantity] = useState(1);
-  const [showDetails, setShowDetails] = useState(true); // Partially open - shows intro only
   const [detailsExpanded, setDetailsExpanded] = useState(false); // Controls full expansion
   const [showInfo, setShowInfo] = useState(true); // Fully open by default
 
@@ -438,7 +437,7 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
     }));
 
     return calculateBundlePrice(product.bundleItems, selections, products, pricingRuleKey);
-  }, [product, bundleSelections, products]);
+  }, [product, bundleSelections]);
 
   const currentPrice = product.dynamicPricing ? calculateDynamicBundlePrice() : getPriceBySize(selectedSize);
 
@@ -457,6 +456,7 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
   const [isVisible, setIsVisible] = useState(false);
   const [showShareToast, setShowShareToast] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const touchStartXRef = useRef<number | null>(null);
 
 
   const sizes = [
@@ -776,7 +776,8 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
 
   // Reset active image when color changes
   useEffect(() => {
-    setActiveImage(0);
+    const frameId = requestAnimationFrame(() => setActiveImage(0));
+    return () => cancelAnimationFrame(frameId);
   }, [selectedColor]);
 
 
@@ -880,12 +881,14 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                 className="relative aspect-square bg-white/50 backdrop-blur-sm rounded-2xl sm:rounded-3xl flex items-center justify-center overflow-hidden border border-[#0F1A26]/10 shadow-2xl shadow-[#0F1A26]/10 touch-pan-y"
                 onTouchStart={(e) => {
                   const touch = e.touches[0];
-                  (e.currentTarget as any).touchStartX = touch.clientX;
+                  touchStartXRef.current = touch.clientX;
                 }}
                 onTouchEnd={(e) => {
                   const touch = e.changedTouches[0];
-                  const startX = (e.currentTarget as any).touchStartX;
+                  const startX = touchStartXRef.current;
+                  if (startX === null) return;
                   const diff = startX - touch.clientX;
+                  touchStartXRef.current = null;
                   const threshold = 50;
                   if (Math.abs(diff) > threshold) {
                     if (diff > 0) {

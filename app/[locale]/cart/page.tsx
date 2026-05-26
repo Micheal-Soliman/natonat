@@ -7,7 +7,7 @@ import { useTranslations } from 'next-intl';
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
-import { ShoppingBag, Trash2, Plus, Minus, ArrowLeft, Package, Truck, Shield, X } from "lucide-react";
+import { ShoppingBag, Trash2, Plus, Minus, ArrowLeft } from "lucide-react";
 import { useCart } from "@/app/lib/cart-context";
 import { Loading } from "@/app/components/loading";
 
@@ -85,9 +85,13 @@ function CartContent() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-    // Clear buyNowItem when viewing cart - user is using cart checkout flow
-    setBuyNowItem(null);
+    const frameId = requestAnimationFrame(() => {
+      setMounted(true);
+      // Clear buyNowItem when viewing cart - user is using cart checkout flow
+      setBuyNowItem(null);
+    });
+
+    return () => cancelAnimationFrame(frameId);
   }, [setBuyNowItem]);
 
   // Prevent hydration mismatch - render loading state until mounted

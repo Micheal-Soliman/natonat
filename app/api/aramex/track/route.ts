@@ -1,6 +1,16 @@
 import { NextResponse } from "next/server";
 import { trackShipment } from "@/lib/aramex";
 
+type TrackResponse = {
+  HasErrors?: boolean;
+  Notifications?: Array<{ Message: string }>;
+  TrackingResults?: Array<{
+    TrackingStatus?: string;
+    TrackingUpdates?: unknown[];
+    EstimatedDeliveryTime?: string;
+  }>;
+};
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -13,7 +23,7 @@ export async function GET(req: Request) {
       );
     }
 
-    const result = await trackShipment(trackingNumber);
+    const result = (await trackShipment(trackingNumber)) as TrackResponse;
 
     if (result.HasErrors) {
       const errorMessages = result.Notifications?.map((n: { Message: string }) => n.Message).join(", ") || "Unknown error";

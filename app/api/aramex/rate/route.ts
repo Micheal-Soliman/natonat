@@ -1,6 +1,15 @@
 import { NextResponse } from "next/server";
 import { calculateRate } from "@/lib/aramex";
 
+type RateResponse = {
+  HasErrors?: boolean;
+  Notifications?: Array<{ Message: string }>;
+  TotalAmount?: { Value?: number; CurrencyCode?: string };
+  BaseCharge?: { Value?: number };
+  Taxes?: Array<{ Value: number; Type: string }>;
+  RateDetails?: unknown;
+};
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -73,7 +82,7 @@ export async function POST(req: Request) {
       },
     };
 
-    const result = await calculateRate(rateData);
+    const result = (await calculateRate(rateData)) as RateResponse;
 
     if (result.HasErrors) {
       const errorMessages = result.Notifications?.map((n: { Message: string }) => n.Message).join(", ") || "Unknown error";

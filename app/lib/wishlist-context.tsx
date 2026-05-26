@@ -30,18 +30,23 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 
   // Load from localStorage on mount
   useEffect(() => {
-    const saved = localStorage.getItem("natonat-wishlist");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        // Filter out old items without slug
-        const validItems = parsed.filter((item: WishlistItem) => item.slug);
-        setItems(validItems);
-      } catch {
-        setItems([]);
+    const frameId = requestAnimationFrame(() => {
+      const saved = localStorage.getItem("natonat-wishlist");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          // Filter out old items without slug
+          const validItems = parsed.filter((item: WishlistItem) => item.slug);
+          setItems(validItems);
+        } catch {
+          setItems([]);
+        }
       }
-    }
-    setIsHydrated(true);
+
+      setIsHydrated(true);
+    });
+
+    return () => cancelAnimationFrame(frameId);
   }, []);
 
   // Save to localStorage when items change
