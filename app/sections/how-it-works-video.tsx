@@ -8,22 +8,32 @@ export function HowItWorksVideo() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const idleCallback = (window as Window & typeof globalThis & {
+    const win = window as Window & typeof globalThis & {
       requestIdleCallback?: (callback: () => void) => number;
       cancelIdleCallback?: (id: number) => void;
-    }).requestIdleCallback;
+    };
 
-    if (idleCallback) {
-      const id = idleCallback(() => setLoadVideo(true));
-      return () => {
-        (window as Window & typeof globalThis & {
-          cancelIdleCallback?: (id: number) => void;
-        }).cancelIdleCallback?.(id);
-      };
+    let idleId: number | null = null;
+    let timeoutId: number | null = null;
+
+    const load = () => setLoadVideo(true);
+
+    if (typeof win.requestIdleCallback !== "undefined") {
+      idleId = win.requestIdleCallback(() => {
+        timeoutId = win.setTimeout(load, 2000);
+      });
+    } else {
+      timeoutId = win.setTimeout(load, 2000);
     }
 
-    const frame = requestAnimationFrame(() => setLoadVideo(true));
-    return () => cancelAnimationFrame(frame);
+    return () => {
+      if (idleId !== null) {
+        win.cancelIdleCallback?.(idleId);
+      }
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, []);
 
   return (
