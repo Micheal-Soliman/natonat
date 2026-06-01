@@ -1,15 +1,10 @@
-﻿"use client";
-
-import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
+﻿import Image from "next/image";
 import { Link } from "@/i18n/routing";
-import { useTranslations } from 'next-intl';
+import { getTranslations } from "next-intl/server";
 import { ArrowUpRight } from "lucide-react";
 
-export function FeaturedCollections() {
-  const t = useTranslations('collections');
-  const [isVisible, setIsVisible] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+export async function FeaturedCollections() {
+  const t = await getTranslations('collections');
 
   const collections = [
     {
@@ -41,27 +36,10 @@ export function FeaturedCollections() {
     },
   ];
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
-      },
-      { threshold: 0.2 }
-    );
-
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
-
   return (
-    <section ref={ref} className="py-24 bg-[#F1EBE3]">
+    <section className="py-24 bg-[#F1EBE3]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className={`text-center mb-16 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+        <div className="text-center mb-16 transition-all duration-700 opacity-100 translate-y-0">
           <span className="text-[#EEBC3F] text-xs font-semibold tracking-[0.2em] uppercase">{t('sectionLabel')}</span>
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-semibold text-[#0F1A26] mt-4 tracking-tight">
             {t('title')}
@@ -73,8 +51,7 @@ export function FeaturedCollections() {
             <Link
               key={collection.title}
               href={collection.href}
-              className={`group relative overflow-hidden rounded-3xl bg-[#0F1A26] transition-all duration-700 hover:shadow-2xl hover:shadow-[#EEBC3F]/10 hover:-translate-y-2 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-                }`}
+              className="group relative overflow-hidden rounded-3xl bg-[#0F1A26] transition-all duration-700 hover:shadow-2xl hover:shadow-[#EEBC3F]/10 hover:-translate-y-2 opacity-100 translate-y-0"
               style={{ transitionDelay: `${(index + 1) * 150}ms` }}
             >
               {/* Image Container - Full Card */}

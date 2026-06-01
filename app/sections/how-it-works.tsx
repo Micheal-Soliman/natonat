@@ -2,6 +2,7 @@ import { Link } from "@/i18n/routing";
 import { getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Ruler, Package, Check, PlayCircle } from "lucide-react";
+import { HowItWorksVideo } from "./how-it-works-video";
 
 export async function HowItWorks() {
   const t = await getTranslations("howItWorks");
@@ -99,18 +100,7 @@ export async function HowItWorks() {
             {/* Bigger Video */}
             <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/30 mb-4">
               <div className="relative h-[230px] sm:h-[260px] lg:h-[280px]">
-                <video
-                  className="w-full h-full object-contain"
-                  controls
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  preload="none"
-                >
-                  <source src="/size.mp4" type="video/mp4" />
-                  Your browser does not support the video tag.
-                </video>
+                <HowItWorksVideo />
               </div>
 
               <div className="px-4 py-3 border-t border-white/10 flex items-center justify-between gap-3">

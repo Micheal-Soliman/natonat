@@ -109,6 +109,23 @@ a, button {
   width: 100%;
 }
 
+/* Marquee animation */
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  display: flex;
+  min-width: max-content;
+  animation: marquee 120s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee > * {
+  flex: none;
+}
+
 /* Custom Scrollbar for Thumbnails */
 .scrollbar-thin {
   scrollbar-width: thin;

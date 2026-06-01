@@ -1,9 +1,9 @@
 "use client";
 
-import { useTranslations } from "next-intl";
 import Image from "next/image";
 import { Link } from "@/i18n/routing";
 import { Instagram, Facebook, MessageCircle, Mail, MapPin, Phone, Youtube } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export function Footer() {
   const t = useTranslations('footer');

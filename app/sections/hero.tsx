@@ -1,57 +1,32 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import { Link } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
-import { useTranslations } from 'next-intl';
+import { getTranslations } from "next-intl/server";
+import { HeroVideo } from "./hero-video";
 
-// Local Arthaus-Bold font
-const arthausFontStyle = `
-  @font-face {
-    font-family: 'Arthaus-Bold';
-    src: url('/Arthaus-Bold.ttf') format('truetype');
-    font-weight: bold;
-    font-style: normal;
-    font-display: swap;
-  }
+export default async function Hero() {
+  const t = await getTranslations('hero');
 
-  /* Marquee animation */
-  @keyframes marquee {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
-  }
-  
-  .animate-marquee {
-    animation: marquee 20s linear infinite;
-  }
-`;
+  const renderMarqueeItem = (index: number, keyPrefix: string) => (
+    <div key={`${keyPrefix}-${index}`} className="inline-flex items-center flex-none">
+      <span className="text-[#0F1A26] font-semibold text-sm tracking-wide uppercase px-8">
+        {t('freeShipping')} - {t('egyptOnly')}
+      </span>
+      <span className="text-[#0F1A26]/30">|</span>
+      <span className="text-[#0F1A26] font-semibold text-sm tracking-wide uppercase px-8">
+        {t('symplCashback')}
+      </span>
+      <span className="text-[#0F1A26]/30">|</span>
+    </div>
+  );
 
-export function Hero() {
-  const t = useTranslations('hero');
-  const [loaded, setLoaded] = useState(false);
-  const [loadVideo, setLoadVideo] = useState(false);
-
-  useEffect(() => {
-    setLoaded(true);
-    const id = requestAnimationFrame(() => setLoadVideo(true));
-    return () => cancelAnimationFrame(id);
-  }, []);
+  const marqueeItems = Array.from({ length: 16 }, (_, i) => renderMarqueeItem(i, 'marquee-item'));
+  const marqueeItemsCopy = Array.from({ length: 16 }, (_, i) => renderMarqueeItem(i, 'marquee-copy'));
 
   return (
     <section className="relative h-screen flex items-center justify-center overflow-hidden bg-[#0a0f14]">
       {/* Video Background */}
-      <style dangerouslySetInnerHTML={{ __html: arthausFontStyle }} />
       <div className="absolute inset-0">
-        <video
-          preload="none"
-          autoPlay
-          muted
-          loop
-          playsInline
-          className="absolute inset-0 w-full h-full object-cover"
-        >
-          {loadVideo ? <source src="/hero.mp4" type="video/mp4" /> : null}
-        </video>
+        <HeroVideo />
         {/* Dark overlay for text readability */}
         <div className="absolute inset-0 bg-black/50" />
         {/* Gradient overlay */}
@@ -61,25 +36,25 @@ export function Hero() {
       {/* Main content - minimal */}
       <div className="relative z-10 text-center px-4">
         {/* Small label */}
-        <p className={`text-[#EEBC3F] text-[10px] sm:text-xs tracking-[0.3em] uppercase mb-4 sm:mb-8 transition-all duration-1000 ${loaded ? 'opacity-100' : 'opacity-0'}`}>
+        <p className="text-[#EEBC3F] text-[10px] sm:text-xs tracking-[0.3em] uppercase mb-4 sm:mb-8">
           {t('label')}
         </p>
 
         {/* Big bold headline with local Arthaus-Bold font */}
-        <h1 
-          className={`text-4xl sm:text-6xl md:text-8xl lg:text-[10rem] font-bold leading-none tracking-[0.15em] mb-6 transition-all duration-1000 delay-200 ${loaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`} 
+        <h1
+          className="text-4xl sm:text-6xl md:text-8xl lg:text-[10rem] font-bold leading-none tracking-[0.15em] mb-6"
           style={{ fontFamily: "var(--font-arthaus), sans-serif" }}
         >
           <span className="block text-white">nat<span className="text-[#EEBC3F]">O</span>nat</span>
         </h1>
 
         {/* Tagline */}
-        <p className={`text-base sm:text-lg md:text-xl text-white/40 font-light tracking-wide mb-8 sm:mb-12 transition-all duration-1000 delay-400 ${loaded ? 'opacity-100' : 'opacity-0'}`}>
+        <p className="text-base sm:text-lg md:text-xl text-white/40 font-light tracking-wide mb-8 sm:mb-12">
           {t('tagline')}
         </p>
 
         {/* Single CTA */}
-        <div className={`transition-all duration-1000 delay-600 ${loaded ? 'opacity-100' : 'opacity-0'}`}>
+        <div className="transition-all duration-1000 delay-600 opacity-100">
           <Button
             asChild
             size="lg"
@@ -94,19 +69,9 @@ export function Hero() {
 
       {/* Free Shipping Marquee Banner */}
       <div className="absolute bottom-0 left-0 right-0 bg-[#EEBC3F] py-3 overflow-hidden z-20">
-        <div className="animate-marquee flex whitespace-nowrap">
-          {[...Array(10)].map((_, i) => (
-            <div key={i} className="flex items-center">
-              <span className="text-[#0F1A26] font-semibold text-sm tracking-wide uppercase px-8">
-                {t('freeShipping')} - {t('egyptOnly')}
-              </span>
-              <span className="text-[#0F1A26]/30">|</span>
-              <span className="text-[#0F1A26] font-semibold text-sm tracking-wide uppercase px-8">
-                {t('symplCashback')}
-              </span>
-              <span className="text-[#0F1A26]/30">|</span>
-            </div>
-          ))}
+        <div className="animate-marquee whitespace-nowrap flex">
+          {marqueeItems}
+          {marqueeItemsCopy}
         </div>
       </div>
     </section>
