@@ -45,7 +45,7 @@ export async function BenefitsStrip() {
             <div>
               <span className="text-[#EEBC3F] text-xs tracking-[0.3em] uppercase font-medium">{t("sectionLabel")}</span>
               <h2 className="text-4xl md:text-5xl lg:text-6xl font-light text-[#0F1A26] mt-4 tracking-tight">
-                {t("title")} <span className="font-medium text-[#EEBC3F]" style={{ fontFamily: "'Arthaus-Bold', sans-serif" }}>natOnat</span>
+                {t("title")} <span className="font-medium text-[#EEBC3F]" style={{ fontFamily: "var(--font-arthaus), sans-serif" }}>natOnat</span>
               </h2>
             </div>
             <p className="text-[#0F1A26]/50 text-sm max-w-xs text-right hidden md:block leading-relaxed">

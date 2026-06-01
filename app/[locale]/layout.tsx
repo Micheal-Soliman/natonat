@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import localFont from "next/font/local";
 import { Montserrat, Quicksand, Noto_Sans_Arabic } from "next/font/google";
 import { notFound } from "next/navigation";
 import Script from "next/script";
@@ -29,6 +30,12 @@ const notoSansArabic = Noto_Sans_Arabic({
   variable: "--font-arabic",
   subsets: ["arabic"],
   weight: ["300", "400", "500", "600", "700"],
+});
+
+const arthaus = localFont({
+  src: "../../public/Arthaus-Bold.ttf",
+  variable: "--font-arthaus",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -63,7 +70,7 @@ export default async function LocaleLayout({
   return (
     <html lang={locale} dir={locale === "ar" ? "rtl" : "ltr"}>
       <body
-        className={`${montserrat.variable} ${quicksand.variable} ${notoSansArabic.variable} antialiased font-sans`}
+        className={`${montserrat.variable} ${quicksand.variable} ${notoSansArabic.variable} ${arthaus.variable} antialiased font-sans`}
         style={{
           fontFamily:
             locale === "ar"

@@ -68,7 +68,7 @@ export function Hero() {
         {/* Big bold headline with local Arthaus-Bold font */}
         <h1 
           className={`text-4xl sm:text-6xl md:text-8xl lg:text-[10rem] font-bold leading-none tracking-[0.15em] mb-6 transition-all duration-1000 delay-200 ${loaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`} 
-          style={{ fontFamily: "'Arthaus-Bold', sans-serif" }}
+          style={{ fontFamily: "var(--font-arthaus), sans-serif" }}
         >
           <span className="block text-white">nat<span className="text-[#EEBC3F]">O</span>nat</span>
         </h1>
