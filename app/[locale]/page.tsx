@@ -11,10 +11,12 @@ import { ArticlesSection } from "@/app/sections/articles-section";
 import { Footer } from "@/app/sections/footer";
 import { Loading } from "@/app/components/loading";
 
-export default function Home({ params }: { params: { locale: string } }) {
+export default async function Home({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+
   return (
     <Suspense fallback={<Loading />}>
-      <HomeContent locale={params.locale} />
+      <HomeContent locale={locale} />
     </Suspense>
   );
 }
