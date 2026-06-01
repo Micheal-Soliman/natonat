@@ -130,7 +130,7 @@ function HowItWorksContent() {
                   className="w-full h-full object-contain"
                   controls
                   playsInline
-                  preload="metadata"
+                  preload="none"
                   poster="/videos/measurement-poster.jpg"
                 >
                   <source src="/size.mp4" type="video/mp4" />

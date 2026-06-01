@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Link } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
 import { useTranslations } from 'next-intl';
@@ -27,21 +28,29 @@ const arthausFontStyle = `
 
 export function Hero() {
   const t = useTranslations('hero');
-  const loaded = true;
+  const [loaded, setLoaded] = useState(false);
+  const [loadVideo, setLoadVideo] = useState(false);
+
+  useEffect(() => {
+    setLoaded(true);
+    const id = requestAnimationFrame(() => setLoadVideo(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
   return (
     <section className="relative h-screen flex items-center justify-center overflow-hidden bg-[#0a0f14]">
       {/* Video Background */}
       <style dangerouslySetInnerHTML={{ __html: arthausFontStyle }} />
       <div className="absolute inset-0">
         <video
-          preload="metadata"
+          preload="none"
           autoPlay
           muted
           loop
           playsInline
           className="absolute inset-0 w-full h-full object-cover"
         >
-          <source src="/hero.mp4" type="video/mp4" />
+          {loadVideo ? <source src="/hero.mp4" type="video/mp4" /> : null}
         </video>
         {/* Dark overlay for text readability */}
         <div className="absolute inset-0 bg-black/50" />
