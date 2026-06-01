@@ -72,7 +72,7 @@ export const products: Product[] = [
     ],
     description: "Modern geometric design for the stylish traveler",
     sizePrices: {
-      s: { price: 589, originalPrice: 700 },
+      s: { price: 549, originalPrice: 700 },
       m: { price: 649, originalPrice: 750 },
       l: { price: 689, originalPrice: 800 },
       xl: { price: 749, originalPrice: 850 }
@@ -104,7 +104,7 @@ export const products: Product[] = [
     ],
     description: "Beautiful floral pattern to brighten your journey",
     sizePrices: {
-      s: { price: 589, originalPrice: 750 },
+      s: { price: 549, originalPrice: 750 },
       m: { price: 649, originalPrice: 800 },
       l: { price: 689, originalPrice: 850 },
       xl: { price: 749, originalPrice: 900 }
@@ -136,7 +136,7 @@ export const products: Product[] = [
     ],
     description: "Bold abstract design for artistic souls",
     sizePrices: {
-      s: { price: 589, originalPrice: 800 },
+      s: { price: 549, originalPrice: 800 },
       m: { price: 649, originalPrice: 850 },
       l: { price: 689, originalPrice: 900 },
       xl: { price: 749, originalPrice: 950 }
@@ -168,7 +168,7 @@ export const products: Product[] = [
     ],
     description: "Inspired by the magnificent city of Dubai",
     sizePrices: {
-      s: { price: 589, originalPrice: 850 },
+      s: { price: 549, originalPrice: 850 },
       m: { price: 649, originalPrice: 900 },
       l: { price: 689, originalPrice: 950 },
       xl: { price: 749, originalPrice: 1000 }
@@ -200,7 +200,7 @@ export const products: Product[] = [
     ],
     description: "Celebrating Egypt's iconic landmarks",
     sizePrices: {
-      s: { price: 589, originalPrice: 750 },
+      s: { price: 549, originalPrice: 750 },
       m: { price: 649, originalPrice: 800 },
       l: { price: 689, originalPrice: 850 },
       xl: { price: 749, originalPrice: 900 }
@@ -232,7 +232,7 @@ export const products: Product[] = [
     ],
     description: "Royal Egyptian design for majestic travelers",
     sizePrices: {
-      s: { price: 589, originalPrice: 700 },
+      s: { price: 549, originalPrice: 700 },
       m: { price: 649, originalPrice: 750 },
       l: { price: 689, originalPrice: 800 },
       xl: { price: 749, originalPrice: 850 }
@@ -264,7 +264,7 @@ export const products: Product[] = [
     ],
     description: "Timeless Egyptian heritage design",
     sizePrices: {
-      s: { price: 589, originalPrice: 800 },
+      s: { price: 549, originalPrice: 800 },
       m: { price: 649, originalPrice: 850 },
       l: { price: 689, originalPrice: 900 },
       xl: { price: 749, originalPrice: 950 }
@@ -296,7 +296,7 @@ export const products: Product[] = [
     ],
     description: "Vibrant festival colors for joyful travelers",
     sizePrices: {
-      s: { price: 589, originalPrice: 750 },
+      s: { price: 549, originalPrice: 750 },
       m: { price: 649, originalPrice: 800 },
       l: { price: 689, originalPrice: 850 },
       xl: { price: 749, originalPrice: 900 }
@@ -328,7 +328,7 @@ export const products: Product[] = [
     ],
     description: "Elegant lotus flower design",
     sizePrices: {
-      s: { price: 589, originalPrice: 700 },
+      s: { price: 549, originalPrice: 700 },
       m: { price: 649, originalPrice: 750 },
       l: { price: 689, originalPrice: 800 },
       xl: { price: 749, originalPrice: 850 }
@@ -360,7 +360,7 @@ export const products: Product[] = [
     ],
     description: "Mystical lunar-inspired design",
     sizePrices: {
-      s: { price: 589, originalPrice: 800 },
+      s: { price: 549, originalPrice: 800 },
       m: { price: 649, originalPrice: 850 },
       l: { price: 689, originalPrice: 900 },
       xl: { price: 749, originalPrice: 950 }
@@ -392,7 +392,7 @@ export const products: Product[] = [
     ],
     description: "The city that never sleeps design",
     sizePrices: {
-      s: { price: 589, originalPrice: 750 },
+      s: { price: 549, originalPrice: 750 },
       m: { price: 649, originalPrice: 800 },
       l: { price: 689, originalPrice: 850 },
       xl: { price: 749, originalPrice: 900 }
@@ -424,7 +424,7 @@ export const products: Product[] = [
     ],
     description: "Mind-bending optical art design",
     sizePrices: {
-      s: { price: 589, originalPrice: 850 },
+      s: { price: 549, originalPrice: 850 },
       m: { price: 649, originalPrice: 900 },
       l: { price: 689, originalPrice: 950 },
       xl: { price: 749, originalPrice: 1000 }
@@ -456,7 +456,7 @@ export const products: Product[] = [
     ],
     description: "Solar-inspired radiant design",
     sizePrices: {
-      s: { price: 589, originalPrice: 750 },
+      s: { price: 549, originalPrice: 750 },
       m: { price: 649, originalPrice: 800 },
       l: { price: 689, originalPrice: 850 },
       xl: { price: 749, originalPrice: 900 }
@@ -488,7 +488,7 @@ export const products: Product[] = [
     ],
     description: "Colorful mosaic of travel memories",
     sizePrices: {
-      s: { price: 589, originalPrice: 800 },
+      s: { price: 549, originalPrice: 800 },
       m: { price: 649, originalPrice: 850 },
       l: { price: 689, originalPrice: 900 },
       xl: { price: 749, originalPrice: 950 }
@@ -520,7 +520,7 @@ export const products: Product[] = [
     ],
     description: "Ancient Egyptian pharaoh inspired design",
     sizePrices: {
-      s: { price: 589, originalPrice: 750 },
+      s: { price: 549, originalPrice: 750 },
       m: { price: 649, originalPrice: 800 },
       l: { price: 689, originalPrice: 850 },
       xl: { price: 749, originalPrice: 900 }
@@ -552,7 +552,7 @@ export const products: Product[] = [
     ],
     description: "Classic black design for sophisticated travelers",
     sizePrices: {
-      s: { price: 589, originalPrice: 700 },
+      s: { price: 549, originalPrice: 700 },
       m: { price: 649, originalPrice: 750 },
       l: { price: 689, originalPrice: 800 },
       xl: { price: 749, originalPrice: 850 }
@@ -584,7 +584,7 @@ export const products: Product[] = [
     ],
     description: "Adventure awaits with this exploration-inspired design",
     sizePrices: {
-      s: { price: 589, originalPrice: 800 },
+      s: { price: 549, originalPrice: 800 },
       m: { price: 649, originalPrice: 850 },
       l: { price: 689, originalPrice: 900 },
       xl: { price: 749, originalPrice: 950 }
@@ -616,7 +616,7 @@ export const products: Product[] = [
     ],
     description: "Nature-inspired design for outdoor enthusiasts",
     sizePrices: {
-      s: { price: 589, originalPrice: 650 },
+      s: { price: 549, originalPrice: 650 },
       m: { price: 649, originalPrice: 700 },
       l: { price: 689, originalPrice: 750 },
       xl: { price: 749, originalPrice: 800 }
@@ -648,7 +648,7 @@ export const products: Product[] = [
     ],
     description: "Colorful travel stickers design for wanderlust souls",
     sizePrices: {
-      s: { price: 589, originalPrice: 750 },
+      s: { price: 549, originalPrice: 750 },
       m: { price: 649, originalPrice: 800 },
       l: { price: 689, originalPrice: 850 },
       xl: { price: 749, originalPrice: 900 }
@@ -680,7 +680,7 @@ export const products: Product[] = [
     ],
     description: "Modern urban aesthetic for city travelers",
     sizePrices: {
-      s: { price: 589, originalPrice: 800 },
+      s: { price: 549, originalPrice: 800 },
       m: { price: 649, originalPrice: 850 },
       l: { price: 689, originalPrice: 900 },
       xl: { price: 749, originalPrice: 950 }
@@ -712,7 +712,7 @@ export const products: Product[] = [
     ],
     description: "Bold and vibrant design for confident travelers",
     sizePrices: {
-      s: { price: 589, originalPrice: 750 },
+      s: { price: 549, originalPrice: 750 },
       m: { price: 649, originalPrice: 800 },
       l: { price: 689, originalPrice: 850 },
       xl: { price: 749, originalPrice: 900 }
@@ -744,7 +744,7 @@ export const products: Product[] = [
     ],
     description: "Vibrant Barcelona-inspired design for passionate travelers",
     sizePrices: {
-      s: { price: 589, originalPrice: 750 },
+      s: { price: 549, originalPrice: 750 },
       m: { price: 649, originalPrice: 800 },
       l: { price: 689, originalPrice: 850 },
       xl: { price: 749, originalPrice: 900 }
@@ -776,7 +776,7 @@ export const products: Product[] = [
     ],
     description: "Elegant Madrid design celebrating Spanish culture",
     sizePrices: {
-      s: { price: 589, originalPrice: 800 },
+      s: { price: 549, originalPrice: 800 },
       m: { price: 649, originalPrice: 850 },
       l: { price: 689, originalPrice: 900 },
       xl: { price: 749, originalPrice: 950 }
@@ -808,7 +808,7 @@ export const products: Product[] = [
     ],
     description: "Stunning peacock feather design for elegant travelers",
     sizePrices: {
-      s: { price: 589, originalPrice: 800 },
+      s: { price: 549, originalPrice: 800 },
       m: { price: 649, originalPrice: 850 },
       l: { price: 689, originalPrice: 900 },
       xl: { price: 749, originalPrice: 950 }
@@ -840,7 +840,7 @@ export const products: Product[] = [
     ],
     description: "Ancient pyramids design honoring Egypt's wonders",
     sizePrices: {
-      s: { price: 589, originalPrice: 800 },
+      s: { price: 549, originalPrice: 800 },
       m: { price: 649, originalPrice: 850 },
       l: { price: 689, originalPrice: 900 },
       xl: { price: 749, originalPrice: 950 }
@@ -872,7 +872,7 @@ export const products: Product[] = [
     ],
     description: "Futuristic tech design for modern adventurers",
     sizePrices: {
-      s: { price: 589, originalPrice: 850 },
+      s: { price: 549, originalPrice: 850 },
       m: { price: 649, originalPrice: 900 },
       l: { price: 689, originalPrice: 950 },
       xl: { price: 749, originalPrice: 1000 }
@@ -904,7 +904,7 @@ export const products: Product[] = [
     ],
     description: "Lush wild fern design for nature lovers",
     sizePrices: {
-      s: { price: 589, originalPrice: 700 },
+      s: { price: 549, originalPrice: 700 },
       m: { price: 649, originalPrice: 750 },
       l: { price: 689, originalPrice: 800 },
       xl: { price: 749, originalPrice: 850 }
@@ -936,7 +936,7 @@ export const products: Product[] = [
     ],
     description: "غطاء شنط مستوحى من الطاقة الموسيقية والنيون. تصميم عصري جريء بخطوط لامعة وتفاصيل ناعمة بيعكس روح الإيقاع والحركة. مثالي للمسافرين اللي بيحبوا الطاقة والتميز.",
     sizePrices: {
-      s: { price: 589, originalPrice: 750 },
+      s: { price: 549, originalPrice: 750 },
       m: { price: 649, originalPrice: 800 },
       l: { price: 689, originalPrice: 850 },
       xl: { price: 749, originalPrice: 900 }
@@ -974,7 +974,7 @@ export const products: Product[] = [
     ],
     description: "Clean minimal green luggage cover design for a fresh, modern travel look.",
     sizePrices: {
-      s: { price: 589, originalPrice: 750 },
+      s: { price: 549, originalPrice: 750 },
       m: { price: 649, originalPrice: 800 },
       l: { price: 689, originalPrice: 850 },
       xl: { price: 749, originalPrice: 900 }
@@ -1012,7 +1012,7 @@ export const products: Product[] = [
     ],
     description: "Bold minimal red luggage cover design for a confident, modern travel look.",
     sizePrices: {
-      s: { price: 589, originalPrice: 750 },
+      s: { price: 549, originalPrice: 750 },
       m: { price: 649, originalPrice: 800 },
       l: { price: 689, originalPrice: 850 },
       xl: { price: 749, originalPrice: 900 }
