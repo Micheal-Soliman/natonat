@@ -8,7 +8,7 @@ import "../globals.css";
 import { CartProvider } from "../lib/cart-context";
 import { WishlistProvider } from "../lib/wishlist-context";
 import { ToastProvider } from "../components/toast-provider";
-import { FloatingContact } from "../components/floating-contact";
+import FloatingContactLoader from "../components/floating-contact-loader";
 import { CartSliderWrapper } from "../components/cart-slider-wrapper";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, setRequestLocale } from "next-intl/server";
@@ -125,7 +125,7 @@ export default async function LocaleLayout({
             <CartProvider>
               <WishlistProvider>
                 {children}
-                <FloatingContact />
+                <FloatingContactLoader />
                 <CartSliderWrapper />
               </WishlistProvider>
             </CartProvider>

@@ -320,6 +320,7 @@ export function Navigation() {
               ) : (
                 <button
                   onClick={() => setSearchOpen(true)}
+                  aria-label="Search"
                   className={`rounded-full flex items-center justify-center transition-all duration-300 cursor-pointer ${scrolled
                     ? "w-10 h-10 text-white/60 hover:text-white hover:bg-white/10"
                     : "w-10 h-10 text-[#0F1A26]/60 hover:text-[#0F1A26] hover:bg-[#0F1A26]/10"
@@ -343,6 +344,7 @@ export function Navigation() {
                     : "bg-[#0F1A26]/10 text-[#0F1A26]"
                   : ""
                 }`}
+              aria-label="Wishlist"
             >
               <Heart className="w-5 h-5" />
 
@@ -355,6 +357,7 @@ export function Navigation() {
 
             <button
               onClick={openCart}
+              aria-label="Open cart"
               className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 cursor-pointer ${scrolled
                 ? "text-white/70 hover:text-white hover:bg-white/15"
                 : "text-[#0F1A26]/70 hover:text-[#0F1A26] hover:bg-[#0F1A26]/15"
@@ -387,6 +390,7 @@ export function Navigation() {
                   ? "bg-[#EEBC3F] text-[#0F1A26]"
                   : ""
                 }`}
+              aria-label="Wishlist"
             >
               <Heart className="w-4 h-4 sm:w-5 sm:h-5" />
 
@@ -402,6 +406,7 @@ export function Navigation() {
                 openCart();
                 closeMobileMenu();
               }}
+              aria-label="Open cart"
               className={`relative w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center cursor-pointer transition-all duration-300 ${scrolled
                 ? "bg-white/10 text-white hover:bg-white/20"
                 : "bg-[#0F1A26]/10 text-[#0F1A26] hover:bg-[#0F1A26]/20"
@@ -418,6 +423,7 @@ export function Navigation() {
 
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
               className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center cursor-pointer transition-all duration-300 ${scrolled
                 ? "bg-white/10 text-white"
                 : "bg-[#0F1A26]/10 text-[#0F1A26]"

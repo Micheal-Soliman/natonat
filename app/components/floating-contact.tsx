@@ -29,40 +29,44 @@ export function FloatingContact() {
   ];
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
-      <AnimatePresence>
-        {isOpen && (
-          <>
-            {contacts.map((contact, index) => (
-              <motion.a
-                key={contact.id}
-                href={contact.href}
-                target={contact.id === "whatsapp" ? "_blank" : undefined}
-                rel={contact.id === "whatsapp" ? "noopener noreferrer" : undefined}
-                initial={{ opacity: 0, y: 20, scale: 0.8 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 20, scale: 0.8 }}
-                transition={{ duration: 0.2, delay: index * 0.1 }}
-                className={`flex items-center gap-3 group`}
-              >
-                <span className="bg-white px-3 py-1.5 rounded-lg shadow-lg text-sm font-medium text-[#0F1A26] opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                  {contact.label}
-                </span>
-                <div
-                  className={`w-12 h-12 rounded-full ${contact.color} ${contact.hoverColor} flex items-center justify-center shadow-lg transition-all duration-300 hover:scale-110`}
+    <div className="fixed bottom-6 right-6 z-50">
+      {/* Contacts Container - allows flex layout without affecting button position */}
+      <div className="flex flex-col items-end gap-3 mb-3">
+        <AnimatePresence>
+          {isOpen && (
+            <>
+              {contacts.map((contact, index) => (
+                <motion.a
+                  key={contact.id}
+                  href={contact.href}
+                  target={contact.id === "whatsapp" ? "_blank" : undefined}
+                  rel={contact.id === "whatsapp" ? "noopener noreferrer" : undefined}
+                  aria-label={contact.label}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.15, delay: index * 0.06 }}
+                  className="relative flex items-center justify-end group cursor-pointer"
                 >
-                  <contact.icon className="w-5 h-5 text-white" />
-                </div>
-              </motion.a>
-            ))}
-          </>
-        )}
-      </AnimatePresence>
+                  <span className="pointer-events-none absolute right-full mr-3 hidden rounded-lg bg-white px-3 py-1.5 shadow-lg text-sm font-medium text-[#0F1A26] transition-all duration-200 group-hover:block whitespace-nowrap">
+                    {contact.label}
+                  </span>
+                  <div
+                    className={`w-12 h-12 rounded-full ${contact.color} ${contact.hoverColor} flex items-center justify-center shadow-lg transition-all duration-300 hover:scale-110`}
+                  >
+                    <contact.icon className="w-5 h-5 text-white" />
+                  </div>
+                </motion.a>
+              ))}
+            </>
+          )}
+        </AnimatePresence>
+      </div>
 
-      {/* Main Toggle Button */}
+      {/* Main Toggle Button - Fixed position, never moves */}
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative w-14 h-14 rounded-full bg-[#0F1A26] flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-105"
+        className="relative w-14 h-14 rounded-full bg-[#0F1A26] flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-105 cursor-pointer"
         whileTap={{ scale: 0.95 }}
       >
         <AnimatePresence mode="wait">
@@ -99,13 +103,13 @@ export function FloatingContact() {
         )}
       </motion.button>
 
-      {/* Label - Always visible except when menu is open */}
+      {/* Label - Positioned absolutely, doesn't affect button */}
       <AnimatePresence>
         {!isOpen && (
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             className="absolute bottom-16 right-0 bg-white px-4 py-2 rounded-lg shadow-lg whitespace-nowrap"
           >
             <p className="text-sm font-medium text-[#0F1A26]">{t('label')}</p>
