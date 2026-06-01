@@ -18,18 +18,21 @@ const montserrat = Montserrat({
   variable: "--font-montserrat",
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
+  display: "swap",
 });
 
 const quicksand = Quicksand({
   variable: "--font-quicksand",
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
+  display: "swap",
 });
 
 const notoSansArabic = Noto_Sans_Arabic({
   variable: "--font-arabic",
   subsets: ["arabic"],
   weight: ["300", "400", "500", "600", "700"],
+  display: "swap",
 });
 
 const arthaus = localFont({
@@ -78,22 +81,32 @@ export default async function LocaleLayout({
               : "var(--font-montserrat), sans-serif",
         }}
       >
-        {/* Meta Pixel Code */}
-        <Script id="meta-pixel" strategy="lazyOnload">
-          {`
-            !function(f,b,e,v,n,t,s)
-            {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-            n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-            if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-            n.queue=[];t=b.createElement(e);t.async=!0;
-            t.src=v;s=b.getElementsByTagName(e)[0];
-            s.parentNode.insertBefore(t,s)}(window, document,'script',
-            'https://connect.facebook.net/en_US/fbevents.js');
-
-            fbq('init', '1648230933094184');
-            fbq('track', 'PageView');
-          `}
-        </Script>
+        {/* Meta Pixel Code — defer until user interaction to reduce third-party impact */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+            (function(){
+              var fired = false;
+              function loadPixel(){
+                if(fired) return; fired = true;
+                var s = document.createElement('script');
+                s.async = true;
+                s.src = 'https://connect.facebook.net/en_US/fbevents.js';
+                s.onload = function(){
+                  try{
+                    fbq('init', '1648230933094184');
+                    fbq('track', 'PageView');
+                  }catch(e){}
+                };
+                document.head.appendChild(s);
+              }
+              ['scroll','pointerdown','keydown','touchstart'].forEach(function(ev){
+                window.addEventListener(ev, loadPixel, { once: true, passive: true });
+              });
+            })();
+            `,
+          }}
+        />
 
         <noscript>
           {/* eslint-disable-next-line @next/next/no-img-element */}
