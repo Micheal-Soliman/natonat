@@ -106,7 +106,7 @@ export async function HowItWorks() {
                   muted
                   loop
                   playsInline
-                  preload="metadata"
+                  preload="none"
                 >
                   <source src="/size.mp4" type="video/mp4" />
                   Your browser does not support the video tag.
