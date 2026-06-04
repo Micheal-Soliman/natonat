@@ -9,6 +9,7 @@ import { CartProvider } from "../lib/cart-context";
 import { WishlistProvider } from "../lib/wishlist-context";
 import { ToastProvider } from "../components/toast-provider";
 import FloatingContactLoader from "../components/floating-contact-loader";
+import { MetaPixelPageView } from "../components/meta-pixel-page-view";
 import { CartSliderWrapper } from "../components/cart-slider-wrapper";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, setRequestLocale } from "next-intl/server";
@@ -81,32 +82,22 @@ export default async function LocaleLayout({
               : "var(--font-montserrat), sans-serif",
         }}
       >
-        {/* Meta Pixel Code — defer until user interaction to reduce third-party impact */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-            (function(){
-              var fired = false;
-              function loadPixel(){
-                if(fired) return; fired = true;
-                var s = document.createElement('script');
-                s.async = true;
-                s.src = 'https://connect.facebook.net/en_US/fbevents.js';
-                s.onload = function(){
-                  try{
-                    fbq('init', '1648230933094184');
-                    fbq('track', 'PageView');
-                  }catch(e){}
-                };
-                document.head.appendChild(s);
-              }
-              ['scroll','pointerdown','keydown','touchstart'].forEach(function(ev){
-                window.addEventListener(ev, loadPixel, { once: true, passive: true });
-              });
-            })();
-            `,
-          }}
-        />
+        {/* Meta Pixel Code */}
+        <Script id="meta-pixel" strategy="afterInteractive">
+          {`
+            !function(f,b,e,v,n,t,s)
+            {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+            n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+            if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+            n.queue=[];t=b.createElement(e);t.async=!0;
+            t.src=v;s=b.getElementsByTagName(e)[0];
+            s.parentNode.insertBefore(t,s)}(window, document,'script',
+            'https://connect.facebook.net/en_US/fbevents.js');
+
+            fbq('init', '1648230933094184');
+            fbq('track', 'PageView');
+          `}
+        </Script>
 
         <noscript>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -121,6 +112,7 @@ export default async function LocaleLayout({
         {/* End Meta Pixel Code */}
 
         <NextIntlClientProvider messages={messages}>
+          <MetaPixelPageView />
           <ToastProvider>
             <CartProvider>
               <WishlistProvider>
