@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Shield, Sparkles, Ruler, Heart, Share2, Check, Star, Truck, RotateCcw, ArrowUpRight, Award, ArrowLeft, ChevronLeft, ChevronRight as ChevronRightIcon, ChevronDown } from "lucide-react";
 import { FAQSection } from "@/app/components/faq-section";
 import { SwipeableProductImage } from "@/app/components/swipeable-product-image";
-import { type Product, products } from "@/lib/products";
+import { type Product } from "@/lib/products";
 import { calculateBundlePrice, getPricingRuleKey } from "@/lib/bundle-pricing";
 
 // Separate component for detailed product description
@@ -31,6 +31,7 @@ interface ProductDetailedDescriptionProps {
     originalPrice: number;
     image: string;
     size?: string;
+    color?: string;
     quantity: number;
   }) => void;
 }
@@ -350,6 +351,7 @@ function ProductDetailedDescriptionFull({ product, selectedSize, quantity, t, ad
               originalPrice: product.originalPrice,
               image: product.image,
               size: product.size ? selectedSize : undefined,
+              color: product.color,
               quantity: quantity,
             });
           }}
@@ -366,15 +368,24 @@ interface ProductPageContentProps {
   product: Product;
   prevProduct: Product | null;
   nextProduct: Product | null;
+  products: Product[];
 }
 
-export default function ProductPageContent({ product, prevProduct, nextProduct }: ProductPageContentProps) {
+export default function ProductPageContent({
+  product,
+  prevProduct,
+  nextProduct,
+  products,
+}: ProductPageContentProps) {
   const t = useTranslations('product');
   const { addToCart, setBuyNowItem } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const router = useRouter();
   const [selectedSize, setSelectedSize] = useState("m");
   const [selectedColor, setSelectedColor] = useState<string | null>(product.colors?.[0]?.id || null);
+  const selectedProductColor =
+    product.colors?.find((color) => color.id === selectedColor)?.name ||
+    product.color;
   const [quantity, setQuantity] = useState(1);
   const [detailsExpanded, setDetailsExpanded] = useState(false); // Controls full expansion
   const [showInfo, setShowInfo] = useState(true); // Fully open by default
@@ -382,7 +393,7 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
   const isBundle = product.category === "bundles" && !!product.bundleItems?.length;
   const getBundleProduct = useCallback(
     (productId: number) => products.find((p) => p.id === productId),
-    []
+    [products]
   );
 
   const getBundleSizeOptions = useCallback((bundleProduct: Product): string[] => {
@@ -437,7 +448,7 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
     }));
 
     return calculateBundlePrice(product.bundleItems, selections, products, pricingRuleKey);
-  }, [product, bundleSelections]);
+  }, [product, bundleSelections, products]);
 
   const currentPrice = product.dynamicPricing ? calculateDynamicBundlePrice() : getPriceBySize(selectedSize);
 
@@ -771,7 +782,7 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
       .forEach(({ item }) => selected.set(item.id, item));
 
     return Array.from(selected.values()).slice(0, RELATED_LIMIT);
-  }, [product]);
+  }, [product, products]);
 
 
   // Reset active image when color changes
@@ -1296,9 +1307,23 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                             return {
                               productId: selectedProductId || 0,
                               productName: bundleProduct?.name || "",
+                              productSlug: bundleProduct?.slug,
+                              productType: bundleProduct?.type,
+                              label: item.label,
                               size: selection.size,
-                              color: selection.color,
+                              color:
+                                bundleProduct?.colors?.find((color) => color.id === selection.color)?.name ||
+                                selection.color ||
+                                bundleProduct?.color,
                               quantity: item.quantity,
+                              price:
+                                selection.size && bundleProduct?.sizePrices
+                                  ? bundleProduct.sizePrices[selection.size as keyof typeof bundleProduct.sizePrices]?.price
+                                  : bundleProduct?.price,
+                              originalPrice:
+                                selection.size && bundleProduct?.sizePrices
+                                  ? bundleProduct.sizePrices[selection.size as keyof typeof bundleProduct.sizePrices]?.originalPrice
+                                  : bundleProduct?.originalPrice,
                             };
                           })
                           : undefined;
@@ -1314,7 +1339,7 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                           ? product.colors.find(c => c.id === selectedColor)?.image || product.image
                           : product.image,
                         size: product.size ? selectedSize : undefined,
-                        color: product.colors && selectedColor ? selectedColor : undefined,
+                        color: selectedProductColor,
                         quantity: quantity,
                         isBundle,
                         bundleSelections: cartBundleSelections,
@@ -1342,9 +1367,23 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                             return {
                               productId: selectedProductId || 0,
                               productName: bundleProduct?.name || "",
+                              productSlug: bundleProduct?.slug,
+                              productType: bundleProduct?.type,
+                              label: item.label,
                               size: selection.size,
-                              color: selection.color,
+                              color:
+                                bundleProduct?.colors?.find((color) => color.id === selection.color)?.name ||
+                                selection.color ||
+                                bundleProduct?.color,
                               quantity: item.quantity,
+                              price:
+                                selection.size && bundleProduct?.sizePrices
+                                  ? bundleProduct.sizePrices[selection.size as keyof typeof bundleProduct.sizePrices]?.price
+                                  : bundleProduct?.price,
+                              originalPrice:
+                                selection.size && bundleProduct?.sizePrices
+                                  ? bundleProduct.sizePrices[selection.size as keyof typeof bundleProduct.sizePrices]?.originalPrice
+                                  : bundleProduct?.originalPrice,
                             };
                           })
                           : undefined;
@@ -1360,7 +1399,7 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                           ? product.colors.find(c => c.id === selectedColor)?.image || product.image
                           : product.image,
                         size: product.size ? selectedSize : undefined,
-                        color: product.colors && selectedColor ? selectedColor : undefined,
+                        color: selectedProductColor,
                         quantity: quantity,
                         isBundle,
                         bundleSelections: cartBundleSelections,
@@ -1617,9 +1656,23 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                       return {
                         productId: selectedProductId || 0,
                         productName: bundleProduct?.name || "",
+                        productSlug: bundleProduct?.slug,
+                        productType: bundleProduct?.type,
+                        label: item.label,
                         size: selection.size,
-                        color: selection.color,
+                        color:
+                          bundleProduct?.colors?.find((color) => color.id === selection.color)?.name ||
+                          selection.color ||
+                          bundleProduct?.color,
                         quantity: item.quantity,
+                        price:
+                          selection.size && bundleProduct?.sizePrices
+                            ? bundleProduct.sizePrices[selection.size as keyof typeof bundleProduct.sizePrices]?.price
+                            : bundleProduct?.price,
+                        originalPrice:
+                          selection.size && bundleProduct?.sizePrices
+                            ? bundleProduct.sizePrices[selection.size as keyof typeof bundleProduct.sizePrices]?.originalPrice
+                            : bundleProduct?.originalPrice,
                       };
                     })
                     : undefined;
@@ -1633,6 +1686,7 @@ export default function ProductPageContent({ product, prevProduct, nextProduct }
                   originalPrice: currentPrice.originalPrice,
                   image: product.image,
                   size: product.size ? selectedSize : undefined,
+                  color: selectedProductColor,
                   quantity: quantity,
                   isBundle,
                   bundleSelections: cartBundleSelections,

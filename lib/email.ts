@@ -9,13 +9,29 @@ const transporter = nodemailer.createTransport({
 });
 
 type OrderEmailItem = {
+  id?: number;
   name: string;
+  slug?: string;
   quantity: number;
   size?: string;
   color?: string;
   type?: string;
   price?: number;
   price_egp?: number;
+  original_price_egp?: number;
+  isBundle?: boolean;
+  bundleSelections?: {
+    productId?: number;
+    productName?: string;
+    productSlug?: string;
+    productType?: string;
+    label?: string;
+    size?: string;
+    color?: string;
+    quantity?: number;
+    price?: number;
+    originalPrice?: number;
+  }[];
 };
 
 type OrderEmailData = {
@@ -44,29 +60,90 @@ type OrderEmailData = {
   };
 };
 
-function renderItemHtml(item: OrderEmailItem) {
+function escapeHtml(value: unknown) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+function renderBundleSelectionsHtml(item: OrderEmailItem) {
+  if (!item.bundleSelections?.length) return '';
+
+  const selections = item.bundleSelections.map((selection, index) => {
+    const details = [
+      selection.productType ? `Type: ${escapeHtml(selection.productType)}` : '',
+      selection.size ? `Size: ${escapeHtml(selection.size).toUpperCase()}` : '',
+      selection.color ? `Color: ${escapeHtml(selection.color)}` : '',
+      `Qty: ${selection.quantity || 1}`,
+    ].filter(Boolean).join(' | ');
+    const identity = [
+      selection.productId ? `ID: ${selection.productId}` : '',
+      selection.productSlug ? `Slug: ${escapeHtml(selection.productSlug)}` : '',
+    ].filter(Boolean).join(' | ');
+    const price = selection.price;
+    const originalPrice = selection.originalPrice;
+    const priceHtml = price !== undefined
+      ? `<div style="font-size: 13px; color: #555;">Catalog unit price: EGP ${price}${
+          originalPrice && originalPrice !== price ? ` | Original: EGP ${originalPrice}` : ''
+        }</div>`
+      : '';
+
+    return `
+      <li style="margin: 6px 0;">
+        <strong>${index + 1}. ${escapeHtml(selection.label || 'Bundle item')}: ${escapeHtml(selection.productName || `Product ${selection.productId || ''}`)}</strong>
+        <div style="font-size: 13px; color: #555;">${details}</div>
+        ${identity ? `<div style="font-size: 12px; color: #777;">${identity}</div>` : ''}
+        ${priceHtml}
+      </li>
+    `;
+  }).join('');
+
+  return `
+    <div style="margin-top: 8px; padding: 8px 10px; background: #fff8e1; border-left: 3px solid #EEBC3F;">
+      <strong style="font-size: 13px;">Bundle contents:</strong>
+      <ul style="margin: 4px 0 0; padding-left: 18px;">${selections}</ul>
+    </div>
+  `;
+}
+
+export function renderItemHtml(item: OrderEmailItem) {
   const optionsHtml = item.size
-    ? `<div style="font-size: 14px; color: #555;">Size: ${item.size.toUpperCase()}</div>`
+    ? `<div style="font-size: 14px; color: #555;">Size: ${escapeHtml(item.size).toUpperCase()}</div>`
     : '';
 
   const colorHtml = item.color
-    ? `<div style="font-size: 14px; color: #555;">Color: ${item.color}</div>`
+    ? `<div style="font-size: 14px; color: #555;">Color: ${escapeHtml(item.color)}</div>`
     : '';
 
-  // Use item.type which is always present in the payload (e.g. "Luggage Cover", "Bundle", etc.)
   const typeLabel = item.type || 'Product';
+  const unitPrice = item.price_egp ?? item.price ?? 0;
+  const bundleHtml = renderBundleSelectionsHtml(item);
+  const identityHtml = [
+    item.id ? `Product ID: ${item.id}` : '',
+    item.slug ? `Slug: ${escapeHtml(item.slug)}` : '',
+  ].filter(Boolean).join(' | ');
+  const originalPriceHtml =
+    item.original_price_egp && item.original_price_egp !== unitPrice
+      ? `<div style="font-size: 12px; color: #777;">Original price: EGP ${item.original_price_egp}</div>`
+      : '';
 
   return `
     <tr>
       <td style="padding: 10px; border-bottom: 1px solid #eee;">
-        <strong>${item.name}</strong>
+        <strong>${escapeHtml(item.name)}</strong>
         ${optionsHtml}
         ${colorHtml}
-        <div style="font-size: 12px; color: #777; margin-top: 2px;">${typeLabel}</div>
+        <div style="font-size: 12px; color: #777; margin-top: 2px;">${escapeHtml(typeLabel)}</div>
+        ${identityHtml ? `<div style="font-size: 12px; color: #777;">${identityHtml}</div>` : ''}
+        ${originalPriceHtml}
+        ${bundleHtml}
       </td>
       <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.quantity}</td>
-      <td style="padding: 10px; border-bottom: 1px solid #eee;">EGP ${item.price_egp || item.price || 0}</td>
-      <td style="padding: 10px; border-bottom: 1px solid #eee;">EGP ${(item.price_egp || item.price || 0) * item.quantity}</td>
+      <td style="padding: 10px; border-bottom: 1px solid #eee;">EGP ${unitPrice}</td>
+      <td style="padding: 10px; border-bottom: 1px solid #eee;">EGP ${unitPrice * item.quantity}</td>
     </tr>
   `;
 }

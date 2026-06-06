@@ -5,7 +5,39 @@ import { products } from "@/lib/products";
 
 export const dynamic = "force-dynamic";
 
-function csvEscape(value: any) {
+type CatalogItem = {
+  id: string;
+  title: string;
+  description: string;
+  availability: string;
+  condition: string;
+  link: string;
+  image_link: string;
+  brand: string;
+  google_product_category: string;
+  fb_product_category: string;
+  quantity_to_sell_on_facebook: number;
+  sale_price: string;
+  sale_price_effective_date: string;
+  item_group_id: string;
+  gender: string;
+  color: string;
+  age_group: string;
+  material: string;
+  pattern: string;
+  shipping: string;
+  shipping_weight: string;
+  offer_disclaimer: string;
+  offer_disclaimer_url: string;
+  video: string[];
+  gtin: string;
+  product_tags: string[];
+  style: string[];
+  price?: string;
+  size?: string;
+};
+
+function csvEscape(value: unknown) {
   if (value === null || value === undefined) return "";
   const s = String(value);
   // Escape double quotes by doubling, wrap in quotes if contains comma, quote or newline
@@ -28,7 +60,7 @@ export async function GET(request: Request) {
     const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || "https://example.com").replace(/\/$/, "");
 
     // Build catalog items. For products with sizePrices create per-size rows.
-    const items: any[] = [];
+    const items: CatalogItem[] = [];
 
     for (const p of matchedProducts) {
       const base = {
@@ -64,7 +96,7 @@ export async function GET(request: Request) {
       // If sizePrices exist, expand into variants with size-specific prices
       if (p.sizePrices) {
         for (const sizeKey of ["s", "m", "l", "xl"]) {
-          const sizeData = (p.sizePrices as any)[sizeKey];
+          const sizeData = p.sizePrices[sizeKey as keyof typeof p.sizePrices];
           if (!sizeData) continue;
           const sizeLabel = sizeKey.toUpperCase();
           const priceVal = Number(sizeData.price).toFixed(2);

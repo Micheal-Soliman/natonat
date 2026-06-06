@@ -1,15 +1,20 @@
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import Link from "next/link";
-import { products, getProductBySlug } from "@/lib/products";
+import { getCatalogProductBySlug, getCatalogProducts } from "@/lib/sanity-products";
 import ProductPageContent from "./product-content";
 
 import { getTranslations } from 'next-intl/server';
 
+export const revalidate = 60;
+
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   const t = await getTranslations('product');
   const { slug } = await params;
-  const product = getProductBySlug(slug);
+  const [product, products] = await Promise.all([
+    getCatalogProductBySlug(slug),
+    getCatalogProducts(),
+  ]);
   
   // If product not found, show error or redirect
   if (!product) {
@@ -39,6 +44,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       product={product} 
       prevProduct={prevProduct} 
       nextProduct={nextProduct} 
+      products={products}
     />
   );
 }

@@ -9,11 +9,58 @@ import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, CreditCard, Truck, Check, MapPin, Phone, Mail, Building, Newspaper, Store, Package } from "lucide-react";
-import { useCart } from "@/app/lib/cart-context";
+import { useCart, type CartItem } from "@/app/lib/cart-context";
 
 
 function generateOrderRef() {
   return `NAT-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+}
+
+function serializeOrderItem(item: CartItem) {
+  const catalogProduct = products.find((product) => product.id === item.id);
+  const color =
+    catalogProduct?.colors?.find((variant) => variant.id === item.color)?.name ||
+    item.color ||
+    catalogProduct?.color;
+
+  const bundleSelections = item.bundleSelections?.map((selection) => {
+    const selectedProduct = products.find((product) => product.id === selection.productId);
+    const selectedSizePrice =
+      selection.size && selectedProduct?.sizePrices
+        ? selectedProduct.sizePrices[selection.size as keyof typeof selectedProduct.sizePrices]
+        : undefined;
+
+    return {
+      ...selection,
+      productName: selection.productName || selectedProduct?.name || "",
+      productSlug: selection.productSlug || selectedProduct?.slug,
+      productType: selection.productType || selectedProduct?.type,
+      color:
+        selectedProduct?.colors?.find((variant) => variant.id === selection.color)?.name ||
+        selection.color ||
+        selectedProduct?.color,
+      price: selection.price ?? selectedSizePrice?.price ?? selectedProduct?.price,
+      originalPrice:
+        selection.originalPrice ??
+        selectedSizePrice?.originalPrice ??
+        selectedProduct?.originalPrice,
+    };
+  });
+
+  return {
+    id: item.id,
+    name: item.name,
+    slug: item.slug,
+    price_egp: item.price,
+    original_price_egp: item.originalPrice,
+    quantity: item.quantity,
+    size: item.size,
+    color,
+    type: catalogProduct?.type || item.type || "Product",
+    image: item.image,
+    isBundle: item.isBundle,
+    bundleSelections,
+  };
 }
 
 type PaymentLogo = {
@@ -373,21 +420,7 @@ function CheckoutContent() {
               address: formData.address,
               postCode: formData.postCode,
             },
-            items: checkoutItems.map((item) => {
-              const catalogProduct = products.find((p) => p.id === item.id);
-
-              return {
-                id: item.id,
-                name: item.name,
-                slug: item.slug,
-                price_egp: item.price,
-                quantity: item.quantity,
-                size: item.size,
-                color: item.color,
-                type: catalogProduct?.type || item.type || "Product",
-                image: item.image,
-              };
-            }),
+            items: checkoutItems.map(serializeOrderItem),
             paymob: {
               client_secret: clientSecret,
               intention_order_id: data?.intention_order_id,
@@ -518,17 +551,7 @@ function CheckoutContent() {
             postCode: formData.postCode,
           },
 
-          items: checkoutItems.map((item) => ({
-            id: item.id,
-            name: item.name,
-            slug: item.slug,
-            price_egp: item.price,
-            quantity: item.quantity,
-            size: item.size,
-            color: item.color,
-            type: item.type,
-            image: item.image,
-          })),
+          items: checkoutItems.map(serializeOrderItem),
 
           extras: {
             shipping_rule: shippingRuleCOD,

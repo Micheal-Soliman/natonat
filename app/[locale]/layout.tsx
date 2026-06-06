@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
-import { Montserrat, Quicksand, Noto_Sans_Arabic } from "next/font/google";
 import { notFound } from "next/navigation";
 import Script from "next/script";
 
-import "../globals.css";
 import { CartProvider } from "../lib/cart-context";
 import { WishlistProvider } from "../lib/wishlist-context";
 import { ToastProvider } from "../components/toast-provider";
@@ -14,33 +11,6 @@ import { CartSliderWrapper } from "../components/cart-slider-wrapper";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
-
-const montserrat = Montserrat({
-  variable: "--font-montserrat",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  display: "swap",
-});
-
-const quicksand = Quicksand({
-  variable: "--font-quicksand",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  display: "swap",
-});
-
-const notoSansArabic = Noto_Sans_Arabic({
-  variable: "--font-arabic",
-  subsets: ["arabic"],
-  weight: ["300", "400", "500", "600", "700"],
-  display: "swap",
-});
-
-const arthaus = localFont({
-  src: "../../public/Arthaus-Bold.ttf",
-  variable: "--font-arthaus",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "natOnat | Pack Smart. Travel Easy.",
@@ -72,16 +42,16 @@ export default async function LocaleLayout({
   const messages = await getMessages({ locale });
 
   return (
-    <html lang={locale} dir={locale === "ar" ? "rtl" : "ltr"}>
-      <body
-        className={`${montserrat.variable} ${quicksand.variable} ${notoSansArabic.variable} ${arthaus.variable} antialiased font-sans`}
-        style={{
-          fontFamily:
-            locale === "ar"
-              ? "var(--font-arabic), var(--font-montserrat), sans-serif"
-              : "var(--font-montserrat), sans-serif",
-        }}
-      >
+    <div
+      lang={locale}
+      dir={locale === "ar" ? "rtl" : "ltr"}
+      style={{
+        fontFamily:
+          locale === "ar"
+            ? "var(--font-arabic), var(--font-montserrat), sans-serif"
+            : "var(--font-montserrat), sans-serif",
+      }}
+    >
         {/* Meta Pixel Code */}
         <Script id="meta-pixel" strategy="afterInteractive">
           {`
@@ -123,7 +93,6 @@ export default async function LocaleLayout({
             </CartProvider>
           </ToastProvider>
         </NextIntlClientProvider>
-      </body>
-    </html>
+    </div>
   );
 }

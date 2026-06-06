@@ -5,9 +5,14 @@ import React, { createContext, useContext, useState, useCallback, useEffect, Rea
 export interface BundleSelection {
   productId: number;
   productName: string;
+  productSlug?: string;
+  productType?: string;
+  label?: string;
   size?: string;
   color?: string;
   quantity: number;
+  price?: number;
+  originalPrice?: number;
 }
 
 export interface CartItem {
