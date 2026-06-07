@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect, useMemo, type ReactNode } from "react";
+import { Suspense, useState, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { products } from "@/lib/products";
 import Image from "next/image";
 import { Link, useRouter } from "@/i18n/routing";
@@ -10,6 +10,7 @@ import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, CreditCard, Truck, Check, MapPin, Phone, Mail, Building, Newspaper, Store, Package } from "lucide-react";
 import { useCart, type CartItem } from "@/app/lib/cart-context";
+import { trackMetaPixelEvent } from "@/lib/meta-pixel";
 
 
 function generateOrderRef() {
@@ -219,6 +220,7 @@ function CheckoutContent() {
   const locale = useLocale();
   const router = useRouter();
   const { items, subtotal, discount, originalSubtotal, appliedDiscounts, clearCart, buyNowItem, setBuyNowItem } = useCart();
+  const checkoutTracked = useRef(false);
 
   // Group duplicate items (same id + size + color) and sum quantities
   const checkoutItems = useMemo(() => {
@@ -298,6 +300,21 @@ function CheckoutContent() {
     setIsSubmitting(true);
 
     const orderRef = generateOrderRef();
+    window.sessionStorage.setItem(
+      `meta-purchase-payload-${orderRef}`,
+      JSON.stringify({
+        value: finalTotal,
+        currency: "EGP",
+        content_ids: checkoutItems.map((item) => String(item.id)),
+        contents: checkoutItems.map((item) => ({
+          id: String(item.id),
+          quantity: item.quantity,
+          item_price: item.price,
+        })),
+        content_type: "product",
+        num_items: checkoutItems.reduce((sum, item) => sum + item.quantity, 0),
+      }),
+    );
 
     if (paymentMethod === "card") {
       try {
@@ -627,6 +644,24 @@ function CheckoutContent() {
     () => total - paymentDiscount,
     [total, paymentDiscount]
   );
+
+  useEffect(() => {
+    if (checkoutTracked.current || checkoutItems.length === 0) return;
+
+    checkoutTracked.current = true;
+    trackMetaPixelEvent("InitiateCheckout", {
+      content_ids: checkoutItems.map((item) => String(item.id)),
+      contents: checkoutItems.map((item) => ({
+        id: String(item.id),
+        quantity: item.quantity,
+        item_price: item.price,
+      })),
+      content_type: "product",
+      num_items: checkoutItems.reduce((sum, item) => sum + item.quantity, 0),
+      value: finalTotal,
+      currency: "EGP",
+    });
+  }, [checkoutItems, finalTotal]);
 
   const controlBase =
     "border border-[#0F1A26]/10 bg-white text-[#0F1A26] placeholder:text-[#0F1A26]/40 caret-[#0F1A26] focus:border-[#EEBC3F] focus:outline-none transition-colors [color-scheme:light]";

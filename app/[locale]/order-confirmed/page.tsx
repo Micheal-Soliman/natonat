@@ -8,6 +8,7 @@ import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle, Clock, ShoppingBag } from "lucide-react";
 import { useCart } from "@/app/lib/cart-context";
+import { trackMetaPixelEvent } from "@/lib/meta-pixel";
 
 export default function OrderConfirmedPage() {
   return (
@@ -62,10 +63,54 @@ function OrderConfirmedContent() {
 
   useEffect(() => {
     if (isSuccess) {
+      const dedupeKey = orderRef ? `meta-purchase-${orderRef}` : "";
+      const wasTracked =
+        dedupeKey && window.localStorage.getItem(dedupeKey) === "1";
+
+      if (!wasTracked) {
+        const storedPayload = orderRef
+          ? window.sessionStorage.getItem(`meta-purchase-payload-${orderRef}`)
+          : null;
+        let purchasePayload: Record<string, unknown> = {};
+
+        if (storedPayload) {
+          try {
+            purchasePayload = JSON.parse(storedPayload) as Record<string, unknown>;
+          } catch {
+            purchasePayload = {};
+          }
+        }
+
+        trackMetaPixelEvent("Purchase", {
+          ...purchasePayload,
+          value:
+            amount && Number.isFinite(amount)
+              ? amount
+              : purchasePayload.value || 0,
+          currency: "EGP",
+          order_id: orderRef,
+          transaction_id: transactionId,
+        });
+
+        if (dedupeKey) {
+          window.localStorage.setItem(dedupeKey, "1");
+        }
+        if (orderRef) {
+          window.sessionStorage.removeItem(`meta-purchase-payload-${orderRef}`);
+        }
+      }
+
       clearCart();
       setBuyNowItem(null);
     }
-  }, [isSuccess, clearCart, setBuyNowItem]);
+  }, [
+    isSuccess,
+    amount,
+    orderRef,
+    transactionId,
+    clearCart,
+    setBuyNowItem,
+  ]);
 
   return (
     <>

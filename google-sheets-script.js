@@ -1,5 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
+/**
+ * After changing this file in Google Apps Script:
+ * Deploy > Manage deployments > Edit > New version > Deploy.
+ * Saving without creating a new deployment version leaves the live webhook unchanged.
+ */
+
 const SPREADSHEET_ID = "1dNjh5Bu_-OylUS2TSLjS9tx6t6Lnj49DBdcKljd4Ldo";
 const SHEET_NAME = "cod_orders";
 
@@ -36,6 +42,8 @@ function doPost(e) {
     if (sheet.getLastRow() === 0) {
       createHeaders(sheet);
     }
+
+    ensureExtendedHeaders(sheet);
 
     const orderRef = data.order_ref || "";
     if (!orderRef) {
@@ -142,7 +150,12 @@ function createHeaders(sheet) {
     "Item 5 Unit Price",
     "Item 5 Total",
 
-    "Additional Items"
+    "Additional Items",
+    "Products Details",
+    "Bundles Details",
+    "Items (Full JSON)",
+    "Raw Payload",
+    "Catalog Enriched At"
   ];
 
   sheet.clear();
@@ -156,6 +169,30 @@ function createHeaders(sheet) {
 
   sheet.setFrozenRows(1);
   sheet.autoResizeColumns(1, headers.length);
+}
+
+function ensureExtendedHeaders(sheet) {
+  const requiredHeaders = [
+    "Products Details",
+    "Bundles Details",
+    "Items (Full JSON)",
+    "Raw Payload",
+    "Catalog Enriched At"
+  ];
+  const lastColumn = Math.max(sheet.getLastColumn(), 1);
+  const existingHeaders = sheet.getRange(1, 1, 1, lastColumn).getValues()[0];
+  const missingHeaders = requiredHeaders.filter(header => existingHeaders.indexOf(header) === -1);
+
+  if (missingHeaders.length === 0) return;
+
+  const startColumn = existingHeaders.length + 1;
+  sheet.getRange(1, startColumn, 1, missingHeaders.length).setValues([missingHeaders]);
+  const range = sheet.getRange(1, startColumn, 1, missingHeaders.length);
+  range.setFontWeight("bold");
+  range.setBackground("#FF9800");
+  range.setFontColor("#0F1A26");
+  range.setHorizontalAlignment("center");
+  sheet.autoResizeColumns(startColumn, missingHeaders.length);
 }
 
 function buildOrderRow(data) {
@@ -199,14 +236,9 @@ function buildOrderRow(data) {
 
   const itemsDescription = items
     .map(item => {
-      const name = item.name || "";
-      const qty = item.quantity || 0;
-      const size = item.size || "";
-      const color = item.color || "";
-      const variant = [size, color].filter(Boolean).join(", ");
-      return variant ? `${name} x${qty} (${variant})` : `${name} x${qty}`;
+      return formatProductDetails(item);
     })
-    .join(" | ");
+    .join(" || ");
 
   const itemColumns = [];
 
@@ -232,8 +264,18 @@ function buildOrderRow(data) {
 
   const additionalItems =
     items.length > 5
-      ? items.slice(5).map(item => `${item.name || ""} x${item.quantity || 0}`).join(" | ")
+      ? items.slice(5).map(formatProductDetails).join(" || ")
       : "";
+
+  const productsDetails = items
+    .filter(item => !item.isBundle)
+    .map(formatProductDetails)
+    .join("\n");
+  const bundlesDetails = items
+    .filter(item => item.isBundle || (item.bundleSelections || []).length > 0)
+    .map(formatBundleDetails)
+    .filter(Boolean)
+    .join("\n");
 
   const codAmount =
     String(paymentMethod).toLowerCase() === "cod" ||
@@ -271,8 +313,48 @@ function buildOrderRow(data) {
 
     ...itemColumns,
 
-    additionalItems
+    additionalItems,
+    productsDetails,
+    bundlesDetails,
+    JSON.stringify(items),
+    JSON.stringify(data),
+    data.catalog_enriched_at || ""
   ];
+}
+
+function formatProductDetails(item) {
+  return [
+    `Name: ${item.name || ""}`,
+    item.id ? `ID: ${item.id}` : "",
+    item.slug ? `Slug: ${item.slug}` : "",
+    item.type ? `Type: ${item.type}` : "",
+    item.size ? `Size: ${String(item.size).toUpperCase()}` : "",
+    item.color ? `Color: ${item.color}` : "",
+    `Qty: ${Number(item.quantity || 0)}`,
+    `Unit Price: EGP ${Number(item.price_egp || item.price || 0)}`,
+    item.original_price_egp
+      ? `Original Price: EGP ${Number(item.original_price_egp)}`
+      : ""
+  ].filter(Boolean).join(" | ");
+}
+
+function formatBundleDetails(item) {
+  const selections = Array.isArray(item.bundleSelections) ? item.bundleSelections : [];
+  if (selections.length === 0) return "";
+
+  return `${item.name || "Bundle"} => ${selections.map((selection, index) => [
+    `${index + 1}. ${selection.label || "Bundle item"}: ${selection.productName || ""}`,
+    selection.productId ? `ID: ${selection.productId}` : "",
+    selection.productSlug ? `Slug: ${selection.productSlug}` : "",
+    selection.productType ? `Type: ${selection.productType}` : "",
+    selection.size ? `Size: ${String(selection.size).toUpperCase()}` : "",
+    selection.color ? `Color: ${selection.color}` : "",
+    `Qty: ${Number(selection.quantity || 1)}`,
+    selection.price !== undefined ? `Catalog Price: EGP ${Number(selection.price)}` : "",
+    selection.originalPrice !== undefined
+      ? `Original: EGP ${Number(selection.originalPrice)}`
+      : ""
+  ].filter(Boolean).join(" | ")).join(" || ")}`;
 }
 
 function findOrderRow(sheet, orderRef) {

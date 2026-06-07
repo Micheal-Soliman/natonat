@@ -15,6 +15,7 @@ import { FAQSection } from "@/app/components/faq-section";
 import { SwipeableProductImage } from "@/app/components/swipeable-product-image";
 import { type Product } from "@/lib/products";
 import { calculateBundlePrice, getPricingRuleKey } from "@/lib/bundle-pricing";
+import { trackMetaPixelEvent } from "@/lib/meta-pixel";
 
 // Separate component for detailed product description
 interface ProductDetailedDescriptionProps {
@@ -354,6 +355,13 @@ function ProductDetailedDescriptionFull({ product, selectedSize, quantity, t, ad
               color: product.color,
               quantity: quantity,
             });
+            trackMetaPixelEvent("AddToCart", {
+              content_ids: [String(product.id)],
+              content_name: product.name,
+              content_type: "product",
+              value: product.price * quantity,
+              currency: "EGP",
+            });
           }}
           className="bg-[#EEBC3F] text-[#0F1A26] hover:bg-[#d4a535] h-10 px-6 rounded-lg font-bold text-sm"
         >
@@ -386,6 +394,16 @@ export default function ProductPageContent({
   const selectedProductColor =
     product.colors?.find((color) => color.id === selectedColor)?.name ||
     product.color;
+
+  useEffect(() => {
+    trackMetaPixelEvent("ViewContent", {
+      content_ids: [String(product.id)],
+      content_name: product.name,
+      content_type: "product",
+      value: product.price,
+      currency: "EGP",
+    });
+  }, [product.id, product.name, product.price]);
   const [quantity, setQuantity] = useState(1);
   const [detailsExpanded, setDetailsExpanded] = useState(false); // Controls full expansion
   const [showInfo, setShowInfo] = useState(true); // Fully open by default
@@ -1344,6 +1362,13 @@ export default function ProductPageContent({
                         isBundle,
                         bundleSelections: cartBundleSelections,
                       });
+                      trackMetaPixelEvent("AddToCart", {
+                        content_ids: [String(product.id)],
+                        content_name: product.name,
+                        content_type: "product",
+                        value: currentPrice.price * quantity,
+                        currency: "EGP",
+                      });
                     }}
                     className="flex-1 bg-[#0F1A26] text-white hover:bg-[#EEBC3F] hover:text-[#0F1A26] h-14 sm:h-16 rounded-2xl font-bold text-base sm:text-lg transition-all duration-300 hover:shadow-xl hover:shadow-[#EEBC3F]/20 group"
                   >
@@ -1690,6 +1715,13 @@ export default function ProductPageContent({
                   quantity: quantity,
                   isBundle,
                   bundleSelections: cartBundleSelections,
+                });
+                trackMetaPixelEvent("AddToCart", {
+                  content_ids: [String(product.id)],
+                  content_name: product.name,
+                  content_type: "product",
+                  value: currentPrice.price * quantity,
+                  currency: "EGP",
                 });
               }}
               className="bg-[#0F1A26] text-white hover:bg-[#EEBC3F] hover:text-[#0F1A26] h-12 px-6 rounded-xl font-bold text-sm transition-all duration-300 flex-shrink-0"

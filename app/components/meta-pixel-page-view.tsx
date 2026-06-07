@@ -14,6 +14,8 @@ export function MetaPixelPageView() {
   const isFirstRender = useRef(true);
 
   useEffect(() => {
+    if (pathname.startsWith("/studio")) return;
+
     if (isFirstRender.current) {
       isFirstRender.current = false;
       return;

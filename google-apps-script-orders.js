@@ -9,6 +9,10 @@
  * 3. Paste this code
  * 4. Deploy as Web App (Execute as: Me, Access: Anyone)
  * 5. Copy the Web App URL to your .env.local as GOOGLE_SHEETS_WEBHOOK_URL
+ *
+ * When updating an existing deployment:
+ * Deploy > Manage deployments > Edit > New version > Deploy.
+ * Saving the script alone does not update the live Web App version.
  */
 
 const SHEET_NAME = "orders";
@@ -23,6 +27,8 @@ function doPost(e) {
       sheet = ss.insertSheet(SHEET_NAME);
       createHeaders(sheet);
     }
+
+    ensureExtendedHeaders(sheet);
     
     const row = buildOrderRow(data);
     sheet.appendRow(row);
@@ -97,7 +103,13 @@ function createHeaders(sheet) {
     "Extras (JSON)",
     
     // Raw Payload
-    "Raw Payload"
+    "Raw Payload",
+
+    // Enhanced product details
+    "Total Items Quantity",
+    "Products Details",
+    "Bundles Details",
+    "Catalog Enriched At"
   ];
   
   sheet.appendRow(headers);
@@ -110,6 +122,71 @@ function createHeaders(sheet) {
   
   // Auto-resize columns
   sheet.autoResizeColumns(1, headers.length);
+}
+
+function ensureExtendedHeaders(sheet) {
+  const requiredHeaders = [
+    "Total Items Quantity",
+    "Products Details",
+    "Bundles Details",
+    "Catalog Enriched At"
+  ];
+  const lastColumn = Math.max(sheet.getLastColumn(), 1);
+  const existingHeaders = sheet.getRange(1, 1, 1, lastColumn).getValues()[0];
+  const missingHeaders = requiredHeaders.filter(header => existingHeaders.indexOf(header) === -1);
+
+  if (missingHeaders.length === 0) return;
+
+  const startColumn = existingHeaders.length + 1;
+  sheet.getRange(1, startColumn, 1, missingHeaders.length).setValues([missingHeaders]);
+  const range = sheet.getRange(1, startColumn, 1, missingHeaders.length);
+  range.setFontWeight("bold");
+  range.setBackground("#EEBC3F");
+  range.setFontColor("#0F1A26");
+  sheet.autoResizeColumns(startColumn, missingHeaders.length);
+}
+
+function formatProductDetails(item) {
+  const details = [
+    `Name: ${item.name || ""}`,
+    item.id ? `ID: ${item.id}` : "",
+    item.slug ? `Slug: ${item.slug}` : "",
+    item.type ? `Type: ${item.type}` : "",
+    item.size ? `Size: ${String(item.size).toUpperCase()}` : "",
+    item.color ? `Color: ${item.color}` : "",
+    `Qty: ${Number(item.quantity || 0)}`,
+    `Unit Price: EGP ${Number(item.price_egp || item.price || 0)}`,
+    item.original_price_egp
+      ? `Original Price: EGP ${Number(item.original_price_egp)}`
+      : ""
+  ].filter(Boolean);
+
+  return details.join(" | ");
+}
+
+function formatBundleDetails(item) {
+  const selections = Array.isArray(item.bundleSelections) ? item.bundleSelections : [];
+  if (selections.length === 0) return "";
+
+  const contents = selections.map((selection, index) => {
+    const details = [
+      `${index + 1}. ${selection.label || "Bundle item"}: ${selection.productName || ""}`,
+      selection.productId ? `ID: ${selection.productId}` : "",
+      selection.productSlug ? `Slug: ${selection.productSlug}` : "",
+      selection.productType ? `Type: ${selection.productType}` : "",
+      selection.size ? `Size: ${String(selection.size).toUpperCase()}` : "",
+      selection.color ? `Color: ${selection.color}` : "",
+      `Qty: ${Number(selection.quantity || 1)}`,
+      selection.price !== undefined ? `Catalog Price: EGP ${Number(selection.price)}` : "",
+      selection.originalPrice !== undefined
+        ? `Original: EGP ${Number(selection.originalPrice)}`
+        : ""
+    ].filter(Boolean);
+
+    return details.join(" | ");
+  });
+
+  return `${item.name || "Bundle"} => ${contents.join(" || ")}`;
 }
 
 function buildOrderRow(data) {
@@ -139,9 +216,20 @@ function buildOrderRow(data) {
   // Items data
   const items = data.items || [];
   const itemsCount = items.length;
-  const itemsSummary = items.map(item => 
-    `${item.name} (x${item.quantity}) - EGP ${item.price_egp}`
-  ).join(" | ");
+  const totalItemsQuantity = items.reduce(
+    (sum, item) => sum + Number(item.quantity || 0),
+    0
+  );
+  const itemsSummary = items.map(formatProductDetails).join(" || ");
+  const productsDetails = items
+    .filter(item => !item.isBundle)
+    .map(formatProductDetails)
+    .join("\n");
+  const bundlesDetails = items
+    .filter(item => item.isBundle || (item.bundleSelections || []).length > 0)
+    .map(formatBundleDetails)
+    .filter(Boolean)
+    .join("\n");
   
   // Paymob data
   const paymob = data.paymob || {};
@@ -210,7 +298,13 @@ function buildOrderRow(data) {
     JSON.stringify(extras),
     
     // Raw payload
-    JSON.stringify(data)
+    JSON.stringify(data),
+
+    // Enhanced product details
+    totalItemsQuantity,
+    productsDetails,
+    bundlesDetails,
+    data.catalog_enriched_at || ""
   ];
 }
 
@@ -241,7 +335,9 @@ function doGet(e) {
       const rowOrderRef = row[2];
 
       if (rowOrderRef === orderRef) {
-        const rawPayload = row[30];
+        const headers = values[0];
+        const rawPayloadIndex = headers.indexOf("Raw Payload");
+        const rawPayload = rawPayloadIndex >= 0 ? row[rawPayloadIndex] : row[30];
         const order = rawPayload ? JSON.parse(rawPayload) : {};
 
         return jsonOutput({
