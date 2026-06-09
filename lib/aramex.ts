@@ -769,6 +769,13 @@ function getShipperConfig() {
     return process.env[key] || fallback;
   };
 
+  const companyName = getValue("ARAMEX_SHIPPER_COMPANY", "natOnat").trim();
+  const configuredPersonName = getValue("ARAMEX_SHIPPER_PERSON", companyName).trim();
+  const personName =
+    configuredPersonName.toLowerCase() === "michael soliman"
+      ? companyName
+      : configuredPersonName;
+
   return {
     addressLine1: getValue("ARAMEX_SHIPPER_ADDRESS_LINE1", "5th Settlement"),
     addressLine2: getValue("ARAMEX_SHIPPER_ADDRESS_LINE2", "New Cairo"),
@@ -777,8 +784,8 @@ function getShipperConfig() {
     state: env === "prod" ? "New Cairo" : getValue("ARAMEX_SHIPPER_STATE", "New Cairo"),
     postCode: getValue("ARAMEX_SHIPPER_POSTCODE", "11835"),
     countryCode: getValue("ARAMEX_SHIPPER_COUNTRY_CODE", "EG"),
-    companyName: getValue("ARAMEX_SHIPPER_COMPANY", "natOnat"),
-    personName: getValue("ARAMEX_SHIPPER_PERSON", "natOnat"),
+    companyName,
+    personName,
     phone: getValue("ARAMEX_SHIPPER_PHONE", "+201070004227"),
     email: getValue("ARAMEX_SHIPPER_EMAIL", "natonateg@gmail.com"),
     accountNumber: credentials.AccountNumber,
