@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import { Montserrat, Noto_Sans_Arabic, Quicksand } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
+import { GoogleAnalyticsPageView } from "./components/google-analytics-page-view";
 import { MetaPixelPageView } from "./components/meta-pixel-page-view";
 
 const montserrat = Montserrat({
@@ -53,6 +54,11 @@ export default function RootLayout({
       <body
         className={`${montserrat.variable} ${quicksand.variable} ${notoSansArabic.variable} ${arthaus.variable} antialiased font-sans`}
       >
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-MBR1BZMFVE"
+          strategy="afterInteractive"
+        />
+
         <Script id="meta-pixel" strategy="afterInteractive">
           {`
             if (!window.location.pathname.startsWith('/studio')) {
@@ -82,6 +88,7 @@ export default function RootLayout({
           />
         </noscript>
 
+        <GoogleAnalyticsPageView />
         <MetaPixelPageView />
         {children}
       </body>
