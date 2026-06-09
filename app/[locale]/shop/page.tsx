@@ -8,7 +8,7 @@ import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
 import { Filter, X, ChevronLeft, ChevronRight } from "lucide-react";
-import { products, categories, sizes, genders, collections, printTypes, getDiscountPercentage } from "@/lib/products";
+import { products, categories, sizes, genders, collections, printTypes } from "@/lib/products";
 import { Loading } from "@/app/components/loading";
 import { SwipeableProductImage } from "@/app/components/swipeable-product-image";
 
@@ -516,24 +516,6 @@ function ShopContent() {
                       <h3 className="text-[#0F1A26] font-medium text-xs sm:text-sm mt-0.5 mb-0.5 sm:mt-1 sm:mb-1 group-hover:text-[#EEBC3F] transition-colors line-clamp-1">
                         {product.name}
                       </h3>
-                      <div className="flex flex-col gap-0.5 sm:gap-1">
-                        {product.dynamicPricing ? (
-                          <div className="flex items-baseline gap-1 sm:gap-2">
-                            {(() => {
-                              const discountPercent = getDiscountPercentage(product);
-                              if (discountPercent) {
-                                return <span className="text-[#EEBC3F] font-bold text-sm sm:text-lg">Get {discountPercent}% Discount</span>;
-                              }
-                              return <span className="text-[#EEBC3F] font-bold text-sm sm:text-lg">Price calculated on selection</span>;
-                            })()}
-                          </div>
-                        ) : (
-                          <div className="flex items-baseline gap-1 sm:gap-2">
-                            <span className="text-[#0F1A26] font-bold text-sm sm:text-lg">EGP {product.price}</span>
-                            <span className="text-[#0F1A26]/50 text-xs sm:text-sm line-through font-medium">EGP {product.originalPrice}</span>
-                          </div>
-                        )}
-                      </div>
                     </div>
                   </Link>
                 ))}
