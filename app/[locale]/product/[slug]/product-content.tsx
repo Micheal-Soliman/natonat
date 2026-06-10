@@ -1643,16 +1643,6 @@ export default function ProductPageContent({
                   <SwipeableProductImage product={relatedProduct} />
                   <div className="mt-3">
                     <h3 className="text-[#0F1A26] font-bold group-hover:text-[#EEBC3F] transition-colors duration-300 text-sm sm:text-lg line-clamp-1">{relatedProduct.name}</h3>
-                    <div className="flex items-baseline gap-2 sm:gap-3 mt-1 sm:mt-2">
-                      {relatedProduct.dynamicPricing ? (
-                        <span className="text-[#EEBC3F] font-bold text-sm sm:text-lg">Price calculated on selection</span>
-                      ) : (
-                        <>
-                          <span className="text-[#0F1A26] font-bold text-sm sm:text-lg">EGP {relatedProduct.price}</span>
-                          <span className="text-[#0F1A26]/30 text-xs sm:text-sm line-through">EGP {relatedProduct.originalPrice}</span>
-                        </>
-                      )}
-                    </div>
                   </div>
                 </Link>
               ))}
