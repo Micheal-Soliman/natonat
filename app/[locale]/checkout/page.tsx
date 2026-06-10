@@ -8,7 +8,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, CreditCard, Truck, Check, MapPin, Phone, Mail, Building, Newspaper, Store, Package } from "lucide-react";
+import { ArrowLeft, CreditCard, Truck, Check, MapPin, Phone, Mail, Newspaper, Store, Package, Search, ChevronDown } from "lucide-react";
 import { useCart, type CartItem } from "@/app/lib/cart-context";
 import { trackMetaPixelEvent } from "@/lib/meta-pixel";
 
@@ -257,6 +257,8 @@ function CheckoutContent() {
   });
   const [aramexCities, setAramexCities] = useState<string[]>([]);
   const [loadingCities, setLoadingCities] = useState(false);
+  const [citySearch, setCitySearch] = useState("");
+  const [cityListOpen, setCityListOpen] = useState(false);
 
   useEffect(() => {
     async function getCities() {
@@ -279,6 +281,28 @@ function CheckoutContent() {
     }
     getCities();
   }, []);
+
+  const filteredCities = useMemo(() => {
+    const query = citySearch.trim().toLocaleLowerCase();
+    if (!query) return aramexCities.slice(0, 60);
+
+    return aramexCities
+      .filter((city) => city.toLocaleLowerCase().includes(query))
+      .sort((a, b) => {
+        const aStartsWith = a.toLocaleLowerCase().startsWith(query);
+        const bStartsWith = b.toLocaleLowerCase().startsWith(query);
+        if (aStartsWith !== bStartsWith) return aStartsWith ? -1 : 1;
+        return a.localeCompare(b);
+      })
+      .slice(0, 60);
+  }, [aramexCities, citySearch]);
+
+  const selectCity = (city: string) => {
+    setFormData((current) => ({ ...current, city }));
+    setCitySearch(city);
+    setCityListOpen(false);
+  };
+
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [deliveryMethod, setDeliveryMethod] = useState("delivery");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -670,7 +694,6 @@ function CheckoutContent() {
   const inputIconClass = `w-full px-4 py-3 pl-11 rounded-xl ${controlBase}`;
   const inputSmallClass = `w-full px-3 py-2.5 rounded-lg text-sm ${controlBase}`;
   const inputSmallIconClass = `w-full px-3 py-2.5 pl-10 rounded-lg text-sm ${controlBase}`;
-  const selectClass = `w-full px-4 py-3 pl-11 rounded-xl ${controlBase} font-medium appearance-none disabled:opacity-50`;
 
 
   if (isSuccess) {
@@ -1072,28 +1095,86 @@ function CheckoutContent() {
                           {t("form.shipping.city")}
                         </label>
                         <div className="relative">
-                          <Building className="w-4 h-4 text-[#0F1A26]/40 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
-                          <select
+                          <Search className="w-4 h-4 text-[#0F1A26]/40 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
+                          <input
+                            type="search"
                             required
-                            value={formData.city}
-                            onChange={(e) =>
-                              setFormData({ ...formData, city: e.target.value })
-                            }
-                            className={selectClass}
-                            disabled={loadingCities}
-                          >
-                            <option value="" className="text-[#0F1A26] bg-white">
-                              {loadingCities
-                                ? t("form.shipping.loadingCities") || "Loading cities..."
-                                : t("form.shipping.cityPlaceholder")}
-                            </option>
+                            role="combobox"
+                            aria-expanded={cityListOpen}
+                            aria-controls="checkout-city-list"
+                            aria-autocomplete="list"
+                            autoComplete="off"
+                            value={citySearch}
+                            onFocus={() => setCityListOpen(true)}
+                            onBlur={() => window.setTimeout(() => setCityListOpen(false), 150)}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              const exactCity = aramexCities.find(
+                                (city) => city.toLocaleLowerCase() === value.trim().toLocaleLowerCase()
+                              );
 
-                            {aramexCities.map((city) => (
-                              <option key={city} value={city} className="text-[#0F1A26] bg-white">
-                                {city}
-                              </option>
-                            ))}
-                          </select>
+                              setCitySearch(value);
+                              setFormData((current) => ({
+                                ...current,
+                                city: exactCity || "",
+                              }));
+                              setCityListOpen(true);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && cityListOpen && filteredCities[0]) {
+                                e.preventDefault();
+                                selectCity(filteredCities[0]);
+                              }
+                              if (e.key === "Escape") setCityListOpen(false);
+                            }}
+                            className={`${inputIconClass} pr-11 disabled:opacity-50`}
+                            disabled={loadingCities}
+                            placeholder={
+                              loadingCities
+                                ? t("form.shipping.loadingCities")
+                                : t("form.shipping.citySearchPlaceholder")
+                            }
+                          />
+                          <ChevronDown
+                            className={`w-4 h-4 text-[#0F1A26]/40 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none transition-transform ${
+                              cityListOpen ? "rotate-180" : ""
+                            }`}
+                          />
+
+                          {cityListOpen && !loadingCities && (
+                            <div
+                              id="checkout-city-list"
+                              role="listbox"
+                              className="absolute z-50 mt-2 max-h-64 w-full overflow-y-auto rounded-xl border border-[#0F1A26]/10 bg-white p-1.5 shadow-xl"
+                            >
+                              {filteredCities.length > 0 ? (
+                                filteredCities.map((city) => (
+                                  <button
+                                    key={city}
+                                    type="button"
+                                    role="option"
+                                    aria-selected={formData.city === city}
+                                    onMouseDown={(e) => e.preventDefault()}
+                                    onClick={() => selectCity(city)}
+                                    className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm transition-colors hover:bg-[#EEBC3F]/15 ${
+                                      formData.city === city
+                                        ? "bg-[#EEBC3F]/20 font-semibold text-[#0F1A26]"
+                                        : "text-[#0F1A26]/75"
+                                    }`}
+                                  >
+                                    <span>{city}</span>
+                                    {formData.city === city && (
+                                      <Check className="h-4 w-4 shrink-0 text-[#EEBC3F]" />
+                                    )}
+                                  </button>
+                                ))
+                              ) : (
+                                <p className="px-3 py-4 text-center text-sm text-[#0F1A26]/50">
+                                  {t("form.shipping.noCitiesFound")}
+                                </p>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
 

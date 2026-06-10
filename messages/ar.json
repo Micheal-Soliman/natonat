@@ -570,6 +570,8 @@
         "addressPlaceholder": "شارع، مبنى، رقم الشقة",
         "city": "المدينة",
         "cityPlaceholder": "اختر المدينة",
+        "citySearchPlaceholder": "ابحث عن مدينتك",
+        "noCitiesFound": "لا توجد مدن مطابقة",
         "loadingCities": "جاري تحميل المدن...",
         "postCode": "الرمز البريدي",
         "postCodePlaceholder": "الرمز البريدي",

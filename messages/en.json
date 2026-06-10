@@ -584,6 +584,8 @@
         "addressPlaceholder": "Street address",
         "city": "City",
         "cityPlaceholder": "Select City",
+        "citySearchPlaceholder": "Search for your city",
+        "noCitiesFound": "No matching cities found",
         "loadingCities": "Loading cities...",
         "postCode": "Post Code",
         "postCodePlaceholder": "Postal Code",
