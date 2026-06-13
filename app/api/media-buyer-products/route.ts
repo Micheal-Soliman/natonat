@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { readFile } from "fs/promises";
 import path from "path";
-import { products } from "@/lib/products";
+import { getCatalogProducts } from "@/lib/sanity-products";
 
 export const dynamic = "force-dynamic";
 
@@ -55,6 +55,7 @@ export async function GET(request: Request) {
     const raw = await readFile(filePath, "utf-8");
     const { slugs } = JSON.parse(raw) as { slugs: string[]; label?: string };
 
+    const products = await getCatalogProducts();
     const matchedProducts = products.filter((product) => slugs.includes(product.slug));
 
     const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || "https://example.com").replace(/\/$/, "");

@@ -1,6 +1,8 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, ReactNode } from "react";
+
+import { useCatalogProducts } from "@/app/lib/catalog-context";
 
 export interface BundleSelection {
   productId: number;
@@ -52,6 +54,7 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
+  const products = useCatalogProducts();
   const [items, setItems] = useState<CartItem[]>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('cart');
@@ -160,6 +163,55 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const [buyNowItem, setBuyNowItem] = useState<CartItem | null>(null);
 
+  const catalogItems = useMemo(
+    () =>
+      items.map((item) => {
+        const product = products.find((candidate) => candidate.id === item.id);
+        if (!product) return item;
+
+        const sizeKey = item.size?.toLowerCase() as keyof NonNullable<typeof product.sizePrices>;
+        const sizePrice = sizeKey && product.sizePrices?.[sizeKey];
+        const colorVariant = product.colors?.find(
+          (variant) => variant.id === item.color || variant.name === item.color
+        );
+        const bundleSelections = item.bundleSelections?.map((selection) => {
+          const selectedProduct = products.find(
+            (candidate) => candidate.id === selection.productId
+          );
+          if (!selectedProduct) return selection;
+
+          const selectionSizeKey =
+            selection.size?.toLowerCase() as keyof NonNullable<typeof selectedProduct.sizePrices>;
+          const selectionSizePrice =
+            selectionSizeKey && selectedProduct.sizePrices?.[selectionSizeKey];
+
+          return {
+            ...selection,
+            productName: selectedProduct.name,
+            productSlug: selectedProduct.slug,
+            productType: selectedProduct.type,
+            price: selectionSizePrice?.price ?? selectedProduct.price,
+            originalPrice:
+              selectionSizePrice?.originalPrice ?? selectedProduct.originalPrice,
+          };
+        });
+
+        return {
+          ...item,
+          name: product.name,
+          slug: product.slug,
+          type: product.type,
+          image: colorVariant?.image || product.image,
+          price: item.isBundle ? item.price : sizePrice?.price ?? product.price,
+          originalPrice: item.isBundle
+            ? item.originalPrice
+            : sizePrice?.originalPrice ?? product.originalPrice,
+          bundleSelections,
+        };
+      }),
+    [items, products]
+  );
+
   // Simple total calculation - bundle prices are already calculated by bundle-pricing system
   const calculateTotals = useCallback((cartItems: CartItem[]) => {
     let subtotal = 0;
@@ -180,13 +232,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return { subtotal, discount, originalSubtotal, appliedDiscounts };
   }, []);
 
-  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-  const { subtotal, discount, originalSubtotal, appliedDiscounts } = calculateTotals(items);
+  const totalItems = catalogItems.reduce((sum, item) => sum + item.quantity, 0);
+  const { subtotal, discount, originalSubtotal, appliedDiscounts } = calculateTotals(catalogItems);
 
   return (
     <CartContext.Provider
       value={{
-        items,
+        items: catalogItems,
         addToCart,
         removeFromCart,
         updateQuantity,

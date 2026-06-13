@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { CartProvider } from "../lib/cart-context";
+import { CatalogProvider } from "../lib/catalog-context";
 import { WishlistProvider } from "../lib/wishlist-context";
 import { ToastProvider } from "../components/toast-provider";
 import FloatingContactLoader from "../components/floating-contact-loader";
@@ -9,6 +10,7 @@ import { CartSliderWrapper } from "../components/cart-slider-wrapper";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
+import { getCatalogProducts } from "@/lib/sanity-products";
 
 export const metadata: Metadata = {
   title: "natOnat | Pack Smart. Travel Easy.",
@@ -37,7 +39,10 @@ export default async function LocaleLayout({
 
   setRequestLocale(locale);
 
-  const messages = await getMessages({ locale });
+  const [messages, products] = await Promise.all([
+    getMessages({ locale }),
+    getCatalogProducts(),
+  ]);
 
   return (
     <div
@@ -51,15 +56,17 @@ export default async function LocaleLayout({
       }}
     >
         <NextIntlClientProvider messages={messages}>
-          <ToastProvider>
-            <CartProvider>
-              <WishlistProvider>
-                {children}
-                <FloatingContactLoader />
-                <CartSliderWrapper />
-              </WishlistProvider>
-            </CartProvider>
-          </ToastProvider>
+          <CatalogProvider products={products}>
+            <ToastProvider>
+              <CartProvider>
+                <WishlistProvider>
+                  {children}
+                  <FloatingContactLoader />
+                  <CartSliderWrapper />
+                </WishlistProvider>
+              </CartProvider>
+            </ToastProvider>
+          </CatalogProvider>
         </NextIntlClientProvider>
     </div>
   );

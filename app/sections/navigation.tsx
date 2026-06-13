@@ -13,7 +13,6 @@ import {
   ArrowRight,
   Heart,
 } from "lucide-react";
-import { products } from "@/lib/products";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { ShopMegaMenu } from "./shop-mega-menu";
@@ -23,9 +22,11 @@ import {
   LocaleSwitcher,
   LocaleSwitcherMobile,
 } from "@/app/components/locale-switcher";
+import { useCatalogProducts } from "@/app/lib/catalog-context";
 
 export function Navigation() {
   const t = useTranslations("navigation");
+  const products = useCatalogProducts();
   const locale = useLocale();
   const { totalItems, openCart } = useCart();
   const { totalItems: wishlistTotal } = useWishlist();
@@ -74,7 +75,7 @@ export function Navigation() {
         return nameMatch || typeMatch || categoryMatch;
       })
       .slice(0, 5);
-  }, [searchQuery]);
+  }, [products, searchQuery]);
 
   useEffect(() => {
     const handleScroll = () => {

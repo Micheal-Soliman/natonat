@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import type { Product } from "@/lib/products";
+import { useCatalogProducts } from "@/app/lib/catalog-context";
 
 export interface WishlistItem {
   id: number;
@@ -25,6 +26,7 @@ interface WishlistContextType {
 const WishlistContext = createContext<WishlistContextType | undefined>(undefined);
 
 export function WishlistProvider({ children }: { children: React.ReactNode }) {
+  const products = useCatalogProducts();
   const [items, setItems] = useState<WishlistItem[]>([]);
   const [isHydrated, setIsHydrated] = useState(false);
 
@@ -36,7 +38,22 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
         try {
           const parsed = JSON.parse(saved);
           // Filter out old items without slug
-          const validItems = parsed.filter((item: WishlistItem) => item.slug);
+          const validItems = parsed
+            .filter((item: WishlistItem) => item.slug)
+            .map((item: WishlistItem) => {
+              const product = products.find((candidate) => candidate.id === item.id);
+              if (!product) return item;
+
+              return {
+                ...item,
+                slug: product.slug,
+                name: product.name,
+                type: product.type,
+                price: product.price,
+                originalPrice: product.originalPrice,
+                image: product.image,
+              };
+            });
           setItems(validItems);
         } catch {
           setItems([]);
@@ -47,7 +64,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => cancelAnimationFrame(frameId);
-  }, []);
+  }, [products]);
 
   // Save to localStorage when items change
   useEffect(() => {

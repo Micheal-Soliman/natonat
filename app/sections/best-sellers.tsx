@@ -6,14 +6,20 @@ import { Link } from "@/i18n/routing";
 import { useTranslations, useLocale } from 'next-intl';
 import { Button } from "@/components/ui/button";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
-import { products } from "@/lib/products";
+import { useCatalogProducts } from "@/app/lib/catalog-context";
+import type { Product } from "@/lib/products";
 
 // Get products from all 3 categories for display
-const getDisplayProducts = () => {
+const hasCategory = (product: Product, category: string) =>
+  Array.isArray(product.category)
+    ? product.category.includes(category)
+    : product.category === category;
+
+const getDisplayProducts = (products: Product[]) => {
   const tagged = products.filter(p => p.tag === "Best Seller" || p.tag === "New").slice(0, 4);
-  const luggage = products.find(p => p.category === "luggage-covers" && !tagged.find(t => t.id === p.id));
-  const passport = products.find(p => p.category === "passport-wallets" && !tagged.find(t => t.id === p.id));
-  const packonat = products.find(p => p.category === "packonat" && !tagged.find(t => t.id === p.id));
+  const luggage = products.find(p => hasCategory(p, "luggage-covers") && !tagged.find(t => t.id === p.id));
+  const passport = products.find(p => hasCategory(p, "passport-wallets") && !tagged.find(t => t.id === p.id));
+  const packonat = products.find(p => hasCategory(p, "packonat") && !tagged.find(t => t.id === p.id));
 
   const result = [...tagged];
   if (luggage) result.push(luggage);
@@ -24,10 +30,10 @@ const getDisplayProducts = () => {
   return [...result, ...remaining].slice(0, 8);
 };
 
-const displayProducts = getDisplayProducts();
-
 export function BestSellers() {
   const t = useTranslations('bestSellers');
+  const products = useCatalogProducts();
+  const displayProducts = getDisplayProducts(products);
   const locale = useLocale();
   const isRTL = locale === 'ar';
   const [isVisible, setIsVisible] = useState(false);

@@ -6,10 +6,12 @@ type SanityColor = {
   id?: string;
   name?: string;
   imageUrl?: string;
+  imageAssetUrl?: string;
 };
 
 type SanityBundleItem = {
   legacyProductIds?: number[];
+  referencedLegacyId?: number;
   quantity?: number;
   label?: string;
 };
@@ -32,6 +34,10 @@ function normalizeProduct(product: SanityProduct): Product | null {
   return {
     ...product,
     id: product.legacyId,
+    category:
+      Array.isArray(product.category) && product.category.length === 1
+        ? product.category[0]
+        : product.category,
     image: product.mainImageUrl || product.imageUrl || "",
     images:
       product.galleryImageUrls?.filter(Boolean) ||
@@ -40,10 +46,13 @@ function normalizeProduct(product: SanityProduct): Product | null {
     colors: product.colors?.map((color) => ({
       id: color.id || color.name || "",
       name: color.name || color.id || "",
-      image: color.imageUrl || "",
+      image: color.imageAssetUrl || color.imageUrl || "",
     })),
     bundleItems: product.bundleItems?.map((item) => ({
-      productIds: item.legacyProductIds,
+      productId: item.referencedLegacyId,
+      productIds:
+        item.legacyProductIds ||
+        (item.referencedLegacyId ? [item.referencedLegacyId] : undefined),
       quantity: item.quantity || 1,
       label: item.label,
     })),

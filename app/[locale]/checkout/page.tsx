@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useState, useEffect, useMemo, useRef, type ReactNode } from "react";
-import { products } from "@/lib/products";
+import type { Product } from "@/lib/products";
 import Image from "next/image";
 import { Link, useRouter } from "@/i18n/routing";
 import { useTranslations, useLocale } from 'next-intl';
@@ -11,13 +11,14 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, CreditCard, Truck, Check, MapPin, Phone, Mail, Newspaper, Store, Package, Search, ChevronDown } from "lucide-react";
 import { useCart, type CartItem } from "@/app/lib/cart-context";
 import { trackMetaPixelEvent } from "@/lib/meta-pixel";
+import { useCatalogProducts } from "@/app/lib/catalog-context";
 
 
 function generateOrderRef() {
   return `NAT-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 }
 
-function serializeOrderItem(item: CartItem) {
+function serializeOrderItem(item: CartItem, products: Product[]) {
   const catalogProduct = products.find((product) => product.id === item.id);
   const color =
     catalogProduct?.colors?.find((variant) => variant.id === item.color)?.name ||
@@ -217,6 +218,7 @@ export default function CheckoutPage() {
 
 function CheckoutContent() {
   const t = useTranslations('checkout');
+  const products = useCatalogProducts();
   const locale = useLocale();
   const router = useRouter();
   const { items, subtotal, discount, originalSubtotal, appliedDiscounts, clearCart, buyNowItem, setBuyNowItem } = useCart();
@@ -461,7 +463,7 @@ function CheckoutContent() {
               address: formData.address,
               postCode: formData.postCode,
             },
-            items: checkoutItems.map(serializeOrderItem),
+            items: checkoutItems.map((item) => serializeOrderItem(item, products)),
             paymob: {
               client_secret: clientSecret,
               intention_order_id: data?.intention_order_id,
@@ -592,7 +594,7 @@ function CheckoutContent() {
             postCode: formData.postCode,
           },
 
-          items: checkoutItems.map(serializeOrderItem),
+          items: checkoutItems.map((item) => serializeOrderItem(item, products)),
 
           extras: {
             shipping_rule: shippingRuleCOD,

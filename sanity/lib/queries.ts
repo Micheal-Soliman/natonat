@@ -17,7 +17,12 @@ export const activeProductsQuery = groq`
     sizePrices,
     theme,
     color,
-    colors,
+    colors[]{
+      id,
+      name,
+      imageUrl,
+      "imageAssetUrl": image.asset->url
+    },
     imageUrl,
     "mainImageUrl": mainImage.asset->url,
     galleryUrls,
@@ -26,7 +31,12 @@ export const activeProductsQuery = groq`
     collection,
     printType,
     isBundle,
-    bundleItems,
+    bundleItems[]{
+      legacyProductIds,
+      quantity,
+      label,
+      "referencedLegacyId": product->legacyId
+    },
     dynamicPricing,
     pricingRule,
     sortOrder
@@ -50,7 +60,12 @@ export const productBySlugQuery = groq`
     sizePrices,
     theme,
     color,
-    colors,
+    colors[]{
+      id,
+      name,
+      imageUrl,
+      "imageAssetUrl": image.asset->url
+    },
     imageUrl,
     "mainImageUrl": mainImage.asset->url,
     galleryUrls,
@@ -59,7 +74,12 @@ export const productBySlugQuery = groq`
     collection,
     printType,
     isBundle,
-    bundleItems,
+    bundleItems[]{
+      legacyProductIds,
+      quantity,
+      label,
+      "referencedLegacyId": product->legacyId
+    },
     dynamicPricing,
     pricingRule,
     sortOrder

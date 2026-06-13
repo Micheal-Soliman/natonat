@@ -2,13 +2,21 @@ import Image from "next/image";
 import { Link } from "@/i18n/routing";
 import { getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/button";
-import { products, getDiscountPercentage } from "@/lib/products";
-
-// Get bundle products from lib/products
-const bundles = products.filter((p) => p.category === "bundles").slice(0, 3);
+import { getDiscountPercentage } from "@/lib/products";
+import { getCatalogProducts } from "@/lib/sanity-products";
 
 export async function TravelSets() {
-  const t = await getTranslations('bundles');
+  const [t, products] = await Promise.all([
+    getTranslations('bundles'),
+    getCatalogProducts(),
+  ]);
+  const bundles = products
+    .filter((product) =>
+      Array.isArray(product.category)
+        ? product.category.includes("bundles")
+        : product.category === "bundles"
+    )
+    .slice(0, 3);
 
   return (
     <section className="py-20 bg-[#F1EBE3]">
