@@ -166,17 +166,32 @@ export async function POST(req: Request) {
     raw_payload: payload,
   };
 
-  const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL;
-  if (webhookUrl) {
+  const appOrigin =
+    process.env.APP_ORIGIN ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    new URL(req.url).origin;
+
+  if (paymentDetails.special_reference) {
     try {
-      await fetch(webhookUrl, {
+      await fetch(`${appOrigin}/api/orders/log`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(paymentDetails),
+        body: JSON.stringify({
+          source: "paymob_webhook",
+          order_ref: paymentDetails.special_reference,
+          status: transaction.success
+            ? "confirmed"
+            : transaction.pending
+              ? "pending"
+              : "failed",
+          payment_status: paymentDetails.payment_status,
+          payment: paymentDetails,
+          updated_at: new Date().toISOString(),
+        }),
         cache: "no-store",
       });
-    } catch {
-      // ignore forwarding errors
+    } catch (error) {
+      console.error("[Webhook] Failed to update order payment status:", error);
     }
   }
 
@@ -184,7 +199,7 @@ export async function POST(req: Request) {
   if (transaction?.success && paymentDetails.special_reference) {
     try {
       // Retrieve order details from order log
-      const orderLogRes = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || ""}/api/orders/log?order_ref=${paymentDetails.special_reference}`, {
+      const orderLogRes = await fetch(`${appOrigin}/api/orders/log?order_ref=${paymentDetails.special_reference}`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       });
@@ -197,7 +212,7 @@ export async function POST(req: Request) {
         if (orderData?.delivery_method === "delivery" && orderData?.customer && !orderData?.aramex?.trackingNumber) {
           console.log(`[Webhook] Proceeding with Aramex shipment for order: ${paymentDetails.special_reference}`);
           
-          const shipmentRes = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || ""}/api/aramex/shipment`, {
+          const shipmentRes = await fetch(`${appOrigin}/api/aramex/shipment`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -218,7 +233,7 @@ export async function POST(req: Request) {
             console.log("[Webhook] Aramex shipment created:", shipmentData.trackingNumber);
             
             // Update order with tracking info
-            await fetch(`${process.env.NEXT_PUBLIC_APP_URL || ""}/api/orders/log`, {
+            await fetch(`${appOrigin}/api/orders/log`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({

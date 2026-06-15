@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/routing";
 import { Navigation } from "@/app/sections/navigation";
@@ -37,32 +37,133 @@ function OrderConfirmedContent() {
   const { clearCart, setBuyNowItem } = useCart();
 
   const orderRef = searchParams.get("order_ref") || "";
-  const method = searchParams.get("method") || "";
-  const transactionId = searchParams.get("id") || "";
-  const amountCents = searchParams.get("amount_cents") || "";
+  const methodFromUrl = searchParams.get("method") || "";
+  const transactionIdFromUrl = searchParams.get("id") || "";
+  const amountCentsFromUrl = searchParams.get("amount_cents") || "";
 
-  const successParam = searchParams.get("success");
-  const pendingParam = searchParams.get("pending");
+  type VerificationStatus =
+    | "checking"
+    | "success"
+    | "pending"
+    | "failed"
+    | "not_found";
 
-  const isCard = method === "card";
+  type VerifiedOrder = {
+    status?: string;
+    payment_status?: string;
+    payment_method?: string;
+    amount_egp?: number;
+    amount_cents?: number;
+    payment?: {
+      transaction_id?: string | number;
+      amount_cents?: number;
+    };
+  };
 
-  const isSuccess =
-    !isCard ||
-    successParam === "true" ||
-    successParam === "True" ||
-    successParam === "1";
-
-  const isPending =
-    pendingParam === "true" ||
-    pendingParam === "True" ||
-    pendingParam === "1";
-
-  const isFailed = isCard && !isSuccess && !isPending;
-
-  const amount = amountCents ? Number(amountCents) / 100 : null;
+  const [verificationStatus, setVerificationStatus] =
+    useState<VerificationStatus>("checking");
+  const [verifiedOrder, setVerifiedOrder] = useState<VerifiedOrder | null>(null);
 
   useEffect(() => {
-    if (isSuccess) {
+    const controller = new AbortController();
+
+    async function verifyOrder() {
+      if (!orderRef) {
+        setVerificationStatus("not_found");
+        return;
+      }
+
+      const maxAttempts = methodFromUrl === "card" ? 6 : 1;
+      let orderWasFound = false;
+
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        try {
+          const response = await fetch(
+            `/api/orders/log?order_ref=${encodeURIComponent(orderRef)}`,
+            {
+              cache: "no-store",
+              signal: controller.signal,
+            }
+          );
+
+          if (response.ok) {
+            const order = (await response.json()) as VerifiedOrder;
+            const paymentStatus = (order.payment_status || "").toLowerCase();
+            const orderStatus = (order.status || "").toLowerCase();
+            const paymentMethod = (
+              order.payment_method ||
+              methodFromUrl
+            ).toLowerCase();
+            const isCard =
+              paymentMethod.includes("card") ||
+              paymentMethod.includes("paymob");
+
+            orderWasFound = true;
+            setVerifiedOrder(order);
+
+            if (paymentStatus === "paid" || paymentStatus === "success") {
+              setVerificationStatus("success");
+              return;
+            }
+
+            if (
+              paymentStatus === "failed" ||
+              orderStatus === "failed" ||
+              orderStatus === "cancelled"
+            ) {
+              setVerificationStatus("failed");
+              return;
+            }
+
+            if (
+              !isCard &&
+              (paymentMethod === "cod" ||
+                ["confirmed", "shipped", "completed"].includes(orderStatus))
+            ) {
+              setVerificationStatus("success");
+              return;
+            }
+          } else if (response.status !== 404) {
+            setVerificationStatus("failed");
+            return;
+          }
+        } catch (error) {
+          if (controller.signal.aborted) return;
+          console.error("Failed to verify order:", error);
+        }
+
+        if (attempt < maxAttempts - 1) {
+          await new Promise((resolve) => window.setTimeout(resolve, 1500));
+        }
+      }
+
+      setVerificationStatus(orderWasFound ? "pending" : "not_found");
+    }
+
+    verifyOrder();
+    return () => controller.abort();
+  }, [methodFromUrl, orderRef]);
+
+  const isSuccess = verificationStatus === "success";
+  const isPending =
+    verificationStatus === "checking" || verificationStatus === "pending";
+  const isFailed =
+    verificationStatus === "failed" || verificationStatus === "not_found";
+  const method = verifiedOrder?.payment_method || methodFromUrl;
+  const transactionId =
+    verifiedOrder?.payment?.transaction_id || transactionIdFromUrl;
+  const verifiedAmountCents =
+    verifiedOrder?.payment?.amount_cents || verifiedOrder?.amount_cents;
+  const amount =
+    verifiedOrder?.amount_egp ??
+    (verifiedAmountCents
+      ? Number(verifiedAmountCents) / 100
+      : amountCentsFromUrl
+        ? Number(amountCentsFromUrl) / 100
+        : null);
+
+  useEffect(() => {
+    if (verificationStatus === "success") {
       const dedupeKey = orderRef ? `meta-purchase-${orderRef}` : "";
       const wasTracked =
         dedupeKey && window.localStorage.getItem(dedupeKey) === "1";
@@ -104,7 +205,7 @@ function OrderConfirmedContent() {
       setBuyNowItem(null);
     }
   }, [
-    isSuccess,
+    verificationStatus,
     amount,
     orderRef,
     transactionId,
@@ -129,19 +230,27 @@ function OrderConfirmedContent() {
           </div>
 
           <h1 className="text-2xl md:text-3xl font-bold text-[#0F1A26] mb-3">
-            {isSuccess
-              ? "Order Confirmed"
-              : isPending
-                ? "Payment Pending"
-                : "Payment Failed"}
+            {verificationStatus === "checking"
+              ? "Checking Order"
+              : isSuccess
+                ? "Order Confirmed"
+                : isPending
+                  ? "Payment Pending"
+                  : verificationStatus === "not_found"
+                    ? "Order Not Found"
+                    : "Payment Failed"}
           </h1>
 
           <p className="text-[#0F1A26]/60 mb-6 leading-relaxed">
-            {isSuccess
-              ? "Thank you. Your order has been confirmed successfully."
-              : isPending
-                ? "Your payment is pending. We will update your order once confirmed."
-                : "Your payment was not completed. Please try again."}
+            {verificationStatus === "checking"
+              ? "Please wait while we verify your order."
+              : isSuccess
+                ? "Thank you. Your order has been confirmed successfully."
+                : isPending
+                  ? "Your payment is pending. We will update your order once confirmed."
+                  : verificationStatus === "not_found"
+                    ? "We could not verify this order reference. Please check the link or contact support."
+                    : "Your payment was not completed. Please try again."}
           </p>
 
           <div className="bg-[#F1EBE3] rounded-2xl p-5 mb-6 space-y-3 text-left">
@@ -193,7 +302,9 @@ function OrderConfirmedContent() {
           {isFailed && (
             <div className="mb-6 rounded-2xl bg-red-50 border border-red-100 p-4">
               <p className="text-sm text-red-700 font-medium">
-                If money was deducted, please contact support with your order reference.
+                {verificationStatus === "not_found"
+                  ? "This page cannot confirm an order without a valid order record."
+                  : "If money was deducted, please contact support with your order reference."}
               </p>
             </div>
           )}

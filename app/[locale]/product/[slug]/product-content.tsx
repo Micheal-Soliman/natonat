@@ -357,6 +357,11 @@ function ProductDetailedDescriptionFull({ product, selectedSize, quantity, t, ad
             });
             trackMetaPixelEvent("AddToCart", {
               content_ids: [String(product.id)],
+              contents: [{
+                id: String(product.id),
+                quantity,
+                item_price: product.price,
+              }],
               content_name: product.name,
               content_type: "product",
               value: product.price * quantity,
@@ -398,6 +403,11 @@ export default function ProductPageContent({
   useEffect(() => {
     trackMetaPixelEvent("ViewContent", {
       content_ids: [String(product.id)],
+      contents: [{
+        id: String(product.id),
+        quantity: 1,
+        item_price: product.price,
+      }],
       content_name: product.name,
       content_type: "product",
       value: product.price,
@@ -1364,6 +1374,11 @@ export default function ProductPageContent({
                       });
                       trackMetaPixelEvent("AddToCart", {
                         content_ids: [String(product.id)],
+                        contents: [{
+                          id: String(product.id),
+                          quantity,
+                          item_price: currentPrice.price,
+                        }],
                         content_name: product.name,
                         content_type: "product",
                         value: currentPrice.price * quantity,
@@ -1708,6 +1723,11 @@ export default function ProductPageContent({
                 });
                 trackMetaPixelEvent("AddToCart", {
                   content_ids: [String(product.id)],
+                  contents: [{
+                    id: String(product.id),
+                    quantity,
+                    item_price: currentPrice.price,
+                  }],
                   content_name: product.name,
                   content_type: "product",
                   value: currentPrice.price * quantity,

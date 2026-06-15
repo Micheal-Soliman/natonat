@@ -175,7 +175,10 @@ export async function POST(req: Request) {
   // Store in memory for retrieval by webhook
   const orderRef = body.order_ref as string | undefined;
   if (orderRef) {
-    const existing = orderStore.get(orderRef) as StoredOrder | undefined;
+    const existing =
+      (orderStore.get(orderRef) as StoredOrder | undefined) ||
+      ((await fetchOrderFromGoogleSheets(orderRef)) as StoredOrder | null) ||
+      undefined;
     
     // Build status history
     const newStatus = (body.status || existing?.status || "confirmed") as string;
