@@ -6,10 +6,11 @@ import { getCatalogProductBySlug, getCatalogProducts } from "@/lib/sanity-produc
 import ProductPageContent from "./product-content";
 
 import { getTranslations } from 'next-intl/server';
+import { siteConfig } from "@/lib/seo";
 
 export const revalidate = 60;
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.natonat.com").replace(/\/$/, "");
+const siteUrl = siteConfig.url;
 
 function absoluteUrl(path: string) {
   if (!path) return siteUrl;
@@ -41,6 +42,7 @@ export async function generateMetadata({
     .map(absoluteUrl);
 
   return {
+    metadataBase: new URL(siteUrl),
     title,
     description,
     alternates: {
@@ -48,6 +50,7 @@ export async function generateMetadata({
       languages: {
         en: `${siteUrl}/en/product/${product.slug}`,
         ar: `${siteUrl}/ar/product/${product.slug}`,
+        "x-default": `${siteUrl}/en/product/${product.slug}`,
       },
     },
     openGraph: {
@@ -61,6 +64,7 @@ export async function generateMetadata({
     },
     twitter: {
       card: "summary_large_image",
+      site: siteConfig.twitterHandle,
       title,
       description,
       images,

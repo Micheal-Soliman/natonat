@@ -6,6 +6,7 @@ import "./globals.css";
 import { GoogleAnalyticsPageView } from "./components/google-analytics-page-view";
 import { MetaPixelPageView } from "./components/meta-pixel-page-view";
 import { TikTokPixelPageView } from "./components/tiktok-pixel-page-view";
+import { absoluteUrl, siteConfig } from "@/lib/seo";
 
 const montserrat = Montserrat({
   variable: "--font-montserrat",
@@ -35,10 +36,63 @@ const arthaus = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "natOnat | Pack Smart. Travel Easy.",
-  description: "Premium travel accessories - stretchy, washable luggage covers and smart passport wallets that protect your gear and make it stand out.",
+  metadataBase: new URL(siteConfig.url),
+  title: {
+    default: siteConfig.title,
+    template: "%s | natOnat",
+  },
+  description: siteConfig.description,
+  applicationName: siteConfig.name,
+  category: "Travel accessories",
+  keywords: [
+    "natOnat",
+    "luggage covers Egypt",
+    "suitcase cover",
+    "passport wallet Egypt",
+    "travel accessories Egypt",
+    "PackOnat",
+  ],
+  alternates: {
+    canonical: siteConfig.url,
+    languages: {
+      en: `${siteConfig.url}/en`,
+      ar: `${siteConfig.url}/ar`,
+      "x-default": `${siteConfig.url}/en`,
+    },
+    types: {
+      "application/rss+xml": `${siteConfig.url}/rss.xml`,
+      "application/feed+json": `${siteConfig.url}/feed.json`,
+    },
+  },
+  openGraph: {
+    title: siteConfig.title,
+    description: siteConfig.description,
+    url: siteConfig.url,
+    siteName: siteConfig.name,
+    images: [absoluteUrl(siteConfig.ogImage)],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    site: siteConfig.twitterHandle,
+    title: siteConfig.title,
+    description: siteConfig.description,
+    images: [absoluteUrl(siteConfig.ogImage)],
+  },
   icons: {
     icon: "/favicon.ico",
+  },
+  manifest: "/manifest.webmanifest",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
   },
   verification: {
     google: "EUu-r19QGPFxdT77LqBBqvBBRtW6CfEJTLqc-8V6pKo",
@@ -50,11 +104,50 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": `${siteConfig.url}/#organization`,
+        name: siteConfig.name,
+        url: siteConfig.url,
+        logo: absoluteUrl("/logo-after.png"),
+        sameAs: [
+          "https://www.facebook.com/natonateg",
+          "https://www.instagram.com/natonateg",
+          "https://www.tiktok.com/@natonateg",
+        ],
+      },
+      {
+        "@type": "WebSite",
+        "@id": `${siteConfig.url}/#website`,
+        url: siteConfig.url,
+        name: siteConfig.name,
+        description: siteConfig.description,
+        publisher: {
+          "@id": `${siteConfig.url}/#organization`,
+        },
+        potentialAction: {
+          "@type": "SearchAction",
+          target: `${siteConfig.url}/en/shop?search={search_term_string}`,
+          "query-input": "required name=search_term_string",
+        },
+      },
+    ],
+  };
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body
         className={`${montserrat.variable} ${quicksand.variable} ${notoSansArabic.variable} ${arthaus.variable} antialiased font-sans`}
       >
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(structuredData).replace(/</g, "\\u003c"),
+          }}
+        />
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-MBR1BZMFVE"
           strategy="afterInteractive"

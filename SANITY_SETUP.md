@@ -50,6 +50,27 @@ The Studio product editor is split into tabs:
 - Media: current public image URLs and future Sanity image fields
 - Bundle: bundle configuration
 
+## Size guide settings
+
+The Studio has a standalone `Size guide` section. It is prefilled with the
+current storefront values:
+
+- S: 45-53 cm / 18-21 in
+- M: 55-63 cm / 22-25 in
+- L: 65-70 cm / 26-28 in
+- XL: 72-81 cm / 29-32 in
+- Video: `/size.mp4`
+
+If the singleton document is not already created in Sanity, opening `Size guide`
+from Studio will show these values as the initial content. You can publish it
+and then edit the numbers/video from there.
+
+To import the same current values directly into the dataset:
+
+```bash
+npx sanity dataset import sanity-size-guide-settings.ndjson production --replace
+```
+
 ## Import current products
 
 Generate an import file from the current local catalog:

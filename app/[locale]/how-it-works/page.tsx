@@ -8,6 +8,7 @@ import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
 import { Ruler, Package, Check, Sparkles, ArrowRight, ChevronDown, ChevronUp, Luggage } from "lucide-react";
 import { Loading } from "@/app/components/loading";
+import type { SiteSettings } from "@/lib/sanity-site-settings";
 
 const getSteps = () => [
   { icon: Ruler, key: "measure" },
@@ -35,6 +36,7 @@ function HowItWorksContent() {
   const tp = useTranslations('products');
   const [isVisible, setIsVisible] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [sizeGuide, setSizeGuide] = useState<SiteSettings["sizeGuide"] | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   const steps = getSteps();
@@ -56,6 +58,31 @@ function HowItWorksContent() {
 
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    async function loadSiteSettings() {
+      try {
+        const res = await fetch("/api/site-settings", { cache: "no-store" });
+        if (!res.ok) return;
+
+        const data = (await res.json()) as SiteSettings;
+        setSizeGuide(data.sizeGuide);
+      } catch (error) {
+        console.error("Failed to load size guide settings:", error);
+      }
+    }
+
+    loadSiteSettings();
+  }, []);
+
+  const sizeGuideItems = sizeGuide?.sizes?.length
+    ? sizeGuide.sizes
+    : [
+        { size: "S", inches: "18-21\"", inch: "18-21", cm: "45-53", type: t('sizes.s.type'), note: t('sizeGuide.heightOnly') },
+        { size: "M", inches: "22-25\"", inch: "22-25", cm: "55-63", type: t('sizes.m.type'), note: t('sizeGuide.heightOnly') },
+        { size: "L", inches: "26-28\"", inch: "26-28", cm: "65-70", type: t('sizes.l.type'), note: t('sizeGuide.heightOnly') },
+        { size: "XL", inches: "29-32\"", inch: "29-32", cm: "72-81", type: t('sizes.xl.type'), note: t('sizeGuide.heightOnly') },
+      ];
 
   return (
     <>
@@ -115,11 +142,11 @@ function HowItWorksContent() {
               </span>
 
               <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-[#0F1A26] mt-2 md:mt-3">
-                {t('video.title')}
+                {sizeGuide?.title || t('video.title')}
               </h2>
 
               <p className="text-[#0F1A26]/50 mt-2 md:mt-3 max-w-xl mx-auto text-sm md:text-base">
-                {t('video.subtitle')}
+                {sizeGuide?.subtitle || t('video.subtitle')}
               </p>
             </div>
 
@@ -131,9 +158,9 @@ function HowItWorksContent() {
                   controls
                   playsInline
                   preload="none"
-                  poster="/videos/measurement-poster.jpg"
+                  poster={sizeGuide?.posterUrl || "/videos/measurement-poster.jpg"}
                 >
-                  <source src="/size.mp4" type="video/mp4" />
+                  <source src={sizeGuide?.videoUrl || "/size.mp4"} type="video/mp4" />
                   Your browser does not support the video tag.
                 </video>
 
@@ -143,14 +170,14 @@ function HowItWorksContent() {
                     <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-3 md:px-4 py-2">
                       <Ruler className="w-4 h-4 text-[#EEBC3F]" />
                       <span className="text-white text-xs md:text-sm">
-                        {t('video.tip1')}
+                        {sizeGuide?.tips?.[0] || t('video.tip1')}
                       </span>
                     </div>
 
                     <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-3 md:px-4 py-2">
                       <Luggage className="w-4 h-4 text-[#EEBC3F]" />
                       <span className="text-white text-xs md:text-sm">
-                        {t('video.tip2')}
+                        {sizeGuide?.tips?.[1] || t('video.tip2')}
                       </span>
                     </div>
                   </div>
@@ -164,16 +191,11 @@ function HowItWorksContent() {
                 </h3>
 
                 <p className="text-white/50 text-xs text-center mb-6">
-                  {t('sizeGuide.note')}
+                  {sizeGuide?.note || t('sizeGuide.note')}
                 </p>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {[
-                    { size: "S", inches: "18-21\"", cm: "45-53 cm", type: t('sizes.s.type') },
-                    { size: "M", inches: "22-25\"", cm: "55-63 cm", type: t('sizes.m.type') },
-                    { size: "L", inches: "26-28\"", cm: "65-70 cm", type: t('sizes.l.type') },
-                    { size: "XL", inches: "29-32\"", cm: "72-81 cm", type: t('sizes.xl.type') },
-                  ].map((item) => (
+                  {sizeGuideItems.map((item) => (
                     <div
                       key={item.size}
                       className="bg-white/5 rounded-xl p-4 text-center border border-white/10 hover:border-[#EEBC3F]/30 transition-all duration-300"
@@ -183,11 +205,11 @@ function HowItWorksContent() {
                       </span>
 
                       <p className="text-white font-semibold mt-1">
-                        {item.inches}
+                        {("inches" in item ? item.inches : `${item.inch}"`)}
                       </p>
 
                       <p className="text-[#EEBC3F] text-sm">
-                        {item.cm}
+                        {item.cm.includes("cm") ? item.cm : `${item.cm} cm`}
                       </p>
 
                       <p className="text-white/40 text-xs mt-1">
@@ -195,7 +217,7 @@ function HowItWorksContent() {
                       </p>
 
                       <p className="text-white/30 text-[14px] mt-2">
-                        ({t('sizeGuide.heightOnly')})
+                        ({item.note || t('sizeGuide.heightOnly')})
                       </p>
                     </div>
                   ))}

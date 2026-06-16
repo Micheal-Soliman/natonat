@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/button";
 import { getDiscountPercentage } from "@/lib/products";
 import { getCatalogProducts } from "@/lib/sanity-products";
+import { BundleQuickCustomizer } from "@/app/components/bundle-quick-customizer";
 
 export async function TravelSets() {
   const [t, products] = await Promise.all([
@@ -94,12 +95,9 @@ export async function TravelSets() {
                   })()}
                 </div>
 
-                <Button
-                  asChild
-                  className="w-full bg-[#0F1A26] text-[#F1EBE3] hover:bg-[#EEBC3F] hover:text-[#0F1A26] transition-all duration-300 mt-auto h-10 text-sm"
-                >
-                  <Link href={`/product/${bundle.slug}`}>{t('viewProduct')}</Link>
-                </Button>
+                <div className="mt-auto">
+                  <BundleQuickCustomizer product={bundle} products={products} variant="light" />
+                </div>
               </div>
             </div>
           ))}

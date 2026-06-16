@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Shield, Sparkles, Ruler, Heart, Share2, Check, Star, Truck, RotateCcw, ArrowUpRight, Award, ArrowLeft, ChevronLeft, ChevronRight as ChevronRightIcon, ChevronDown, MessageCircle, CreditCard } from "lucide-react";
 import { FAQSection } from "@/app/components/faq-section";
 import { SwipeableProductImage } from "@/app/components/swipeable-product-image";
+import { useSizeGuideSizes } from "@/app/lib/site-settings-context";
 import { type Product } from "@/lib/products";
 import { calculateBundlePrice, getPricingRuleKey } from "@/lib/bundle-pricing";
 import { trackMetaPixelEvent } from "@/lib/meta-pixel";
@@ -510,12 +511,7 @@ export default function ProductPageContent({
   const touchStartXRef = useRef<number | null>(null);
 
 
-  const sizes = [
-    { id: "s", label: "S", range: "48-53 cm" },
-    { id: "m", label: "M", range: "58-63 cm" },
-    { id: "l", label: "L", range: "65-70 cm" },
-    { id: "xl", label: "XL", range: "72-80 cm" },
-  ];
+  const sizes = useSizeGuideSizes();
 
 
   const relatedProducts = useMemo(() => {

@@ -2,13 +2,14 @@ import { Link } from "@/i18n/routing";
 import { getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Ruler, Package, Check, PlayCircle } from "lucide-react";
-import { HowItWorksVideo } from "./how-it-works-video";
+import { getSiteSettings } from "@/lib/sanity-site-settings";
 
 export async function HowItWorks() {
   const t = await getTranslations("howItWorks");
   const ts = await getTranslations("howItWorks.steps");
   const tg = await getTranslations("howItWorks.sizeGuide");
   const tc = await getTranslations("howItWorks.calculator");
+  const { sizeGuide } = await getSiteSettings();
 
   const steps = [
     {
@@ -31,18 +32,10 @@ export async function HowItWorks() {
     },
   ];
 
-  const sizes = [
-    { size: "S", cm: "45–53", inch: "18–21", type: tg("sizes.s.type") },
-    { size: "M", cm: "55–63", inch: "22–25", type: tg("sizes.m.type") },
-    { size: "L", cm: "65–70", inch: "26–28", type: tg("sizes.l.type") },
-    { size: "XL", cm: "72–81", inch: "29–32", type: tg("sizes.xl.type") },
-  ];
-
   return (
     <section className="py-20 bg-[#0F1A26]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
-          {/* Left content */}
           <div>
             <span className="text-[#EEBC3F] text-sm font-semibold uppercase tracking-wider">
               {t("sectionLabel")}
@@ -55,8 +48,8 @@ export async function HowItWorks() {
             <p className="text-white/70 mb-8">{t("subtitle")}</p>
 
             <div className="space-y-6">
-              {steps.map((step, index) => (
-                <div key={index} className="flex gap-4">
+              {steps.map((step) => (
+                <div key={step.title} className="flex gap-4">
                   <div className="flex-shrink-0 w-12 h-12 rounded-full bg-[#EEBC3F]/20 flex items-center justify-center">
                     <step.icon className="w-5 h-5 text-[#EEBC3F]" />
                   </div>
@@ -86,42 +79,49 @@ export async function HowItWorks() {
             </Button>
           </div>
 
-          {/* Right - Size Guide + Video */}
           <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-5 sm:p-6 border border-white/10">
             <div className="flex items-center justify-between gap-4 mb-4">
-              <h3 className="text-xl font-bold text-white">{tg("title")}</h3>
+              <h3 className="text-xl font-bold text-white">
+                {sizeGuide.title || tg("title")}
+              </h3>
 
               <div className="flex items-center gap-2 text-[#EEBC3F] text-xs font-semibold uppercase tracking-wider">
                 <PlayCircle className="w-4 h-4" />
-                Size Video
+                {sizeGuide.label}
               </div>
             </div>
 
-            {/* Bigger Video */}
             <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/30 mb-4">
               <div className="relative h-[230px] sm:h-[260px] lg:h-[280px]">
-                <HowItWorksVideo />
+                <video
+                  className="h-full w-full object-contain"
+                  controls
+                  playsInline
+                  preload="none"
+                  poster={sizeGuide.posterUrl}
+                >
+                  <source src={sizeGuide.videoUrl} type="video/mp4" />
+                </video>
               </div>
 
               <div className="px-4 py-3 border-t border-white/10 flex items-center justify-between gap-3">
                 <div>
                   <p className="text-white text-sm font-semibold">
-                    How to measure your suitcase
+                    {sizeGuide.videoTitle}
                   </p>
                   <p className="text-white/50 text-xs">
-                    Measure height only, excluding wheels.
+                    {sizeGuide.videoSubtitle}
                   </p>
                 </div>
 
                 <span className="shrink-0 text-[#EEBC3F] text-xs font-bold">
-                  20 sec
+                  {sizeGuide.videoDuration}
                 </span>
               </div>
             </div>
 
-            {/* 4 Small Size Boxes Beside Each Other */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-              {sizes.map((item) => (
+              {sizeGuide.sizes.map((item) => (
                 <div
                   key={item.size}
                   className="bg-white/10 rounded-xl px-2.5 py-3 border border-white/10 hover:border-[#EEBC3F]/40 transition-all duration-300 text-center"
@@ -145,7 +145,7 @@ export async function HowItWorks() {
 
                   <div className="mt-2 pt-2 border-t border-white/15">
                     <p className="text-white/55 text-[10px] leading-tight">
-                      {tg("heightOnly")}
+                      {item.note || tg("heightOnly")}
                     </p>
                   </div>
                 </div>
@@ -153,7 +153,7 @@ export async function HowItWorks() {
             </div>
 
             <p className="text-white/70 text-xs text-center font-medium mt-4">
-              {tg("note")}
+              {sizeGuide.note || tg("note")}
             </p>
           </div>
         </div>

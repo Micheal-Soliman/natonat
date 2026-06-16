@@ -8,17 +8,19 @@ import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
 import { Filter, X, ChevronLeft, ChevronRight, ShoppingCart, Zap } from "lucide-react";
-import { categories, sizes, genders, collections, printTypes, type Product } from "@/lib/products";
+import { categories, genders, collections, printTypes, type Product } from "@/lib/products";
 import { Loading } from "@/app/components/loading";
 import { SwipeableProductImage } from "@/app/components/swipeable-product-image";
 import { BundleQuickCustomizer } from "@/app/components/bundle-quick-customizer";
 import { useCatalogProducts } from "@/app/lib/catalog-context";
+import { useSizeGuideSizes } from "@/app/lib/site-settings-context";
 import { useCart } from "@/app/lib/cart-context";
 
 function ShopContent() {
   const t = useTranslations('shop');
   const router = useRouter();
   const products = useCatalogProducts();
+  const sizes = useSizeGuideSizes();
   const { addToCart, setBuyNowItem } = useCart();
   const searchParams = useSearchParams();
   const categoryFromUrl = searchParams.get("category") || "all";

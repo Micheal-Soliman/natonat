@@ -4,12 +4,12 @@ import { useMemo, useState } from "react";
 import type React from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { Link, useRouter } from "@/i18n/routing";
+import { useRouter } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Zap } from "lucide-react";
 import { useCart } from "@/app/lib/cart-context";
+import { useSizeGuideSizes } from "@/app/lib/site-settings-context";
 import { calculateBundlePrice, getPricingRuleKey } from "@/lib/bundle-pricing";
-import { sizes, type Product } from "@/lib/products";
+import type { Product } from "@/lib/products";
 
 type BundleQuickCustomizerProps = {
   product: Product;
@@ -24,13 +24,15 @@ type BundleQuickSelection = {
   color?: string;
 };
 
-const getSizeOptions = (product?: Product) => {
+type SizeOption = ReturnType<typeof useSizeGuideSizes>[number];
+
+const getSizeOptions = (product: Product | undefined, sizes: SizeOption[]) => {
   if (!product?.sizePrices) return [];
   return sizes.filter((size) => product.sizePrices?.[size.id as keyof NonNullable<Product["sizePrices"]>]);
 };
 
-const getDefaultSize = (product?: Product) => {
-  const sizeOptions = getSizeOptions(product).map((size) => size.id);
+const getDefaultSize = (product: Product | undefined, sizes: SizeOption[]) => {
+  const sizeOptions = getSizeOptions(product, sizes).map((size) => size.id);
   if (sizeOptions.includes("m")) return "m";
   return sizeOptions[0] || product?.size?.toLowerCase();
 };
@@ -44,6 +46,7 @@ export function BundleQuickCustomizer({
   const t = useTranslations("shop.quickAdd");
   const router = useRouter();
   const { addToCart, setBuyNowItem } = useCart();
+  const sizes = useSizeGuideSizes();
   const isDark = variant === "dark";
 
   const initialSelections = useMemo(() => {
@@ -54,13 +57,13 @@ export function BundleQuickCustomizer({
       const selectedProduct = products.find((candidate) => candidate.id === selectedProductId);
       initial[index] = {
         productId: selectedProductId,
-        size: getDefaultSize(selectedProduct),
+        size: getDefaultSize(selectedProduct, sizes),
         color: selectedProduct?.colors?.[0]?.id,
       };
     });
 
     return initial;
-  }, [product.bundleItems, products]);
+  }, [product.bundleItems, products, sizes]);
 
   const [selections, setSelections] = useState<Record<number, BundleQuickSelection>>(initialSelections);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -80,7 +83,7 @@ export function BundleQuickCustomizer({
       const selection = selections[index] || {};
       const selectedProductId = selection.productId || item.productId || item.productIds?.[0] || 0;
       const selectedProduct = products.find((candidate) => candidate.id === selectedProductId);
-      const size = selection.size || getDefaultSize(selectedProduct);
+      const size = selection.size || getDefaultSize(selectedProduct, sizes);
       const colorId = selection.color || selectedProduct?.colors?.[0]?.id;
       const color = selectedProduct?.colors?.find((candidate) => candidate.id === colorId);
       const sizePrice =
@@ -102,7 +105,7 @@ export function BundleQuickCustomizer({
         image: color?.image || selectedProduct?.image,
       };
     });
-  }, [product.bundleItems, products, selections]);
+  }, [product.bundleItems, products, selections, sizes]);
 
   const bundlePrice = useMemo(() => {
     const pricingRuleKey = getPricingRuleKey(product);
@@ -169,7 +172,7 @@ export function BundleQuickCustomizer({
     : activeSelectedProduct
       ? [activeSelectedProduct]
       : [];
-  const activeSizeOptions = getSizeOptions(activeSelectedProduct);
+  const activeSizeOptions = getSizeOptions(activeSelectedProduct, sizes);
   const activeSelectedColor = activeSelectedProduct?.colors?.find(
     (color) => color.id === activeSelection.color
   );
@@ -257,7 +260,7 @@ export function BundleQuickCustomizer({
                 const nextProduct = products.find((candidate) => candidate.id === nextProductId);
                 updateSelection(activeIndex, {
                   productId: nextProductId,
-                  size: getDefaultSize(nextProduct),
+                  size: getDefaultSize(nextProduct, sizes),
                   color: nextProduct?.colors?.[0]?.id,
                 });
               }}
@@ -383,7 +386,6 @@ export function BundleQuickCustomizer({
           }`}
           variant="outline"
         >
-          <ShoppingCart className="h-3.5 w-3.5 shrink-0 sm:mr-1" />
           <span className="truncate">{t("add")}</span>
         </Button>
         <Button
@@ -392,17 +394,9 @@ export function BundleQuickCustomizer({
           onClick={handleBuy}
           className="h-9 rounded-xl bg-[#EEBC3F] px-2 text-xs font-bold text-[#0F1A26] shadow-sm shadow-[#EEBC3F]/25 hover:bg-[#d4a535]"
         >
-          <Zap className="h-3.5 w-3.5 shrink-0 sm:mr-1" />
           <span className="truncate">{t("buy")}</span>
         </Button>
       </div>
-
-      <Link
-        href={`/product/${product.slug}`}
-        className={`mt-2 block text-center text-xs font-bold ${isDark ? "text-[#EEBC3F]" : "text-[#0F1A26]/60 hover:text-[#0F1A26]"}`}
-      >
-        {t("customize")}
-      </Link>
     </div>
   );
 }

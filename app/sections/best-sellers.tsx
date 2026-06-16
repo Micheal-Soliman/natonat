@@ -7,9 +7,9 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Button } from "@/components/ui/button";
 import { ArrowRight, ChevronLeft, ChevronRight, ShoppingCart, Zap } from "lucide-react";
 import { useCatalogProducts } from "@/app/lib/catalog-context";
+import { useSizeGuideSizes } from "@/app/lib/site-settings-context";
 import { useCart } from "@/app/lib/cart-context";
 import { BundleQuickCustomizer } from "@/app/components/bundle-quick-customizer";
-import { sizes } from "@/lib/products";
 import type { Product } from "@/lib/products";
 
 // Get products from all 3 categories for display
@@ -38,6 +38,7 @@ export function BestSellers() {
   const tq = useTranslations('shop');
   const router = useRouter();
   const products = useCatalogProducts();
+  const sizes = useSizeGuideSizes();
   const { addToCart, setBuyNowItem } = useCart();
   const displayProducts = getDisplayProducts(products);
   const locale = useLocale();
