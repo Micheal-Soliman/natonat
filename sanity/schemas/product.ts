@@ -1,11 +1,7 @@
 import { defineArrayMember, defineField, defineType } from "sanity";
 
-const categoryOptions = [
-  { title: "Luggage Covers", value: "luggage-covers" },
-  { title: "Passport Wallets", value: "passport-wallets" },
-  { title: "PackOnat", value: "packonat" },
-  { title: "Bundles", value: "bundles" },
-];
+import { CategoryDropdownInput } from "@/sanity/components/category-dropdown-input";
+import { categoryOptions } from "./category-options";
 
 const sizeOptions = [
   { title: "S", value: "s" },
@@ -94,7 +90,9 @@ export const product = defineType({
       of: [defineArrayMember({ type: "string" })],
       options: {
         list: categoryOptions,
-        layout: "tags",
+      },
+      components: {
+        input: CategoryDropdownInput,
       },
       validation: (Rule) => Rule.required().min(1),
     }),
