@@ -7,7 +7,7 @@ import { useTranslations } from 'next-intl';
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
-import { Filter, X, ChevronLeft, ChevronRight, ShoppingCart, Zap } from "lucide-react";
+import { Filter, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { categories, genders, collections, printTypes, type Product } from "@/lib/products";
 import { Loading } from "@/app/components/loading";
 import { SwipeableProductImage } from "@/app/components/swipeable-product-image";
@@ -741,7 +741,6 @@ function ShopContent() {
                               className="h-9 rounded-xl bg-[#F8F6F3] border border-[#0F1A26]/10 text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white px-2 text-xs font-bold"
                               variant="outline"
                             >
-                              <ShoppingCart className="w-3.5 h-3.5 shrink-0 sm:mr-1" />
                               <span className="truncate">{t('quickAdd.add')}</span>
                             </Button>
                             <Button
@@ -750,7 +749,6 @@ function ShopContent() {
                               onClick={() => handleQuickBuy(product)}
                               className="h-9 rounded-xl bg-[#EEBC3F] text-[#0F1A26] hover:bg-[#d4a535] px-2 text-xs font-bold shadow-sm shadow-[#EEBC3F]/25"
                             >
-                              <Zap className="w-3.5 h-3.5 shrink-0 sm:mr-1" />
                               <span className="truncate">{t('quickAdd.buy')}</span>
                             </Button>
                           </div>

@@ -493,6 +493,101 @@ export default function ProductPageContent({
 
   const currentPrice = product.dynamicPricing ? calculateDynamicBundlePrice() : getPriceBySize(selectedSize);
 
+  const buildCartBundleSelections = useCallback(() => {
+    if (!isBundle || !product.bundleItems) return undefined;
+
+    return product.bundleItems.map((item, index) => {
+      const selection = bundleSelections[index] || {};
+      const selectedProductId = selection.productId || item.productId || item.productIds?.[0];
+      const bundleProduct = selectedProductId ? getBundleProduct(selectedProductId) : undefined;
+
+      return {
+        productId: selectedProductId || 0,
+        productName: bundleProduct?.name || "",
+        productSlug: bundleProduct?.slug,
+        productType: bundleProduct?.type,
+        label: item.label,
+        size: selection.size,
+        color:
+          bundleProduct?.colors?.find((color) => color.id === selection.color)?.name ||
+          selection.color ||
+          bundleProduct?.color,
+        quantity: item.quantity,
+        price:
+          selection.size && bundleProduct?.sizePrices
+            ? bundleProduct.sizePrices[selection.size as keyof typeof bundleProduct.sizePrices]?.price
+            : bundleProduct?.price,
+        originalPrice:
+          selection.size && bundleProduct?.sizePrices
+            ? bundleProduct.sizePrices[selection.size as keyof typeof bundleProduct.sizePrices]?.originalPrice
+            : bundleProduct?.originalPrice,
+      };
+    });
+  }, [bundleSelections, getBundleProduct, isBundle, product.bundleItems]);
+
+  const buildCartItem = useCallback(() => ({
+    id: product.id,
+    name: product.name,
+    slug: product.slug,
+    type: product.type,
+    price: currentPrice.price,
+    originalPrice: currentPrice.originalPrice,
+    image: product.colors && selectedColor
+      ? product.colors.find(c => c.id === selectedColor)?.image || product.image
+      : product.image,
+    size: product.size ? selectedSize : undefined,
+    color: selectedProductColor,
+    quantity,
+    isBundle,
+    bundleSelections: buildCartBundleSelections(),
+  }), [
+    buildCartBundleSelections,
+    currentPrice.originalPrice,
+    currentPrice.price,
+    isBundle,
+    product.colors,
+    product.id,
+    product.image,
+    product.name,
+    product.size,
+    product.slug,
+    product.type,
+    quantity,
+    selectedColor,
+    selectedProductColor,
+    selectedSize,
+  ]);
+
+  const trackAddToCart = useCallback(() => {
+    trackMetaPixelEvent("AddToCart", {
+      content_ids: [String(product.id)],
+      contents: [{
+        id: String(product.id),
+        quantity,
+        item_price: currentPrice.price,
+      }],
+      content_name: product.name,
+      content_type: "product",
+      value: currentPrice.price * quantity,
+      currency: "EGP",
+    });
+  }, [currentPrice.price, product.id, product.name, quantity]);
+
+  const handleStickyAddToCart = useCallback(() => {
+    addToCart(buildCartItem());
+    trackAddToCart();
+  }, [addToCart, buildCartItem, trackAddToCart]);
+
+  const handleStickyBuyNow = useCallback(() => {
+    if (!currentPrice.price) {
+      alert(t("price.unavailable"));
+      return;
+    }
+
+    setBuyNowItem(buildCartItem());
+    router.push("/checkout");
+  }, [buildCartItem, currentPrice.price, router, setBuyNowItem, t]);
+
   // Filter images based on selected color - memoized to prevent infinite loops
   const colorImages = useMemo(() => {
     if (!product.colors || !selectedColor) return product.images || [product.image];
@@ -1715,6 +1810,61 @@ export default function ProductPageContent({
                   </div>
                 </Link>
               ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop Sticky Buy Bar */}
+        <div className="hidden lg:block fixed bottom-5 left-1/2 z-50 w-[min(1120px,calc(100vw-48px))] -translate-x-1/2 rounded-3xl border border-[#0F1A26]/10 bg-white/95 px-5 py-4 shadow-2xl shadow-[#0F1A26]/15 backdrop-blur-xl">
+          <div className="flex items-center gap-5">
+            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl bg-[#F1EBE3]">
+              <Image
+                src={
+                  product.colors && selectedColor
+                    ? product.colors.find(c => c.id === selectedColor)?.image || product.image
+                    : product.image
+                }
+                alt={product.name}
+                fill
+                sizes="64px"
+                className="object-contain p-1.5"
+              />
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-bold text-[#0F1A26]">{product.name}</p>
+              <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-semibold text-[#0F1A26]/55">
+                {product.size && <span>{selectedSize.toUpperCase()}</span>}
+                {selectedProductColor && <span>{selectedProductColor}</span>}
+                <span>{quantity}x</span>
+              </div>
+            </div>
+
+            <div className="shrink-0 text-right">
+              <p className="text-xl font-black text-[#0F1A26]">EGP {currentPrice.price}</p>
+              {currentPrice.originalPrice > currentPrice.price && (
+                <p className="text-xs font-semibold text-[#0F1A26]/35 line-through">
+                  EGP {currentPrice.originalPrice}
+                </p>
+              )}
+            </div>
+
+            <div className="grid w-[300px] grid-cols-2 gap-2">
+              <Button
+                type="button"
+                onClick={handleStickyAddToCart}
+                className="h-12 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] text-sm font-bold text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white"
+                variant="outline"
+              >
+                {t('addToCart')}
+              </Button>
+              <Button
+                type="button"
+                onClick={handleStickyBuyNow}
+                className="h-12 rounded-2xl bg-[#EEBC3F] text-sm font-bold text-[#0F1A26] shadow-sm shadow-[#EEBC3F]/25 hover:bg-[#d4a535]"
+              >
+                {t('buyNow')}
+              </Button>
             </div>
           </div>
         </div>

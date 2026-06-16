@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Link, useRouter } from "@/i18n/routing";
 import { useTranslations, useLocale } from 'next-intl';
 import { Button } from "@/components/ui/button";
-import { ArrowRight, ChevronLeft, ChevronRight, ShoppingCart, Zap } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { useCatalogProducts } from "@/app/lib/catalog-context";
 import { useSizeGuideSizes } from "@/app/lib/site-settings-context";
 import { useCart } from "@/app/lib/cart-context";
@@ -467,7 +467,6 @@ export function BestSellers() {
                         className="h-9 rounded-xl bg-white/10 border border-white/10 text-white hover:bg-white hover:text-[#0F1A26] px-2 text-xs font-bold"
                         variant="outline"
                       >
-                        <ShoppingCart className="w-3.5 h-3.5 shrink-0 sm:mr-1" />
                         <span className="truncate">{tq('quickAdd.add')}</span>
                       </Button>
                       <Button
@@ -476,7 +475,6 @@ export function BestSellers() {
                         onClick={() => handleQuickBuy(product)}
                         className="h-9 rounded-xl bg-[#EEBC3F] text-[#0F1A26] hover:bg-[#d4a535] px-2 text-xs font-bold shadow-sm shadow-[#EEBC3F]/25"
                       >
-                        <Zap className="w-3.5 h-3.5 shrink-0 sm:mr-1" />
                         <span className="truncate">{tq('quickAdd.buy')}</span>
                       </Button>
                     </div>

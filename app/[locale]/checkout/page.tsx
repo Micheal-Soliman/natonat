@@ -678,6 +678,16 @@ function CheckoutContent() {
   const inputSmallClass = `w-full px-3 py-2.5 rounded-lg text-sm ${controlBase}`;
   const inputSmallIconClass = `w-full px-3 py-2.5 pl-10 rounded-lg text-sm ${controlBase}`;
 
+  const checkoutStepLabels =
+    locale === "ar"
+      ? ["بياناتك", "الشحن", "الدفع", "المراجعة"]
+      : ["Details", "Delivery", "Payment", "Review"];
+  const checkoutStepStatus = [
+    Boolean(formData.email && formData.firstName && formData.lastName && formData.phone),
+    deliveryMethod === "pickup" || Boolean(formData.city && formData.address),
+    Boolean(paymentMethod),
+    checkoutItems.length > 0,
+  ];
 
   if (isSuccess) {
     return (
@@ -776,6 +786,47 @@ function CheckoutContent() {
             <ArrowLeft className="w-4 h-4" />
             {t('backToCart')}
           </Link>
+
+          <div className="mb-8 rounded-2xl border border-[#0F1A26]/5 bg-white p-4 shadow-sm shadow-[#0F1A26]/5">
+            <div className="grid grid-cols-4 gap-2">
+              {checkoutStepLabels.map((label, index) => {
+                const isDone = checkoutStepStatus[index];
+                const isCurrent =
+                  !isDone &&
+                  checkoutStepStatus.slice(0, index).every(Boolean);
+
+                return (
+                  <div key={label} className="min-w-0">
+                    <div
+                      className={`mb-2 h-1.5 rounded-full transition-colors ${
+                        isDone || isCurrent ? "bg-[#EEBC3F]" : "bg-[#0F1A26]/10"
+                      }`}
+                    />
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+                          isDone
+                            ? "bg-[#0F1A26] text-white"
+                            : isCurrent
+                              ? "bg-[#EEBC3F] text-[#0F1A26]"
+                              : "bg-[#0F1A26]/5 text-[#0F1A26]/35"
+                        }`}
+                      >
+                        {isDone ? <Check className="h-3.5 w-3.5" /> : index + 1}
+                      </span>
+                      <span
+                        className={`truncate text-xs font-bold ${
+                          isDone || isCurrent ? "text-[#0F1A26]" : "text-[#0F1A26]/35"
+                        }`}
+                      >
+                        {label}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
 
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Checkout Form */}
