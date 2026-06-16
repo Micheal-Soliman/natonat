@@ -106,6 +106,7 @@
     "title": "Travel Smarter with Bundles",
     "subtitle": "Complete travel sets designed for every type of journey. Save up to 30% when you bundle.",
     "save": "Save EGP {amount}",
+    "discountPercent": "Get {percent}% Discount",
     "addToCart": "Add to Cart",
     "viewAll": "View All Bundles",
     "viewProduct": "View Product"
@@ -383,8 +384,37 @@
         "printed": "Printed Models"
       }
     },
+    "categoryCopy": {
+      "all": {
+        "title": "Travel essentials built for everyday trips",
+        "description": "Browse luggage covers, passport wallets, PackOnat organizers and bundles with filters for size, color and travel style."
+      },
+      "luggage-covers": {
+        "title": "Choose the right luggage cover by size and style",
+        "description": "Filter by suitcase height, design collection and print type. Measure the suitcase body without wheels for the best fit."
+      },
+      "passport-wallets": {
+        "title": "Passport wallets with secure everyday details",
+        "description": "Pick the color and finish that fits your travel routine, with RFID protection and space for key documents."
+      },
+      "packonat": {
+        "title": "PackOnat organizers for cleaner packing",
+        "description": "Keep clothes folded, separated and easier to move between suitcase and hotel room."
+      },
+      "bundles": {
+        "title": "Bundles that match complete travel needs",
+        "description": "Shop curated sets with product combinations already grouped for gifting, family travel or full suitcase protection."
+      }
+    },
     "results": {
       "showing": "Showing {count} products"
+    },
+    "quickAdd": {
+      "size": "Select size",
+      "color": "Select color",
+      "add": "Add",
+      "buy": "Buy",
+      "customize": "Customize"
     },
     "noProducts": "No products found",
     "clearFilters": "Clear all filters",
@@ -407,7 +437,8 @@
       "reviews": "127 verified reviews"
     },
     "price": {
-      "save": "Save {{percent}}%"
+      "save": "Save {percent}%",
+      "unavailable": "Product price is not loaded. Please refresh the page."
     },
     "size": {
       "select": "Select Size",
@@ -443,6 +474,18 @@
       "scratchProtection": {
         "title": "Scratch Protection",
         "desc": "Protects your luggage"
+      }
+    },
+    "trust": {
+      "measure": "Measure height without wheels",
+      "shipping": "Free shipping over 1000 EGP",
+      "returns": "30-day exchange and returns",
+      "payment": "Secure card and COD payments",
+      "whatsapp": {
+        "cta": "Need size help on WhatsApp?",
+        "message": "Hi natOnat, I need help choosing the right size for {product}. Selected size: {size}. Color: {color}.",
+        "noSize": "not selected",
+        "noColor": "not selected"
       }
     },
     "description": {
@@ -492,7 +535,13 @@
     "videoSection": {
       "title": "See It In Action",
       "subtitle": "Watch how PackOnat keeps your clothes organized and wrinkle-free",
-      "passportSubtitle": "Discover the premium leather and RFID protection of our passport wallet"
+      "passportSubtitle": "Discover the premium leather and RFID protection of our passport wallet",
+      "luggageSubtitle": "Watch how our luggage covers protect your suitcase in style",
+      "luggageLabels": {
+        "protection": "Premium suitcase protection",
+        "easyWear": "Easy to wear in seconds",
+        "secureFit": "Travel-ready secure fit"
+      }
     }
   },
   "sizeModal": {
@@ -551,7 +600,9 @@
       "note": "Shipping and taxes calculated at checkout",
       "egyptOnly": "🚚 Egypt delivery only",
       "shippingAtCheckout": "Shipping calculated at checkout",
-      "discount": "Discount"
+      "discount": "Discount",
+      "freeShippingProgress": "Add EGP {amount} more for free shipping",
+      "freeShippingUnlocked": "You unlocked free shipping"
     },
     "savings": "You're saving EGP {amount}"
   },

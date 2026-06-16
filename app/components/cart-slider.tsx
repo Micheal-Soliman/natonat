@@ -24,6 +24,9 @@ export function CartSlider() {
   } = useCart();
 
   // Cart shows subtotal only - shipping calculated at checkout based on city selection
+  const freeShippingThreshold = 1000;
+  const remainingForFreeShipping = Math.max(0, freeShippingThreshold - subtotal);
+  const freeShippingProgress = Math.min(100, (subtotal / freeShippingThreshold) * 100);
 
   if (!isOpen) return null;
 
@@ -186,6 +189,22 @@ export function CartSlider() {
         {/* Footer with Summary */}
         {items.length > 0 && (
           <div className="border-t border-[#0F1A26]/10 p-6 bg-[#F1EBE3]">
+            <div className="mb-4 rounded-2xl bg-white p-4 border border-[#0F1A26]/10">
+              <div className="flex items-center justify-between gap-3 text-xs font-semibold text-[#0F1A26] mb-2">
+                <span>
+                  {remainingForFreeShipping > 0
+                    ? t("summary.freeShippingProgress", { amount: remainingForFreeShipping })
+                    : t("summary.freeShippingUnlocked")}
+                </span>
+                <span>{Math.round(freeShippingProgress)}%</span>
+              </div>
+              <div className="h-2 rounded-full bg-[#0F1A26]/10 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-[#EEBC3F] transition-all duration-300"
+                  style={{ width: `${freeShippingProgress}%` }}
+                />
+              </div>
+            </div>
             <div className="space-y-3 mb-6">
               <div className="flex justify-between text-sm">
                 <span className="text-[#0F1A26]/60">{t("summary.subtotal")}</span>

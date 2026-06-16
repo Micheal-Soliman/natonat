@@ -214,7 +214,7 @@ export function SwipeableProductImage({
       {/* DESKTOP OVERLAY */}
       <div className="hidden md:flex absolute inset-0 z-40 bg-[#0F1A26]/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 items-center justify-center pointer-events-none">
         <span className="text-white font-semibold text-sm tracking-wider uppercase">
-          View Product
+          {t("viewProduct")}
         </span>
       </div>
     </div>

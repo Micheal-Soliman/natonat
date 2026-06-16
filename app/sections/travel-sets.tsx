@@ -79,7 +79,7 @@ export async function TravelSets() {
                   {(() => {
                     const discountPercent = getDiscountPercentage(bundle);
                     if (discountPercent && bundle.price === 0) {
-                      return <span className="text-xl font-bold text-[#EEBC3F]">Get {discountPercent}% Discount</span>;
+                      return <span className="text-xl font-bold text-[#EEBC3F]">{t('discountPercent', { percent: discountPercent })}</span>;
                     }
                     return (
                       <>

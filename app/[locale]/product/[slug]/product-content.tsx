@@ -6,11 +6,11 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Image from "next/image";
 import { Link } from "@/i18n/routing";
 import { useRouter } from "@/i18n/routing";
-import { useTranslations } from 'next-intl';
+import { useMessages, useTranslations } from 'next-intl';
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
-import { Shield, Sparkles, Ruler, Heart, Share2, Check, Star, Truck, RotateCcw, ArrowUpRight, Award, ArrowLeft, ChevronLeft, ChevronRight as ChevronRightIcon, ChevronDown } from "lucide-react";
+import { Shield, Sparkles, Ruler, Heart, Share2, Check, Star, Truck, RotateCcw, ArrowUpRight, Award, ArrowLeft, ChevronLeft, ChevronRight as ChevronRightIcon, ChevronDown, MessageCircle, CreditCard } from "lucide-react";
 import { FAQSection } from "@/app/components/faq-section";
 import { SwipeableProductImage } from "@/app/components/swipeable-product-image";
 import { type Product } from "@/lib/products";
@@ -46,6 +46,35 @@ type ProductVideoItem = {
   poster: string;
   src: string;
   label?: string;
+};
+
+const getNestedProductMessage = (source: unknown, path: string): unknown => {
+  if (!source || typeof source !== "object") return undefined;
+
+  return path.split(".").reduce<unknown>((current, key) => {
+    if (!current || typeof current !== "object") return undefined;
+    return (current as Record<string, unknown>)[key];
+  }, source);
+};
+
+const getProductDetailMessages = (messages: unknown, slug: string) => {
+  const productsMessages = getNestedProductMessage(messages, "products");
+  if (!productsMessages || typeof productsMessages !== "object") return null;
+
+  const productMessages = (productsMessages as Record<string, unknown>)[slug];
+  return productMessages && typeof productMessages === "object"
+    ? productMessages
+    : null;
+};
+
+const getProductDetailString = (messages: unknown, path: string) => {
+  const value = getNestedProductMessage(messages, path);
+  return typeof value === "string" ? value : "";
+};
+
+const getProductDetailArray = (messages: unknown, path: string) => {
+  const value = getNestedProductMessage(messages, path);
+  return Array.isArray(value) ? value : [];
 };
 
 function ProductVideoSection({
@@ -147,32 +176,11 @@ function ProductVideoSection({
 
 // Component for showing just the intro (partially open)
 function ProductDetailedDescriptionIntro({ product, onExpand }: ProductDetailedDescriptionIntroProps) {
-  const tp = useTranslations('products');
+  const messages = useMessages();
   const t = useTranslations('product');
+  const productMessages = getProductDetailMessages(messages, product.slug);
+  const intro = getProductDetailString(productMessages, "intro");
 
-  // Check if this product has detailed description data
-  const hasDetailedDescription = () => {
-    try {
-      const intro = tp(`${product.slug}.intro`);
-      return intro && intro !== `${product.slug}.intro`;
-    } catch {
-      return false;
-    }
-  };
-
-  const getIntro = () => {
-    try {
-      return tp(`${product.slug}.intro`);
-    } catch {
-      return null;
-    }
-  };
-
-  if (!hasDetailedDescription()) {
-    return null;
-  }
-
-  const intro = getIntro();
   if (!intro) return null;
 
   return (
@@ -194,26 +202,16 @@ function ProductDetailedDescriptionIntro({ product, onExpand }: ProductDetailedD
 
 // Component for showing intro text only (no button) when expanded
 function ProductDetailedDescriptionTextOnly({ product }: { product: Product }) {
-  const tp = useTranslations('products');
+  const messages = useMessages();
+  const productMessages = getProductDetailMessages(messages, product.slug);
+  const intro = getProductDetailString(productMessages, "intro");
 
-  // Check if this product has detailed description data
-  const hasDetailedDescription = () => {
-    try {
-      const intro = tp(`${product.slug}.intro`);
-      return intro && intro !== `${product.slug}.intro`;
-    } catch {
-      return false;
-    }
-  };
-
-  if (!hasDetailedDescription()) {
-    return null;
-  }
+  if (!intro) return null;
 
   return (
     <div className="p-5 bg-white rounded-xl border border-[#0F1A26]/5 shadow-md">
       <p className="text-[#0F1A26]/80 text-sm leading-relaxed">
-        {tp(`${product.slug}.intro`)}
+        {intro}
       </p>
     </div>
   );
@@ -221,26 +219,30 @@ function ProductDetailedDescriptionTextOnly({ product }: { product: Product }) {
 
 // Component for showing full content when expanded
 function ProductDetailedDescriptionFull({ product, selectedSize, quantity, t, addToCart }: ProductDetailedDescriptionProps) {
+  const messages = useMessages();
   const tp = useTranslations('products');
+  const productMessages = getProductDetailMessages(messages, product.slug);
+
+  if (!productMessages) {
+    return null;
+  }
 
   // Helper to safely get array data
   const getArray = (path: string): string[] => {
-    try {
-      const raw = tp.raw(`${product.slug}.${path}`);
-      return Array.isArray(raw) ? raw : [];
-    } catch {
-      return [];
-    }
+    return getProductDetailArray(productMessages, path).filter(
+      (item): item is string => typeof item === "string"
+    );
   };
 
   // Helper to safely get features array
   const getFeatures = (): { title: string; desc: string }[] => {
-    try {
-      const raw = tp.raw(`${product.slug}.whyChoose.features`);
-      return Array.isArray(raw) ? raw : [];
-    } catch {
-      return [];
-    }
+    return getProductDetailArray(productMessages, "whyChoose.features").filter(
+      (item): item is { title: string; desc: string } =>
+        !!item &&
+        typeof item === "object" &&
+        typeof (item as { title?: unknown }).title === "string" &&
+        typeof (item as { desc?: unknown }).desc === "string"
+    );
   };
 
   const perfectFor = getArray('designInspiration.perfectFor');
@@ -399,6 +401,15 @@ export default function ProductPageContent({
   const selectedProductColor =
     product.colors?.find((color) => color.id === selectedColor)?.name ||
     product.color;
+  const sizeHelpUrl = useMemo(() => {
+    const message = t("trust.whatsapp.message", {
+      product: product.name,
+      size: product.size ? selectedSize.toUpperCase() : t("trust.whatsapp.noSize"),
+      color: selectedProductColor || t("trust.whatsapp.noColor"),
+    });
+
+    return `https://wa.me/201070004227?text=${encodeURIComponent(message)}`;
+  }, [product.name, product.size, selectedProductColor, selectedSize, t]);
 
   useEffect(() => {
     trackMetaPixelEvent("ViewContent", {
@@ -1075,16 +1086,18 @@ export default function ProductPageContent({
                     {[1, 2, 3, 4, 5].map((star) => (
                       <Star key={star} className="w-3 h-3 sm:w-4 sm:h-4 fill-[#EEBC3F] text-[#EEBC3F]" strokeWidth={1.5} />
                     ))}
-                    <span className="text-xs sm:text-sm font-bold text-[#0F1A26] ml-1 sm:ml-2">4.9</span>
+                    <span className="text-xs sm:text-sm font-bold text-[#0F1A26] ml-1 sm:ml-2">{t('rating.value')}</span>
                   </div>
-                  <span className="text-xs sm:text-sm text-[#0F1A26]/50 underline decoration-[#0F1A26]/20 underline-offset-4">127 verified reviews</span>
+                  <span className="text-xs sm:text-sm text-[#0F1A26]/50 underline decoration-[#0F1A26]/20 underline-offset-4">{t('rating.reviews')}</span>
                 </div>
 
                 {/* Price - Premium */}
                 <div className="flex flex-wrap items-baseline gap-2 sm:gap-4 mb-6 sm:mb-8 p-3 sm:p-6 bg-gradient-to-r from-[#EEBC3F]/20 to-[#EEBC3F]/5 rounded-xl sm:rounded-2xl border-2 border-[#EEBC3F]/30">
                   <span className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#0F1A26] tracking-tight">EGP {currentPrice.price}</span>
                   <span className="text-lg sm:text-xl md:text-2xl text-[#0F1A26]/50 line-through font-medium">EGP {currentPrice.originalPrice}</span>
-                  <span className="bg-[#EEBC3F] text-[#0F1A26] text-xs sm:text-sm font-bold px-3 sm:px-4 py-1 sm:py-2 rounded-full shadow-lg">Save {Math.round((1 - currentPrice.price / currentPrice.originalPrice) * 100)}%</span>
+                  <span className="bg-[#EEBC3F] text-[#0F1A26] text-xs sm:text-sm font-bold px-3 sm:px-4 py-1 sm:py-2 rounded-full shadow-lg">
+                    {t('price.save', { percent: Math.round((1 - currentPrice.price / currentPrice.originalPrice) * 100) })}
+                  </span>
                 </div>
 
                 {/* Size Selection */}
@@ -1307,6 +1320,31 @@ export default function ProductPageContent({
                   </div>
                 )}
 
+                <div className="mb-4 sm:mb-6 rounded-2xl border border-[#0F1A26]/10 bg-white/70 p-3 sm:p-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {[
+                      { icon: Ruler, label: t("trust.measure") },
+                      { icon: Truck, label: t("trust.shipping") },
+                      { icon: RotateCcw, label: t("trust.returns") },
+                      { icon: CreditCard, label: t("trust.payment") },
+                    ].map((item) => (
+                      <div key={item.label} className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-[#0F1A26]/70">
+                        <item.icon className="w-4 h-4 text-[#EEBC3F] flex-shrink-0" strokeWidth={1.7} />
+                        <span>{item.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <a
+                    href={sizeHelpUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-[#25D366]/10 px-3 py-2 text-sm font-bold text-[#128C4A] transition-colors hover:bg-[#25D366]/15"
+                  >
+                    <MessageCircle className="w-4 h-4" strokeWidth={1.8} />
+                    {t("trust.whatsapp.cta")}
+                  </a>
+                </div>
+
                 {/* Quantity & Add to Cart - Premium */}
                 <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6 sm:mb-8">
                   <div className="flex items-center bg-white border-2 border-[#0F1A26]/10 rounded-2xl overflow-hidden hover:border-[#EEBC3F]/30 transition-colors w-full sm:w-auto">
@@ -1394,7 +1432,7 @@ export default function ProductPageContent({
                       const priceToUse = currentPrice?.price || product?.price || 0;
                       if (!priceToUse || priceToUse === 0) {
                         console.error("[Product] Cannot buy now - invalid price:", { currentPrice, product });
-                        alert("Error: Product price not loaded. Please refresh the page.");
+                        alert(t("price.unavailable"));
                         return;
                       }
 
@@ -1478,11 +1516,8 @@ export default function ProductPageContent({
           {/* Video Section - Full Width */}
           {product.category === "passport-wallets" && (
             <ProductVideoSection
-              title={t('videoSection.title') || 'See It In Action'}
-              subtitle={
-                t('videoSection.passportSubtitle') ||
-                'Discover the premium leather and RFID protection of our passport wallet'
-              }
+              title={t('videoSection.title')}
+              subtitle={t('videoSection.passportSubtitle')}
               poster="/passport%20wallet/Cognac%20brown/1.png"
               src="/passport%20wallet/Wallet%20landscape%20without%20logo.mov"
               fullWidth
@@ -1491,11 +1526,8 @@ export default function ProductPageContent({
 
           {product.category === "packonat" && (
             <ProductVideoSection
-              title={t('videoSection.title') || 'See It In Action'}
-              subtitle={
-                t('videoSection.subtitle') ||
-                'Watch how PackOnat keeps your clothes organized and wrinkle-free'
-              }
+              title={t('videoSection.title')}
+              subtitle={t('videoSection.subtitle')}
               poster="/packOnat/Black/1.png"
               src="/packOnat/Cloth%20case%20landscape%20without%20logo.mov"
               fullWidth
@@ -1505,28 +1537,25 @@ export default function ProductPageContent({
 
           {product.category === "luggage-covers" && (
             <ProductVideoSection
-              title={t('videoSection.title') || 'See It In Action'}
-              subtitle={
-                t('videoSection.subtitle') ||
-                'Watch how our luggage covers protect your suitcase in style'
-              }
+              title={t('videoSection.title')}
+              subtitle={t('videoSection.luggageSubtitle')}
               fullWidth
               videoFit="contain"
               videos={[
                 {
                   poster: "/octopus photo/Black/1.png",
                   src: "/octopus photo/Wear2.mp4",
-                  label: "Premium suitcase protection",
+                  label: t('videoSection.luggageLabels.protection'),
                 },
                 {
                   poster: "/octopus photo/Green/1.png",
                   src: "/octopus photo/Wear.mp4",
-                  label: "Easy to wear in seconds",
+                  label: t('videoSection.luggageLabels.easyWear'),
                 },
                 {
                   poster: "/octopus photo/Black/1.png",
                   src: "/octopus photo/Wear3.mp4",
-                  label: "Travel-ready secure fit",
+                  label: t('videoSection.luggageLabels.secureFit'),
                 },
               ]}
             />
