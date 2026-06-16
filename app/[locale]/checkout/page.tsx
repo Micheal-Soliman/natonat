@@ -148,12 +148,6 @@ const cardPaymentLogos: PaymentLogo[] = [
     height: 18,
   },
   {
-    src: "/sympl.png",
-    alt: "Sympl Pay",
-    width: 46,
-    height: 18,
-  },
-  {
     src: "/etisalat.png",
     alt: "etisalat",
     width: 54,
@@ -190,23 +184,6 @@ function InstaPayLogoImages() {
   return <PaymentLogoStrip logos={instapayPaymentLogos} />;
 }
 
-
-function SymplPromoBanner() {
-  return (
-    <div className="mb-5 overflow-hidden rounded-2xl border border-[#0F1A26]/10 bg-white shadow-sm">
-      <Image
-        src="/banner-payment.png"
-        alt="Sympl Cashback Banner"
-        width={1200}
-        height={1200}
-        className="w-full h-auto object-cover"
-        loading="lazy"
-        quality={55}
-        sizes="(max-width: 768px) 92vw, 600px"
-      />
-    </div>
-  );
-}
 
 export default function CheckoutPage() {
   return (
@@ -1227,7 +1204,6 @@ function CheckoutContent() {
                     {t("form.payment.title")}
                   </h2>
 
-                  <SymplPromoBanner />
 
                   <div className="space-y-3">
                     <label
