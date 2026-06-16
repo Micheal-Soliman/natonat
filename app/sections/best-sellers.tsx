@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, ChevronLeft, ChevronRight, ShoppingCart, Zap } from "lucide-react";
 import { useCatalogProducts } from "@/app/lib/catalog-context";
 import { useCart } from "@/app/lib/cart-context";
+import { BundleQuickCustomizer } from "@/app/components/bundle-quick-customizer";
 import { sizes } from "@/lib/products";
 import type { Product } from "@/lib/products";
 
@@ -242,20 +243,10 @@ export function BestSellers() {
   };
 
   const handleQuickAdd = (product: Product) => {
-    if (isBundleProduct(product)) {
-      router.push(`/product/${product.slug}`);
-      return;
-    }
-
     addToCart(getQuickCartItem(product));
   };
 
   const handleQuickBuy = (product: Product) => {
-    if (isBundleProduct(product)) {
-      router.push(`/product/${product.slug}`);
-      return;
-    }
-
     setBuyNowItem(getQuickCartItem(product));
     router.push("/checkout");
   };
@@ -372,6 +363,14 @@ export function BestSellers() {
                     </div>
                   </Link>
 
+                  {isBundle ? (
+                    <BundleQuickCustomizer
+                      product={product}
+                      products={products}
+                      variant="dark"
+                      stopInteraction={stopCarouselDrag}
+                    />
+                  ) : (
                   <div
                     className="mt-3 rounded-2xl border border-white/10 bg-white/[0.07] p-2.5 shadow-lg shadow-black/10 backdrop-blur-sm"
                     onMouseDown={stopCarouselDrag}
@@ -450,28 +449,38 @@ export function BestSellers() {
                       </div>
                     )}
 
+                    {isBundle && (
+                      <Link
+                        href={`/product/${product.slug}`}
+                        className="mb-2 block rounded-xl bg-[#EEBC3F]/10 px-3 py-2 text-center text-xs font-bold text-[#EEBC3F] hover:bg-[#EEBC3F]/20"
+                      >
+                        {tq('quickAdd.customize')}
+                      </Link>
+                    )}
+
                     <div className="grid grid-cols-2 gap-2">
                       <Button
                         type="button"
-                        aria-label={isBundle ? tq('quickAdd.customize') : tq('quickAdd.add')}
+                        aria-label={tq('quickAdd.add')}
                         onClick={() => handleQuickAdd(product)}
                         className="h-9 rounded-xl bg-white/10 border border-white/10 text-white hover:bg-white hover:text-[#0F1A26] px-2 text-xs font-bold"
                         variant="outline"
                       >
                         <ShoppingCart className="w-3.5 h-3.5 shrink-0 sm:mr-1" />
-                        <span className="truncate">{isBundle ? tq('quickAdd.customize') : tq('quickAdd.add')}</span>
+                        <span className="truncate">{tq('quickAdd.add')}</span>
                       </Button>
                       <Button
                         type="button"
-                        aria-label={isBundle ? tq('quickAdd.customize') : tq('quickAdd.buy')}
+                        aria-label={tq('quickAdd.buy')}
                         onClick={() => handleQuickBuy(product)}
                         className="h-9 rounded-xl bg-[#EEBC3F] text-[#0F1A26] hover:bg-[#d4a535] px-2 text-xs font-bold shadow-sm shadow-[#EEBC3F]/25"
                       >
                         <Zap className="w-3.5 h-3.5 shrink-0 sm:mr-1" />
-                        <span className="truncate">{isBundle ? tq('quickAdd.customize') : tq('quickAdd.buy')}</span>
+                        <span className="truncate">{tq('quickAdd.buy')}</span>
                       </Button>
                     </div>
                   </div>
+                  )}
                 </div>
               );
             })}

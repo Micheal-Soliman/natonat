@@ -449,9 +449,10 @@ export default function ProductPageContent({
         const productId = item.productId || item.productIds?.[0];
         const bundleProduct = productId ? products.find((p) => p.id === productId) : undefined;
         const sizeOptions = bundleProduct ? getBundleSizeOptions(bundleProduct) : [];
+        const defaultSize = sizeOptions.includes("m") ? "m" : sizeOptions[0];
         initial[index] = {
           productId: productId,
-          size: sizeOptions[0],
+          size: defaultSize,
           color: bundleProduct?.colors?.[0]?.id,
         };
       });
@@ -1155,10 +1156,10 @@ export default function ProductPageContent({
                         const productOptions = item.productIds
                           ? item.productIds.map(id => {
                             const p = getBundleProduct(id);
-                            return p ? { id: p.id, name: p.name, image: p.image } : null;
+                            return p || null;
                           }).filter(Boolean)
                           : item.productId && bundleProduct
-                            ? [{ id: bundleProduct.id, name: bundleProduct.name, image: bundleProduct.image }]
+                            ? [bundleProduct]
                             : [];
 
                         return (
@@ -1181,36 +1182,64 @@ export default function ProductPageContent({
                               </div>
                               <div className="flex-1">
                                 {item.label && <p className="text-[#0F1A26]/50 text-xs mb-0.5">{item.label}</p>}
-                                {productOptions.length > 1 ? (
-                                  <select
-                                    value={selectedProductId || ""}
-                                    onChange={(e) => {
-                                      const newProductId = parseInt(e.target.value);
-                                      const newProduct = getBundleProduct(newProductId);
-                                      const newSizeOptions = newProduct ? getBundleSizeOptions(newProduct) : [];
-                                      setBundleSelections((prev) => ({
-                                        ...prev,
-                                        [index]: {
-                                          ...prev[index],
-                                          productId: newProductId,
-                                          size: newSizeOptions[0],
-                                          color: newProduct?.colors?.[0]?.id,
-                                        },
-                                      }));
-                                    }}
-                                    className="w-full text-sm font-semibold text-[#0F1A26] bg-transparent border border-[#0F1A26]/20 rounded-lg px-2 py-1 focus:border-[#EEBC3F] focus:outline-none"
-                                  >
-                                    <option value="">Select product...</option>
-                                    {productOptions.map((opt) => opt && (
-                                      <option key={opt.id} value={opt.id}>{opt.name}</option>
-                                    ))}
-                                  </select>
-                                ) : bundleProduct ? (
+                                {bundleProduct ? (
                                   <h5 className="font-semibold text-[#0F1A26] text-sm">{bundleProduct.name}</h5>
                                 ) : null}
                                 <span className="text-[#EEBC3F] text-xs font-medium block mt-1">Qty: {item.quantity}</span>
                               </div>
                             </div>
+
+                            {productOptions.length > 1 && (
+                              <div className="mb-3">
+                                <label className="text-[#0F1A26]/60 text-xs mb-2 block">{item.label || t("bundleItemsTitle")}</label>
+                                <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                                  {productOptions.map((opt) => {
+                                    if (!opt) return null;
+                                    const isSelected = selectedProductId === opt.id;
+
+                                    return (
+                                      <button
+                                        key={opt.id}
+                                        type="button"
+                                        onClick={() => {
+                                          const newSizeOptions = getBundleSizeOptions(opt);
+                                          const defaultSize = newSizeOptions.includes("m") ? "m" : newSizeOptions[0];
+                                          setBundleSelections((prev) => ({
+                                            ...prev,
+                                            [index]: {
+                                              ...prev[index],
+                                              productId: opt.id,
+                                              size: defaultSize,
+                                              color: opt.colors?.[0]?.id,
+                                            },
+                                          }));
+                                        }}
+                                        className={`w-24 shrink-0 rounded-xl border p-2 text-start transition-all ${
+                                          isSelected
+                                            ? "border-[#EEBC3F] bg-[#EEBC3F]/10 ring-2 ring-[#EEBC3F]/20"
+                                            : "border-[#0F1A26]/10 bg-[#F8F6F3] hover:border-[#EEBC3F]/50"
+                                        }`}
+                                      >
+                                        <span className="relative mb-2 block h-16 overflow-hidden rounded-lg bg-white">
+                                          <Image
+                                            src={opt.image}
+                                            alt={opt.name}
+                                            fill
+                                            sizes="96px"
+                                            className="object-contain"
+                                            loading="lazy"
+                                            quality={45}
+                                          />
+                                        </span>
+                                        <span className="line-clamp-2 text-[11px] font-bold leading-tight text-[#0F1A26]">
+                                          {opt.name}
+                                        </span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
 
                             {sizeOptions.length > 0 && (
                               <div className="mb-3">

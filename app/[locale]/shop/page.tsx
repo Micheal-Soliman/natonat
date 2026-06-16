@@ -11,6 +11,7 @@ import { Filter, X, ChevronLeft, ChevronRight, ShoppingCart, Zap } from "lucide-
 import { categories, sizes, genders, collections, printTypes, type Product } from "@/lib/products";
 import { Loading } from "@/app/components/loading";
 import { SwipeableProductImage } from "@/app/components/swipeable-product-image";
+import { BundleQuickCustomizer } from "@/app/components/bundle-quick-customizer";
 import { useCatalogProducts } from "@/app/lib/catalog-context";
 import { useCart } from "@/app/lib/cart-context";
 
@@ -317,20 +318,10 @@ function ShopContent() {
   };
 
   const handleQuickAdd = (product: Product) => {
-    if (isBundleProduct(product)) {
-      router.push(`/product/${product.slug}`);
-      return;
-    }
-
     addToCart(getQuickCartItem(product));
   };
 
   const handleQuickBuy = (product: Product) => {
-    if (isBundleProduct(product)) {
-      router.push(`/product/${product.slug}`);
-      return;
-    }
-
     setBuyNowItem(getQuickCartItem(product));
     router.push("/checkout");
   };
@@ -656,6 +647,9 @@ function ShopContent() {
                           </h3>
                         </Link>
 
+                        {isBundle ? (
+                          <BundleQuickCustomizer product={product} products={products} variant="light" />
+                        ) : (
                         <div className="mt-2 rounded-2xl border border-[#0F1A26]/8 bg-white/85 p-2 shadow-sm backdrop-blur-sm sm:p-3">
                           {!isBundle && (sizeOptions.length > 1 || colorOptions.length > 1) && (
                             <div className="mb-2 space-y-2">
@@ -728,28 +722,38 @@ function ShopContent() {
                             </div>
                           )}
 
+                          {isBundle && (
+                            <Link
+                              href={`/product/${product.slug}`}
+                              className="mb-2 block rounded-xl bg-[#EEBC3F]/10 px-3 py-2 text-center text-xs font-bold text-[#0F1A26] hover:bg-[#EEBC3F]/20"
+                            >
+                              {t('quickAdd.customize')}
+                            </Link>
+                          )}
+
                           <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
                             <Button
                               type="button"
-                              aria-label={isBundle ? t('quickAdd.customize') : t('quickAdd.add')}
+                              aria-label={t('quickAdd.add')}
                               onClick={() => handleQuickAdd(product)}
                               className="h-9 rounded-xl bg-[#F8F6F3] border border-[#0F1A26]/10 text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white px-2 text-xs font-bold"
                               variant="outline"
                             >
                               <ShoppingCart className="w-3.5 h-3.5 shrink-0 sm:mr-1" />
-                              <span className="truncate">{isBundle ? t('quickAdd.customize') : t('quickAdd.add')}</span>
+                              <span className="truncate">{t('quickAdd.add')}</span>
                             </Button>
                             <Button
                               type="button"
-                              aria-label={isBundle ? t('quickAdd.customize') : t('quickAdd.buy')}
+                              aria-label={t('quickAdd.buy')}
                               onClick={() => handleQuickBuy(product)}
                               className="h-9 rounded-xl bg-[#EEBC3F] text-[#0F1A26] hover:bg-[#d4a535] px-2 text-xs font-bold shadow-sm shadow-[#EEBC3F]/25"
                             >
                               <Zap className="w-3.5 h-3.5 shrink-0 sm:mr-1" />
-                              <span className="truncate">{isBundle ? t('quickAdd.customize') : t('quickAdd.buy')}</span>
+                              <span className="truncate">{t('quickAdd.buy')}</span>
                             </Button>
                           </div>
                         </div>
+                        )}
                       </div>
                     </div>
                   );

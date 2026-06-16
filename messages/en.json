@@ -414,7 +414,11 @@
       "color": "Select color",
       "add": "Add",
       "buy": "Buy",
-      "customize": "Customize"
+      "customize": "Customize",
+      "total": "Bundle total",
+      "next": "Next",
+      "back": "Back",
+      "step": "Step {current}/{total}"
     },
     "noProducts": "No products found",
     "clearFilters": "Clear all filters",

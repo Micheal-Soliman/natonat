@@ -442,7 +442,11 @@
       "color": "اختر اللون",
       "add": "أضف",
       "buy": "اشتري",
-      "customize": "خصص"
+      "customize": "خصص",
+      "total": "إجمالي الباقة",
+      "next": "التالي",
+      "back": "السابق",
+      "step": "خطوة {current}/{total}"
     },
     "noProducts": "لا توجد منتجات",
     "clearFilters": "إزالة الفلاتر",
