@@ -35,9 +35,17 @@ export interface CartItem {
 
 interface CartContextType {
   items: CartItem[];
-  addToCart: (item: Omit<CartItem, "quantity"> & { quantity?: number }) => void;
+  addToCart: (
+    item: Omit<CartItem, "quantity"> & { quantity?: number },
+    options?: { openCart?: boolean }
+  ) => void;
   removeFromCart: (id: number, size?: string, color?: string, bundleKey?: string) => void;
   updateQuantity: (id: number, delta: number, size?: string, color?: string, bundleKey?: string) => void;
+  updateCartItem: (
+    id: number,
+    current: { size?: string; color?: string; bundleKey?: string },
+    updates: Partial<Pick<CartItem, "size" | "color" | "image" | "price" | "originalPrice">>
+  ) => void;
   clearCart: () => void;
   buyNowItem: CartItem | null;
   setBuyNowItem: (item: CartItem | null) => void;
@@ -73,7 +81,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [items]);
 
-  const addToCart = useCallback((newItem: Omit<CartItem, "quantity"> & { quantity?: number }) => {
+  const addToCart = useCallback((
+    newItem: Omit<CartItem, "quantity"> & { quantity?: number },
+    options?: { openCart?: boolean }
+  ) => {
     const qty = newItem.quantity || 1;
 
     setItems((currentItems) => {
@@ -114,7 +125,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return [...currentItems, { ...normalizedNewItem, quantity: qty }];
     });
 
-    setIsOpen(true);
+    if (options?.openCart !== false) {
+      setIsOpen(true);
+    }
   }, []);
 
   const removeFromCart = useCallback((id: number, size?: string, color?: string, bundleKey?: string) => {
@@ -155,6 +168,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
           : item
       );
     });
+  }, []);
+
+  const updateCartItem = useCallback((
+    id: number,
+    current: { size?: string; color?: string; bundleKey?: string },
+    updates: Partial<Pick<CartItem, "size" | "color" | "image" | "price" | "originalPrice">>
+  ) => {
+    setItems((currentItems) =>
+      currentItems.map((item) =>
+        item.id === id &&
+        (item.isBundle
+          ? item.bundleKey === current.bundleKey
+          : item.size === current.size && item.color === current.color)
+          ? { ...item, ...updates }
+          : item
+      )
+    );
   }, []);
 
   const clearCart = useCallback(() => {
@@ -242,6 +272,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         addToCart,
         removeFromCart,
         updateQuantity,
+        updateCartItem,
         clearCart,
         buyNowItem,
         setBuyNowItem,

@@ -39,6 +39,7 @@ function normalizeProduct(product: SanityProduct): Product | null {
         ? product.category[0]
         : product.category,
     image: product.mainImageUrl || product.imageUrl || "",
+    stockStatus: product.stockStatus || "in_stock",
     images:
       product.galleryImageUrls?.filter(Boolean) ||
       product.galleryUrls?.filter(Boolean) ||

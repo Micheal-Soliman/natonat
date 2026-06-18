@@ -10,7 +10,10 @@ import { useCatalogProducts } from "@/app/lib/catalog-context";
 import { useSizeGuideSizes } from "@/app/lib/site-settings-context";
 import { useCart } from "@/app/lib/cart-context";
 import { BundleQuickCustomizer } from "@/app/components/bundle-quick-customizer";
+import { WishlistToggleButton } from "@/app/components/wishlist-toggle-button";
+import { useToast } from "@/app/components/toast-provider";
 import type { Product } from "@/lib/products";
+import { getStockLabel, isProductOutOfStock } from "@/lib/product-stock";
 
 // Get products from all 3 categories for display
 const hasCategory = (product: Product, category: string) =>
@@ -40,6 +43,7 @@ export function BestSellers() {
   const products = useCatalogProducts();
   const sizes = useSizeGuideSizes();
   const { addToCart, setBuyNowItem } = useCart();
+  const { showToast } = useToast();
   const displayProducts = getDisplayProducts(products);
   const locale = useLocale();
   const isRTL = locale === 'ar';
@@ -244,10 +248,24 @@ export function BestSellers() {
   };
 
   const handleQuickAdd = (product: Product) => {
-    addToCart(getQuickCartItem(product));
+    if (isProductOutOfStock(product)) return;
+    addToCart(getQuickCartItem(product), { openCart: false });
+    showToast({
+      title: locale === "ar" ? "اتضاف للسلة" : "Added to cart",
+      description: product.name,
+      action: {
+        label: locale === "ar" ? "إتمام الطلب" : "Checkout",
+        onClick: () => router.push("/checkout"),
+      },
+      cancel: {
+        label: locale === "ar" ? "كمل تسوق" : "Keep shopping",
+        onClick: () => {},
+      },
+    });
   };
 
   const handleQuickBuy = (product: Product) => {
+    if (isProductOutOfStock(product)) return;
     setBuyNowItem(getQuickCartItem(product));
     router.push("/checkout");
   };
@@ -304,6 +322,7 @@ export function BestSellers() {
               const colorOptions = product.colors || [];
               const selection = getQuickSelection(product);
               const isBundle = isBundleProduct(product);
+              const isUnavailable = isProductOutOfStock(product);
 
               return (
                 <div
@@ -312,17 +331,18 @@ export function BestSellers() {
                     }`}
                   style={{ transitionDelay: `${(index + 1) * 80}ms` }}
                 >
-                  <Link
-                    href={`/product/${product.slug}`}
-                    className="block"
-                    onClick={(e) => {
-                      if (hasDraggedRef.current) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                      }
-                    }}
-                  >
-                    {/* Product Image */}
+                  <div className="relative">
+                    <Link
+                      href={`/product/${product.slug}`}
+                      className="block"
+                      onClick={(e) => {
+                        if (hasDraggedRef.current) {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }
+                      }}
+                    >
+                      {/* Product Image */}
                     <div className="relative aspect-[3/4] rounded-xl sm:rounded-2xl overflow-hidden mb-3 sm:mb-4 border border-white/10 bg-[#F1EBE3]">
                       <Image
                         src={product.image}
@@ -349,8 +369,31 @@ export function BestSellers() {
                                       product.tag === 'Limited' ? t('limited') : product.tag}
                         </span>
                       )}
-                    </div>
 
+                      {!product.dynamicPricing && product.originalPrice > product.price && (
+                        <span className="absolute top-2 right-2 sm:top-3 sm:right-3 z-10 rounded-full bg-[#EEBC3F] px-2 py-1 text-[10px] font-bold text-[#0F1A26] shadow-lg sm:px-3 sm:py-1.5">
+                          -{Math.round((1 - product.price / product.originalPrice) * 100)}%
+                        </span>
+                      )}
+                    </div>
+                    </Link>
+                    <WishlistToggleButton
+                      product={product}
+                      variant="dark"
+                      className="absolute bottom-6 right-2 sm:bottom-7 sm:right-3"
+                    />
+                  </div>
+
+                  <Link
+                    href={`/product/${product.slug}`}
+                    className="block"
+                    onClick={(e) => {
+                      if (hasDraggedRef.current) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }
+                    }}
+                  >
                     {/* Product Info */}
                     <div>
                       <div className="flex items-center gap-2 mb-1">
@@ -361,6 +404,13 @@ export function BestSellers() {
                       <h3 className="text-white font-medium text-sm sm:text-base tracking-tight group-hover:text-[#EEBC3F] transition-colors duration-300 line-clamp-1">
                         {product.name}
                       </h3>
+                      {product.stockStatus && product.stockStatus !== "in_stock" && (
+                        <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                          isUnavailable ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"
+                        }`}>
+                          {getStockLabel(product, locale)}
+                        </span>
+                      )}
                     </div>
                   </Link>
 
@@ -464,18 +514,20 @@ export function BestSellers() {
                         type="button"
                         aria-label={tq('quickAdd.add')}
                         onClick={() => handleQuickAdd(product)}
+                        disabled={isUnavailable}
                         className="h-9 rounded-xl bg-white/10 border border-white/10 text-white hover:bg-white hover:text-[#0F1A26] px-2 text-xs font-bold"
                         variant="outline"
                       >
-                        <span className="truncate">{tq('quickAdd.add')}</span>
+                        <span className="truncate">{isUnavailable ? getStockLabel(product, locale) : tq('quickAdd.add')}</span>
                       </Button>
                       <Button
                         type="button"
                         aria-label={tq('quickAdd.buy')}
                         onClick={() => handleQuickBuy(product)}
+                        disabled={isUnavailable}
                         className="h-9 rounded-xl bg-[#EEBC3F] text-[#0F1A26] hover:bg-[#d4a535] px-2 text-xs font-bold shadow-sm shadow-[#EEBC3F]/25"
                       >
-                        <span className="truncate">{tq('quickAdd.buy')}</span>
+                        <span className="truncate">{isUnavailable ? getStockLabel(product, locale) : tq('quickAdd.buy')}</span>
                       </Button>
                     </div>
                   </div>

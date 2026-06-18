@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, Suspense } from "react";
 import { Link, useRouter } from "@/i18n/routing";
 import { useSearchParams } from "next/navigation";
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
@@ -12,16 +12,21 @@ import { categories, genders, collections, printTypes, type Product } from "@/li
 import { Loading } from "@/app/components/loading";
 import { SwipeableProductImage } from "@/app/components/swipeable-product-image";
 import { BundleQuickCustomizer } from "@/app/components/bundle-quick-customizer";
+import { WishlistToggleButton } from "@/app/components/wishlist-toggle-button";
+import { useToast } from "@/app/components/toast-provider";
 import { useCatalogProducts } from "@/app/lib/catalog-context";
 import { useSizeGuideSizes } from "@/app/lib/site-settings-context";
 import { useCart } from "@/app/lib/cart-context";
+import { getStockLabel, isProductOutOfStock } from "@/lib/product-stock";
 
 function ShopContent() {
   const t = useTranslations('shop');
+  const locale = useLocale();
   const router = useRouter();
   const products = useCatalogProducts();
   const sizes = useSizeGuideSizes();
   const { addToCart, setBuyNowItem } = useCart();
+  const { showToast } = useToast();
   const searchParams = useSearchParams();
   const categoryFromUrl = searchParams.get("category") || "all";
   const sizeFromUrl = searchParams.get("size");
@@ -320,10 +325,24 @@ function ShopContent() {
   };
 
   const handleQuickAdd = (product: Product) => {
-    addToCart(getQuickCartItem(product));
+    if (isProductOutOfStock(product)) return;
+    addToCart(getQuickCartItem(product), { openCart: false });
+    showToast({
+      title: locale === "ar" ? "اتضاف للسلة" : "Added to cart",
+      description: product.name,
+      action: {
+        label: locale === "ar" ? "إتمام الطلب" : "Checkout",
+        onClick: () => router.push("/checkout"),
+      },
+      cancel: {
+        label: locale === "ar" ? "كمل تسوق" : "Keep shopping",
+        onClick: () => {},
+      },
+    });
   };
 
   const handleQuickBuy = (product: Product) => {
+    if (isProductOutOfStock(product)) return;
     setBuyNowItem(getQuickCartItem(product));
     router.push("/checkout");
   };
@@ -627,6 +646,7 @@ function ShopContent() {
                   const colorOptions = product.colors || [];
                   const selection = getQuickSelection(product);
                   const isBundle = isBundleProduct(product);
+                  const isUnavailable = isProductOutOfStock(product);
 
                   return (
                     <div
@@ -634,9 +654,15 @@ function ShopContent() {
                       className={`group transition-all duration-500 hover:-translate-y-1 sm:hover:-translate-y-2 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
                       style={{ transitionDelay: `${index * 50}ms` }}
                     >
-                      <Link href={`/product/${product.slug}`} className="block">
-                        <SwipeableProductImage product={product} />
-                      </Link>
+                      <div className="relative">
+                        <Link href={`/product/${product.slug}`} className="block">
+                          <SwipeableProductImage product={product} />
+                        </Link>
+                        <WishlistToggleButton
+                          product={product}
+                          className="absolute right-2 top-12 sm:right-3 sm:top-14"
+                        />
+                      </div>
 
                       {/* Product Info - Clean */}
                       <div className="px-1">
@@ -647,6 +673,13 @@ function ShopContent() {
                           <h3 className="text-[#0F1A26] font-medium text-xs sm:text-sm mt-0.5 mb-0.5 sm:mt-1 sm:mb-1 group-hover:text-[#EEBC3F] transition-colors line-clamp-1">
                             {product.name}
                           </h3>
+                          {product.stockStatus && product.stockStatus !== "in_stock" && (
+                            <span className={`mb-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                              isUnavailable ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"
+                            }`}>
+                              {getStockLabel(product, locale)}
+                            </span>
+                          )}
                         </Link>
 
                         {isBundle ? (
@@ -738,18 +771,20 @@ function ShopContent() {
                               type="button"
                               aria-label={t('quickAdd.add')}
                               onClick={() => handleQuickAdd(product)}
+                              disabled={isUnavailable}
                               className="h-9 rounded-xl bg-[#F8F6F3] border border-[#0F1A26]/10 text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white px-2 text-xs font-bold"
                               variant="outline"
                             >
-                              <span className="truncate">{t('quickAdd.add')}</span>
+                              <span className="truncate">{isUnavailable ? getStockLabel(product, locale) : t('quickAdd.add')}</span>
                             </Button>
                             <Button
                               type="button"
                               aria-label={t('quickAdd.buy')}
                               onClick={() => handleQuickBuy(product)}
+                              disabled={isUnavailable}
                               className="h-9 rounded-xl bg-[#EEBC3F] text-[#0F1A26] hover:bg-[#d4a535] px-2 text-xs font-bold shadow-sm shadow-[#EEBC3F]/25"
                             >
-                              <span className="truncate">{t('quickAdd.buy')}</span>
+                              <span className="truncate">{isUnavailable ? getStockLabel(product, locale) : t('quickAdd.buy')}</span>
                             </Button>
                           </div>
                         </div>

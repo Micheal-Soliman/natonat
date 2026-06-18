@@ -3,10 +3,11 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/routing";
+import { useLocale } from "next-intl";
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, XCircle, Clock, ShoppingBag } from "lucide-react";
+import { CheckCircle, XCircle, Clock, ShoppingBag, MessageCircle, Truck } from "lucide-react";
 import { useCart } from "@/app/lib/cart-context";
 import { trackMetaPixelEvent } from "@/lib/meta-pixel";
 
@@ -34,6 +35,7 @@ function LoadingState() {
 
 function OrderConfirmedContent() {
   const searchParams = useSearchParams();
+  const locale = useLocale();
   const { clearCart, setBuyNowItem } = useCart();
 
   const orderRef = searchParams.get("order_ref") || "";
@@ -58,6 +60,31 @@ function OrderConfirmedContent() {
       transaction_id?: string | number;
       amount_cents?: number;
     };
+    aramex?: {
+      trackingNumber?: string;
+      labelUrl?: string;
+      guid?: string;
+    } | null;
+    items?: {
+      id?: number;
+      name?: string;
+      type?: string;
+      price_egp?: number;
+      price?: number;
+      quantity?: number;
+      size?: string;
+      color?: string;
+      image?: string;
+      isBundle?: boolean;
+      bundleSelections?: {
+        productName?: string;
+        label?: string;
+        size?: string;
+        color?: string;
+        quantity?: number;
+        price?: number;
+      }[];
+    }[];
   };
 
   const [verificationStatus, setVerificationStatus] =
@@ -161,6 +188,14 @@ function OrderConfirmedContent() {
       : amountCentsFromUrl
         ? Number(amountCentsFromUrl) / 100
         : null);
+  const trackingNumber = verifiedOrder?.aramex?.trackingNumber;
+  const orderItems = verifiedOrder?.items || [];
+  const supportMessage = encodeURIComponent(
+    locale === "ar"
+      ? `أهلا natOnat، محتاج مساعدة في الطلب ${orderRef || ""}`
+      : `Hello natOnat, I need help with order ${orderRef || ""}`
+  );
+  const supportHref = `https://wa.me/201070004227?text=${supportMessage}`;
 
   useEffect(() => {
     if (verificationStatus === "success") {
@@ -291,11 +326,93 @@ function OrderConfirmedContent() {
             )}
           </div>
 
+          {orderItems.length > 0 && (
+            <div className="mb-6 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] p-4 text-left">
+              <h2 className="mb-3 text-sm font-bold text-[#0F1A26]">
+                {locale === "ar" ? "تفاصيل الطلب" : "Order items"}
+              </h2>
+              <div className="space-y-3">
+                {orderItems.map((item, index) => {
+                  const itemPrice = item.price_egp ?? item.price ?? 0;
+                  return (
+                    <div key={`${item.id || item.name}-${index}`} className="rounded-xl bg-white p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-bold text-[#0F1A26]">
+                            {item.name || (locale === "ar" ? "منتج" : "Product")}
+                          </p>
+                          <div className="mt-1 flex flex-wrap gap-1.5 text-[11px] font-semibold text-[#0F1A26]/55">
+                            {item.type && <span>{item.type}</span>}
+                            {item.size && <span>{item.size.toUpperCase()}</span>}
+                            {item.color && <span>{item.color}</span>}
+                            <span>x{item.quantity || 1}</span>
+                          </div>
+                        </div>
+                        {itemPrice > 0 && (
+                          <span className="shrink-0 text-sm font-bold text-[#0F1A26]">
+                            EGP {itemPrice * (item.quantity || 1)}
+                          </span>
+                        )}
+                      </div>
+
+                      {item.bundleSelections?.length ? (
+                        <div className="mt-2 space-y-1 border-t border-[#0F1A26]/10 pt-2">
+                          {item.bundleSelections.map((selection, selectionIndex) => (
+                            <div key={`${selection.productName}-${selectionIndex}`} className="flex items-center justify-between gap-2 text-xs text-[#0F1A26]/65">
+                              <span className="min-w-0 truncate">
+                                {selectionIndex + 1}. {selection.productName || selection.label}
+                              </span>
+                              <span className="shrink-0 text-right">
+                                {[selection.size?.toUpperCase(), selection.color, `x${selection.quantity || 1}`]
+                                  .filter(Boolean)
+                                  .join(" / ")}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {isSuccess && (
-            <div className="mb-6 rounded-2xl bg-green-50 border border-green-100 p-4">
-              <p className="text-sm text-green-700 font-medium">
-                Your purchase has been tracked successfully.
-              </p>
+            <div className="mb-6 space-y-3">
+              <div className="rounded-2xl bg-green-50 border border-green-100 p-4">
+                <p className="text-sm text-green-700 font-medium">
+                  {locale === "ar"
+                    ? "تم تسجيل طلبك بنجاح. هنراجع الطلب ونبلغك بأي تحديث."
+                    : "Your order was recorded successfully. We will review it and share updates."}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] p-4 text-left">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EEBC3F]/15">
+                    <Truck className="h-5 w-5 text-[#EEBC3F]" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-[#0F1A26]">
+                      {locale === "ar" ? "حالة الشحن" : "Shipping status"}
+                    </p>
+                    <p className="mt-1 text-sm text-[#0F1A26]/60">
+                      {trackingNumber
+                        ? locale === "ar"
+                          ? "تم إنشاء شحنة Aramex."
+                          : "Aramex shipment has been created."
+                        : locale === "ar"
+                          ? "رقم التتبع هيظهر/يتبعت لما الشحنة تتجهز."
+                          : "Tracking will be shared once the shipment is ready."}
+                    </p>
+                    {trackingNumber && (
+                      <p className="mt-2 text-sm font-bold text-[#0F1A26]" dir="ltr">
+                        {trackingNumber}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
@@ -310,6 +427,12 @@ function OrderConfirmedContent() {
           )}
 
           <div className="flex flex-col sm:flex-row gap-3">
+            <a href={supportHref} target="_blank" rel="noopener noreferrer" className="flex-1">
+              <Button className="w-full bg-[#25D366] text-white hover:bg-[#128C4A] rounded-full h-12 font-bold">
+                <MessageCircle className="w-4 h-4 mr-2" />
+                {locale === "ar" ? "مساعدة واتساب" : "WhatsApp Support"}
+              </Button>
+            </a>
             {isFailed ? (
               <Link href="/checkout" className="flex-1">
                 <Button className="w-full bg-[#EEBC3F] text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white rounded-full h-12 font-bold">

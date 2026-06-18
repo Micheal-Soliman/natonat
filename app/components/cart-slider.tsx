@@ -3,16 +3,23 @@
 import { useCart } from "@/app/lib/cart-context";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/routing";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import { Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
+import { useCatalogProducts } from "@/app/lib/catalog-context";
+import { useSizeGuideSizes } from "@/app/lib/site-settings-context";
+import type { Product } from "@/lib/products";
 
 export function CartSlider() {
   const t = useTranslations("cart");
+  const locale = useLocale();
+  const products = useCatalogProducts();
+  const sizes = useSizeGuideSizes();
   const {
     items,
     removeFromCart,
     updateQuantity,
+    updateCartItem,
     subtotal,
     discount,
     originalSubtotal,
@@ -27,6 +34,40 @@ export function CartSlider() {
   const freeShippingThreshold = 1000;
   const remainingForFreeShipping = Math.max(0, freeShippingThreshold - subtotal);
   const freeShippingProgress = Math.min(100, (subtotal / freeShippingThreshold) * 100);
+
+  const getSizeOptions = (product?: Product) => {
+    if (!product?.sizePrices) return [];
+    return sizes.filter((size) => product.sizePrices?.[size.id as keyof NonNullable<Product["sizePrices"]>]);
+  };
+
+  const updateItemSize = (item: typeof items[number], nextSize: string) => {
+    const product = products.find((candidate) => candidate.id === item.id);
+    const sizePrice = product?.sizePrices?.[nextSize as keyof NonNullable<Product["sizePrices"]>];
+
+    updateCartItem(
+      item.id,
+      { size: item.size, color: item.color, bundleKey: item.bundleKey },
+      {
+        size: nextSize,
+        price: sizePrice?.price ?? item.price,
+        originalPrice: sizePrice?.originalPrice ?? item.originalPrice,
+      }
+    );
+  };
+
+  const updateItemColor = (item: typeof items[number], nextColorId: string) => {
+    const product = products.find((candidate) => candidate.id === item.id);
+    const color = product?.colors?.find((candidate) => candidate.id === nextColorId);
+
+    updateCartItem(
+      item.id,
+      { size: item.size, color: item.color, bundleKey: item.bundleKey },
+      {
+        color: color?.name || nextColorId,
+        image: color?.image || item.image,
+      }
+    );
+  };
 
   if (!isOpen) return null;
 
@@ -62,7 +103,7 @@ export function CartSlider() {
         </div>
 
         {/* Cart Items */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           {items.length === 0 ? (
             <div className="text-center py-12">
               <div className="w-20 h-20 rounded-full bg-[#0F1A26]/5 flex items-center justify-center mx-auto mb-6">
@@ -81,7 +122,14 @@ export function CartSlider() {
             </div>
           ) : (
             <div className="space-y-4">
-              {items.map((item) => (
+              {items.map((item) => {
+                const product = products.find((candidate) => candidate.id === item.id);
+                const sizeOptions = !item.isBundle ? getSizeOptions(product) : [];
+                const colorOptions = !item.isBundle ? product?.colors || [] : [];
+                const selectedColorId =
+                  colorOptions.find((color) => color.name === item.color || color.id === item.color)?.id || "";
+
+                return (
                 <div
                   key={`${item.id}-${item.size}-${item.color}-${item.isBundle ? JSON.stringify(item.bundleSelections || []) : ""}`}
                   className="bg-[#F1EBE3] rounded-2xl p-4 flex gap-4"
@@ -145,6 +193,58 @@ export function CartSlider() {
                             ))}
                           </div>
                         )}
+
+                        {!item.isBundle && (sizeOptions.length > 1 || colorOptions.length > 1) && (
+                          <div className="mt-3 grid grid-cols-1 gap-2">
+                            {sizeOptions.length > 1 && (
+                              <label className="block">
+                                <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#0F1A26]/45">
+                                  {t("size")}
+                                </span>
+                                <select
+                                  value={item.size || ""}
+                                  onChange={(event) => updateItemSize(item, event.target.value)}
+                                  className="h-9 w-full rounded-lg border border-[#0F1A26]/10 bg-white px-2 text-xs font-bold text-[#0F1A26] outline-none focus:border-[#EEBC3F]"
+                                >
+                                  {sizeOptions.map((size) => (
+                                    <option key={size.id} value={size.id}>
+                                      {size.label} - {size.range}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                            )}
+
+                            {colorOptions.length > 1 && (
+                              <label className="block">
+                                <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#0F1A26]/45">
+                                  {t("color")}
+                                </span>
+                                <select
+                                  value={selectedColorId}
+                                  onChange={(event) => updateItemColor(item, event.target.value)}
+                                  className="h-9 w-full rounded-lg border border-[#0F1A26]/10 bg-white px-2 text-xs font-bold text-[#0F1A26] outline-none focus:border-[#EEBC3F]"
+                                >
+                                  {colorOptions.map((color) => (
+                                    <option key={color.id} value={color.id}>
+                                      {color.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                            )}
+                          </div>
+                        )}
+
+                        {item.isBundle && (
+                          <Link
+                            href={`/product/${item.slug}`}
+                            onClick={closeCart}
+                            className="mt-3 inline-flex rounded-lg bg-white px-3 py-2 text-xs font-bold text-[#0F1A26] transition hover:bg-[#EEBC3F]/20"
+                          >
+                            {locale === "ar" ? "تعديل الباقة" : "Edit bundle"}
+                          </Link>
+                        )}
                       </div>
                       <button
                         onClick={() => removeFromCart(item.id, item.size, item.color, item.bundleKey)}
@@ -181,16 +281,17 @@ export function CartSlider() {
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
 
         {/* Footer with Summary */}
         {items.length > 0 && (
-          <div className="border-t border-[#0F1A26]/10 p-6 bg-[#F1EBE3]">
-            <div className="mb-4 rounded-2xl bg-white p-4 border border-[#0F1A26]/10">
-              <div className="flex items-center justify-between gap-3 text-xs font-semibold text-[#0F1A26] mb-2">
+          <div className="border-t border-[#0F1A26]/10 bg-[#F1EBE3] p-4 sm:p-5">
+            <div className="mb-3 rounded-2xl bg-white p-3 border border-[#0F1A26]/10">
+              <div className="flex items-center justify-between gap-3 text-xs font-semibold text-[#0F1A26] mb-1.5">
                 <span>
                   {remainingForFreeShipping > 0
                     ? t("summary.freeShippingProgress", { amount: remainingForFreeShipping })
@@ -198,26 +299,26 @@ export function CartSlider() {
                 </span>
                 <span>{Math.round(freeShippingProgress)}%</span>
               </div>
-              <div className="h-2 rounded-full bg-[#0F1A26]/10 overflow-hidden">
+              <div className="h-1.5 rounded-full bg-[#0F1A26]/10 overflow-hidden">
                 <div
                   className="h-full rounded-full bg-[#EEBC3F] transition-all duration-300"
                   style={{ width: `${freeShippingProgress}%` }}
                 />
               </div>
             </div>
-            <div className="space-y-3 mb-6">
+            <div className="space-y-2 mb-3">
               <div className="flex justify-between text-sm">
                 <span className="text-[#0F1A26]/60">{t("summary.subtotal")}</span>
                 <span className="text-[#0F1A26] font-medium">EGP {originalSubtotal}</span>
               </div>
               
               {discount > 0 && (
-                <div className="space-y-1">
+                <div>
                   <div className="flex justify-between text-sm text-green-600 font-medium">
                     <span>{t("summary.discount")}</span>
                     <span>-EGP {discount}</span>
                   </div>
-                  <div className="flex flex-col gap-0.5">
+                  <div className="hidden flex-col gap-0.5 sm:flex">
                     {appliedDiscounts.map((desc, i) => (
                       <span key={i} className="text-[10px] text-green-600/70 italic text-right block">
                         • {desc}
@@ -227,41 +328,43 @@ export function CartSlider() {
                 </div>
               )}
 
-              <div className="border-t border-[#0F1A26]/10 pt-3">
+              <div className="border-t border-[#0F1A26]/10 pt-2">
                 <div className="flex justify-between">
                   <span className="text-[#0F1A26] font-semibold">
                     {t("summary.total")}
                   </span>
-                  <span className="text-[#0F1A26] font-bold text-lg">
+                  <span className="text-[#0F1A26] font-bold text-base sm:text-lg">
                     EGP {subtotal}
                   </span>
                 </div>
               </div>
-              <p className="text-xs text-[#0F1A26]/50 text-center">
+              <p className="text-[11px] text-[#0F1A26]/45 text-center">
                 {t("summary.shippingAtCheckout")}
               </p>
             </div>
 
-            <Link 
-              href="/checkout" 
-              onClick={() => {
-                setBuyNowItem(null); // Clear buyNowItem to show all cart items
-                closeCart();
-              }}
-            >
-              <Button className="w-full bg-[#EEBC3F] text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white rounded-full h-14 font-bold text-base transition-all duration-300 mb-3">
-                {t("summary.proceedToCheckout")}
-              </Button>
-            </Link>
-
-            <Link href="/cart" onClick={closeCart}>
-              <Button
-                variant="outline"
-                className="w-full border-[#0F1A26]/20 text-[#0F1A26] hover:bg-[#0F1A26] rounded-full h-12 font-medium transition-all duration-300"
+            <div className="grid grid-cols-2 gap-2">
+              <Link
+                href="/checkout"
+                onClick={() => {
+                  setBuyNowItem(null); // Clear buyNowItem to show all cart items
+                  closeCart();
+                }}
               >
-                {t("summary.proceedToCart")}
-              </Button>
-            </Link>
+                <Button className="w-full bg-[#EEBC3F] text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white rounded-full h-12 px-2 font-bold text-xs sm:text-sm transition-all duration-300">
+                  <span className="truncate">{t("summary.proceedToCheckout")}</span>
+                </Button>
+              </Link>
+
+              <Link href="/cart" onClick={closeCart}>
+                <Button
+                  variant="outline"
+                  className="w-full border-[#0F1A26]/20 text-[#0F1A26] hover:bg-[#0F1A26] rounded-full h-12 px-2 font-bold text-xs sm:text-sm transition-all duration-300"
+                >
+                  <span className="truncate">{t("summary.proceedToCart")}</span>
+                </Button>
+              </Link>
+            </div>
 
             {/* <p className="text-xs text-[#0F1A26]/40 text-center mt-3">
               {t("summary.note")}

@@ -18,6 +18,63 @@ function generateOrderRef() {
   return `NAT-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 }
 
+const popularCityNames = [
+  "Cairo",
+  "New Cairo",
+  "Nasr City",
+  "Maadi",
+  "Giza",
+  "Sheikh Zayed City",
+  "October City",
+  "Alexandria",
+  "Mansoura",
+  "Tanta",
+  "Zagazig",
+  "Ismailia",
+  "Port Said",
+];
+
+const citySearchAliases: Record<string, string[]> = {
+  cairo: ["cairo", "القاهرة", "قاهره", "القاهره", "el qahera", "alqahira"],
+  "new cairo": ["new cairo", "التجمع", "القاهرة الجديدة", "القاهره الجديده", "tagamoa", "tagamo3", "newcairo"],
+  "nasr city": ["nasr city", "مدينة نصر", "مدينه نصر", "nasr", "madinet nasr"],
+  maadi: ["maadi", "المعادي", "معادي"],
+  giza: ["giza", "الجيزة", "الجيزه", "جيزة", "جيزه"],
+  "sheikh zayed city": ["sheikh zayed", "sheikh zayed city", "زايد", "الشيخ زايد", "zayed"],
+  "october city": ["october", "october city", "6 october", "6th october", "اكتوبر", "أكتوبر", "٦ اكتوبر", "6 اكتوبر"],
+  alexandria: ["alexandria", "alex", "اسكندرية", "اسكندريه", "الإسكندرية", "الاسكندرية"],
+  mansoura: ["mansoura", "المنصورة", "المنصوره"],
+  tanta: ["tanta", "طنطا"],
+  zagazig: ["zagazig", "الزقازيق", "زقازيق"],
+  ismailia: ["ismailia", "الإسماعيلية", "الاسماعيلية", "اسماعيليه"],
+  "port said": ["port said", "portsaid", "بورسعيد"],
+};
+
+function normalizeCitySearch(value: string) {
+  return value
+    .trim()
+    .toLocaleLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u064B-\u065F\u0670]/g, "")
+    .replace(/[إأآا]/g, "ا")
+    .replace(/ى/g, "ي")
+    .replace(/ة/g, "ه")
+    .replace(/ؤ/g, "و")
+    .replace(/ئ/g, "ي")
+    .replace(/\s+/g, " ");
+}
+
+function getCitySearchTerms(city: string) {
+  const cityKey = normalizeCitySearch(city);
+  const aliasTerms = Object.entries(citySearchAliases).flatMap(([key, aliases]) =>
+    cityKey === normalizeCitySearch(key) || aliases.some((alias) => cityKey.includes(normalizeCitySearch(alias)))
+      ? aliases
+      : []
+  );
+
+  return [city, ...aliasTerms].map(normalizeCitySearch);
+}
+
 function serializeOrderItem(item: CartItem, products: Product[]) {
   const catalogProduct = products.find((product) => product.id === item.id);
   const color =
@@ -223,6 +280,7 @@ function CheckoutContent() {
   const checkoutSubtotal = buyNowItem
     ? (buyNowItem.price || 0) * (buyNowItem.quantity || 1)
     : subtotal;
+  const checkoutItemCount = checkoutItems.reduce((sum, item) => sum + item.quantity, 0);
 
   const [formData, setFormData] = useState({
     email: "",
@@ -238,6 +296,7 @@ function CheckoutContent() {
   const [loadingCities, setLoadingCities] = useState(false);
   const [citySearch, setCitySearch] = useState("");
   const [cityListOpen, setCityListOpen] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     async function getCities() {
@@ -262,15 +321,30 @@ function CheckoutContent() {
   }, []);
 
   const filteredCities = useMemo(() => {
-    const query = citySearch.trim().toLocaleLowerCase();
-    if (!query) return aramexCities.slice(0, 60);
+    const query = normalizeCitySearch(citySearch);
+    const popularCities = popularCityNames
+      .map((name) => aramexCities.find((city) => normalizeCitySearch(city) === normalizeCitySearch(name)))
+      .filter(Boolean) as string[];
+    const uniquePopularCities = Array.from(new Set(popularCities));
+
+    if (!query) {
+      return [
+        ...uniquePopularCities,
+        ...aramexCities.filter((city) => !uniquePopularCities.includes(city)),
+      ].slice(0, 60);
+    }
 
     return aramexCities
-      .filter((city) => city.toLocaleLowerCase().includes(query))
+      .filter((city) => getCitySearchTerms(city).some((term) => term.includes(query)))
       .sort((a, b) => {
-        const aStartsWith = a.toLocaleLowerCase().startsWith(query);
-        const bStartsWith = b.toLocaleLowerCase().startsWith(query);
+        const aTerms = getCitySearchTerms(a);
+        const bTerms = getCitySearchTerms(b);
+        const aStartsWith = aTerms.some((term) => term.startsWith(query));
+        const bStartsWith = bTerms.some((term) => term.startsWith(query));
+        const aPopular = uniquePopularCities.includes(a);
+        const bPopular = uniquePopularCities.includes(b);
         if (aStartsWith !== bStartsWith) return aStartsWith ? -1 : 1;
+        if (aPopular !== bPopular) return aPopular ? -1 : 1;
         return a.localeCompare(b);
       })
       .slice(0, 60);
@@ -279,7 +353,29 @@ function CheckoutContent() {
   const selectCity = (city: string) => {
     setFormData((current) => ({ ...current, city }));
     setCitySearch(city);
+    setFieldErrors((current) => ({ ...current, city: "" }));
     setCityListOpen(false);
+  };
+
+  const validateCitySearch = () => {
+    if (deliveryMethod !== "delivery" || loadingCities) return;
+
+    const normalizedValue = normalizeCitySearch(citySearch);
+    const exactCity = aramexCities.find((city) =>
+      getCitySearchTerms(city).some((term) => term === normalizedValue)
+    );
+
+    if (exactCity) {
+      selectCity(exactCity);
+      return;
+    }
+
+    if (citySearch.trim()) {
+      setFieldErrors((current) => ({
+        ...current,
+        city: locale === "ar" ? "اختار مدينة من القائمة" : "Choose a city from the list",
+      }));
+    }
   };
 
   const [paymentMethod, setPaymentMethod] = useState("cod");
@@ -300,6 +396,40 @@ function CheckoutContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError("");
+
+    const nextErrors: Record<string, string> = {};
+    const requiredMessage = locale === "ar" ? "الخانة دي مطلوبة" : "This field is required";
+    const invalidEmailMessage = locale === "ar" ? "اكتب بريد إلكتروني صحيح" : "Enter a valid email address";
+    const invalidPhoneMessage = locale === "ar" ? "اكتب رقم موبايل مصري صحيح" : "Enter a valid Egyptian mobile number";
+    const invalidCityMessage = locale === "ar" ? "اختار مدينة من القائمة" : "Choose a city from the list";
+    const emailValue = formData.email.trim();
+    const phoneDigits = formData.phone.replace(/\D/g, "");
+    const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue);
+    const isValidEgyptPhone =
+      /^01[0125]\d{8}$/.test(phoneDigits) ||
+      /^201[0125]\d{8}$/.test(phoneDigits);
+
+    if (!emailValue) nextErrors.email = requiredMessage;
+    else if (!isValidEmail) nextErrors.email = invalidEmailMessage;
+    if (!formData.firstName.trim()) nextErrors.firstName = requiredMessage;
+    if (!formData.lastName.trim()) nextErrors.lastName = requiredMessage;
+    if (!formData.phone.trim()) nextErrors.phone = requiredMessage;
+    else if (!isValidEgyptPhone) nextErrors.phone = invalidPhoneMessage;
+
+    if (deliveryMethod === "delivery") {
+      if (!formData.address.trim()) nextErrors.address = requiredMessage;
+      if (!formData.city || !aramexCities.includes(formData.city)) {
+        nextErrors.city = invalidCityMessage;
+      }
+    }
+
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors);
+      setSubmitError(locale === "ar" ? "راجع البيانات المطلوبة قبل إتمام الطلب." : "Please review the highlighted fields before placing the order.");
+      return;
+    }
+
+    setFieldErrors({});
     setIsSubmitting(true);
 
     const orderRef = generateOrderRef();
@@ -677,6 +807,12 @@ function CheckoutContent() {
   const inputIconClass = `w-full px-4 py-3 pl-11 rounded-xl ${controlBase}`;
   const inputSmallClass = `w-full px-3 py-2.5 rounded-lg text-sm ${controlBase}`;
   const inputSmallIconClass = `w-full px-3 py-2.5 pl-10 rounded-lg text-sm ${controlBase}`;
+  const getInputClass = (field: string, baseClass: string) =>
+    fieldErrors[field] ? `${baseClass} border-red-400 focus:border-red-500` : baseClass;
+  const renderFieldError = (field: string) =>
+    fieldErrors[field] ? (
+      <p className="mt-1.5 text-xs font-semibold text-red-600">{fieldErrors[field]}</p>
+    ) : null;
 
   const checkoutStepLabels =
     locale === "ar"
@@ -688,6 +824,10 @@ function CheckoutContent() {
     Boolean(paymentMethod),
     checkoutItems.length > 0,
   ];
+  const visibleCheckoutStepLabels =
+    locale === "ar"
+      ? ["بياناتك", "الشحن", "الدفع", "المراجعة"]
+      : checkoutStepLabels;
 
   if (isSuccess) {
     return (
@@ -765,7 +905,7 @@ function CheckoutContent() {
   return (
     <>
       <Navigation />
-      <main className="min-h-screen bg-[#F1EBE3]">
+      <main className="min-h-screen bg-[#F1EBE3] pb-28 lg:pb-0">
         {/* Header - Clean */}
         <div className="bg-[#0F1A26] pt-28 pb-16 md:pt-40 md:pb-24">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -789,7 +929,7 @@ function CheckoutContent() {
 
           <div className="mb-8 rounded-2xl border border-[#0F1A26]/5 bg-white p-4 shadow-sm shadow-[#0F1A26]/5">
             <div className="grid grid-cols-4 gap-2">
-              {checkoutStepLabels.map((label, index) => {
+              {visibleCheckoutStepLabels.map((label, index) => {
                 const isDone = checkoutStepStatus[index];
                 const isCurrent =
                   !isDone &&
@@ -831,7 +971,7 @@ function CheckoutContent() {
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Checkout Form */}
             <div className="flex-1">
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form id="checkout-form" onSubmit={handleSubmit} className="space-y-6" noValidate>
                 {/* Contact */}
                 <div className="bg-white rounded-2xl p-6 border border-[#0F1A26]/5">
                   <h2 className="text-lg font-semibold text-[#0F1A26] mb-4 flex items-center gap-2">
@@ -848,10 +988,14 @@ function CheckoutContent() {
                         type="email"
                         required
                         value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className={inputClass}
+                        onChange={(e) => {
+                          setFormData({ ...formData, email: e.target.value });
+                          setFieldErrors((current) => ({ ...current, email: "" }));
+                        }}
+                        className={getInputClass("email", inputClass)}
                         placeholder="your@email.com"
                       />
+                      {renderFieldError("email")}
                     </div>
 
                     {/* Newsletter Subscribe */}
@@ -952,12 +1096,14 @@ function CheckoutContent() {
                                 type="text"
                                 required
                                 value={formData.firstName}
-                                onChange={(e) =>
-                                  setFormData({ ...formData, firstName: e.target.value })
-                                }
-                                className={inputSmallClass}
+                                onChange={(e) => {
+                                  setFormData({ ...formData, firstName: e.target.value });
+                                  setFieldErrors((current) => ({ ...current, firstName: "" }));
+                                }}
+                                className={getInputClass("firstName", inputSmallClass)}
                                 placeholder={t("form.shipping.firstNamePlaceholder")}
                               />
+                              {renderFieldError("firstName")}
                             </div>
 
                             <div>
@@ -968,12 +1114,14 @@ function CheckoutContent() {
                                 type="text"
                                 required
                                 value={formData.lastName}
-                                onChange={(e) =>
-                                  setFormData({ ...formData, lastName: e.target.value })
-                                }
-                                className={inputSmallClass}
+                                onChange={(e) => {
+                                  setFormData({ ...formData, lastName: e.target.value });
+                                  setFieldErrors((current) => ({ ...current, lastName: "" }));
+                                }}
+                                className={getInputClass("lastName", inputSmallClass)}
                                 placeholder={t("form.shipping.lastNamePlaceholder")}
                               />
+                              {renderFieldError("lastName")}
                             </div>
                           </div>
 
@@ -987,12 +1135,14 @@ function CheckoutContent() {
                                 type="tel"
                                 required
                                 value={formData.phone}
-                                onChange={(e) =>
-                                  setFormData({ ...formData, phone: e.target.value })
-                                }
-                                className={inputSmallIconClass}
+                                onChange={(e) => {
+                                  setFormData({ ...formData, phone: e.target.value });
+                                  setFieldErrors((current) => ({ ...current, phone: "" }));
+                                }}
+                                className={getInputClass("phone", inputSmallIconClass)}
                                 placeholder={t("form.shipping.phonePlaceholder")}
                               />
+                              {renderFieldError("phone")}
                             </div>
                           </div>
 
@@ -1048,12 +1198,14 @@ function CheckoutContent() {
                           type="text"
                           required
                           value={formData.firstName}
-                          onChange={(e) =>
-                            setFormData({ ...formData, firstName: e.target.value })
-                          }
-                          className={inputClass}
+                          onChange={(e) => {
+                            setFormData({ ...formData, firstName: e.target.value });
+                            setFieldErrors((current) => ({ ...current, firstName: "" }));
+                          }}
+                          className={getInputClass("firstName", inputClass)}
                           placeholder={t("form.shipping.firstNamePlaceholder")}
                         />
+                        {renderFieldError("firstName")}
                       </div>
 
                       <div>
@@ -1064,12 +1216,14 @@ function CheckoutContent() {
                           type="text"
                           required
                           value={formData.lastName}
-                          onChange={(e) =>
-                            setFormData({ ...formData, lastName: e.target.value })
-                          }
-                          className={inputClass}
+                          onChange={(e) => {
+                            setFormData({ ...formData, lastName: e.target.value });
+                            setFieldErrors((current) => ({ ...current, lastName: "" }));
+                          }}
+                          className={getInputClass("lastName", inputClass)}
                           placeholder={t("form.shipping.lastNamePlaceholder")}
                         />
+                        {renderFieldError("lastName")}
                       </div>
 
                       <div className="sm:col-span-2">
@@ -1084,10 +1238,11 @@ function CheckoutContent() {
                               type="text"
                               required
                               value={formData.address}
-                              onChange={(e) =>
-                                setFormData({ ...formData, address: e.target.value })
-                              }
-                              className={inputIconClass}
+                              onChange={(e) => {
+                                setFormData({ ...formData, address: e.target.value });
+                                setFieldErrors((current) => ({ ...current, address: "" }));
+                              }}
+                              className={getInputClass("address", inputIconClass)}
                               placeholder={t("form.shipping.addressPlaceholder")}
                             />
                           </div>
@@ -1122,6 +1277,12 @@ function CheckoutContent() {
                             </span>
                           </button> */}
                         </div>
+                        <p className="mt-2 rounded-lg bg-[#EEBC3F]/10 px-3 py-2 text-xs font-semibold text-[#0F1A26]/65">
+                          {locale === "ar"
+                            ? "اكتب المنطقة، الشارع، رقم العمارة، الدور، وأي علامة مميزة لتسهيل التوصيل."
+                            : "Add area, street, building number, floor, and a nearby landmark for smoother delivery."}
+                        </p>
+                        {renderFieldError("address")}
                       </div>
 
                       <div>
@@ -1140,11 +1301,17 @@ function CheckoutContent() {
                             autoComplete="off"
                             value={citySearch}
                             onFocus={() => setCityListOpen(true)}
-                            onBlur={() => window.setTimeout(() => setCityListOpen(false), 150)}
+                            onBlur={() => {
+                              window.setTimeout(() => {
+                                validateCitySearch();
+                                setCityListOpen(false);
+                              }, 150);
+                            }}
                             onChange={(e) => {
                               const value = e.target.value;
+                              const normalizedValue = normalizeCitySearch(value);
                               const exactCity = aramexCities.find(
-                                (city) => city.toLocaleLowerCase() === value.trim().toLocaleLowerCase()
+                                (city) => getCitySearchTerms(city).some((term) => term === normalizedValue)
                               );
 
                               setCitySearch(value);
@@ -1152,6 +1319,7 @@ function CheckoutContent() {
                                 ...current,
                                 city: exactCity || "",
                               }));
+                              setFieldErrors((current) => ({ ...current, city: "" }));
                               setCityListOpen(true);
                             }}
                             onKeyDown={(e) => {
@@ -1161,7 +1329,7 @@ function CheckoutContent() {
                               }
                               if (e.key === "Escape") setCityListOpen(false);
                             }}
-                            className={`${inputIconClass} pr-11 disabled:opacity-50`}
+                            className={`${getInputClass("city", inputIconClass)} pr-11 disabled:opacity-50`}
                             disabled={loadingCities}
                             placeholder={
                               loadingCities
@@ -1210,6 +1378,14 @@ function CheckoutContent() {
                             </div>
                           )}
                         </div>
+                        {!fieldErrors.city && (
+                          <p className="mt-1.5 text-xs font-semibold text-[#0F1A26]/45">
+                            {locale === "ar"
+                              ? "اكتب أول حروف المدينة واختارها من القائمة، أو اضغط Enter لأول نتيجة."
+                              : "Type the first letters and choose from the list, or press Enter for the first result."}
+                          </p>
+                        )}
+                        {renderFieldError("city")}
                       </div>
 
                       <div>
@@ -1240,13 +1416,15 @@ function CheckoutContent() {
                             type="tel"
                             required
                             value={formData.phone}
-                            onChange={(e) =>
-                              setFormData({ ...formData, phone: e.target.value })
-                            }
-                            className={inputIconClass}
+                            onChange={(e) => {
+                              setFormData({ ...formData, phone: e.target.value });
+                              setFieldErrors((current) => ({ ...current, phone: "" }));
+                            }}
+                            className={getInputClass("phone", inputIconClass)}
                             placeholder={t("form.shipping.phonePlaceholder")}
                           />
                         </div>
+                        {renderFieldError("phone")}
                       </div>
                     </div>
                   </div>
@@ -1387,6 +1565,11 @@ function CheckoutContent() {
                         </p>
                       </div>
                     )}
+                  </div>
+                  <div className="mt-4 rounded-xl bg-[#0F1A26]/5 px-4 py-3 text-xs font-semibold text-[#0F1A26]/65">
+                    {locale === "ar"
+                      ? "الدفع آمن. بيانات الكارت لا يتم تخزينها عندنا، وطلبات الدفع الإلكتروني يتم تأكيدها قبل الشحن."
+                      : "Secure checkout. We do not store card details, and online payments are verified before shipping."}
                   </div>
                 </div>
 
@@ -1532,6 +1715,71 @@ function CheckoutContent() {
           </div>
         </div>
       </main>
+
+      {checkoutItems.length > 0 && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-[#0F1A26]/10 bg-white/95 px-4 py-3 shadow-[0_-8px_28px_rgba(15,26,38,0.14)] backdrop-blur-xl">
+          <div className="mb-2 flex items-start justify-between gap-3">
+            <div className="min-w-0 text-xs font-semibold text-[#0F1A26]/60">
+              <p className="truncate">
+                {locale === "ar" ? `${checkoutItemCount} قطعة` : `${checkoutItemCount} item${checkoutItemCount === 1 ? "" : "s"}`}
+                {" · "}
+                {deliveryMethod === "delivery" && !formData.city
+                  ? locale === "ar"
+                    ? "اختار المدينة لحساب الشحن"
+                    : "Select city for shipping"
+                  : shipping === 0
+                    ? locale === "ar"
+                      ? "الشحن مجاني"
+                      : "Free shipping"
+                    : `${locale === "ar" ? "الشحن" : "Shipping"} EGP ${shipping}`}
+              </p>
+              {paymentDiscount > 0 && (
+                <p className="mt-0.5 text-green-600">
+                  {locale === "ar" ? `خصم الدفع الإلكتروني ${paymentDiscount} جنيه` : `Payment discount EGP ${paymentDiscount}`}
+                </p>
+              )}
+            </div>
+            <div className="shrink-0 text-right">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#0F1A26]/40">
+                {locale === "ar" ? "الإجمالي" : "Total"}
+              </p>
+              <p className="text-base font-black text-[#0F1A26]">
+                EGP {deliveryMethod === "delivery" && !formData.city ? checkoutSubtotal : finalTotal}
+              </p>
+            </div>
+          </div>
+          <div className="hidden">
+            <span>
+              {deliveryMethod === "delivery" && !formData.city
+                ? locale === "ar"
+                  ? "اختار المدينة لحساب الشحن"
+                  : "Select city for shipping"
+                : shipping === 0
+                  ? locale === "ar"
+                    ? "الشحن مجاني"
+                    : "Free shipping"
+                  : `${locale === "ar" ? "الشحن" : "Shipping"} EGP ${shipping}`}
+            </span>
+            <span className="text-base font-black text-[#0F1A26]">
+              EGP {deliveryMethod === "delivery" && !formData.city ? checkoutSubtotal : finalTotal}
+            </span>
+          </div>
+          <Button
+            type="submit"
+            form="checkout-form"
+            disabled={isSubmitting}
+            className="h-12 w-full rounded-full bg-[#EEBC3F] text-sm font-black text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white disabled:opacity-50"
+          >
+            {isSubmitting
+              ? t("form.processing")
+              : mounted
+                ? deliveryMethod === "delivery" && !formData.city
+                  ? `${t("form.completeOrder", { total: checkoutSubtotal.toString() })} (${t("form.selectCity")})`
+                  : t("form.completeOrder", { total: finalTotal.toString() })
+                : t("form.completeOrder", { total: "--" })}
+          </Button>
+        </div>
+      )}
       <Footer />
     </>
   );

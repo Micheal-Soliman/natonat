@@ -3,13 +3,15 @@
 import { useMemo, useState } from "react";
 import type React from "react";
 import Image from "next/image";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/app/lib/cart-context";
+import { useToast } from "@/app/components/toast-provider";
 import { useSizeGuideSizes } from "@/app/lib/site-settings-context";
 import { calculateBundlePrice, getPricingRuleKey } from "@/lib/bundle-pricing";
 import type { Product } from "@/lib/products";
+import { isProductOutOfStock } from "@/lib/product-stock";
 
 type BundleQuickCustomizerProps = {
   product: Product;
@@ -44,8 +46,10 @@ export function BundleQuickCustomizer({
   stopInteraction,
 }: BundleQuickCustomizerProps) {
   const t = useTranslations("shop.quickAdd");
+  const locale = useLocale();
   const router = useRouter();
   const { addToCart, setBuyNowItem } = useCart();
+  const { showToast } = useToast();
   const sizes = useSizeGuideSizes();
   const isDark = variant === "dark";
 
@@ -150,15 +154,6 @@ export function BundleQuickCustomizer({
     })),
   };
 
-  const handleAdd = () => {
-    addToCart(cartItem);
-  };
-
-  const handleBuy = () => {
-    setBuyNowItem(cartItem);
-    router.push("/checkout");
-  };
-
   if (!product.bundleItems?.length) return null;
 
   const bundleItems = product.bundleItems;
@@ -179,6 +174,38 @@ export function BundleQuickCustomizer({
   const activePreviewImage = activeSelectedColor?.image || activeSelectedProduct?.image;
   const hasPrevious = activeIndex > 0;
   const hasNext = activeIndex < bundleItems.length - 1;
+  const nextItemLabel = hasNext ? bundleItems[activeIndex + 1]?.label : "";
+  const nextButtonLabel = nextItemLabel ? `${t("next")}: ${nextItemLabel}` : t("next");
+  const hasUnavailableSelection =
+    isProductOutOfStock(product) ||
+    resolvedSelections.some((selection) => {
+      const selectedProduct = products.find((candidate) => candidate.id === selection.productId);
+      return selectedProduct ? isProductOutOfStock(selectedProduct) : false;
+    });
+  const unavailableLabel = locale === "ar" ? "غير متاح" : "Unavailable";
+
+  const handleAdd = () => {
+    if (hasUnavailableSelection) return;
+    addToCart(cartItem, { openCart: false });
+    showToast({
+      title: locale === "ar" ? "اتضافت الباقة للسلة" : "Bundle added to cart",
+      description: product.name,
+      action: {
+        label: locale === "ar" ? "إتمام الطلب" : "Checkout",
+        onClick: () => router.push("/checkout"),
+      },
+      cancel: {
+        label: locale === "ar" ? "كمل تسوق" : "Keep shopping",
+        onClick: () => {},
+      },
+    });
+  };
+
+  const handleBuy = () => {
+    if (hasUnavailableSelection) return;
+    setBuyNowItem(cartItem);
+    router.push("/checkout");
+  };
 
   return (
     <div
@@ -251,6 +278,11 @@ export function BundleQuickCustomizer({
               )}
             </div>
           </div>
+          {hasUnavailableSelection && (
+            <div className="mb-2 rounded-lg bg-red-50 px-2 py-1.5 text-[11px] font-bold text-red-700">
+              {locale === "ar" ? "اختيار داخل الباقة غير متاح حاليًا" : "One bundle item is currently unavailable"}
+            </div>
+          )}
 
           {activeProductOptions.length > 1 ? (
             <select
@@ -362,7 +394,7 @@ export function BundleQuickCustomizer({
                 onClick={() => setActiveIndex((current) => Math.min(bundleItems.length - 1, current + 1))}
                 className="h-8 rounded-lg bg-[#EEBC3F] text-xs font-bold text-[#0F1A26] transition-all hover:bg-[#d4a535] disabled:opacity-40"
               >
-                {t("next")}
+                <span className="block truncate px-1">{nextButtonLabel}</span>
               </button>
             </div>
           )}
@@ -374,11 +406,30 @@ export function BundleQuickCustomizer({
         <span>EGP {bundlePrice.price}</span>
       </div>
 
+      <div className={`mt-2 rounded-xl p-2 ${isDark ? "bg-black/10 text-white/70" : "bg-white text-[#0F1A26]/65"}`}>
+        <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider">
+          {locale === "ar" ? "مراجعة الباقة" : "Bundle review"}
+        </p>
+        <div className="space-y-1">
+          {resolvedSelections.map((selection, index) => (
+            <div key={`${product.id}-review-${index}`} className="flex items-center justify-between gap-2 text-[11px]">
+              <span className="min-w-0 truncate font-semibold">
+                {index + 1}. {selection.productName || selection.label}
+              </span>
+              <span className="shrink-0 text-right">
+                {[selection.size?.toUpperCase(), selection.color, `x${selection.quantity}`].filter(Boolean).join(" / ")}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="mt-2 grid grid-cols-2 gap-1.5 sm:gap-2">
         <Button
           type="button"
           aria-label={t("add")}
           onClick={handleAdd}
+          disabled={hasUnavailableSelection}
           className={`h-9 rounded-xl px-2 text-xs font-bold ${
             isDark
               ? "border border-white/10 bg-white/10 text-white hover:bg-white hover:text-[#0F1A26]"
@@ -386,15 +437,16 @@ export function BundleQuickCustomizer({
           }`}
           variant="outline"
         >
-          <span className="truncate">{t("add")}</span>
+          <span className="truncate">{hasUnavailableSelection ? unavailableLabel : t("add")}</span>
         </Button>
         <Button
           type="button"
           aria-label={t("buy")}
           onClick={handleBuy}
+          disabled={hasUnavailableSelection}
           className="h-9 rounded-xl bg-[#EEBC3F] px-2 text-xs font-bold text-[#0F1A26] shadow-sm shadow-[#EEBC3F]/25 hover:bg-[#d4a535]"
         >
-          <span className="truncate">{t("buy")}</span>
+          <span className="truncate">{hasUnavailableSelection ? unavailableLabel : t("buy")}</span>
         </Button>
       </div>
     </div>

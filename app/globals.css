@@ -148,3 +148,12 @@ a, button {
 .scrollbar-thin:hover::-webkit-scrollbar-thumb {
   background-color: #EEBC3F;
 }
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

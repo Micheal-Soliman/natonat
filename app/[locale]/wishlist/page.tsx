@@ -1,39 +1,166 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useMemo, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import { Link, useRouter } from "@/i18n/routing";
+import { useLocale, useTranslations } from "next-intl";
+import { ArrowLeft, Heart, Package, ShoppingBag, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useCart } from "@/app/lib/cart-context";
 import { useWishlist } from "@/app/lib/wishlist-context";
+import { useCatalogProducts } from "@/app/lib/catalog-context";
+import { useSizeGuideSizes } from "@/app/lib/site-settings-context";
+import { useToast } from "@/app/components/toast-provider";
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
-import { Heart, ArrowRight, Package, ShoppingBag } from "lucide-react";
+import { getStockLabel, isProductOutOfStock } from "@/lib/product-stock";
+import type { Product } from "@/lib/products";
+
+type QuickSelection = {
+  size?: string;
+  color?: string;
+};
+
+type SizeOption = ReturnType<typeof useSizeGuideSizes>[number];
+
+function getProductCategories(product: Product) {
+  return Array.isArray(product.category) ? product.category : [product.category];
+}
+
+function isBundleProduct(product: Product) {
+  return getProductCategories(product).includes("bundles");
+}
+
+function getSizeOptions(product: Product, sizes: SizeOption[]) {
+  if (product.sizePrices) {
+    return sizes.filter((size) => product.sizePrices?.[size.id as keyof NonNullable<Product["sizePrices"]>]);
+  }
+
+  if (!product.size) return [];
+  return sizes.filter((size) => size.id === product.size?.toLowerCase());
+}
 
 export default function WishlistPage() {
-  const t = useTranslations('wishlist');
+  const t = useTranslations("wishlist");
+  const locale = useLocale();
+  const router = useRouter();
+  const products = useCatalogProducts();
+  const sizes = useSizeGuideSizes();
+  const { addToCart, setBuyNowItem } = useCart();
   const { items, removeFromWishlist, clearWishlist } = useWishlist();
+  const { showToast } = useToast();
+  const [quickSelections, setQuickSelections] = useState<Record<number, QuickSelection>>({});
+
+  const wishlistProducts = useMemo(
+    () =>
+      items
+        .map((item) => products.find((product) => product.id === item.id))
+        .filter(Boolean) as Product[],
+    [items, products]
+  );
+
+  const copy = {
+    add: locale === "ar" ? "أضف للسلة" : "Add to cart",
+    buy: locale === "ar" ? "شراء الآن" : "Buy now",
+    customize: locale === "ar" ? "اختار الباقة" : "Customize bundle",
+    size: locale === "ar" ? "المقاس" : "Size",
+    color: locale === "ar" ? "اللون" : "Color",
+    removed: locale === "ar" ? "اتشال من المفضلة" : "Removed from wishlist",
+    added: locale === "ar" ? "اتضاف للسلة" : "Added to cart",
+    checkout: locale === "ar" ? "إتمام الطلب" : "Checkout",
+    keepShopping: locale === "ar" ? "كمل تسوق" : "Keep shopping",
+    fromCms: locale === "ar" ? "البيانات محدثة من الكتالوج" : "Updated from catalog",
+  };
+
+  const getQuickSelection = (product: Product) => {
+    const sizeOptions = getSizeOptions(product, sizes);
+    const colorOptions = product.colors || [];
+    const saved = quickSelections[product.id] || {};
+
+    return {
+      size: saved.size || sizeOptions[0]?.id || product.size?.toLowerCase(),
+      color: saved.color || colorOptions[0]?.id || product.color,
+    };
+  };
+
+  const updateQuickSelection = (productId: number, selection: QuickSelection) => {
+    setQuickSelections((current) => ({
+      ...current,
+      [productId]: {
+        ...current[productId],
+        ...selection,
+      },
+    }));
+  };
+
+  const getQuickCartItem = (product: Product) => {
+    const selection = getQuickSelection(product);
+    const sizeKey = selection.size?.toLowerCase() as keyof NonNullable<Product["sizePrices"]>;
+    const sizePrice = sizeKey && product.sizePrices?.[sizeKey];
+    const colorVariant = product.colors?.find((color) => color.id === selection.color);
+
+    return {
+      id: product.id,
+      name: product.name,
+      slug: product.slug,
+      type: product.type,
+      price: sizePrice?.price ?? product.price,
+      originalPrice: sizePrice?.originalPrice ?? product.originalPrice,
+      image: colorVariant?.image || product.image,
+      size: product.sizePrices || product.size ? selection.size : undefined,
+      color: colorVariant?.name || selection.color || product.color,
+      quantity: 1,
+    };
+  };
+
+  const handleQuickAdd = (product: Product) => {
+    if (isProductOutOfStock(product)) return;
+    addToCart(getQuickCartItem(product), { openCart: false });
+    showToast({
+      title: copy.added,
+      description: product.name,
+      action: {
+        label: copy.checkout,
+        onClick: () => router.push("/checkout"),
+      },
+      cancel: {
+        label: copy.keepShopping,
+        onClick: () => {},
+      },
+    });
+  };
+
+  const handleQuickBuy = (product: Product) => {
+    if (isProductOutOfStock(product)) return;
+    setBuyNowItem(getQuickCartItem(product));
+    router.push("/checkout");
+  };
+
+  const handleRemove = (id: number) => {
+    removeFromWishlist(id);
+    showToast({ title: copy.removed });
+  };
 
   if (items.length === 0) {
     return (
       <>
         <Navigation />
-        <main className="min-h-screen bg-[#F1EBE3] pt-20">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 text-center">
-            <div className="w-24 h-24 sm:w-32 sm:h-32 mx-auto mb-6 sm:mb-8 rounded-full bg-white flex items-center justify-center shadow-lg">
-              <Heart className="w-10 h-10 sm:w-14 sm:h-14 text-[#0F1A26]/20" strokeWidth={1.5} />
+        <main className="min-h-screen bg-[#F1EBE3] pt-24">
+          <div className="mx-auto max-w-4xl px-4 py-16 text-center sm:px-6 sm:py-24 lg:px-8">
+            <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-white shadow-sm sm:h-32 sm:w-32">
+              <Heart className="h-11 w-11 text-[#0F1A26]/20 sm:h-14 sm:w-14" strokeWidth={1.5} />
             </div>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#0F1A26] mb-4 tracking-tight">
-              {t('empty.title')}
+            <h1 className="mb-4 text-3xl font-bold tracking-tight text-[#0F1A26] sm:text-4xl">
+              {t("empty.title")}
             </h1>
-            <p className="text-[#0F1A26]/60 text-base sm:text-lg mb-8 max-w-md mx-auto">
-              {t('empty.subtitle')}
+            <p className="mx-auto mb-8 max-w-md text-base text-[#0F1A26]/60 sm:text-lg">
+              {t("empty.subtitle")}
             </p>
-            <Link
-              href="/shop"
-              className="inline-flex items-center gap-2 bg-[#0F1A26] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full font-bold text-base sm:text-lg transition-all duration-300 hover:bg-[#EEBC3F] hover:text-[#0F1A26] hover:shadow-xl"
-            >
-              <ShoppingBag className="w-5 h-5" />
-              {t('continueShopping')}
-              <ArrowRight className="w-5 h-5" />
+            <Link href="/shop">
+              <Button className="h-12 rounded-full bg-[#0F1A26] px-8 font-bold text-white hover:bg-[#EEBC3F] hover:text-[#0F1A26]">
+                <ShoppingBag className="mr-2 h-5 w-5" />
+                {t("continueShopping")}
+              </Button>
             </Link>
           </div>
         </main>
@@ -45,95 +172,170 @@ export default function WishlistPage() {
   return (
     <>
       <Navigation />
-      <main className="min-h-screen bg-[#F1EBE3] pt-20">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 sm:mb-12">
+      <main className="min-h-screen bg-[#F1EBE3] pt-24">
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <span className="text-[#EEBC3F] text-xs sm:text-sm font-bold tracking-[0.2em] uppercase">
-                {t('label')}
+              <span className="text-xs font-bold uppercase tracking-[0.2em] text-[#EEBC3F]">
+                {t("label")}
               </span>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#0F1A26] mt-1 sm:mt-2 tracking-tight">
-                {t('titleCount', { count: items.length })}
+              <h1 className="mt-2 text-3xl font-bold tracking-tight text-[#0F1A26] sm:text-4xl">
+                {t("titleCount", { count: wishlistProducts.length || items.length })}
               </h1>
+              <p className="mt-2 text-sm font-medium text-[#0F1A26]/50">{copy.fromCms}</p>
             </div>
-            <button
-              onClick={clearWishlist}
-              className="border border-[#0F1A26]/20 text-[#0F1A26]/60 hover:text-red-500 hover:border-red-200 hover:bg-red-50 rounded-full px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base font-medium transition-all duration-300 flex items-center gap-2"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 sm:w-5 sm:h-5"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>
-              {t('clearAll')}
-            </button>
-          </div>
-
-          {/* Wishlist Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-            {items.map((item) => (
-              <div
-                key={item.id}
-                className="group bg-white rounded-2xl sm:rounded-3xl overflow-hidden border border-[#0F1A26]/5 shadow-sm hover:shadow-xl transition-all duration-300"
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href="/shop"
+                className="inline-flex h-11 items-center gap-2 rounded-full border border-[#0F1A26]/10 bg-white px-5 text-sm font-bold text-[#0F1A26] transition hover:border-[#EEBC3F] hover:text-[#EEBC3F]"
               >
-                {/* Product Image */}
-                <Link href={`/product/${item.slug}`} className="relative aspect-[4/5] block overflow-hidden">
-                  <Image
-                    src={item.image}
-                    alt={item.name}
-                    fill
-                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                    className="object-contain transition-transform duration-500 group-hover:scale-105"
-                    loading="lazy"
-                    quality={60}
-                  />
-                  {/* Sale Badge */}
-                  {item.originalPrice > item.price && (
-                    <div className="absolute top-3 left-3 sm:top-4 sm:left-4 bg-[#EEBC3F] text-[#0F1A26] text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-1 sm:py-1.5 rounded-full">
-                      Save {Math.round((1 - item.price / item.originalPrice) * 100)}%
-                    </div>
-                  )}
-                  {/* Remove Button */}
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      removeFromWishlist(item.id);
-                    }}
-                    className="absolute top-3 right-3 sm:top-4 sm:right-4 w-8 h-8 sm:w-10 sm:h-10 bg-white rounded-full flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-red-50 hover:text-red-500 z-10"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 sm:w-5 sm:h-5"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>
-                  </button>
-                </Link>
-
-                {/* Product Info - Clickable to go to product */}
-                <Link href={`/product/${item.slug}`} className="block p-4 sm:p-6 group/link">
-                  <span className="text-[#EEBC3F] text-[10px] sm:text-xs font-bold tracking-[0.2em] uppercase">
-                    {item.type}
-                  </span>
-                  <h3 className="font-bold text-[#0F1A26] text-base sm:text-lg mt-1 mb-2 line-clamp-1 group-hover/link:text-[#EEBC3F] transition-colors">
-                    {item.name}
-                  </h3>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-lg sm:text-xl font-bold text-[#0F1A26]">
-                      EGP {item.price}
-                    </span>
-                    <span className="text-sm text-[#0F1A26]/40 line-through">
-                      EGP {item.originalPrice}
-                    </span>
-                  </div>
-                </Link>
-              </div>
-            ))}
+                <ArrowLeft className="h-4 w-4" />
+                {t("continueShopping")}
+              </Link>
+              <button
+                type="button"
+                onClick={clearWishlist}
+                className="inline-flex h-11 items-center gap-2 rounded-full border border-red-100 bg-white px-5 text-sm font-bold text-red-500 transition hover:bg-red-50"
+              >
+                <Trash2 className="h-4 w-4" />
+                {t("clearAll")}
+              </button>
+            </div>
           </div>
 
-          {/* Bottom CTA */}
-          <div className="mt-12 sm:mt-16 text-center">
-            <Link
-              href="/shop"
-              className="inline-flex items-center gap-2 text-[#0F1A26] hover:text-[#EEBC3F] font-bold text-base sm:text-lg transition-colors"
-            >
-              <Package className="w-5 h-5" />
-              {t('discoverMore')}
-              <ArrowRight className="w-5 h-5" />
-            </Link>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {wishlistProducts.map((product) => {
+              const sizeOptions = getSizeOptions(product, sizes);
+              const colorOptions = product.colors || [];
+              const selection = getQuickSelection(product);
+              const selectedColor = colorOptions.find((color) => color.id === selection.color);
+              const previewImage = selectedColor?.image || product.image;
+              const bundle = isBundleProduct(product);
+              const unavailable = isProductOutOfStock(product);
+
+              return (
+                <article
+                  key={product.id}
+                  className="group overflow-hidden rounded-3xl border border-[#0F1A26]/8 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl"
+                >
+                  <Link href={`/product/${product.slug}`} className="relative block aspect-[4/5] bg-[#F8F6F3]">
+                    <Image
+                      src={previewImage}
+                      alt={product.name}
+                      fill
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                      className="object-contain p-3 transition-transform duration-500 group-hover:scale-105"
+                      loading="lazy"
+                      quality={60}
+                    />
+                    <span className="absolute left-3 top-3 rounded-full bg-white px-3 py-1 text-[11px] font-bold text-[#0F1A26] shadow-sm">
+                      {getStockLabel(product, locale)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        handleRemove(product.id);
+                      }}
+                      className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white text-red-500 shadow-sm transition hover:bg-red-50"
+                      aria-label={t("clearAll")}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </Link>
+
+                  <div className="p-4">
+                    <Link href={`/product/${product.slug}`}>
+                      <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#EEBC3F]">
+                        {product.type}
+                      </span>
+                      <h3 className="mt-1 line-clamp-1 text-lg font-bold text-[#0F1A26] transition hover:text-[#EEBC3F]">
+                        {product.name}
+                      </h3>
+                    </Link>
+
+                    {!bundle && (sizeOptions.length > 1 || colorOptions.length > 1) && (
+                      <div className="mt-4 grid gap-2">
+                        {sizeOptions.length > 1 && (
+                          <label>
+                            <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#0F1A26]/45">
+                              {copy.size}
+                            </span>
+                            <select
+                              value={selection.size || ""}
+                              onChange={(event) => updateQuickSelection(product.id, { size: event.target.value })}
+                              className="h-10 w-full rounded-xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-3 text-xs font-bold text-[#0F1A26] outline-none focus:border-[#EEBC3F]"
+                            >
+                              {sizeOptions.map((size) => (
+                                <option key={size.id} value={size.id}>
+                                  {size.label} - {size.range}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        )}
+
+                        {colorOptions.length > 1 && (
+                          <label>
+                            <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#0F1A26]/45">
+                              {copy.color}
+                            </span>
+                            <select
+                              value={selection.color || ""}
+                              onChange={(event) => updateQuickSelection(product.id, { color: event.target.value })}
+                              className="h-10 w-full rounded-xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-3 text-xs font-bold text-[#0F1A26] outline-none focus:border-[#EEBC3F]"
+                            >
+                              {colorOptions.map((color) => (
+                                <option key={color.id} value={color.id}>
+                                  {color.name}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="mt-4 flex items-end justify-between gap-3">
+                      <div>
+                        {product.originalPrice > product.price && (
+                          <p className="text-xs text-[#0F1A26]/35 line-through">EGP {product.originalPrice}</p>
+                        )}
+                        <p className="text-xl font-black text-[#0F1A26]">EGP {product.price}</p>
+                      </div>
+                      {bundle ? (
+                        <Link href={`/product/${product.slug}`} className="shrink-0">
+                          <Button className="h-11 rounded-full bg-[#EEBC3F] px-4 text-xs font-black text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white">
+                            <Package className="mr-1.5 h-4 w-4" />
+                            {copy.customize}
+                          </Button>
+                        </Link>
+                      ) : (
+                        <div className="grid shrink-0 grid-cols-2 gap-2">
+                          <Button
+                            type="button"
+                            onClick={() => handleQuickAdd(product)}
+                            disabled={unavailable}
+                            className="h-11 rounded-full bg-[#0F1A26] px-3 text-xs font-black text-white hover:bg-[#EEBC3F] hover:text-[#0F1A26] disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {copy.add}
+                          </Button>
+                          <Button
+                            type="button"
+                            onClick={() => handleQuickBuy(product)}
+                            disabled={unavailable}
+                            className="h-11 rounded-full bg-[#EEBC3F] px-3 text-xs font-black text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {copy.buy}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         </div>
       </main>

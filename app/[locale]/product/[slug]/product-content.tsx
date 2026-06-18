@@ -6,17 +6,21 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Image from "next/image";
 import { Link } from "@/i18n/routing";
 import { useRouter } from "@/i18n/routing";
-import { useMessages, useTranslations } from 'next-intl';
+import { useLocale, useMessages, useTranslations } from 'next-intl';
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
 import { Shield, Sparkles, Ruler, Heart, Share2, Check, Star, Truck, RotateCcw, ArrowUpRight, Award, ArrowLeft, ChevronLeft, ChevronRight as ChevronRightIcon, ChevronDown, MessageCircle, CreditCard } from "lucide-react";
 import { FAQSection } from "@/app/components/faq-section";
 import { SwipeableProductImage } from "@/app/components/swipeable-product-image";
+import { WishlistToggleButton } from "@/app/components/wishlist-toggle-button";
+import { SizeModal } from "@/app/components/size-modal";
+import { useToast } from "@/app/components/toast-provider";
 import { useSizeGuideSizes } from "@/app/lib/site-settings-context";
 import { type Product } from "@/lib/products";
 import { calculateBundlePrice, getPricingRuleKey } from "@/lib/bundle-pricing";
 import { trackMetaPixelEvent } from "@/lib/meta-pixel";
+import { getStockLabel, isProductOutOfStock } from "@/lib/product-stock";
 
 // Separate component for detailed product description
 interface ProductDetailedDescriptionProps {
@@ -394,11 +398,14 @@ export default function ProductPageContent({
   products,
 }: ProductPageContentProps) {
   const t = useTranslations('product');
+  const locale = useLocale();
+  const { showToast } = useToast();
   const { addToCart, setBuyNowItem } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const router = useRouter();
   const [selectedSize, setSelectedSize] = useState("m");
   const [selectedColor, setSelectedColor] = useState<string | null>(product.colors?.[0]?.id || null);
+  const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
   const selectedProductColor =
     product.colors?.find((color) => color.id === selectedColor)?.name ||
     product.color;
@@ -492,6 +499,18 @@ export default function ProductPageContent({
   }, [product, bundleSelections, products]);
 
   const currentPrice = product.dynamicPricing ? calculateDynamicBundlePrice() : getPriceBySize(selectedSize);
+  const selectedBundleHasOutOfStockItem = useMemo(() => {
+    if (!isBundle || !product.bundleItems) return false;
+
+    return product.bundleItems.some((item, index) => {
+      const selection = bundleSelections[index] || {};
+      const selectedProductId = selection.productId || item.productId || item.productIds?.[0];
+      const bundleProduct = selectedProductId ? getBundleProduct(selectedProductId) : undefined;
+      return bundleProduct ? isProductOutOfStock(bundleProduct) : false;
+    });
+  }, [bundleSelections, getBundleProduct, isBundle, product.bundleItems]);
+  const isUnavailable = isProductOutOfStock(product) || selectedBundleHasOutOfStockItem;
+  const stockLabel = getStockLabel(product, locale);
 
   const buildCartBundleSelections = useCallback(() => {
     if (!isBundle || !product.bundleItems) return undefined;
@@ -574,11 +593,25 @@ export default function ProductPageContent({
   }, [currentPrice.price, product.id, product.name, quantity]);
 
   const handleStickyAddToCart = useCallback(() => {
-    addToCart(buildCartItem());
+    if (isUnavailable) return;
+    addToCart(buildCartItem(), { openCart: false });
     trackAddToCart();
-  }, [addToCart, buildCartItem, trackAddToCart]);
+    showToast({
+      title: locale === "ar" ? "اتضاف للسلة" : "Added to cart",
+      description: product.name,
+      action: {
+        label: locale === "ar" ? "إتمام الطلب" : "Checkout",
+        onClick: () => router.push("/checkout"),
+      },
+      cancel: {
+        label: locale === "ar" ? "كمل تسوق" : "Keep shopping",
+        onClick: () => {},
+      },
+    });
+  }, [addToCart, buildCartItem, isUnavailable, locale, product.name, router, showToast, trackAddToCart]);
 
   const handleStickyBuyNow = useCallback(() => {
+    if (isUnavailable) return;
     if (!currentPrice.price) {
       alert(t("price.unavailable"));
       return;
@@ -586,7 +619,7 @@ export default function ProductPageContent({
 
     setBuyNowItem(buildCartItem());
     router.push("/checkout");
-  }, [buildCartItem, currentPrice.price, router, setBuyNowItem, t]);
+  }, [buildCartItem, currentPrice.price, isUnavailable, router, setBuyNowItem, t]);
 
   // Filter images based on selected color - memoized to prevent infinite loops
   const colorImages = useMemo(() => {
@@ -607,6 +640,24 @@ export default function ProductPageContent({
 
 
   const sizes = useSizeGuideSizes();
+  const recommendedSize = useMemo(() => {
+    if (!product.size || sizes.length === 0) return null;
+    return sizes.find((size) => size.id === "m") || sizes[0];
+  }, [product.size, sizes]);
+  const selectedSizeInfo = useMemo(
+    () => sizes.find((size) => size.id === selectedSize) || recommendedSize,
+    [recommendedSize, selectedSize, sizes]
+  );
+  const selectedSizeGuideText = selectedSizeInfo
+    ? locale === "ar"
+      ? `مقاس ${selectedSizeInfo.label} مناسب لارتفاع ${selectedSizeInfo.range || selectedSizeInfo.cm} بدون العجل.`
+      : `Size ${selectedSizeInfo.label} fits ${selectedSizeInfo.range || selectedSizeInfo.cm} without wheels.`
+    : "";
+  const recommendedSizeText = recommendedSize
+    ? locale === "ar"
+      ? `المقاس المقترح غالبًا: ${recommendedSize.label}`
+      : `Most common pick: ${recommendedSize.label}`
+    : "";
 
 
   const relatedProducts = useMemo(() => {
@@ -1017,7 +1068,7 @@ export default function ProductPageContent({
           {/* Section 1 & 2: Gallery + Info Grid */}
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-start">
             {/* Section 1: Gallery */}
-            <div className={`space-y-4 sm:space-y-6 transition-all duration-700 w-full max-w-full overflow-hidden ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'}`}>
+            <div className="space-y-4 sm:space-y-6 w-full max-w-full overflow-hidden">
               {/* Main Image - Premium with Navigation Arrows + Swipe Support */}
               <div
                 className="relative aspect-square bg-white/50 backdrop-blur-sm rounded-2xl sm:rounded-3xl flex items-center justify-center overflow-hidden border border-[#0F1A26]/10 shadow-2xl shadow-[#0F1A26]/10 touch-pan-y"
@@ -1134,7 +1185,7 @@ export default function ProductPageContent({
             </div>
 
             {/* Section 2: Product Info */}
-            <div className={`lg:pl-8 transition-all duration-700 delay-100 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'}`}>
+            <div className="lg:pl-8">
               {/* Buy Box - Price + Size + Add to Cart */}
               <div className="space-y-4">
                 {/* Category & Actions */}
@@ -1190,6 +1241,19 @@ export default function ProductPageContent({
                   <span className="bg-[#EEBC3F] text-[#0F1A26] text-xs sm:text-sm font-bold px-3 sm:px-4 py-1 sm:py-2 rounded-full shadow-lg">
                     {t('price.save', { percent: Math.round((1 - currentPrice.price / currentPrice.originalPrice) * 100) })}
                   </span>
+                  <span className={`text-xs sm:text-sm font-bold px-3 sm:px-4 py-1 sm:py-2 rounded-full ${
+                    isUnavailable
+                      ? "bg-red-100 text-red-700"
+                      : product.stockStatus === "low_stock"
+                        ? "bg-orange-100 text-orange-700"
+                        : "bg-green-100 text-green-700"
+                  }`}>
+                    {selectedBundleHasOutOfStockItem
+                      ? locale === "ar"
+                        ? "اختيار داخل الباقة غير متاح"
+                        : "Bundle selection unavailable"
+                      : stockLabel}
+                  </span>
                 </div>
 
                 {/* Size Selection */}
@@ -1200,30 +1264,56 @@ export default function ProductPageContent({
                         <Award className="w-3 h-3 sm:w-4 sm:h-4 text-[#EEBC3F]" />
                         {t('size.select')}
                       </label>
-                      <Link href="/how-it-works" className="text-xs sm:text-sm bg-[#EEBC3F] hover:bg-[#d4a535] text-[#0F1A26] transition-all flex items-center gap-1.5 font-bold px-3 sm:px-4 py-2 rounded-lg shadow-md hover:shadow-lg hover:scale-105">
+                      <button
+                        type="button"
+                        onClick={() => setIsSizeGuideOpen(true)}
+                        className="text-xs sm:text-sm bg-[#EEBC3F] hover:bg-[#d4a535] text-[#0F1A26] transition-all flex items-center gap-1.5 font-bold px-3 sm:px-4 py-2 rounded-lg shadow-md hover:shadow-lg hover:scale-105"
+                      >
                         <Ruler className="w-3 h-3 sm:w-4 sm:h-4" />
                         {t('size.howToMeasure')}
-                      </Link>
+                      </button>
                     </div>
                     <div className="flex items-center gap-2 mb-3 sm:mb-4 bg-[#EEBC3F]/10 rounded-lg px-3 py-2">
                       <Ruler className="w-4 h-4 text-[#EEBC3F] flex-shrink-0" />
                       <p className="text-[#0F1A26] text-xs font-semibold">{t('size.heightNote')}</p>
                     </div>
+                    {(selectedSizeGuideText || recommendedSizeText) && (
+                      <div className="mb-3 rounded-xl border border-[#EEBC3F]/30 bg-white px-3 py-2.5 text-xs sm:text-sm font-semibold text-[#0F1A26] shadow-sm">
+                        {selectedSizeGuideText && <p>{selectedSizeGuideText}</p>}
+                        {recommendedSizeText && (
+                          <p className="mt-1 text-[#0F1A26]/55">{recommendedSizeText}</p>
+                        )}
+                      </div>
+                    )}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
-                      {sizes.map((size) => (
-                        <button
-                          key={size.id}
-                          onClick={() => setSelectedSize(size.id)}
-                          className={`py-3 sm:py-5 rounded-xl sm:rounded-2xl border-2 text-center transition-all duration-300 ${selectedSize === size.id
-                            ? "border-[#EEBC3F] bg-[#EEBC3F] text-white shadow-xl shadow-[#EEBC3F]/30 scale-105"
-                            : "border-[#0F1A26]/10 hover:border-[#EEBC3F]/50 bg-white hover:shadow-lg"
-                            }`}
-                        >
-                          <span className={`block font-bold text-base sm:text-lg ${selectedSize === size.id ? "text-white" : "text-[#0F1A26]"}`}>{size.label}</span>
-                          <span className={`block text-[10px] uppercase tracking-wider mt-0.5 ${selectedSize === size.id ? "text-white/60" : "text-[#0F1A26]/40"}`}>{t('size.heightLabel')}</span>
-                          <span className={`block text-xs mt-0.5 ${selectedSize === size.id ? "text-white/70" : "text-[#0F1A26]/50"}`}>{size.range}</span>
-                        </button>
-                      ))}
+                      {sizes.map((size) => {
+                        const isRecommended = recommendedSize?.id === size.id;
+                        return (
+                          <button
+                            key={size.id}
+                            onClick={() => setSelectedSize(size.id)}
+                            className={`relative py-3 sm:py-5 rounded-xl sm:rounded-2xl border-2 text-center transition-all duration-300 ${selectedSize === size.id
+                              ? "border-[#EEBC3F] bg-[#EEBC3F] text-white shadow-xl shadow-[#EEBC3F]/30 scale-105"
+                              : isRecommended
+                                ? "border-[#EEBC3F]/70 bg-white shadow-lg shadow-[#EEBC3F]/10"
+                                : "border-[#0F1A26]/10 hover:border-[#EEBC3F]/50 bg-white hover:shadow-lg"
+                              }`}
+                          >
+                            {isRecommended && (
+                              <span className={`absolute -top-2 left-1/2 -translate-x-1/2 rounded-full px-2 py-0.5 text-[9px] font-bold shadow-sm ${
+                                selectedSize === size.id
+                                  ? "bg-white text-[#0F1A26]"
+                                  : "bg-[#EEBC3F] text-[#0F1A26]"
+                              }`}>
+                                {locale === "ar" ? "مقترح" : "Popular"}
+                              </span>
+                            )}
+                            <span className={`block font-bold text-base sm:text-lg ${selectedSize === size.id ? "text-white" : "text-[#0F1A26]"}`}>{size.label}</span>
+                            <span className={`block text-[10px] uppercase tracking-wider mt-0.5 ${selectedSize === size.id ? "text-white/60" : "text-[#0F1A26]/40"}`}>{t('size.heightLabel')}</span>
+                            <span className={`block text-xs mt-0.5 ${selectedSize === size.id ? "text-white/70" : "text-[#0F1A26]/50"}`}>{size.range}</span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -1483,130 +1573,18 @@ export default function ProductPageContent({
                     </button>
                   </div>
                   <Button
-                    onClick={() => {
-                      const cartBundleSelections =
-                        isBundle && product.bundleItems
-                          ? product.bundleItems.map((item, index) => {
-                            const selection = bundleSelections[index] || {};
-                            const selectedProductId = selection.productId || item.productId || item.productIds?.[0];
-                            const bundleProduct = selectedProductId ? getBundleProduct(selectedProductId) : undefined;
-                            return {
-                              productId: selectedProductId || 0,
-                              productName: bundleProduct?.name || "",
-                              productSlug: bundleProduct?.slug,
-                              productType: bundleProduct?.type,
-                              label: item.label,
-                              size: selection.size,
-                              color:
-                                bundleProduct?.colors?.find((color) => color.id === selection.color)?.name ||
-                                selection.color ||
-                                bundleProduct?.color,
-                              quantity: item.quantity,
-                              price:
-                                selection.size && bundleProduct?.sizePrices
-                                  ? bundleProduct.sizePrices[selection.size as keyof typeof bundleProduct.sizePrices]?.price
-                                  : bundleProduct?.price,
-                              originalPrice:
-                                selection.size && bundleProduct?.sizePrices
-                                  ? bundleProduct.sizePrices[selection.size as keyof typeof bundleProduct.sizePrices]?.originalPrice
-                                  : bundleProduct?.originalPrice,
-                            };
-                          })
-                          : undefined;
-
-                      addToCart({
-                        id: product.id,
-                        name: product.name,
-                        slug: product.slug,
-                        type: product.type,
-                        price: currentPrice.price,
-                        originalPrice: currentPrice.originalPrice,
-                        image: product.colors && selectedColor
-                          ? product.colors.find(c => c.id === selectedColor)?.image || product.image
-                          : product.image,
-                        size: product.size ? selectedSize : undefined,
-                        color: selectedProductColor,
-                        quantity: quantity,
-                        isBundle,
-                        bundleSelections: cartBundleSelections,
-                      });
-                      trackMetaPixelEvent("AddToCart", {
-                        content_ids: [String(product.id)],
-                        contents: [{
-                          id: String(product.id),
-                          quantity,
-                          item_price: currentPrice.price,
-                        }],
-                        content_name: product.name,
-                        content_type: "product",
-                        value: currentPrice.price * quantity,
-                        currency: "EGP",
-                      });
-                    }}
+                    onClick={handleStickyAddToCart}
+                    disabled={isUnavailable}
                     className="flex-1 bg-[#0F1A26] text-white hover:bg-[#EEBC3F] hover:text-[#0F1A26] h-14 sm:h-16 rounded-2xl font-bold text-base sm:text-lg transition-all duration-300 hover:shadow-xl hover:shadow-[#EEBC3F]/20 group"
                   >
-                    {t('addToCart')}
+                    {isUnavailable ? (locale === "ar" ? "غير متاح" : "Unavailable") : t('addToCart')}
                   </Button>
                   <Button
-                    onClick={() => {
-                      const priceToUse = currentPrice?.price || product?.price || 0;
-                      if (!priceToUse || priceToUse === 0) {
-                        console.error("[Product] Cannot buy now - invalid price:", { currentPrice, product });
-                        alert(t("price.unavailable"));
-                        return;
-                      }
-
-                      const cartBundleSelections =
-                        isBundle && product.bundleItems
-                          ? product.bundleItems.map((item, index) => {
-                            const selection = bundleSelections[index] || {};
-                            const selectedProductId = selection.productId || item.productId || item.productIds?.[0];
-                            const bundleProduct = selectedProductId ? getBundleProduct(selectedProductId) : undefined;
-                            return {
-                              productId: selectedProductId || 0,
-                              productName: bundleProduct?.name || "",
-                              productSlug: bundleProduct?.slug,
-                              productType: bundleProduct?.type,
-                              label: item.label,
-                              size: selection.size,
-                              color:
-                                bundleProduct?.colors?.find((color) => color.id === selection.color)?.name ||
-                                selection.color ||
-                                bundleProduct?.color,
-                              quantity: item.quantity,
-                              price:
-                                selection.size && bundleProduct?.sizePrices
-                                  ? bundleProduct.sizePrices[selection.size as keyof typeof bundleProduct.sizePrices]?.price
-                                  : bundleProduct?.price,
-                              originalPrice:
-                                selection.size && bundleProduct?.sizePrices
-                                  ? bundleProduct.sizePrices[selection.size as keyof typeof bundleProduct.sizePrices]?.originalPrice
-                                  : bundleProduct?.originalPrice,
-                            };
-                          })
-                          : undefined;
-
-                      setBuyNowItem({
-                        id: product.id,
-                        name: product.name,
-                        slug: product.slug,
-                        type: product.type,
-                        price: priceToUse,
-                        originalPrice: currentPrice?.originalPrice || product?.originalPrice || priceToUse,
-                        image: product.colors && selectedColor
-                          ? product.colors.find(c => c.id === selectedColor)?.image || product.image
-                          : product.image,
-                        size: product.size ? selectedSize : undefined,
-                        color: selectedProductColor,
-                        quantity: quantity,
-                        isBundle,
-                        bundleSelections: cartBundleSelections,
-                      });
-                      router.push("/checkout");
-                    }}
+                    onClick={handleStickyBuyNow}
+                    disabled={isUnavailable}
                     className="flex-1 sm:flex-none bg-gradient-to-r from-[#EEBC3F] to-[#d4a535] text-[#0F1A26] hover:shadow-xl hover:shadow-[#EEBC3F]/30 h-14 sm:h-16 px-4 sm:px-10 rounded-2xl font-bold text-base sm:text-lg transition-all duration-300 group"
                   >
-                    {t('buyNow')}
+                    {isUnavailable ? (locale === "ar" ? "غير متاح" : "Unavailable") : t('buyNow')}
                   </Button>
                 </div>
               </div>{/* End Sticky Buy Box */}
@@ -1798,17 +1776,24 @@ export default function ProductPageContent({
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
               {relatedProducts.map((relatedProduct, index) => (
-                <Link
+                <div
                   key={relatedProduct.id}
-                  href={`/product/${relatedProduct.slug}`}
                   className={`group transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
                   style={{ transitionDelay: `${index * 100 + 200}ms` }}
                 >
-                  <SwipeableProductImage product={relatedProduct} />
-                  <div className="mt-3">
-                    <h3 className="text-[#0F1A26] font-bold group-hover:text-[#EEBC3F] transition-colors duration-300 text-sm sm:text-lg line-clamp-1">{relatedProduct.name}</h3>
+                  <div className="relative">
+                    <Link href={`/product/${relatedProduct.slug}`} className="block">
+                      <SwipeableProductImage product={relatedProduct} />
+                    </Link>
+                    <WishlistToggleButton
+                      product={relatedProduct}
+                      className="absolute right-2 top-12 sm:right-3 sm:top-14"
+                    />
                   </div>
-                </Link>
+                  <Link href={`/product/${relatedProduct.slug}`} className="mt-3 block">
+                    <h3 className="text-[#0F1A26] font-bold group-hover:text-[#EEBC3F] transition-colors duration-300 text-sm sm:text-lg line-clamp-1">{relatedProduct.name}</h3>
+                  </Link>
+                </div>
               ))}
             </div>
           </div>
@@ -1853,98 +1838,69 @@ export default function ProductPageContent({
               <Button
                 type="button"
                 onClick={handleStickyAddToCart}
+                disabled={isUnavailable}
                 className="h-12 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] text-sm font-bold text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white"
                 variant="outline"
               >
-                {t('addToCart')}
+                {isUnavailable ? (locale === "ar" ? "غير متاح" : "Unavailable") : t('addToCart')}
               </Button>
               <Button
                 type="button"
                 onClick={handleStickyBuyNow}
+                disabled={isUnavailable}
                 className="h-12 rounded-2xl bg-[#EEBC3F] text-sm font-bold text-[#0F1A26] shadow-sm shadow-[#EEBC3F]/25 hover:bg-[#d4a535]"
               >
-                {t('buyNow')}
+                {isUnavailable ? (locale === "ar" ? "غير متاح" : "Unavailable") : t('buyNow')}
               </Button>
             </div>
           </div>
         </div>
 
         {/* Mobile Sticky Buy Bar */}
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#0F1A26]/10 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] z-50 px-4 py-3">
-          <div className="flex items-center gap-3">
-            <div className="flex-1 min-w-0">
-              <h3 className="text-[#0F1A26] font-bold text-sm truncate">{product.name}</h3>
-              <div className="flex items-baseline gap-2">
-                <span className="text-[#0F1A26] font-bold text-base">EGP {currentPrice.price}</span>
-                <span className="text-[#0F1A26]/40 text-xs line-through">EGP {currentPrice.originalPrice}</span>
-              </div>
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-[90] border-t border-[#0F1A26]/10 bg-white/97 px-3 pt-2 shadow-[0_-4px_20px_rgba(0,0,0,0.12)] backdrop-blur-xl pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-bold text-[#0F1A26]">{product.name}</p>
             </div>
+            <div className="shrink-0 text-end">
+              <span className="text-base font-black text-[#0F1A26]">EGP {currentPrice.price}</span>
+              {currentPrice.originalPrice > currentPrice.price && (
+                <span className="ms-1 text-[11px] font-semibold text-[#0F1A26]/40 line-through">
+                  EGP {currentPrice.originalPrice}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
             <Button
-              onClick={() => {
-                const cartBundleSelections =
-                  isBundle && product.bundleItems
-                    ? product.bundleItems.map((item, index) => {
-                      const selection = bundleSelections[index] || {};
-                      const selectedProductId = selection.productId || item.productId || item.productIds?.[0];
-                      const bundleProduct = selectedProductId ? getBundleProduct(selectedProductId) : undefined;
-                      return {
-                        productId: selectedProductId || 0,
-                        productName: bundleProduct?.name || "",
-                        productSlug: bundleProduct?.slug,
-                        productType: bundleProduct?.type,
-                        label: item.label,
-                        size: selection.size,
-                        color:
-                          bundleProduct?.colors?.find((color) => color.id === selection.color)?.name ||
-                          selection.color ||
-                          bundleProduct?.color,
-                        quantity: item.quantity,
-                        price:
-                          selection.size && bundleProduct?.sizePrices
-                            ? bundleProduct.sizePrices[selection.size as keyof typeof bundleProduct.sizePrices]?.price
-                            : bundleProduct?.price,
-                        originalPrice:
-                          selection.size && bundleProduct?.sizePrices
-                            ? bundleProduct.sizePrices[selection.size as keyof typeof bundleProduct.sizePrices]?.originalPrice
-                            : bundleProduct?.originalPrice,
-                      };
-                    })
-                    : undefined;
-
-                addToCart({
-                  id: product.id,
-                  name: product.name,
-                  slug: product.slug,
-                  type: product.type,
-                  price: currentPrice.price,
-                  originalPrice: currentPrice.originalPrice,
-                  image: product.image,
-                  size: product.size ? selectedSize : undefined,
-                  color: selectedProductColor,
-                  quantity: quantity,
-                  isBundle,
-                  bundleSelections: cartBundleSelections,
-                });
-                trackMetaPixelEvent("AddToCart", {
-                  content_ids: [String(product.id)],
-                  contents: [{
-                    id: String(product.id),
-                    quantity,
-                    item_price: currentPrice.price,
-                  }],
-                  content_name: product.name,
-                  content_type: "product",
-                  value: currentPrice.price * quantity,
-                  currency: "EGP",
-                });
-              }}
-              className="bg-[#0F1A26] text-white hover:bg-[#EEBC3F] hover:text-[#0F1A26] h-12 px-6 rounded-xl font-bold text-sm transition-all duration-300 flex-shrink-0"
+              type="button"
+              onClick={handleStickyAddToCart}
+              disabled={isUnavailable}
+              className="h-11 rounded-xl bg-[#0F1A26] px-2 text-sm font-black text-white transition-all duration-300 hover:bg-[#EEBC3F] hover:text-[#0F1A26]"
             >
-              {t('addToCart')}
+              {isUnavailable ? (locale === "ar" ? "غير متاح" : "Unavailable") : t('addToCart')}
+            </Button>
+            <Button
+              type="button"
+              onClick={handleStickyBuyNow}
+              disabled={isUnavailable}
+              className="h-11 rounded-xl bg-[#EEBC3F] px-2 text-sm font-black text-[#0F1A26] shadow-sm shadow-[#EEBC3F]/25 transition-all duration-300 hover:bg-[#d4a535]"
+            >
+              {isUnavailable ? (locale === "ar" ? "غير متاح" : "Unavailable") : t('buyNow')}
             </Button>
           </div>
         </div>
       </main>
+      <SizeModal
+        isOpen={isSizeGuideOpen}
+        onClose={() => setIsSizeGuideOpen(false)}
+        onConfirm={(size) => {
+          setSelectedSize(size);
+          setIsSizeGuideOpen(false);
+        }}
+        productName={product.name}
+        confirmLabel={locale === "ar" ? "اختيار المقاس" : "Select size"}
+      />
       <Footer />
     </>
   );

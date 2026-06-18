@@ -13,9 +13,10 @@ interface SizeModalProps {
   onClose: () => void;
   onConfirm: (size: string) => void;
   productName: string;
+  confirmLabel?: string;
 }
 
-export function SizeModal({ isOpen, onClose, onConfirm, productName }: SizeModalProps) {
+export function SizeModal({ isOpen, onClose, onConfirm, productName, confirmLabel }: SizeModalProps) {
   const t = useTranslations("sizeModal");
   const tg = useTranslations("sizeModal.sizeGuideDetails");
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
@@ -138,7 +139,7 @@ export function SizeModal({ isOpen, onClose, onConfirm, productName }: SizeModal
             className="flex-1 bg-[#0F1A26] text-white hover:bg-[#EEBC3F] hover:text-[#0F1A26] rounded-xl h-12 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ShoppingBag className="w-5 h-5 mr-2" />
-            {t("confirm")}
+            {confirmLabel || t("confirm")}
           </Button>
         </div>
       </div>

@@ -38,6 +38,7 @@ export const product = defineType({
   groups: [
     { name: "basic", title: "Basic", default: true },
     { name: "pricing", title: "Pricing" },
+    { name: "inventory", title: "Inventory" },
     { name: "content", title: "Content" },
     { name: "media", title: "Media" },
     { name: "bundle", title: "Bundle" },
@@ -46,6 +47,7 @@ export const product = defineType({
     isActive: true,
     isBundle: false,
     dynamicPricing: false,
+    stockStatus: "in_stock",
     sortOrder: 0,
   },
   fields: [
@@ -129,6 +131,29 @@ export const product = defineType({
       type: "number",
       group: "pricing",
       validation: (Rule) => Rule.min(0),
+    }),
+    defineField({
+      name: "stockStatus",
+      title: "Stock status",
+      type: "string",
+      group: "inventory",
+      initialValue: "in_stock",
+      options: {
+        layout: "radio",
+        list: [
+          { title: "In stock", value: "in_stock" },
+          { title: "Low stock", value: "low_stock" },
+          { title: "Out of stock", value: "out_of_stock" },
+        ],
+      },
+    }),
+    defineField({
+      name: "stockQuantity",
+      title: "Stock quantity",
+      type: "number",
+      group: "inventory",
+      description: "Optional internal quantity. Leave empty if you only want to use the stock status.",
+      validation: (Rule) => Rule.min(0).integer(),
     }),
     defineField({
       name: "description",
