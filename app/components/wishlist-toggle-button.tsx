@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { Heart } from "lucide-react";
-import { useLocale } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useToast } from "@/app/components/toast-provider";
 import { useWishlist } from "@/app/lib/wishlist-context";
 import type { Product } from "@/lib/products";
@@ -18,7 +18,8 @@ export function WishlistToggleButton({
   className = "",
   variant = "light",
 }: WishlistToggleButtonProps) {
-  const locale = useLocale();
+  const toastT = useTranslations("commerceToast");
+  const labelT = useTranslations("wishlistButton");
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const { showToast } = useToast();
   const active = isInWishlist(product.id);
@@ -34,7 +35,7 @@ export function WishlistToggleButton({
     if (active) {
       removeFromWishlist(product.id);
       showToast({
-        title: locale === "ar" ? "اتشال من المفضلة" : "Removed from wishlist",
+        title: toastT("removedFromWishlist"),
         description: product.name,
       });
       return;
@@ -42,7 +43,7 @@ export function WishlistToggleButton({
 
     addToWishlist(product);
     showToast({
-      title: locale === "ar" ? "اتضاف للمفضلة" : "Added to wishlist",
+      title: toastT("addedToWishlist"),
       description: product.name,
     });
   };
@@ -50,7 +51,7 @@ export function WishlistToggleButton({
   return (
     <button
       type="button"
-      aria-label={active ? "Remove from wishlist" : "Add to wishlist"}
+      aria-label={active ? labelT("remove") : labelT("add")}
       aria-pressed={active}
       onClick={toggleWishlist}
       onMouseDown={stopCardInteraction}

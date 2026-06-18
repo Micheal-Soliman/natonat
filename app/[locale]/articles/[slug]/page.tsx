@@ -98,27 +98,16 @@ function ArticleContent() {
   const isArabic = locale === "ar";
   const dateLabel = new Date(article.date).toLocaleDateString(isArabic ? 'ar-EG' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   const articleUrl = `https://www.natonat.com/${locale}/articles/${article.slug}`;
-  const contentLabels = isArabic
-    ? {
-        breadcrumbHome: "الرئيسية",
-        breadcrumbArticles: "المقالات",
-        inThisGuide: "داخل المقال",
-        shopCtaTitle: "جهز شنطتك قبل الرحلة",
-        shopCtaText: "اختار غطاء شنطة مناسب أو محفظة باسبور ذكية من natOnat وسافر وأنت مطمّن.",
-        shopCtaAction: "تسوق المنتجات",
-        sizeCtaAction: "دليل المقاسات",
-        articleSummary: "ملخص المقال",
-      }
-    : {
-        breadcrumbHome: "Home",
-        breadcrumbArticles: "Articles",
-        inThisGuide: "In this guide",
-        shopCtaTitle: "Get your travel gear ready",
-        shopCtaText: "Choose a washable luggage cover or smart passport wallet from natOnat before your next trip.",
-        shopCtaAction: "Shop products",
-        sizeCtaAction: "Size guide",
-        articleSummary: "Article summary",
-      };
+  const contentLabels = {
+    breadcrumbHome: t("detail.breadcrumbHome"),
+    breadcrumbArticles: t("detail.breadcrumbArticles"),
+    inThisGuide: t("detail.inThisGuide"),
+    shopCtaTitle: t("detail.shopCtaTitle"),
+    shopCtaText: t("detail.shopCtaText"),
+    shopCtaAction: t("detail.shopCtaAction"),
+    sizeCtaAction: t("detail.sizeCtaAction"),
+    articleSummary: t("detail.articleSummary"),
+  };
 
   // Simple markdown parser for content
   const renderContent = (content: string) => {

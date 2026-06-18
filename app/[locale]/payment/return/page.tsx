@@ -3,6 +3,7 @@
 import { Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/routing";
+import { useTranslations } from "next-intl";
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
@@ -20,12 +21,14 @@ export default function PaymentReturnPage() {
 }
 
 function PaymentLoading() {
+  const t = useTranslations("paymentReturn");
+
   return (
     <>
       <Navigation />
       <main className="min-h-screen bg-[#F1EBE3] flex items-center justify-center px-4">
         <div className="bg-white rounded-3xl p-8 max-w-md w-full text-center shadow-lg">
-          <p className="text-[#0F1A26]/60">Checking payment status...</p>
+          <p className="text-[#0F1A26]/60">{t("loading")}</p>
         </div>
       </main>
       <Footer />
@@ -35,6 +38,7 @@ function PaymentLoading() {
 
 function PaymentReturnContent() {
   const searchParams = useSearchParams();
+  const t = useTranslations("paymentReturn");
   const { clearCart, setBuyNowItem } = useCart();
 
   const success = searchParams.get("success");
@@ -80,23 +84,23 @@ function PaymentReturnContent() {
 
           <h1 className="text-2xl md:text-3xl font-bold text-[#0F1A26] mb-3">
             {isSuccess
-              ? "Payment Successful"
+              ? t("status.successTitle")
               : isPending
-                ? "Payment Pending"
-                : "Payment Failed"}
+                ? t("status.pendingTitle")
+                : t("status.failedTitle")}
           </h1>
 
           <p className="text-[#0F1A26]/60 mb-6 leading-relaxed">
             {isSuccess
-              ? "Payment approved. Redirecting you now..."
+              ? t("status.successDescription")
               : isPending
-                ? "Your payment is pending. We will update your order once confirmed."
-                : "Your payment was not completed. Please try again."}
+                ? t("status.pendingDescription")
+                : t("status.failedDescription")}
           </p>
 
           {orderRef && (
             <div className="bg-[#F1EBE3] rounded-2xl p-4 mb-6">
-              <p className="text-xs text-[#0F1A26]/50 mb-1">Order Reference</p>
+              <p className="text-xs text-[#0F1A26]/50 mb-1">{t("labels.orderReference")}</p>
               <p className="text-sm font-bold text-[#0F1A26] break-all">
                 {orderRef}
               </p>
@@ -107,7 +111,7 @@ function PaymentReturnContent() {
             <div className="flex flex-col sm:flex-row gap-3">
               <Link href="/checkout" className="flex-1">
                 <Button className="w-full bg-[#EEBC3F] text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white rounded-full h-12 font-bold">
-                  Try Again
+                  {t("actions.tryAgain")}
                 </Button>
               </Link>
 
@@ -116,7 +120,7 @@ function PaymentReturnContent() {
                   variant="outline"
                   className="w-full border-[#0F1A26]/10 text-[#0F1A26] hover:bg-[#F1EBE3] rounded-full h-12 font-bold"
                 >
-                  Back to Shop
+                  {t("actions.backToShop")}
                 </Button>
               </Link>
             </div>

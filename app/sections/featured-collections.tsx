@@ -46,12 +46,12 @@ export async function FeaturedCollections() {
           </h2>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6 md:gap-8">
+        <div className="-mx-4 flex snap-x gap-4 overflow-x-auto px-4 pb-3 no-scrollbar sm:-mx-6 sm:px-6 md:mx-0 md:grid md:grid-cols-3 md:gap-8 md:overflow-visible md:px-0 md:pb-0">
           {collections.map((collection, index) => (
             <Link
               key={collection.title}
               href={collection.href}
-              className="group relative overflow-hidden rounded-3xl bg-[#0F1A26] transition-all duration-700 hover:shadow-2xl hover:shadow-[#EEBC3F]/10 hover:-translate-y-2 opacity-100 translate-y-0"
+              className="group relative w-[82vw] max-w-[330px] shrink-0 snap-start overflow-hidden rounded-3xl bg-[#0F1A26] opacity-100 translate-y-0 transition-all duration-700 hover:-translate-y-2 hover:shadow-2xl hover:shadow-[#EEBC3F]/10 md:w-auto md:max-w-none"
               style={{ transitionDelay: `${(index + 1) * 150}ms` }}
             >
               {/* Image Container - Full Card */}

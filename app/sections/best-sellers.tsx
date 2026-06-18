@@ -39,6 +39,8 @@ const getDisplayProducts = (products: Product[]) => {
 export function BestSellers() {
   const t = useTranslations('bestSellers');
   const tq = useTranslations('shop');
+  const toastT = useTranslations('commerceToast');
+  const stockT = useTranslations('stock');
   const router = useRouter();
   const products = useCatalogProducts();
   const sizes = useSizeGuideSizes();
@@ -47,6 +49,11 @@ export function BestSellers() {
   const displayProducts = getDisplayProducts(products);
   const locale = useLocale();
   const isRTL = locale === 'ar';
+  const stockLabels = {
+    inStock: stockT("inStock"),
+    lowStock: stockT("lowStock"),
+    outOfStock: stockT("outOfStock"),
+  };
   const [isVisible, setIsVisible] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -251,14 +258,14 @@ export function BestSellers() {
     if (isProductOutOfStock(product)) return;
     addToCart(getQuickCartItem(product), { openCart: false });
     showToast({
-      title: locale === "ar" ? "اتضاف للسلة" : "Added to cart",
+      title: toastT("addedToCart"),
       description: product.name,
       action: {
-        label: locale === "ar" ? "إتمام الطلب" : "Checkout",
+        label: toastT("checkout"),
         onClick: () => router.push("/checkout"),
       },
       cancel: {
-        label: locale === "ar" ? "كمل تسوق" : "Keep shopping",
+        label: toastT("keepShopping"),
         onClick: () => {},
       },
     });
@@ -408,7 +415,7 @@ export function BestSellers() {
                         <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${
                           isUnavailable ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"
                         }`}>
-                          {getStockLabel(product, locale)}
+                          {getStockLabel(product, stockLabels)}
                         </span>
                       )}
                     </div>
@@ -515,19 +522,19 @@ export function BestSellers() {
                         aria-label={tq('quickAdd.add')}
                         onClick={() => handleQuickAdd(product)}
                         disabled={isUnavailable}
-                        className="h-9 rounded-xl bg-white/10 border border-white/10 text-white hover:bg-white hover:text-[#0F1A26] px-2 text-xs font-bold"
+                        className="h-10 rounded-xl bg-white/10 border border-white/10 text-white hover:bg-white hover:text-[#0F1A26] px-2 text-xs font-bold"
                         variant="outline"
                       >
-                        <span className="truncate">{isUnavailable ? getStockLabel(product, locale) : tq('quickAdd.add')}</span>
+                        <span className="truncate">{isUnavailable ? getStockLabel(product, stockLabels) : tq('quickAdd.add')}</span>
                       </Button>
                       <Button
                         type="button"
                         aria-label={tq('quickAdd.buy')}
                         onClick={() => handleQuickBuy(product)}
                         disabled={isUnavailable}
-                        className="h-9 rounded-xl bg-[#EEBC3F] text-[#0F1A26] hover:bg-[#d4a535] px-2 text-xs font-bold shadow-sm shadow-[#EEBC3F]/25"
+                        className="h-10 rounded-xl bg-[#EEBC3F] text-[#0F1A26] hover:bg-[#d4a535] px-2 text-xs font-bold shadow-sm shadow-[#EEBC3F]/25"
                       >
-                        <span className="truncate">{isUnavailable ? getStockLabel(product, locale) : tq('quickAdd.buy')}</span>
+                        <span className="truncate">{isUnavailable ? getStockLabel(product, stockLabels) : tq('quickAdd.buy')}</span>
                       </Button>
                     </div>
                   </div>

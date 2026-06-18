@@ -55,12 +55,12 @@ export async function BenefitsStrip() {
           <div className="h-px bg-gradient-to-r from-[#EEBC3F]/50 via-[#0F1A26]/10 to-transparent mt-8" />
         </div>
 
-        {/* Editorial Grid - Mobile: 1 column */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Editorial Grid / Mobile Carousel */}
+        <div className="-mx-4 flex snap-x gap-4 overflow-x-auto px-4 pb-3 no-scrollbar sm:-mx-6 sm:px-6 md:mx-0 md:grid md:grid-cols-2 md:overflow-visible md:px-0 md:pb-0 lg:grid-cols-4">
           {benefits.map((benefit, index) => (
             <div
               key={index}
-              className="group relative bg-white rounded-2xl overflow-hidden transition-all duration-700 shadow-lg shadow-[#0F1A26]/5 hover:shadow-xl hover:shadow-[#0F1A26]/10"
+              className="group relative w-[82vw] max-w-[330px] shrink-0 snap-start overflow-hidden rounded-2xl bg-white shadow-lg shadow-[#0F1A26]/5 transition-all duration-700 hover:shadow-xl hover:shadow-[#0F1A26]/10 md:w-auto md:max-w-none"
               style={{ transitionDelay: `${index * 150}ms` }}
             >
               {/* Image Layer */}
@@ -78,7 +78,7 @@ export async function BenefitsStrip() {
               </div>
 
               {/* Content */}
-              <div className="relative h-[400px] lg:h-[500px] p-8 flex flex-col justify-between">
+              <div className="relative h-[380px] p-6 flex flex-col justify-between sm:p-8 lg:h-[500px]">
                 {/* Top - Number */}
                 <div className="flex items-start justify-between">
                   <span className="text-[#EEBC3F]/30 text-7xl font-light tracking-tighter">

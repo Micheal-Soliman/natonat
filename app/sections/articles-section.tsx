@@ -34,13 +34,13 @@ export async function ArticlesSection({ locale }: { locale: string }) {
           </Link>
         </div>
 
-        {/* Articles Grid */}
-        <div className="grid md:grid-cols-3 gap-8 items-stretch">
+        {/* Articles Grid / Mobile Carousel */}
+        <div className="-mx-4 flex snap-x items-stretch gap-4 overflow-x-auto px-4 pb-3 no-scrollbar sm:-mx-6 sm:px-6 md:mx-0 md:grid md:grid-cols-3 md:gap-8 md:overflow-visible md:px-0 md:pb-0">
           {articles.map((article, index) => (
             <Link
               key={article.id}
               href={`/articles/${article.slug}`}
-              className={`group bg-white rounded-3xl overflow-hidden border border-[#0F1A26]/5 shadow-lg shadow-[#0F1A26]/5 hover:shadow-xl hover:shadow-[#0F1A26]/10 transition-all duration-500 h-full flex flex-col`}
+              className="group flex h-full w-[82vw] max-w-[330px] shrink-0 snap-start flex-col overflow-hidden rounded-3xl border border-[#0F1A26]/5 bg-white shadow-lg shadow-[#0F1A26]/5 transition-all duration-500 hover:shadow-xl hover:shadow-[#0F1A26]/10 md:w-auto md:max-w-none"
               style={{ transitionDelay: `${(index + 1) * 100}ms` }}
             >
               <div className="relative overflow-hidden flex-shrink-0 h-52 sm:h-60">

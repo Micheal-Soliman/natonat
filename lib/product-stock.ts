@@ -8,17 +8,22 @@ export function isProductOutOfStock(product: Product) {
   return getProductStockStatus(product) === "out_of_stock";
 }
 
-export function getStockLabel(product: Product, locale: string) {
+type StockLabels = {
+  inStock: string;
+  lowStock: string;
+  outOfStock: string;
+};
+
+export function getStockLabel(product: Product, labels: StockLabels) {
   const status = getProductStockStatus(product);
 
   if (status === "out_of_stock") {
-    return locale === "ar" ? "غير متاح حاليًا" : "Out of stock";
+    return labels.outOfStock;
   }
 
   if (status === "low_stock") {
-    return locale === "ar" ? "كمية محدودة" : "Low stock";
+    return labels.lowStock;
   }
 
-  return locale === "ar" ? "متاح" : "In stock";
+  return labels.inStock;
 }
-

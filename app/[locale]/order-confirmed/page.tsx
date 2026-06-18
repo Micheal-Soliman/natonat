@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/routing";
-import { useLocale } from "next-intl";
+import { useTranslations } from "next-intl";
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
@@ -20,12 +20,14 @@ export default function OrderConfirmedPage() {
 }
 
 function LoadingState() {
+  const t = useTranslations("orderConfirmed");
+
   return (
     <>
       <Navigation />
       <main className="min-h-screen bg-[#F1EBE3] flex items-center justify-center px-4">
         <div className="bg-white rounded-3xl p-8 max-w-md w-full text-center shadow-lg">
-          <p className="text-[#0F1A26]/60 font-medium">Loading order status...</p>
+          <p className="text-[#0F1A26]/60 font-medium">{t("loading")}</p>
         </div>
       </main>
       <Footer />
@@ -35,7 +37,7 @@ function LoadingState() {
 
 function OrderConfirmedContent() {
   const searchParams = useSearchParams();
-  const locale = useLocale();
+  const t = useTranslations("orderConfirmed");
   const { clearCart, setBuyNowItem } = useCart();
 
   const orderRef = searchParams.get("order_ref") || "";
@@ -191,9 +193,7 @@ function OrderConfirmedContent() {
   const trackingNumber = verifiedOrder?.aramex?.trackingNumber;
   const orderItems = verifiedOrder?.items || [];
   const supportMessage = encodeURIComponent(
-    locale === "ar"
-      ? `أهلا natOnat، محتاج مساعدة في الطلب ${orderRef || ""}`
-      : `Hello natOnat, I need help with order ${orderRef || ""}`
+    t("messages.supportWhatsapp", { orderRef: orderRef || "" })
   );
   const supportHref = `https://wa.me/201070004227?text=${supportMessage}`;
 
@@ -266,32 +266,34 @@ function OrderConfirmedContent() {
 
           <h1 className="text-2xl md:text-3xl font-bold text-[#0F1A26] mb-3">
             {verificationStatus === "checking"
-              ? "Checking Order"
+              ? t("status.checkingTitle")
               : isSuccess
-                ? "Order Confirmed"
+                ? t("status.successTitle")
                 : isPending
-                  ? "Payment Pending"
+                  ? t("status.pendingTitle")
                   : verificationStatus === "not_found"
-                    ? "Order Not Found"
-                    : "Payment Failed"}
+                    ? t("status.notFoundTitle")
+                    : t("status.failedTitle")}
           </h1>
 
           <p className="text-[#0F1A26]/60 mb-6 leading-relaxed">
             {verificationStatus === "checking"
-              ? "Please wait while we verify your order."
+              ? t("status.checkingDescription")
               : isSuccess
-                ? "Thank you. Your order has been confirmed successfully."
+                ? t("status.successDescription")
                 : isPending
-                  ? "Your payment is pending. We will update your order once confirmed."
+                  ? t("status.pendingDescription")
                   : verificationStatus === "not_found"
-                    ? "We could not verify this order reference. Please check the link or contact support."
-                    : "Your payment was not completed. Please try again."}
+                    ? t("status.notFoundDescription")
+                    : t("status.failedDescription")}
           </p>
 
           <div className="bg-[#F1EBE3] rounded-2xl p-5 mb-6 space-y-3 text-left">
             {orderRef && (
               <div className="flex justify-between gap-4 text-sm">
-                <span className="text-[#0F1A26]/50">Order Reference</span>
+                <span className="text-[#0F1A26]/50">
+                  {t("labels.orderReference")}
+                </span>
                 <span className="font-semibold text-[#0F1A26] break-all text-right">
                   {orderRef}
                 </span>
@@ -300,7 +302,9 @@ function OrderConfirmedContent() {
 
             {method && (
               <div className="flex justify-between gap-4 text-sm">
-                <span className="text-[#0F1A26]/50">Payment Method</span>
+                <span className="text-[#0F1A26]/50">
+                  {t("labels.paymentMethod")}
+                </span>
                 <span className="font-semibold text-[#0F1A26] capitalize">
                   {method}
                 </span>
@@ -309,7 +313,9 @@ function OrderConfirmedContent() {
 
             {transactionId && (
               <div className="flex justify-between gap-4 text-sm">
-                <span className="text-[#0F1A26]/50">Transaction ID</span>
+                <span className="text-[#0F1A26]/50">
+                  {t("labels.transactionId")}
+                </span>
                 <span className="font-semibold text-[#0F1A26] break-all text-right">
                   {transactionId}
                 </span>
@@ -318,7 +324,9 @@ function OrderConfirmedContent() {
 
             {amount !== null && Number.isFinite(amount) && (
               <div className="flex justify-between gap-4 text-sm">
-                <span className="text-[#0F1A26]/50">Amount</span>
+                <span className="text-[#0F1A26]/50">
+                  {t("labels.amount")}
+                </span>
                 <span className="font-semibold text-[#0F1A26]">
                   EGP {amount}
                 </span>
@@ -329,7 +337,7 @@ function OrderConfirmedContent() {
           {orderItems.length > 0 && (
             <div className="mb-6 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] p-4 text-left">
               <h2 className="mb-3 text-sm font-bold text-[#0F1A26]">
-                {locale === "ar" ? "تفاصيل الطلب" : "Order items"}
+                {t("labels.orderItems")}
               </h2>
               <div className="space-y-3">
                 {orderItems.map((item, index) => {
@@ -339,7 +347,7 @@ function OrderConfirmedContent() {
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <p className="truncate text-sm font-bold text-[#0F1A26]">
-                            {item.name || (locale === "ar" ? "منتج" : "Product")}
+                            {item.name || t("labels.product")}
                           </p>
                           <div className="mt-1 flex flex-wrap gap-1.5 text-[11px] font-semibold text-[#0F1A26]/55">
                             {item.type && <span>{item.type}</span>}
@@ -382,9 +390,7 @@ function OrderConfirmedContent() {
             <div className="mb-6 space-y-3">
               <div className="rounded-2xl bg-green-50 border border-green-100 p-4">
                 <p className="text-sm text-green-700 font-medium">
-                  {locale === "ar"
-                    ? "تم تسجيل طلبك بنجاح. هنراجع الطلب ونبلغك بأي تحديث."
-                    : "Your order was recorded successfully. We will review it and share updates."}
+                  {t("messages.recorded")}
                 </p>
               </div>
               <div className="rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] p-4 text-left">
@@ -394,16 +400,12 @@ function OrderConfirmedContent() {
                   </div>
                   <div>
                     <p className="text-sm font-bold text-[#0F1A26]">
-                      {locale === "ar" ? "حالة الشحن" : "Shipping status"}
+                      {t("labels.shippingStatus")}
                     </p>
                     <p className="mt-1 text-sm text-[#0F1A26]/60">
                       {trackingNumber
-                        ? locale === "ar"
-                          ? "تم إنشاء شحنة Aramex."
-                          : "Aramex shipment has been created."
-                        : locale === "ar"
-                          ? "رقم التتبع هيظهر/يتبعت لما الشحنة تتجهز."
-                          : "Tracking will be shared once the shipment is ready."}
+                        ? t("messages.shipmentCreated")
+                        : t("messages.trackingPending")}
                     </p>
                     {trackingNumber && (
                       <p className="mt-2 text-sm font-bold text-[#0F1A26]" dir="ltr">
@@ -420,31 +422,31 @@ function OrderConfirmedContent() {
             <div className="mb-6 rounded-2xl bg-red-50 border border-red-100 p-4">
               <p className="text-sm text-red-700 font-medium">
                 {verificationStatus === "not_found"
-                  ? "This page cannot confirm an order without a valid order record."
-                  : "If money was deducted, please contact support with your order reference."}
+                  ? t("messages.cannotConfirm")
+                  : t("messages.moneyDeducted")}
               </p>
             </div>
           )}
 
           <div className="flex flex-col sm:flex-row gap-3">
             <a href={supportHref} target="_blank" rel="noopener noreferrer" className="flex-1">
-              <Button className="w-full bg-[#25D366] text-white hover:bg-[#128C4A] rounded-full h-12 font-bold">
-                <MessageCircle className="w-4 h-4 mr-2" />
-                {locale === "ar" ? "مساعدة واتساب" : "WhatsApp Support"}
+              <Button className="flex w-full items-center justify-center gap-2 rounded-full bg-[#25D366] text-white hover:bg-[#128C4A] h-12 font-bold">
+                <MessageCircle className="h-4 w-4" />
+                {t("actions.whatsappSupport")}
               </Button>
             </a>
             {isFailed ? (
               <Link href="/checkout" className="flex-1">
                 <Button className="w-full bg-[#EEBC3F] text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white rounded-full h-12 font-bold">
-                  Try Again
+                  {t("actions.tryAgain")}
                 </Button>
               </Link>
             ) : null}
 
             <Link href="/shop" className="flex-1">
-              <Button className="w-full bg-[#0F1A26] text-white hover:bg-[#EEBC3F] hover:text-[#0F1A26] rounded-full h-12 font-bold">
-                <ShoppingBag className="w-4 h-4 mr-2" />
-                Continue Shopping
+              <Button className="flex w-full items-center justify-center gap-2 rounded-full bg-[#0F1A26] text-white hover:bg-[#EEBC3F] hover:text-[#0F1A26] h-12 font-bold">
+                <ShoppingBag className="h-4 w-4" />
+                {t("actions.continueShopping")}
               </Button>
             </Link>
           </div>

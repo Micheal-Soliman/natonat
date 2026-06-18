@@ -8,7 +8,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, CreditCard, Truck, Check, MapPin, Phone, Mail, Newspaper, Store, Package, Search, ChevronDown } from "lucide-react";
+import { ArrowLeft, CreditCard, Truck, Check, MapPin, Phone, Mail, Newspaper, Store, Package, Search, ChevronDown, ShoppingBag } from "lucide-react";
 import { useCart, type CartItem } from "@/app/lib/cart-context";
 import { trackMetaPixelEvent } from "@/lib/meta-pixel";
 import { useCatalogProducts } from "@/app/lib/catalog-context";
@@ -373,7 +373,7 @@ function CheckoutContent() {
     if (citySearch.trim()) {
       setFieldErrors((current) => ({
         ...current,
-        city: locale === "ar" ? "اختار مدينة من القائمة" : "Choose a city from the list",
+        city: t("validation.invalidCity"),
       }));
     }
   };
@@ -393,15 +393,22 @@ function CheckoutContent() {
     setMounted(true);
   }, []);
 
+  const hasCheckoutItems = checkoutItems.length > 0;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError("");
 
+    if (!hasCheckoutItems) {
+      setSubmitError(t("emptyCart.submitError"));
+      return;
+    }
+
     const nextErrors: Record<string, string> = {};
-    const requiredMessage = locale === "ar" ? "الخانة دي مطلوبة" : "This field is required";
-    const invalidEmailMessage = locale === "ar" ? "اكتب بريد إلكتروني صحيح" : "Enter a valid email address";
-    const invalidPhoneMessage = locale === "ar" ? "اكتب رقم موبايل مصري صحيح" : "Enter a valid Egyptian mobile number";
-    const invalidCityMessage = locale === "ar" ? "اختار مدينة من القائمة" : "Choose a city from the list";
+    const requiredMessage = t("validation.required");
+    const invalidEmailMessage = t("validation.invalidEmail");
+    const invalidPhoneMessage = t("validation.invalidPhone");
+    const invalidCityMessage = t("validation.invalidCity");
     const emailValue = formData.email.trim();
     const phoneDigits = formData.phone.replace(/\D/g, "");
     const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue);
@@ -425,7 +432,7 @@ function CheckoutContent() {
 
     if (Object.keys(nextErrors).length > 0) {
       setFieldErrors(nextErrors);
-      setSubmitError(locale === "ar" ? "راجع البيانات المطلوبة قبل إتمام الطلب." : "Please review the highlighted fields before placing the order.");
+      setSubmitError(t("validation.reviewFields"));
       return;
     }
 
@@ -783,7 +790,7 @@ function CheckoutContent() {
   );
 
   useEffect(() => {
-    if (checkoutTracked.current || checkoutItems.length === 0) return;
+    if (checkoutTracked.current || !hasCheckoutItems) return;
 
     checkoutTracked.current = true;
     trackMetaPixelEvent("InitiateCheckout", {
@@ -798,7 +805,7 @@ function CheckoutContent() {
       value: finalTotal,
       currency: "EGP",
     });
-  }, [checkoutItems, finalTotal]);
+  }, [checkoutItems, finalTotal, hasCheckoutItems]);
 
   const controlBase =
     "border border-[#0F1A26]/10 bg-white text-[#0F1A26] placeholder:text-[#0F1A26]/40 caret-[#0F1A26] focus:border-[#EEBC3F] focus:outline-none transition-colors [color-scheme:light]";
@@ -814,20 +821,14 @@ function CheckoutContent() {
       <p className="mt-1.5 text-xs font-semibold text-red-600">{fieldErrors[field]}</p>
     ) : null;
 
-  const checkoutStepLabels =
-    locale === "ar"
-      ? ["بياناتك", "الشحن", "الدفع", "المراجعة"]
-      : ["Details", "Delivery", "Payment", "Review"];
+  const checkoutStepLabels = t.raw("steps") as string[];
   const checkoutStepStatus = [
     Boolean(formData.email && formData.firstName && formData.lastName && formData.phone),
     deliveryMethod === "pickup" || Boolean(formData.city && formData.address),
     Boolean(paymentMethod),
-    checkoutItems.length > 0,
+    hasCheckoutItems,
   ];
-  const visibleCheckoutStepLabels =
-    locale === "ar"
-      ? ["بياناتك", "الشحن", "الدفع", "المراجعة"]
-      : checkoutStepLabels;
+  const visibleCheckoutStepLabels = checkoutStepLabels;
 
   if (isSuccess) {
     return (
@@ -867,16 +868,16 @@ function CheckoutContent() {
                           : "text-red-600"
                         }`}>
                         {aramexStatus === "success"
-                          ? "Aramex Shipment Created"
+                          ? t("aramexStatus.success")
                           : aramexStatus === "pending"
-                            ? "Creating Aramex Shipment..."
-                            : "Aramex Shipment Failed"
+                            ? t("aramexStatus.pending")
+                            : t("aramexStatus.failed")
                         }
                       </p>
                     </div>
                     {trackingNumber && (
                       <>
-                        <p className="text-sm text-[#0F1A26]/60 mb-0.5">Tracking Number - \u0631\u0642\u0645 \u0627\u0644\u062A\u062A\u0628\u0639</p>
+                        <p className="text-sm text-[#0F1A26]/60 mb-0.5">{t("aramexStatus.trackingNumber")}</p>
                         <p className="text-lg font-semibold text-[#EEBC3F]">{trackingNumber}</p>
                       </>
                     )}
@@ -884,7 +885,7 @@ function CheckoutContent() {
                       <p className="text-xs text-red-500 mt-1">{aramexError}</p>
                     )}
                     {aramexStatus === "failed" && (
-                      <p className="text-xs text-[#0F1A26]/40 mt-1">Your order is confirmed. We\u2019ll create the shipment manually.</p>
+                      <p className="text-xs text-[#0F1A26]/40 mt-1">{t("aramexStatus.manualShipment")}</p>
                     )}
                   </div>
                 )}
@@ -892,6 +893,43 @@ function CheckoutContent() {
               <Link href="/shop">
                 <Button className="bg-[#0F1A26] text-white hover:bg-[#EEBC3F] hover:text-[#0F1A26] rounded-full px-8 h-12 font-semibold transition-all duration-300">
                   {t('success.continueShopping')}
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </>
+    );
+  }
+
+  if (mounted && !hasCheckoutItems) {
+    return (
+      <>
+        <Navigation />
+        <main className="min-h-screen bg-[#F1EBE3] px-4 py-32">
+          <div className="mx-auto max-w-xl rounded-3xl border border-[#0F1A26]/5 bg-white p-8 text-center shadow-lg">
+            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#EEBC3F]/15">
+              <ShoppingBag className="h-8 w-8 text-[#EEBC3F]" />
+            </div>
+            <h1 className="mb-3 text-2xl font-bold text-[#0F1A26]">
+              {t("emptyCart.title")}
+            </h1>
+            <p className="mx-auto mb-6 max-w-md text-sm leading-6 text-[#0F1A26]/60">
+              {t("emptyCart.description")}
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+              <Link href="/shop">
+                <Button className="h-12 w-full rounded-full bg-[#EEBC3F] px-8 font-bold text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white sm:w-auto">
+                  {t("emptyCart.shopNow")}
+                </Button>
+              </Link>
+              <Link href="/cart">
+                <Button
+                  variant="outline"
+                  className="h-12 w-full rounded-full border-[#0F1A26]/10 px-8 font-bold text-[#0F1A26] hover:bg-[#F1EBE3] sm:w-auto"
+                >
+                  {t("emptyCart.viewCart")}
                 </Button>
               </Link>
             </div>
@@ -1278,9 +1316,7 @@ function CheckoutContent() {
                           </button> */}
                         </div>
                         <p className="mt-2 rounded-lg bg-[#EEBC3F]/10 px-3 py-2 text-xs font-semibold text-[#0F1A26]/65">
-                          {locale === "ar"
-                            ? "اكتب المنطقة، الشارع، رقم العمارة، الدور، وأي علامة مميزة لتسهيل التوصيل."
-                            : "Add area, street, building number, floor, and a nearby landmark for smoother delivery."}
+                          {t("hints.address")}
                         </p>
                         {renderFieldError("address")}
                       </div>
@@ -1380,9 +1416,7 @@ function CheckoutContent() {
                         </div>
                         {!fieldErrors.city && (
                           <p className="mt-1.5 text-xs font-semibold text-[#0F1A26]/45">
-                            {locale === "ar"
-                              ? "اكتب أول حروف المدينة واختارها من القائمة، أو اضغط Enter لأول نتيجة."
-                              : "Type the first letters and choose from the list, or press Enter for the first result."}
+                            {t("hints.city")}
                           </p>
                         )}
                         {renderFieldError("city")}
@@ -1567,15 +1601,13 @@ function CheckoutContent() {
                     )}
                   </div>
                   <div className="mt-4 rounded-xl bg-[#0F1A26]/5 px-4 py-3 text-xs font-semibold text-[#0F1A26]/65">
-                    {locale === "ar"
-                      ? "الدفع آمن. بيانات الكارت لا يتم تخزينها عندنا، وطلبات الدفع الإلكتروني يتم تأكيدها قبل الشحن."
-                      : "Secure checkout. We do not store card details, and online payments are verified before shipping."}
+                    {t("hints.securePayment")}
                   </div>
                 </div>
 
                 <Button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !hasCheckoutItems}
                   className="w-full bg-[#EEBC3F] text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white rounded-full h-14 font-bold text-base transition-all duration-300 disabled:opacity-50"
                 >
                   {isSubmitting
@@ -1693,7 +1725,7 @@ function CheckoutContent() {
                   </div>
                   {paymentDiscount > 0 && (
                     <div className="flex justify-between text-sm text-green-600">
-                      <span>Payment Method Discount (2%)</span>
+                      <span>{t("summary.paymentMethodDiscount")}</span>
                       <span className="font-medium">-EGP {paymentDiscount}</span>
                     </div>
                   )}
@@ -1721,27 +1753,23 @@ function CheckoutContent() {
           <div className="mb-2 flex items-start justify-between gap-3">
             <div className="min-w-0 text-xs font-semibold text-[#0F1A26]/60">
               <p className="truncate">
-                {locale === "ar" ? `${checkoutItemCount} قطعة` : `${checkoutItemCount} item${checkoutItemCount === 1 ? "" : "s"}`}
+                {t("summary.itemCount", { count: checkoutItemCount })}
                 {" · "}
                 {deliveryMethod === "delivery" && !formData.city
-                  ? locale === "ar"
-                    ? "اختار المدينة لحساب الشحن"
-                    : "Select city for shipping"
+                  ? t("summary.selectCityForShipping")
                   : shipping === 0
-                    ? locale === "ar"
-                      ? "الشحن مجاني"
-                      : "Free shipping"
-                    : `${locale === "ar" ? "الشحن" : "Shipping"} EGP ${shipping}`}
+                    ? t("summary.freeShipping")
+                    : `${t("summary.shippingLabel")} EGP ${shipping}`}
               </p>
               {paymentDiscount > 0 && (
                 <p className="mt-0.5 text-green-600">
-                  {locale === "ar" ? `خصم الدفع الإلكتروني ${paymentDiscount} جنيه` : `Payment discount EGP ${paymentDiscount}`}
+                  {t("summary.paymentDiscount", { amount: paymentDiscount })}
                 </p>
               )}
             </div>
             <div className="shrink-0 text-right">
               <p className="text-[10px] font-bold uppercase tracking-wider text-[#0F1A26]/40">
-                {locale === "ar" ? "الإجمالي" : "Total"}
+                {t("summary.total")}
               </p>
               <p className="text-base font-black text-[#0F1A26]">
                 EGP {deliveryMethod === "delivery" && !formData.city ? checkoutSubtotal : finalTotal}
@@ -1751,14 +1779,10 @@ function CheckoutContent() {
           <div className="hidden">
             <span>
               {deliveryMethod === "delivery" && !formData.city
-                ? locale === "ar"
-                  ? "اختار المدينة لحساب الشحن"
-                  : "Select city for shipping"
+                ? t("summary.selectCityForShipping")
                 : shipping === 0
-                  ? locale === "ar"
-                    ? "الشحن مجاني"
-                    : "Free shipping"
-                  : `${locale === "ar" ? "الشحن" : "Shipping"} EGP ${shipping}`}
+                  ? t("summary.freeShipping")
+                  : `${t("summary.shippingLabel")} EGP ${shipping}`}
             </span>
             <span className="text-base font-black text-[#0F1A26]">
               EGP {deliveryMethod === "delivery" && !formData.city ? checkoutSubtotal : finalTotal}
@@ -1767,7 +1791,7 @@ function CheckoutContent() {
           <Button
             type="submit"
             form="checkout-form"
-            disabled={isSubmitting}
+            disabled={isSubmitting || !hasCheckoutItems}
             className="h-12 w-full rounded-full bg-[#EEBC3F] text-sm font-black text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white disabled:opacity-50"
           >
             {isSubmitting

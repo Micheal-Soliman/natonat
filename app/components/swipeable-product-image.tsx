@@ -27,7 +27,7 @@ export function SwipeableProductImage({
 
   const hasMultipleImages = images.length > 1;
 
-  // بدل image[3] اللي بيحمل صور زيادة
+  // Keep the preview image lightweight.
   const hoverImage = images[1] || product.image;
 
   const handleSlideChange = useCallback((newIndex: number) => {

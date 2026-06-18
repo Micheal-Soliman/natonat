@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import { Link, useRouter } from "@/i18n/routing";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { ArrowLeft, Heart, Package, ShoppingBag, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/app/lib/cart-context";
@@ -42,7 +42,7 @@ function getSizeOptions(product: Product, sizes: SizeOption[]) {
 
 export default function WishlistPage() {
   const t = useTranslations("wishlist");
-  const locale = useLocale();
+  const stockT = useTranslations("stock");
   const router = useRouter();
   const products = useCatalogProducts();
   const sizes = useSizeGuideSizes();
@@ -50,6 +50,11 @@ export default function WishlistPage() {
   const { items, removeFromWishlist, clearWishlist } = useWishlist();
   const { showToast } = useToast();
   const [quickSelections, setQuickSelections] = useState<Record<number, QuickSelection>>({});
+  const stockLabels = {
+    inStock: stockT("inStock"),
+    lowStock: stockT("lowStock"),
+    outOfStock: stockT("outOfStock"),
+  };
 
   const wishlistProducts = useMemo(
     () =>
@@ -60,16 +65,16 @@ export default function WishlistPage() {
   );
 
   const copy = {
-    add: locale === "ar" ? "أضف للسلة" : "Add to cart",
-    buy: locale === "ar" ? "شراء الآن" : "Buy now",
-    customize: locale === "ar" ? "اختار الباقة" : "Customize bundle",
-    size: locale === "ar" ? "المقاس" : "Size",
-    color: locale === "ar" ? "اللون" : "Color",
-    removed: locale === "ar" ? "اتشال من المفضلة" : "Removed from wishlist",
-    added: locale === "ar" ? "اتضاف للسلة" : "Added to cart",
-    checkout: locale === "ar" ? "إتمام الطلب" : "Checkout",
-    keepShopping: locale === "ar" ? "كمل تسوق" : "Keep shopping",
-    fromCms: locale === "ar" ? "البيانات محدثة من الكتالوج" : "Updated from catalog",
+    add: t("actions.addToCart"),
+    buy: t("actions.buyNow"),
+    customize: t("actions.customizeBundle"),
+    size: t("item.size"),
+    color: t("item.color"),
+    removed: t("toast.removed"),
+    added: t("toast.added"),
+    checkout: t("actions.checkout"),
+    keepShopping: t("actions.keepShopping"),
+    fromCms: t("item.updatedFromCatalog"),
   };
 
   const getQuickSelection = (product: Product) => {
@@ -229,7 +234,7 @@ export default function WishlistPage() {
                       quality={60}
                     />
                     <span className="absolute left-3 top-3 rounded-full bg-white px-3 py-1 text-[11px] font-bold text-[#0F1A26] shadow-sm">
-                      {getStockLabel(product, locale)}
+                      {getStockLabel(product, stockLabels)}
                     </span>
                     <button
                       type="button"

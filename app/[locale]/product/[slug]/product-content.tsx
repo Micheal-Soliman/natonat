@@ -3,10 +3,11 @@
 import { useCart } from "@/app/lib/cart-context";
 import { useWishlist } from "@/app/lib/wishlist-context";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import type { PointerEvent as ReactPointerEvent } from "react";
 import Image from "next/image";
 import { Link } from "@/i18n/routing";
 import { useRouter } from "@/i18n/routing";
-import { useLocale, useMessages, useTranslations } from 'next-intl';
+import { useMessages, useTranslations } from 'next-intl';
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
@@ -398,7 +399,8 @@ export default function ProductPageContent({
   products,
 }: ProductPageContentProps) {
   const t = useTranslations('product');
-  const locale = useLocale();
+  const toastT = useTranslations('commerceToast');
+  const stockT = useTranslations('stock');
   const { showToast } = useToast();
   const { addToCart, setBuyNowItem } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
@@ -510,7 +512,11 @@ export default function ProductPageContent({
     });
   }, [bundleSelections, getBundleProduct, isBundle, product.bundleItems]);
   const isUnavailable = isProductOutOfStock(product) || selectedBundleHasOutOfStockItem;
-  const stockLabel = getStockLabel(product, locale);
+  const stockLabel = getStockLabel(product, {
+    inStock: stockT("inStock"),
+    lowStock: stockT("lowStock"),
+    outOfStock: stockT("outOfStock"),
+  });
 
   const buildCartBundleSelections = useCallback(() => {
     if (!isBundle || !product.bundleItems) return undefined;
@@ -597,18 +603,18 @@ export default function ProductPageContent({
     addToCart(buildCartItem(), { openCart: false });
     trackAddToCart();
     showToast({
-      title: locale === "ar" ? "اتضاف للسلة" : "Added to cart",
+      title: toastT("addedToCart"),
       description: product.name,
       action: {
-        label: locale === "ar" ? "إتمام الطلب" : "Checkout",
+        label: toastT("checkout"),
         onClick: () => router.push("/checkout"),
       },
       cancel: {
-        label: locale === "ar" ? "كمل تسوق" : "Keep shopping",
+        label: toastT("keepShopping"),
         onClick: () => {},
       },
     });
-  }, [addToCart, buildCartItem, isUnavailable, locale, product.name, router, showToast, trackAddToCart]);
+  }, [addToCart, buildCartItem, isUnavailable, product.name, router, showToast, toastT, trackAddToCart]);
 
   const handleStickyBuyNow = useCallback(() => {
     if (isUnavailable) return;
@@ -637,6 +643,50 @@ export default function ProductPageContent({
   const [showShareToast, setShowShareToast] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const touchStartXRef = useRef<number | null>(null);
+  const bundleOptionsDragRef = useRef<{
+    element: HTMLDivElement;
+    pointerId: number;
+    startX: number;
+    scrollLeft: number;
+  } | null>(null);
+  const bundleOptionsDraggedRef = useRef(false);
+
+  const handleBundleOptionsPointerDown = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+
+    bundleOptionsDraggedRef.current = false;
+    bundleOptionsDragRef.current = {
+      element: event.currentTarget,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      scrollLeft: event.currentTarget.scrollLeft,
+    };
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  }, []);
+
+  const handleBundleOptionsPointerMove = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    const dragState = bundleOptionsDragRef.current;
+    if (!dragState || dragState.pointerId !== event.pointerId) return;
+
+    const deltaX = event.clientX - dragState.startX;
+    if (Math.abs(deltaX) > 4) {
+      bundleOptionsDraggedRef.current = true;
+      event.preventDefault();
+    }
+
+    dragState.element.scrollLeft = dragState.scrollLeft - deltaX;
+  }, []);
+
+  const stopBundleOptionsDrag = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    const dragState = bundleOptionsDragRef.current;
+    if (dragState?.pointerId === event.pointerId) {
+      dragState.element.releasePointerCapture?.(event.pointerId);
+    }
+    bundleOptionsDragRef.current = null;
+    window.setTimeout(() => {
+      bundleOptionsDraggedRef.current = false;
+    }, 0);
+  }, []);
 
 
   const sizes = useSizeGuideSizes();
@@ -649,14 +699,13 @@ export default function ProductPageContent({
     [recommendedSize, selectedSize, sizes]
   );
   const selectedSizeGuideText = selectedSizeInfo
-    ? locale === "ar"
-      ? `مقاس ${selectedSizeInfo.label} مناسب لارتفاع ${selectedSizeInfo.range || selectedSizeInfo.cm} بدون العجل.`
-      : `Size ${selectedSizeInfo.label} fits ${selectedSizeInfo.range || selectedSizeInfo.cm} without wheels.`
+    ? t("size.selectedGuide", {
+      size: selectedSizeInfo.label,
+      range: selectedSizeInfo.range || selectedSizeInfo.cm,
+    })
     : "";
   const recommendedSizeText = recommendedSize
-    ? locale === "ar"
-      ? `المقاس المقترح غالبًا: ${recommendedSize.label}`
-      : `Most common pick: ${recommendedSize.label}`
+    ? t("size.recommended", { size: recommendedSize.label })
     : "";
 
 
@@ -916,7 +965,7 @@ export default function ProductPageContent({
     );
 
     if (currentIsBundle) {
-      // لو المنتج Bundle: اعرض منتجات من مكونات الباندل + باندل شبهه
+      // For bundles: recommend bundle items plus similar bundles.
       currentBundleCategories.forEach((category) => {
         addProducts(
           (item) =>
@@ -928,7 +977,7 @@ export default function ProductPageContent({
 
       addProducts((item) => isBundleProduct(item), 1);
     } else {
-      // 1) منتج من نفس الـ category
+      // 1) Product from the same category.
       currentDirectCategories.forEach((category) => {
         addProducts(
           (item) =>
@@ -938,7 +987,7 @@ export default function ProductPageContent({
         );
       });
 
-      // 2) Bundle فيه نفس نوع المنتج الحالي
+      // 2) Bundle containing the same product type.
       addProducts(
         (item) =>
           isBundleProduct(item) &&
@@ -946,7 +995,7 @@ export default function ProductPageContent({
         1
       );
 
-      // 3) Cross-sell categories متعلمة من الباندلز
+      // 3) Cross-sell categories inferred from bundles.
       affinityCategories.forEach((category) => {
         addProducts(
           (item) =>
@@ -957,7 +1006,7 @@ export default function ProductPageContent({
       });
     }
 
-    // Fallback: كمل العدد بأقوى منتجات حسب السكور
+    // Fallback: fill the remaining slots with the highest scored products.
     scoredProducts
       .filter(({ item }) => !selected.has(item.id))
       .slice(0, RELATED_LIMIT - selected.size)
@@ -1003,7 +1052,7 @@ export default function ProductPageContent({
         </div>
       )}
 
-      <main className="min-h-screen bg-[#F1EBE3] overflow-x-hidden pb-20 lg:pb-0" ref={ref}>
+      <main className="min-h-screen bg-[#F1EBE3] overflow-x-hidden pb-32 lg:pb-0" ref={ref}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12">
           {/* Product Navigation - Top */}
           <div className="flex items-center justify-between mb-8">
@@ -1066,12 +1115,14 @@ export default function ProductPageContent({
           </div>
 
           {/* Section 1 & 2: Gallery + Info Grid */}
-          <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-start">
+          <div className="grid min-w-0 grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-start">
             {/* Section 1: Gallery */}
-            <div className="space-y-4 sm:space-y-6 w-full max-w-full overflow-hidden">
+            <div className="min-w-0 space-y-4 sm:space-y-6 w-full max-w-full overflow-hidden">
               {/* Main Image - Premium with Navigation Arrows + Swipe Support */}
               <div
-                className="relative aspect-square bg-white/50 backdrop-blur-sm rounded-2xl sm:rounded-3xl flex items-center justify-center overflow-hidden border border-[#0F1A26]/10 shadow-2xl shadow-[#0F1A26]/10 touch-pan-y"
+                className={`relative w-full bg-white/50 backdrop-blur-sm rounded-2xl sm:rounded-3xl flex items-center justify-center overflow-hidden border border-[#0F1A26]/10 shadow-2xl shadow-[#0F1A26]/10 touch-pan-y ${
+                  isBundle ? "h-[280px] sm:aspect-square sm:h-auto" : "aspect-square"
+                }`}
                 onTouchStart={(e) => {
                   const touch = e.touches[0];
                   touchStartXRef.current = touch.clientX;
@@ -1100,7 +1151,7 @@ export default function ProductPageContent({
                     alt={product.name}
                     fill
                     sizes="(max-width: 768px) 92vw, (max-width: 1280px) 45vw, 40vw"
-                    className="object-contain p-2 sm:p-4"
+                    className={isBundle ? "h-full w-full object-cover" : "h-full w-full object-contain p-2 sm:p-4"}
                     priority={activeImage === 0}
                     quality={65}
                   />
@@ -1133,7 +1184,7 @@ export default function ProductPageContent({
               {/* Thumbnails - Horizontal Scrollable with Index */}
               <div className="space-y-2 sm:space-y-3 w-full max-w-full overflow-hidden">
                 {/* Thumbnails Row */}
-                <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 sm:pb-3 px-1 scrollbar-thin scrollbar-thumb-[#EEBC3F]/40 scrollbar-track-transparent hover:scrollbar-thumb-[#EEBC3F] max-w-full">
+                <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 sm:pb-3 px-1 no-scrollbar max-w-full">
                   {(colorImages || [product.image]).map((img, idx) => (
                     <button
                       key={idx}
@@ -1148,7 +1199,7 @@ export default function ProductPageContent({
                         alt={`${product.name} view ${idx + 1}`}
                         width={96}
                         height={96}
-                        className="w-full h-full object-contain p-1"
+                        className={isBundle ? "h-full w-full object-cover" : "w-full h-full object-contain p-1"}
                         loading="lazy"
                         quality={45}
                       />
@@ -1249,9 +1300,7 @@ export default function ProductPageContent({
                         : "bg-green-100 text-green-700"
                   }`}>
                     {selectedBundleHasOutOfStockItem
-                      ? locale === "ar"
-                        ? "اختيار داخل الباقة غير متاح"
-                        : "Bundle selection unavailable"
+                      ? t("bundle.selectionUnavailable")
                       : stockLabel}
                   </span>
                 </div>
@@ -1305,7 +1354,7 @@ export default function ProductPageContent({
                                   ? "bg-white text-[#0F1A26]"
                                   : "bg-[#EEBC3F] text-[#0F1A26]"
                               }`}>
-                                {locale === "ar" ? "مقترح" : "Popular"}
+                                {t("bundle.popular")}
                               </span>
                             )}
                             <span className={`block font-bold text-base sm:text-lg ${selectedSize === size.id ? "text-white" : "text-[#0F1A26]"}`}>{size.label}</span>
@@ -1332,6 +1381,8 @@ export default function ProductPageContent({
                         const selectedProductId = selection.productId || item.productId || item.productIds?.[0];
                         const bundleProduct = selectedProductId ? getBundleProduct(selectedProductId) : undefined;
                         const sizeOptions = bundleProduct ? getBundleSizeOptions(bundleProduct) : [];
+                        const selectedBundleColorImage =
+                          bundleProduct?.colors?.find((color) => color.id === selection.color)?.image;
 
                         // Get available product options for this bundle item
                         const productOptions = item.productIds
@@ -1344,15 +1395,15 @@ export default function ProductPageContent({
                             : [];
 
                         return (
-                          <div key={index} className="bg-white rounded-xl p-4 border border-[#0F1A26]/10">
+                          <div key={index} className="overflow-hidden rounded-2xl border border-[#0F1A26]/10 bg-white p-3 sm:p-4">
                             <div className="flex items-center gap-3 mb-3">
-                              <div className="relative w-12 h-12 rounded-lg bg-[#F1EBE3] flex items-center justify-center overflow-hidden">
+                              <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-[#F1EBE3] sm:h-16 sm:w-16">
                                 {bundleProduct ? (
                                   <Image
-                                    src={bundleProduct.image}
+                                    src={selectedBundleColorImage || bundleProduct.image}
                                     alt={bundleProduct.name}
                                     fill
-                                    sizes="48px"
+                                    sizes="64px"
                                     className="object-contain"
                                     loading="lazy"
                                     quality={45}
@@ -1361,19 +1412,35 @@ export default function ProductPageContent({
                                   <div className="w-full h-full bg-[#EEBC3F]/20" />
                                 )}
                               </div>
-                              <div className="flex-1">
+                              <div className="min-w-0 flex-1">
                                 {item.label && <p className="text-[#0F1A26]/50 text-xs mb-0.5">{item.label}</p>}
                                 {bundleProduct ? (
-                                  <h5 className="font-semibold text-[#0F1A26] text-sm">{bundleProduct.name}</h5>
+                                  <h5 className="truncate font-semibold text-[#0F1A26] text-sm">{bundleProduct.name}</h5>
                                 ) : null}
-                                <span className="text-[#EEBC3F] text-xs font-medium block mt-1">Qty: {item.quantity}</span>
+                                <span className="text-[#EEBC3F] text-xs font-bold block mt-1">
+                                  {t("bundle.qty", { quantity: item.quantity })}
+                                </span>
                               </div>
                             </div>
 
                             {productOptions.length > 1 && (
                               <div className="mb-3">
-                                <label className="text-[#0F1A26]/60 text-xs mb-2 block">{item.label || t("bundleItemsTitle")}</label>
-                                <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                                <div className="mb-2 flex items-center justify-between gap-2">
+                                  <label className="text-[#0F1A26]/60 text-xs font-bold block">
+                                    {item.label || t("bundleItemsTitle")}
+                                  </label>
+                                  <span className="text-[10px] font-semibold text-[#0F1A26]/40">
+                                    {t("bundle.swipeToChoose")}
+                                  </span>
+                                </div>
+                                <div
+                                  className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-2 no-scrollbar cursor-grab active:cursor-grabbing"
+                                  onPointerDown={handleBundleOptionsPointerDown}
+                                  onPointerMove={handleBundleOptionsPointerMove}
+                                  onPointerUp={stopBundleOptionsDrag}
+                                  onPointerCancel={stopBundleOptionsDrag}
+                                  onPointerLeave={stopBundleOptionsDrag}
+                                >
                                   {productOptions.map((opt) => {
                                     if (!opt) return null;
                                     const isSelected = selectedProductId === opt.id;
@@ -1382,7 +1449,11 @@ export default function ProductPageContent({
                                       <button
                                         key={opt.id}
                                         type="button"
-                                        onClick={() => {
+                                        onClick={(event) => {
+                                          if (bundleOptionsDraggedRef.current) {
+                                            event.preventDefault();
+                                            return;
+                                          }
                                           const newSizeOptions = getBundleSizeOptions(opt);
                                           const defaultSize = newSizeOptions.includes("m") ? "m" : newSizeOptions[0];
                                           setBundleSelections((prev) => ({
@@ -1395,24 +1466,29 @@ export default function ProductPageContent({
                                             },
                                           }));
                                         }}
-                                        className={`w-24 shrink-0 rounded-xl border p-2 text-start transition-all ${
+                                        className={`relative w-[42vw] max-w-[138px] shrink-0 snap-start rounded-2xl border p-2.5 text-center transition-all sm:w-32 ${
                                           isSelected
                                             ? "border-[#EEBC3F] bg-[#EEBC3F]/10 ring-2 ring-[#EEBC3F]/20"
                                             : "border-[#0F1A26]/10 bg-[#F8F6F3] hover:border-[#EEBC3F]/50"
                                         }`}
                                       >
-                                        <span className="relative mb-2 block h-16 overflow-hidden rounded-lg bg-white">
+                                        {isSelected && (
+                                          <span className="absolute right-2 top-2 z-10 rounded-full bg-[#EEBC3F] px-2 py-0.5 text-[10px] font-black text-[#0F1A26]">
+                                            {t("bundle.selected")}
+                                          </span>
+                                        )}
+                                        <span className="relative mb-2 block h-20 overflow-hidden rounded-xl bg-white sm:h-24">
                                           <Image
                                             src={opt.image}
                                             alt={opt.name}
                                             fill
-                                            sizes="96px"
-                                            className="object-contain"
+                                            sizes="140px"
+                                            className="object-contain p-1"
                                             loading="lazy"
                                             quality={45}
                                           />
                                         </span>
-                                        <span className="line-clamp-2 text-[11px] font-bold leading-tight text-[#0F1A26]">
+                                        <span className="line-clamp-2 min-h-[28px] text-[11px] font-bold leading-tight text-[#0F1A26]">
                                           {opt.name}
                                         </span>
                                       </button>
@@ -1435,7 +1511,7 @@ export default function ProductPageContent({
                                           [index]: { ...prev[index], size },
                                         }))
                                       }
-                                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${selection.size === size
+                                      className={`min-h-10 min-w-11 px-3 py-2 rounded-xl text-xs font-bold transition-all ${selection.size === size
                                         ? "bg-[#EEBC3F] text-[#0F1A26]"
                                         : "bg-white text-[#0F1A26]/70 hover:bg-[#EEBC3F]/20"
                                         }`}
@@ -1460,7 +1536,7 @@ export default function ProductPageContent({
                                           [index]: { ...prev[index], color: color.id },
                                         }))
                                       }
-                                      className={`relative w-8 h-8 rounded-full border-2 transition-all overflow-hidden ${selection.color === color.id
+                                      className={`relative h-10 w-10 rounded-full border-2 transition-all overflow-hidden ${selection.color === color.id
                                         ? "border-[#EEBC3F] ring-2 ring-[#EEBC3F]/30"
                                         : "border-[#0F1A26]/10 hover:border-[#EEBC3F]/50"
                                         }`}
@@ -1577,14 +1653,14 @@ export default function ProductPageContent({
                     disabled={isUnavailable}
                     className="flex-1 bg-[#0F1A26] text-white hover:bg-[#EEBC3F] hover:text-[#0F1A26] h-14 sm:h-16 rounded-2xl font-bold text-base sm:text-lg transition-all duration-300 hover:shadow-xl hover:shadow-[#EEBC3F]/20 group"
                   >
-                    {isUnavailable ? (locale === "ar" ? "غير متاح" : "Unavailable") : t('addToCart')}
+                    {isUnavailable ? t("unavailable") : t('addToCart')}
                   </Button>
                   <Button
                     onClick={handleStickyBuyNow}
                     disabled={isUnavailable}
                     className="flex-1 sm:flex-none bg-gradient-to-r from-[#EEBC3F] to-[#d4a535] text-[#0F1A26] hover:shadow-xl hover:shadow-[#EEBC3F]/30 h-14 sm:h-16 px-4 sm:px-10 rounded-2xl font-bold text-base sm:text-lg transition-all duration-300 group"
                   >
-                    {isUnavailable ? (locale === "ar" ? "غير متاح" : "Unavailable") : t('buyNow')}
+                    {isUnavailable ? t("unavailable") : t('buyNow')}
                   </Button>
                 </div>
               </div>{/* End Sticky Buy Box */}
@@ -1842,7 +1918,7 @@ export default function ProductPageContent({
                 className="h-12 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] text-sm font-bold text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white"
                 variant="outline"
               >
-                {isUnavailable ? (locale === "ar" ? "غير متاح" : "Unavailable") : t('addToCart')}
+                {isUnavailable ? t("unavailable") : t('addToCart')}
               </Button>
               <Button
                 type="button"
@@ -1850,7 +1926,7 @@ export default function ProductPageContent({
                 disabled={isUnavailable}
                 className="h-12 rounded-2xl bg-[#EEBC3F] text-sm font-bold text-[#0F1A26] shadow-sm shadow-[#EEBC3F]/25 hover:bg-[#d4a535]"
               >
-                {isUnavailable ? (locale === "ar" ? "غير متاح" : "Unavailable") : t('buyNow')}
+                {isUnavailable ? t("unavailable") : t('buyNow')}
               </Button>
             </div>
           </div>
@@ -1878,7 +1954,7 @@ export default function ProductPageContent({
               disabled={isUnavailable}
               className="h-11 rounded-xl bg-[#0F1A26] px-2 text-sm font-black text-white transition-all duration-300 hover:bg-[#EEBC3F] hover:text-[#0F1A26]"
             >
-              {isUnavailable ? (locale === "ar" ? "غير متاح" : "Unavailable") : t('addToCart')}
+              {isUnavailable ? t("unavailable") : t('addToCart')}
             </Button>
             <Button
               type="button"
@@ -1886,7 +1962,7 @@ export default function ProductPageContent({
               disabled={isUnavailable}
               className="h-11 rounded-xl bg-[#EEBC3F] px-2 text-sm font-black text-[#0F1A26] shadow-sm shadow-[#EEBC3F]/25 transition-all duration-300 hover:bg-[#d4a535]"
             >
-              {isUnavailable ? (locale === "ar" ? "غير متاح" : "Unavailable") : t('buyNow')}
+              {isUnavailable ? t("unavailable") : t('buyNow')}
             </Button>
           </div>
         </div>
@@ -1899,7 +1975,7 @@ export default function ProductPageContent({
           setIsSizeGuideOpen(false);
         }}
         productName={product.name}
-        confirmLabel={locale === "ar" ? "اختيار المقاس" : "Select size"}
+        confirmLabel={t("size.confirm")}
       />
       <Footer />
     </>

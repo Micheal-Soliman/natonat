@@ -444,15 +444,27 @@
       "save": "Save {percent}%",
       "unavailable": "Product price is not loaded. Please refresh the page."
     },
+    "unavailable": "Unavailable",
     "size": {
       "select": "Select Size",
       "title": "Select Size",
+      "confirm": "Select size",
       "howToMeasure": "How to Measure?",
       "heightNote": "* Height without wheels",
-      "heightLabel": "Height"
+      "heightLabel": "Height",
+      "selectedGuide": "Size {size} fits height {range} without wheels.",
+      "recommended": "Recommended size: {size}"
     },
     "color": {
       "select": "Select Color"
+    },
+    "bundle": {
+      "selectionUnavailable": "Bundle selection unavailable",
+      "itemUnavailable": "Bundle item unavailable",
+      "popular": "Popular",
+      "qty": "Qty: {quantity}",
+      "swipeToChoose": "Swipe to choose",
+      "selected": "Selected"
     },
     "bundleItemsTitle": "Bundle Items - Customize Each",
     "quantity": "Quantity",
@@ -574,6 +586,10 @@
       "subtitle": "Review your items and proceed to checkout"
     },
     "bundleIncludes": "Bundle includes:",
+    "editBundle": "Edit bundle",
+    "securePayment": "Secure payment",
+    "aramexShipping": "Aramex shipping",
+    "saved": "You saved",
     "cartItems": "{count, plural, =0 {No items} =1 {1 item} other {# items}}",
     "continueShopping": "Continue Shopping",
     "empty": {
@@ -616,6 +632,33 @@
       "subtitle": "Complete your order and we'll ship it right away"
     },
     "backToCart": "Back to Cart",
+    "emptyCart": {
+      "title": "Your cart is empty",
+      "description": "Choose your products and options first, then come back to checkout.",
+      "shopNow": "Shop now",
+      "viewCart": "View cart",
+      "submitError": "Your cart is empty. Add products before placing an order."
+    },
+    "validation": {
+      "required": "This field is required",
+      "invalidEmail": "Enter a valid email address",
+      "invalidPhone": "Enter a valid Egyptian mobile number",
+      "invalidCity": "Choose a city from the list",
+      "reviewFields": "Please review the highlighted fields before placing the order."
+    },
+    "steps": ["Details", "Delivery", "Payment", "Review"],
+    "hints": {
+      "address": "Add area, street, building number, floor, and a nearby landmark for smoother delivery.",
+      "city": "Type the first letters and choose from the list, or press Enter for the first result.",
+      "securePayment": "Secure checkout. We do not store card details, and online payments are verified before shipping."
+    },
+    "aramexStatus": {
+      "success": "Aramex Shipment Created",
+      "pending": "Creating Aramex Shipment...",
+      "failed": "Aramex Shipment Failed",
+      "trackingNumber": "Tracking Number",
+      "manualShipment": "Your order is confirmed. We'll create the shipment manually."
+    },
     "success": {
       "title": "Order Confirmed!",
       "subtitle": "Thank you for your order. We'll send you a confirmation email shortly.",
@@ -725,8 +768,68 @@
       "size": "Size",
       "color": "Color",
       "selectCityForShipping": "Select city to calculate shipping",
+      "itemCount": "{count, plural, =1 {# item} other {# items}}",
+      "shippingLabel": "Shipping",
+      "freeShipping": "Free shipping",
+      "paymentMethodDiscount": "Payment Method Discount (2%)",
+      "paymentDiscount": "Payment discount EGP {amount}",
       "buyNowMode": "🛒 Buy Now - Quick Purchase",
       "cartMode": "🛍️ From Cart"
+    }
+  },
+  "orderConfirmed": {
+    "loading": "Loading order status...",
+    "status": {
+      "checkingTitle": "Checking Order",
+      "successTitle": "Order Confirmed",
+      "pendingTitle": "Payment Pending",
+      "notFoundTitle": "Order Not Found",
+      "failedTitle": "Payment Failed",
+      "checkingDescription": "Please wait while we verify your order.",
+      "successDescription": "Thank you. Your order has been confirmed successfully.",
+      "pendingDescription": "Your payment is pending. We will update your order once confirmed.",
+      "notFoundDescription": "We could not verify this order reference. Please check the link or contact support.",
+      "failedDescription": "Your payment was not completed. Please try again."
+    },
+    "labels": {
+      "orderReference": "Order Reference",
+      "paymentMethod": "Payment Method",
+      "transactionId": "Transaction ID",
+      "amount": "Amount",
+      "orderItems": "Order items",
+      "product": "Product",
+      "shippingStatus": "Shipping status"
+    },
+    "messages": {
+      "recorded": "Your order was recorded successfully. We will review it and share updates.",
+      "shipmentCreated": "Aramex shipment has been created.",
+      "trackingPending": "Tracking will be shared once the shipment is ready.",
+      "cannotConfirm": "This page cannot confirm an order without a valid order record.",
+      "moneyDeducted": "If money was deducted, please contact support with your order reference.",
+      "supportWhatsapp": "Hello natOnat, I need help with order {orderRef}"
+    },
+    "actions": {
+      "whatsappSupport": "WhatsApp Support",
+      "tryAgain": "Try Again",
+      "continueShopping": "Continue Shopping"
+    }
+  },
+  "paymentReturn": {
+    "loading": "Checking payment status...",
+    "status": {
+      "successTitle": "Payment Successful",
+      "pendingTitle": "Payment Pending",
+      "failedTitle": "Payment Failed",
+      "successDescription": "Payment approved. Redirecting you now...",
+      "pendingDescription": "Your payment is pending. We will update your order once confirmed.",
+      "failedDescription": "Your payment was not completed. Please try again."
+    },
+    "labels": {
+      "orderReference": "Order Reference"
+    },
+    "actions": {
+      "tryAgain": "Try Again",
+      "backToShop": "Back to Shop"
     }
   },
   "common": {
@@ -744,6 +847,33 @@
     "delete": "Delete",
     "view": "View"
   },
+  "commerceToast": {
+    "addedToCart": "Added to cart",
+    "bundleAddedToCart": "Bundle added to cart",
+    "checkout": "Checkout",
+    "keepShopping": "Keep shopping",
+    "removedFromWishlist": "Removed from wishlist",
+    "addedToWishlist": "Added to wishlist"
+  },
+  "wishlistButton": {
+    "add": "Add to wishlist",
+    "remove": "Remove from wishlist"
+  },
+  "localeSwitcher": {
+    "label": "Language / اللغة",
+    "switchToEnglish": "Switch to English",
+    "switchToArabic": "Switch to Arabic"
+  },
+  "stock": {
+    "inStock": "In stock",
+    "lowStock": "Low stock",
+    "outOfStock": "Out of stock"
+  },
+  "bundleCustomizer": {
+    "unavailable": "Unavailable",
+    "oneItemUnavailable": "One bundle item is currently unavailable",
+    "review": "Bundle review"
+  },
   "wishlist": {
     "label": "Favorites",
     "title": "My Wishlist",
@@ -754,7 +884,23 @@
     },
     "clearAll": "Clear All",
     "discoverMore": "Discover More Products",
-    "continueShopping": "Continue Shopping"
+    "continueShopping": "Continue Shopping",
+    "actions": {
+      "addToCart": "Add to cart",
+      "buyNow": "Buy now",
+      "customizeBundle": "Customize bundle",
+      "checkout": "Checkout",
+      "keepShopping": "Keep shopping"
+    },
+    "item": {
+      "size": "Size",
+      "color": "Color",
+      "updatedFromCatalog": "Updated from catalog"
+    },
+    "toast": {
+      "removed": "Removed from wishlist",
+      "added": "Added to cart"
+    }
   },
   "contact": {
     "hero": {
@@ -832,7 +978,17 @@
     "readTime": "min read",
     "share": "Share This Article",
     "related": "More Articles",
-    "backToArticles": "Back to Articles"
+    "backToArticles": "Back to Articles",
+    "detail": {
+      "breadcrumbHome": "Home",
+      "breadcrumbArticles": "Articles",
+      "inThisGuide": "In this guide",
+      "shopCtaTitle": "Get your travel gear ready",
+      "shopCtaText": "Choose a washable luggage cover or smart passport wallet from natOnat before your next trip.",
+      "shopCtaAction": "Shop products",
+      "sizeCtaAction": "Size guide",
+      "articleSummary": "Article summary"
+    }
   },
   "about": {
     "hero": {
@@ -3614,7 +3770,9 @@
   },
   "components": {
     "floatingContact": {
-      "label": "Need help?"
+      "label": "Need help?",
+      "whatsapp": "WhatsApp",
+      "phone": "Call us"
     }
   }
 }

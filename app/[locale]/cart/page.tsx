@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import Image from "next/image";
 import { Link } from "@/i18n/routing";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { ArrowLeft, Minus, Plus, ShieldCheck, ShoppingBag, Trash2, Truck } from "lucide-react";
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
@@ -31,7 +31,6 @@ export default function CartPage() {
 
 function CartContent() {
   const t = useTranslations("cart");
-  const locale = useLocale();
   const products = useCatalogProducts();
   const sizes = useSizeGuideSizes();
   const {
@@ -91,11 +90,11 @@ function CartContent() {
   };
 
   const labels = {
-    editBundle: locale === "ar" ? "تعديل الباقة" : "Edit bundle",
-    bundleIncludes: locale === "ar" ? "محتويات الباقة" : "Bundle includes",
-    secure: locale === "ar" ? "دفع آمن" : "Secure payment",
-    aramex: locale === "ar" ? "شحن Aramex" : "Aramex shipping",
-    saved: locale === "ar" ? "وفرت" : "You saved",
+    editBundle: t("editBundle"),
+    bundleIncludes: t("bundleIncludes"),
+    secure: t("securePayment"),
+    aramex: t("aramexShipping"),
+    saved: t("saved"),
   };
 
   if (!mounted) {
@@ -115,7 +114,7 @@ function CartContent() {
   return (
     <>
       <Navigation />
-      <main className="min-h-screen bg-[#F1EBE3] pt-24">
+      <main className="min-h-screen bg-[#F1EBE3] pt-24 pb-28 lg:pb-0">
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
@@ -398,6 +397,26 @@ function CartContent() {
             </div>
           )}
         </div>
+        {items.length > 0 && (
+          <div className="lg:hidden fixed bottom-0 left-0 right-0 z-[90] border-t border-[#0F1A26]/10 bg-white/97 px-3 pt-2 shadow-[0_-4px_20px_rgba(0,0,0,0.12)] backdrop-blur-xl pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-[#0F1A26]/45">
+                  {t("summary.total")}
+                </p>
+                <p className="text-lg font-black text-[#0F1A26]">EGP {subtotal}</p>
+              </div>
+              <p className="text-xs font-semibold text-[#0F1A26]/45">
+                {t("cartItems", { count: totalItems })}
+              </p>
+            </div>
+            <Link href="/checkout" onClick={() => setBuyNowItem(null)}>
+              <Button className="h-11 w-full rounded-xl bg-[#EEBC3F] px-3 text-sm font-black text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white">
+                {t("summary.proceedToCheckout")}
+              </Button>
+            </Link>
+          </div>
+        )}
       </main>
       <Footer />
     </>

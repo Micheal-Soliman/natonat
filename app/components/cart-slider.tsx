@@ -3,7 +3,7 @@
 import { useCart } from "@/app/lib/cart-context";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/routing";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import Image from "next/image";
 import { Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
 import { useCatalogProducts } from "@/app/lib/catalog-context";
@@ -12,7 +12,6 @@ import type { Product } from "@/lib/products";
 
 export function CartSlider() {
   const t = useTranslations("cart");
-  const locale = useLocale();
   const products = useCatalogProducts();
   const sizes = useSizeGuideSizes();
   const {
@@ -242,7 +241,7 @@ export function CartSlider() {
                             onClick={closeCart}
                             className="mt-3 inline-flex rounded-lg bg-white px-3 py-2 text-xs font-bold text-[#0F1A26] transition hover:bg-[#EEBC3F]/20"
                           >
-                            {locale === "ar" ? "تعديل الباقة" : "Edit bundle"}
+                            {t("editBundle")}
                           </Link>
                         )}
                       </div>

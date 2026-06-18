@@ -35,11 +35,11 @@ export async function TravelSets() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 items-stretch">
+        <div className="-mx-4 flex snap-x items-stretch gap-4 overflow-x-auto px-4 pb-3 no-scrollbar sm:-mx-6 sm:px-6 md:mx-0 md:grid md:grid-cols-2 md:gap-6 md:overflow-visible md:px-0 md:pb-0 lg:grid-cols-3">
           {bundles.map((bundle) => (
             <div
               key={bundle.id}
-              className="group bg-white rounded-2xl overflow-hidden border border-[#0F1A26]/10 hover:border-[#EEBC3F] transition-all hover:shadow-xl flex flex-col h-full"
+              className="group flex h-full w-[86vw] max-w-[350px] shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-[#0F1A26]/10 bg-white transition-all hover:border-[#EEBC3F] hover:shadow-xl md:w-auto md:max-w-none"
             >
               {/* Bundle Image - Smaller aspect ratio */}
               <div className="relative">

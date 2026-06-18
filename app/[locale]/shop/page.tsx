@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, Suspense } from "react";
 import { Link, useRouter } from "@/i18n/routing";
 import { useSearchParams } from "next/navigation";
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,8 @@ import { getStockLabel, isProductOutOfStock } from "@/lib/product-stock";
 
 function ShopContent() {
   const t = useTranslations('shop');
-  const locale = useLocale();
+  const toastT = useTranslations('commerceToast');
+  const stockT = useTranslations('stock');
   const router = useRouter();
   const products = useCatalogProducts();
   const sizes = useSizeGuideSizes();
@@ -43,6 +44,11 @@ function ShopContent() {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [hideNav, setHideNav] = useState(false);
+  const stockLabels = {
+    inStock: stockT("inStock"),
+    lowStock: stockT("lowStock"),
+    outOfStock: stockT("outOfStock"),
+  };
   const [currentPage, setCurrentPage] = useState(1);
   const [quickSelections, setQuickSelections] = useState<Record<number, { size?: string; color?: string }>>({});
   const PRODUCTS_PER_PAGE = 12;
@@ -328,14 +334,14 @@ function ShopContent() {
     if (isProductOutOfStock(product)) return;
     addToCart(getQuickCartItem(product), { openCart: false });
     showToast({
-      title: locale === "ar" ? "اتضاف للسلة" : "Added to cart",
+      title: toastT("addedToCart"),
       description: product.name,
       action: {
-        label: locale === "ar" ? "إتمام الطلب" : "Checkout",
+        label: toastT("checkout"),
         onClick: () => router.push("/checkout"),
       },
       cancel: {
-        label: locale === "ar" ? "كمل تسوق" : "Keep shopping",
+        label: toastT("keepShopping"),
         onClick: () => {},
       },
     });
@@ -377,12 +383,12 @@ function ShopContent() {
         {/* Category Tabs - Clean */}
         <div ref={categoryTabsRef} className="bg-white border-b border-[#0F1A26]/5 sticky top-0 z-[60]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex overflow-x-auto gap-2 py-4 no-scrollbar">
+            <div className="flex snap-x overflow-x-auto gap-2 py-4 no-scrollbar">
               {categories.map((cat) => (
                 <Link
                   key={cat.id}
                   href={cat.id === "all" ? "/shop" : `/shop?category=${cat.id}`}
-                  className={`px-5 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-300 ${
+                  className={`snap-start px-5 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-300 ${
                     activeCategory === cat.id
                       ? "bg-[#0F1A26] text-white"
                       : "bg-[#F8F6F3] text-[#0F1A26]/70 hover:text-[#0F1A26]"
@@ -677,7 +683,7 @@ function ShopContent() {
                             <span className={`mb-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${
                               isUnavailable ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"
                             }`}>
-                              {getStockLabel(product, locale)}
+                              {getStockLabel(product, stockLabels)}
                             </span>
                           )}
                         </Link>
@@ -772,19 +778,19 @@ function ShopContent() {
                               aria-label={t('quickAdd.add')}
                               onClick={() => handleQuickAdd(product)}
                               disabled={isUnavailable}
-                              className="h-9 rounded-xl bg-[#F8F6F3] border border-[#0F1A26]/10 text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white px-2 text-xs font-bold"
+                              className="h-10 rounded-xl bg-[#F8F6F3] border border-[#0F1A26]/10 text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white px-2 text-xs font-bold"
                               variant="outline"
                             >
-                              <span className="truncate">{isUnavailable ? getStockLabel(product, locale) : t('quickAdd.add')}</span>
+                              <span className="truncate">{isUnavailable ? getStockLabel(product, stockLabels) : t('quickAdd.add')}</span>
                             </Button>
                             <Button
                               type="button"
                               aria-label={t('quickAdd.buy')}
                               onClick={() => handleQuickBuy(product)}
                               disabled={isUnavailable}
-                              className="h-9 rounded-xl bg-[#EEBC3F] text-[#0F1A26] hover:bg-[#d4a535] px-2 text-xs font-bold shadow-sm shadow-[#EEBC3F]/25"
+                              className="h-10 rounded-xl bg-[#EEBC3F] text-[#0F1A26] hover:bg-[#d4a535] px-2 text-xs font-bold shadow-sm shadow-[#EEBC3F]/25"
                             >
-                              <span className="truncate">{isUnavailable ? getStockLabel(product, locale) : t('quickAdd.buy')}</span>
+                              <span className="truncate">{isUnavailable ? getStockLabel(product, stockLabels) : t('quickAdd.buy')}</span>
                             </Button>
                           </div>
                         </div>

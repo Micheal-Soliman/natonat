@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import type React from "react";
 import Image from "next/image";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/app/lib/cart-context";
@@ -46,7 +46,8 @@ export function BundleQuickCustomizer({
   stopInteraction,
 }: BundleQuickCustomizerProps) {
   const t = useTranslations("shop.quickAdd");
-  const locale = useLocale();
+  const toastT = useTranslations("commerceToast");
+  const bundleT = useTranslations("bundleCustomizer");
   const router = useRouter();
   const { addToCart, setBuyNowItem } = useCart();
   const { showToast } = useToast();
@@ -182,20 +183,20 @@ export function BundleQuickCustomizer({
       const selectedProduct = products.find((candidate) => candidate.id === selection.productId);
       return selectedProduct ? isProductOutOfStock(selectedProduct) : false;
     });
-  const unavailableLabel = locale === "ar" ? "غير متاح" : "Unavailable";
+  const unavailableLabel = bundleT("unavailable");
 
   const handleAdd = () => {
     if (hasUnavailableSelection) return;
     addToCart(cartItem, { openCart: false });
     showToast({
-      title: locale === "ar" ? "اتضافت الباقة للسلة" : "Bundle added to cart",
+      title: toastT("bundleAddedToCart"),
       description: product.name,
       action: {
-        label: locale === "ar" ? "إتمام الطلب" : "Checkout",
+        label: toastT("checkout"),
         onClick: () => router.push("/checkout"),
       },
       cancel: {
-        label: locale === "ar" ? "كمل تسوق" : "Keep shopping",
+        label: toastT("keepShopping"),
         onClick: () => {},
       },
     });
@@ -280,7 +281,7 @@ export function BundleQuickCustomizer({
           </div>
           {hasUnavailableSelection && (
             <div className="mb-2 rounded-lg bg-red-50 px-2 py-1.5 text-[11px] font-bold text-red-700">
-              {locale === "ar" ? "اختيار داخل الباقة غير متاح حاليًا" : "One bundle item is currently unavailable"}
+              {bundleT("oneItemUnavailable")}
             </div>
           )}
 
@@ -408,7 +409,7 @@ export function BundleQuickCustomizer({
 
       <div className={`mt-2 rounded-xl p-2 ${isDark ? "bg-black/10 text-white/70" : "bg-white text-[#0F1A26]/65"}`}>
         <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider">
-          {locale === "ar" ? "مراجعة الباقة" : "Bundle review"}
+          {bundleT("review")}
         </p>
         <div className="space-y-1">
           {resolvedSelections.map((selection, index) => (
@@ -430,7 +431,7 @@ export function BundleQuickCustomizer({
           aria-label={t("add")}
           onClick={handleAdd}
           disabled={hasUnavailableSelection}
-          className={`h-9 rounded-xl px-2 text-xs font-bold ${
+          className={`h-10 rounded-xl px-2 text-xs font-bold ${
             isDark
               ? "border border-white/10 bg-white/10 text-white hover:bg-white hover:text-[#0F1A26]"
               : "border border-[#0F1A26]/10 bg-[#F8F6F3] text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white"
@@ -444,7 +445,7 @@ export function BundleQuickCustomizer({
           aria-label={t("buy")}
           onClick={handleBuy}
           disabled={hasUnavailableSelection}
-          className="h-9 rounded-xl bg-[#EEBC3F] px-2 text-xs font-bold text-[#0F1A26] shadow-sm shadow-[#EEBC3F]/25 hover:bg-[#d4a535]"
+          className="h-10 rounded-xl bg-[#EEBC3F] px-2 text-xs font-bold text-[#0F1A26] shadow-sm shadow-[#EEBC3F]/25 hover:bg-[#d4a535]"
         >
           <span className="truncate">{hasUnavailableSelection ? unavailableLabel : t("buy")}</span>
         </Button>

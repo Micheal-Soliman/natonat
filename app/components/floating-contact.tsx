@@ -12,7 +12,7 @@ export function FloatingContact() {
   const contacts = [
     {
       id: "whatsapp",
-      label: "واتساب",
+      label: t("whatsapp"),
       icon: MessageCircle,
       href: "https://wa.me/201070004227",
       color: "bg-[#0F1A26]",
@@ -20,7 +20,7 @@ export function FloatingContact() {
     },
     {
       id: "phone",
-      label: "اتصل بنا",
+      label: t("phone"),
       icon: Phone,
       href: "tel:+201070004227",
       color: "bg-[#EEBC3F]",
