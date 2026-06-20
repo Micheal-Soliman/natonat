@@ -511,8 +511,8 @@ function CheckoutContent() {
     }
   };
 
-  const [paymentMethod, setPaymentMethod] = useState("cod");
-  const [deliveryMethod, setDeliveryMethod] = useState("delivery");
+  const [paymentMethod, setPaymentMethod] = useState("");
+  const [deliveryMethod, setDeliveryMethod] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess] = useState(false);
   const [orderId] = useState<string>("");
@@ -553,10 +553,15 @@ function CheckoutContent() {
 
     if (!emailValue) nextErrors.email = requiredMessage;
     else if (!isValidEmail) nextErrors.email = invalidEmailMessage;
-    if (!formData.firstName.trim()) nextErrors.firstName = requiredMessage;
-    if (!formData.lastName.trim()) nextErrors.lastName = requiredMessage;
-    if (!formData.phone.trim()) nextErrors.phone = requiredMessage;
-    else if (!isValidEgyptPhone) nextErrors.phone = invalidPhoneMessage;
+
+    if (!deliveryMethod) nextErrors.deliveryMethod = requiredMessage;
+
+    if (deliveryMethod) {
+      if (!formData.firstName.trim()) nextErrors.firstName = requiredMessage;
+      if (!formData.lastName.trim()) nextErrors.lastName = requiredMessage;
+      if (!formData.phone.trim()) nextErrors.phone = requiredMessage;
+      else if (!isValidEgyptPhone) nextErrors.phone = invalidPhoneMessage;
+    }
 
     if (deliveryMethod === "delivery") {
       if (!formData.address.trim()) nextErrors.address = requiredMessage;
@@ -564,6 +569,8 @@ function CheckoutContent() {
         nextErrors.city = invalidCityMessage;
       }
     }
+
+    if (!paymentMethod) nextErrors.paymentMethod = requiredMessage;
 
     if (Object.keys(nextErrors).length > 0) {
       setFieldErrors(nextErrors);
@@ -604,9 +611,7 @@ function CheckoutContent() {
           throw new Error("NEXT_PUBLIC_PAYMOB_PUBLIC_KEY is not set");
         }
 
-        const origin = window.location.origin;
-        const notificationUrl = `${origin}/api/paymob/webhook`;
-        const redirectionUrl = `${origin}/${locale}/order-confirmed?order_ref=${encodeURIComponent(orderRef)}&method=card`;
+        const origin = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
 
         const intentionItems = checkoutItems.map((item) => ({
           name: item.name,
@@ -670,8 +675,6 @@ function CheckoutContent() {
               payment_discount_percent: paymentDiscount > 0 ? 2 : null,
             },
             special_reference: orderRef,
-            notification_url: notificationUrl,
-            redirection_url: redirectionUrl,
           }),
         });
 
@@ -882,6 +885,7 @@ function CheckoutContent() {
 
   // Shipping: 75 EGP for Cairo, Giza & Alexandria, 100 EGP for other cities, free for orders > 1000, pickup = 0
   const shipping = useMemo(() => {
+    if (!deliveryMethod) return 0;
     if (deliveryMethod === "pickup") return 0;
     if (checkoutSubtotal > 1000) return 0;
 
@@ -899,7 +903,7 @@ function CheckoutContent() {
   // 2% discount for non-COD payment methods
   const paymentDiscount = useMemo(
     () =>
-      paymentMethod !== "cod"
+      paymentMethod && paymentMethod !== "cod"
         ? Math.round((checkoutSubtotal + shipping) * 0.02)
         : 0,
     [paymentMethod, checkoutSubtotal, shipping]
@@ -943,13 +947,31 @@ function CheckoutContent() {
     ) : null;
 
   const checkoutStepLabels = t.raw("steps") as string[];
+  const contactStepDone = Boolean(formData.email.trim());
+  const deliveryStepDone =
+    Boolean(deliveryMethod) &&
+    Boolean(formData.firstName.trim() && formData.lastName.trim() && formData.phone.trim()) &&
+    (deliveryMethod === "pickup" || Boolean(formData.city && formData.address.trim()));
+  const paymentStepDone = Boolean(paymentMethod);
+  const reviewStepDone = contactStepDone && deliveryStepDone && paymentStepDone && hasCheckoutItems;
   const checkoutStepStatus = [
-    Boolean(formData.email && formData.firstName && formData.lastName && formData.phone),
-    deliveryMethod === "pickup" || Boolean(formData.city && formData.address),
-    Boolean(paymentMethod),
-    hasCheckoutItems,
+    contactStepDone,
+    deliveryStepDone,
+    paymentStepDone,
+    reviewStepDone,
   ];
   const visibleCheckoutStepLabels = checkoutStepLabels;
+  const checkoutStepAnchors = [
+    "#checkout-details",
+    "#checkout-shipping",
+    "#checkout-payment",
+    "#checkout-review",
+  ];
+  const firstIncompleteCheckoutStep = checkoutStepStatus.findIndex((isDone) => !isDone);
+  const currentCheckoutStepIndex =
+    firstIncompleteCheckoutStep === -1
+      ? visibleCheckoutStepLabels.length - 1
+      : firstIncompleteCheckoutStep;
 
   if (isSuccess) {
     return (
@@ -1086,21 +1108,49 @@ function CheckoutContent() {
             {t('backToCart')}
           </Link>
 
-          <div className="mb-8 rounded-2xl border border-[#0F1A26]/5 bg-white p-4 shadow-sm shadow-[#0F1A26]/5">
-            <div className="grid grid-cols-4 gap-2">
+          <div className="mb-8 rounded-2xl border border-[#0F1A26]/5 bg-white p-4 shadow-sm shadow-[#0F1A26]/5 sm:p-5">
+            <div className="mb-4 flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#EEBC3F]">
+                  {currentCheckoutStepIndex + 1}/{visibleCheckoutStepLabels.length}
+                </p>
+                <h2 className="mt-1 truncate text-lg font-black text-[#0F1A26] sm:text-xl">
+                  {visibleCheckoutStepLabels[currentCheckoutStepIndex]}
+                </h2>
+              </div>
+              <div className="hidden rounded-full bg-[#F1EBE3] px-4 py-2 text-xs font-bold text-[#0F1A26]/60 sm:block">
+                {checkoutStepStatus.filter(Boolean).length}/{visibleCheckoutStepLabels.length}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {visibleCheckoutStepLabels.map((label, index) => {
                 const isDone = checkoutStepStatus[index];
                 const isCurrent =
                   !isDone &&
                   checkoutStepStatus.slice(0, index).every(Boolean);
+                const isActive = isDone || isCurrent || index === currentCheckoutStepIndex;
 
                 return (
-                  <div key={label} className="min-w-0">
-                    <div
-                      className={`mb-2 h-1.5 rounded-full transition-colors ${
-                        isDone || isCurrent ? "bg-[#EEBC3F]" : "bg-[#0F1A26]/10"
-                      }`}
-                    />
+                  <a
+                    key={label}
+                    href={checkoutStepAnchors[index]}
+                    aria-current={index === currentCheckoutStepIndex ? "step" : undefined}
+                    className={`min-w-0 rounded-2xl border p-3 transition-all ${
+                      isCurrent
+                        ? "border-[#EEBC3F] bg-[#EEBC3F]/10 shadow-sm"
+                        : isDone
+                          ? "border-[#0F1A26]/10 bg-[#F8F6F3]"
+                          : "border-[#0F1A26]/10 bg-white"
+                    }`}
+                  >
+                    <div className="mb-2 h-1.5 rounded-full bg-[#0F1A26]/10">
+                      <div
+                        className={`h-full rounded-full transition-all ${
+                          isActive ? "w-full bg-[#EEBC3F]" : "w-0 bg-[#EEBC3F]"
+                        }`}
+                      />
+                    </div>
                     <div className="flex items-center gap-2">
                       <span
                         className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
@@ -1114,14 +1164,14 @@ function CheckoutContent() {
                         {isDone ? <Check className="h-3.5 w-3.5" /> : index + 1}
                       </span>
                       <span
-                        className={`truncate text-xs font-bold ${
+                        className={`min-w-0 truncate text-xs font-bold sm:text-[13px] ${
                           isDone || isCurrent ? "text-[#0F1A26]" : "text-[#0F1A26]/35"
                         }`}
                       >
                         {label}
                       </span>
                     </div>
-                  </div>
+                  </a>
                 );
               })}
             </div>
@@ -1132,7 +1182,7 @@ function CheckoutContent() {
             <div className="flex-1">
               <form id="checkout-form" onSubmit={handleSubmit} className="space-y-6" noValidate>
                 {/* Contact */}
-                <div className="bg-white rounded-2xl p-6 border border-[#0F1A26]/5">
+                <div id="checkout-details" className="scroll-mt-28 bg-white rounded-2xl p-6 border border-[#0F1A26]/5">
                   <h2 className="text-lg font-semibold text-[#0F1A26] mb-4 flex items-center gap-2">
                     <Mail className="w-5 h-5 text-[#EEBC3F]" />
                     {t("form.contact.title")}
@@ -1196,7 +1246,10 @@ function CheckoutContent() {
                         name="delivery"
                         value="delivery"
                         checked={deliveryMethod === "delivery"}
-                        onChange={(e) => setDeliveryMethod(e.target.value)}
+                        onChange={(e) => {
+                          setDeliveryMethod(e.target.value);
+                          setFieldErrors((current) => ({ ...current, deliveryMethod: "" }));
+                        }}
                         className="w-4 h-4 accent-[#EEBC3F] [color-scheme:light]"
                       />
                       <div className="flex-1">
@@ -1220,7 +1273,10 @@ function CheckoutContent() {
                         name="delivery"
                         value="pickup"
                         checked={deliveryMethod === "pickup"}
-                        onChange={(e) => setDeliveryMethod(e.target.value)}
+                        onChange={(e) => {
+                          setDeliveryMethod(e.target.value);
+                          setFieldErrors((current) => ({ ...current, deliveryMethod: "" }));
+                        }}
                         className="w-4 h-4 accent-[#EEBC3F] [color-scheme:light]"
                       />
                       <div className="flex-1">
@@ -1333,12 +1389,13 @@ function CheckoutContent() {
                         </div>
                       </div>
                     )}
+                    {renderFieldError("deliveryMethod")}
                   </div>
                 </div>
 
                 {/* Shipping - only show when delivery is selected */}
                 {deliveryMethod === "delivery" && (
-                  <div className="bg-white rounded-2xl p-6 border border-[#0F1A26]/5">
+                  <div id="checkout-shipping" className="scroll-mt-28 bg-white rounded-2xl p-6 border border-[#0F1A26]/5">
                     <h2 className="text-lg font-semibold text-[#0F1A26] mb-4 flex items-center gap-2">
                       <Truck className="w-5 h-5 text-[#EEBC3F]" />
                       {t("form.shipping.title")}
@@ -1586,7 +1643,7 @@ function CheckoutContent() {
                 )}
 
                 {/* Payment */}
-                <div className="bg-white rounded-2xl p-6 border border-[#0F1A26]/10 shadow-sm">
+                <div id="checkout-payment" className="scroll-mt-28 bg-white rounded-2xl p-6 border border-[#0F1A26]/10 shadow-sm">
                   <h2 className="text-lg font-bold text-[#0F1A26] mb-4 flex items-center gap-2">
                     <CreditCard className="w-5 h-5 text-[#EEBC3F]" />
                     {t("form.payment.title")}
@@ -1605,7 +1662,10 @@ function CheckoutContent() {
                         name="payment"
                         value="card"
                         checked={paymentMethod === "card"}
-                        onChange={(e) => setPaymentMethod(e.target.value)}
+                        onChange={(e) => {
+                          setPaymentMethod(e.target.value);
+                          setFieldErrors((current) => ({ ...current, paymentMethod: "" }));
+                        }}
                         className="w-5 h-5 mt-1 accent-[#EEBC3F] [color-scheme:light]"
                       />
 
@@ -1638,7 +1698,10 @@ function CheckoutContent() {
                         name="payment"
                         value="cod"
                         checked={paymentMethod === "cod"}
-                        onChange={(e) => setPaymentMethod(e.target.value)}
+                        onChange={(e) => {
+                          setPaymentMethod(e.target.value);
+                          setFieldErrors((current) => ({ ...current, paymentMethod: "" }));
+                        }}
                         className="w-5 h-5 accent-[#EEBC3F] [color-scheme:light]"
                       />
                       <div className="flex-1">
@@ -1662,7 +1725,10 @@ function CheckoutContent() {
                         name="payment"
                         value="instapay"
                         checked={paymentMethod === "instapay"}
-                        onChange={(e) => setPaymentMethod(e.target.value)}
+                        onChange={(e) => {
+                          setPaymentMethod(e.target.value);
+                          setFieldErrors((current) => ({ ...current, paymentMethod: "" }));
+                        }}
                         className="w-5 h-5 mt-1 accent-[#EEBC3F] [color-scheme:light]"
                       />
 
@@ -1720,6 +1786,7 @@ function CheckoutContent() {
                         </p>
                       </div>
                     )}
+                    {renderFieldError("paymentMethod")}
                   </div>
                   <div className="mt-4 rounded-xl bg-[#0F1A26]/5 px-4 py-3 text-xs font-semibold text-[#0F1A26]/65">
                     {t("hints.securePayment")}
@@ -1734,7 +1801,11 @@ function CheckoutContent() {
                   {isSubmitting
                     ? t("form.processing")
                     : mounted
-                      ? deliveryMethod === "delivery" && !formData.city
+                      ? !deliveryMethod
+                        ? `${t("form.completeOrder", {
+                          total: checkoutSubtotal.toString(),
+                        })} (${t("form.delivery.title")})`
+                        : deliveryMethod === "delivery" && !formData.city
                         ? `${t("form.completeOrder", {
                           total: checkoutSubtotal.toString(),
                         })} (${t("form.selectCity")})`
@@ -1750,7 +1821,7 @@ function CheckoutContent() {
 
             {/* Order Summary */}
             <div className="lg:w-96 order-first lg:order-last">
-              <div className="bg-white rounded-2xl p-6 border border-[#0F1A26]/5 lg:sticky lg:top-28">
+              <div id="checkout-review" className="scroll-mt-28 bg-white rounded-2xl p-6 border border-[#0F1A26]/5 lg:sticky lg:top-28">
                 <h2 className="text-lg font-semibold text-[#0F1A26] mb-2">{t('summary.title')}</h2>
                 {buyNowItem ? (
                   <p className="text-xs text-[#EEBC3F] font-medium mb-4">{t('summary.buyNowMode') || '🛒 Buy Now - Quick Purchase'}</p>
@@ -1833,7 +1904,9 @@ function CheckoutContent() {
                   <div className="flex justify-between text-sm">
                     <span className="text-[#0F1A26]/60">{t('summary.shipping')}</span>
                     <span className="text-[#0F1A26] font-medium">
-                      {deliveryMethod === "delivery" && formData.city ? (
+                      {!deliveryMethod ? (
+                        <span className="text-[#0F1A26]/50 font-medium text-xs">{t("form.delivery.title")}</span>
+                      ) : deliveryMethod === "delivery" && formData.city ? (
                         shipping === 0
                           ? `${t('summary.free')} ${t('summary.freeShippingOver1000') || '(Order > 1000 EGP)'}`
                           : `EGP ${shipping}`
@@ -1876,7 +1949,9 @@ function CheckoutContent() {
               <p className="truncate">
                 {t("summary.itemCount", { count: checkoutItemCount })}
                 {" · "}
-                {deliveryMethod === "delivery" && !formData.city
+                {!deliveryMethod
+                  ? t("form.delivery.title")
+                  : deliveryMethod === "delivery" && !formData.city
                   ? t("summary.selectCityForShipping")
                   : shipping === 0
                     ? t("summary.freeShipping")
@@ -1899,7 +1974,9 @@ function CheckoutContent() {
           </div>
           <div className="hidden">
             <span>
-              {deliveryMethod === "delivery" && !formData.city
+              {!deliveryMethod
+                ? t("form.delivery.title")
+                : deliveryMethod === "delivery" && !formData.city
                 ? t("summary.selectCityForShipping")
                 : shipping === 0
                   ? t("summary.freeShipping")
@@ -1918,9 +1995,11 @@ function CheckoutContent() {
             {isSubmitting
               ? t("form.processing")
               : mounted
-                ? deliveryMethod === "delivery" && !formData.city
-                  ? `${t("form.completeOrder", { total: checkoutSubtotal.toString() })} (${t("form.selectCity")})`
-                  : t("form.completeOrder", { total: finalTotal.toString() })
+                ? !deliveryMethod
+                  ? `${t("form.completeOrder", { total: checkoutSubtotal.toString() })} (${t("form.delivery.title")})`
+                  : deliveryMethod === "delivery" && !formData.city
+                    ? `${t("form.completeOrder", { total: checkoutSubtotal.toString() })} (${t("form.selectCity")})`
+                    : t("form.completeOrder", { total: finalTotal.toString() })
                 : t("form.completeOrder", { total: "--" })}
           </Button>
         </div>
