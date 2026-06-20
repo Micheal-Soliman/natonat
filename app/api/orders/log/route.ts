@@ -49,9 +49,38 @@ function getOrderEventKey(body: OrderLogBody, status: string) {
 
 function hasCheckoutEmailAlreadySent(existing: StoredOrder | undefined) {
   return Boolean(
-    existing?.source === "checkout" ||
-      existing?.history?.some((entry) => entry.source === "checkout")
+    existing?.email_sent_at ||
+      existing?.history?.some((entry) => entry.source === "email_notification")
   );
+}
+
+function getOrderStatusValue(value: unknown) {
+  return typeof value === "string" ? value.toLowerCase() : "";
+}
+
+function shouldSendOrderEmail(order: StoredOrder) {
+  const source = getOrderStatusValue(order.source);
+  const status = getOrderStatusValue(order.status);
+  const paymentStatus = getOrderStatusValue(order.payment_status);
+  const deliveryMethod = getOrderStatusValue(order.delivery_method);
+
+  if (status === "created" || status === "pending" || paymentStatus === "pending") {
+    return false;
+  }
+
+  if (source === "checkout") {
+    return status === "confirmed" || paymentStatus === "cash on delivery";
+  }
+
+  if (source === "paymob_webhook_aramex") {
+    return paymentStatus === "paid";
+  }
+
+  if (source === "paymob_webhook") {
+    return paymentStatus === "paid" && deliveryMethod !== "delivery";
+  }
+
+  return false;
 }
 
 type OrderItem = {
@@ -329,21 +358,36 @@ export async function POST(req: Request) {
       ? `https://www.aramex.com/eg/ar/track/results?mode=0&ShipmentNumber=${trackingNumber}`
       : "";
 
-    const updatedOrder = { 
-      ...existing, 
-      ...body, 
+    let updatedOrder = {
+      ...existing,
+      ...body,
       history,
-      tracking_link: trackingLink 
-    };
+      tracking_link: trackingLink
+    } as StoredOrder;
 
-    orderStore.set(orderRef, updatedOrder);
-    
-    // Send email notification for new orders from checkout
-    if (body.source === "checkout" && !hasCheckoutEmailAlreadySent(existing)) {
+    // Send email notification only after the order is genuinely confirmable.
+    // Card orders are first stored as created/Pending before Paymob redirects;
+    // their email waits for a successful Paymob webhook.
+    if (shouldSendOrderEmail(updatedOrder) && !hasCheckoutEmailAlreadySent(existing)) {
+      const emailHistoryEntry: OrderHistoryEntry = {
+        status: "email_sent",
+        timestamp: new Date().toISOString(),
+        source: "email_notification",
+        event_key: `email_notification:${orderRef}`,
+      };
+
+      updatedOrder = {
+        ...updatedOrder,
+        email_sent_at: emailHistoryEntry.timestamp,
+        history: [...history, emailHistoryEntry],
+      };
+
       // Don't await to avoid blocking the response
       sendOrderEmail(updatedOrder).catch(err => console.error("Failed to send order email:", err));
       sendCustomerConfirmationEmail(updatedOrder).catch(err => console.error("Failed to send customer confirmation email:", err));
     }
+
+    orderStore.set(orderRef, updatedOrder);
 
     // Forward the ENTIRE updated order to Google Sheets
     body = updatedOrder;
