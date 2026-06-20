@@ -863,6 +863,9 @@ function CheckoutContent() {
 
     } catch (error) {
       console.error("Failed to log order to Google Sheets:", error);
+      setIsSubmitting(false);
+      setSubmitError(error instanceof Error ? error.message : "Failed to log order");
+      return;
     }
 
 

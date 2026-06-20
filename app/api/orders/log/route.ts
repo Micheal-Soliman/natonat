@@ -76,6 +76,10 @@ function shouldSendOrderEmail(order: StoredOrder) {
     return paymentStatus === "paid";
   }
 
+  if (source === "paymob_webhook_aramex_failed") {
+    return paymentStatus === "paid";
+  }
+
   if (source === "paymob_webhook") {
     return paymentStatus === "paid" && deliveryMethod !== "delivery";
   }

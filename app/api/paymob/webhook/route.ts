@@ -313,6 +313,21 @@ export async function POST(req: Request) {
             });
           } else {
             console.error("[Webhook] Failed to create Aramex shipment:", shipmentData.error);
+            await fetch(`${appOrigin}/api/orders/log`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                source: "paymob_webhook_aramex_failed",
+                order_ref: paymentDetails.special_reference,
+                status: "confirmed",
+                payment_status: "Paid",
+                aramex: {
+                  error: shipmentData.error || shipmentData.details || "Aramex shipment failed",
+                },
+                payment: paymentDetails,
+                updated_at: new Date().toISOString(),
+              }),
+            });
           }
         } else if (orderData?.aramex?.trackingNumber) {
           if (process.env.NODE_ENV !== "production") {
@@ -332,6 +347,21 @@ export async function POST(req: Request) {
       }
     } catch (err) {
       console.error("[Webhook] Aramex shipment creation error:", err);
+      await fetch(`${appOrigin}/api/orders/log`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          source: "paymob_webhook_aramex_failed",
+          order_ref: paymentDetails.special_reference,
+          status: "confirmed",
+          payment_status: "Paid",
+          aramex: {
+            error: err instanceof Error ? err.message : "Aramex shipment creation error",
+          },
+          payment: paymentDetails,
+          updated_at: new Date().toISOString(),
+        }),
+      });
       // Don't block webhook response if shipment fails
     }
   }
