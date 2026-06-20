@@ -5,7 +5,7 @@ export function getProductStockStatus(product: Product) {
 }
 
 export function isProductOutOfStock(product: Product) {
-  return getProductStockStatus(product) === "out_of_stock";
+  return getProductStockStatus(product) === "out_of_stock" || product.stockQuantity === 0;
 }
 
 type StockLabels = {

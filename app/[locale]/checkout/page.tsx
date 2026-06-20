@@ -34,6 +34,9 @@ const popularCityNames = [
   "Port Said",
 ];
 
+const ARAMEX_CITIES_CACHE_KEY = "natonat-aramex-cities-eg";
+const ARAMEX_CITIES_CACHE_TTL = 24 * 60 * 60 * 1000;
+
 const citySearchAliases: Record<string, string[]> = {
   cairo: ["cairo", "القاهرة", "قاهره", "القاهره", "el qahera", "alqahira"],
   "new cairo": ["new cairo", "التجمع", "القاهرة الجديدة", "القاهره الجديده", "tagamoa", "tagamo3", "newcairo"],
@@ -75,22 +78,128 @@ function getCitySearchTerms(city: string) {
   return [city, ...aliasTerms].map(normalizeCitySearch);
 }
 
+function isDiscountShippingCity(city: string) {
+  const cityLower = normalizeCitySearch(city);
+  const cairoDistricts = [
+    "cairo",
+    "new cairo",
+    "nasr city",
+    "maadi",
+    "heliopolis",
+    "zamalek",
+    "down town",
+    "ain shams",
+    "abasya",
+    "el rehab",
+  ];
+  const gizaDistricts = [
+    "giza",
+    "dokki",
+    "mohandiseen",
+    "agouza",
+    "imbaba",
+    "sheikh zayed city",
+    "october city",
+  ];
+  const alexDistricts = ["alexandria"];
+
+  return (
+    cairoDistricts.includes(cityLower) ||
+    gizaDistricts.includes(cityLower) ||
+    alexDistricts.includes(cityLower)
+  );
+}
+
+function getShippingRule({
+  deliveryMethod,
+  subtotal,
+  city,
+}: {
+  deliveryMethod: string;
+  subtotal: number;
+  city: string;
+}) {
+  if (deliveryMethod === "pickup") return "pickup_free";
+  if (subtotal > 1000) return "subtotal_over_1000_free";
+  return isDiscountShippingCity(city)
+    ? "cairo_giza_alex_75"
+    : "other_governorates_100";
+}
+
+function normalizeCitiesPayload(data: unknown) {
+  return Array.from(new Set(Array.isArray(data) ? data : []))
+    .filter((city): city is string => typeof city === "string" && city.trim().length > 0)
+    .sort((a, b) => a.localeCompare(b));
+}
+
+function readCachedAramexCities() {
+  try {
+    const raw = window.localStorage.getItem(ARAMEX_CITIES_CACHE_KEY);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as {
+      cachedAt?: number;
+      cities?: unknown;
+    };
+
+    if (
+      !parsed.cachedAt ||
+      Date.now() - parsed.cachedAt > ARAMEX_CITIES_CACHE_TTL
+    ) {
+      return null;
+    }
+
+    const cities = normalizeCitiesPayload(parsed.cities);
+    return cities.length > 0 ? cities : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedAramexCities(cities: string[]) {
+  try {
+    window.localStorage.setItem(
+      ARAMEX_CITIES_CACHE_KEY,
+      JSON.stringify({
+        cachedAt: Date.now(),
+        cities,
+      })
+    );
+  } catch {
+    // Ignore storage errors; checkout can still fetch cities normally.
+  }
+}
+
 function serializeOrderItem(item: CartItem, products: Product[]) {
   const catalogProduct = products.find((product) => product.id === item.id);
   const color =
     catalogProduct?.colors?.find((variant) => variant.id === item.color)?.name ||
     item.color ||
     catalogProduct?.color;
+  const lineId = [
+    item.id,
+    item.slug,
+    item.size || "no-size",
+    item.color || "no-color",
+    item.isBundle ? item.bundleKey || "bundle" : "",
+  ]
+    .filter(Boolean)
+    .join(":");
 
-  const bundleSelections = item.bundleSelections?.map((selection) => {
+  const bundleSelections = item.bundleSelections?.map((selection, index) => {
     const selectedProduct = products.find((product) => product.id === selection.productId);
     const selectedSizePrice =
       selection.size && selectedProduct?.sizePrices
         ? selectedProduct.sizePrices[selection.size as keyof typeof selectedProduct.sizePrices]
         : undefined;
+    const selectionPrice =
+      selection.price ?? selectedSizePrice?.price ?? selectedProduct?.price;
+    const selectionQuantity = selection.quantity || 1;
 
     return {
       ...selection,
+      selection_id: `${lineId}:selection:${index + 1}`,
+      bundle_index: index + 1,
       productName: selection.productName || selectedProduct?.name || "",
       productSlug: selection.productSlug || selectedProduct?.slug,
       productType: selection.productType || selectedProduct?.type,
@@ -98,7 +207,9 @@ function serializeOrderItem(item: CartItem, products: Product[]) {
         selectedProduct?.colors?.find((variant) => variant.id === selection.color)?.name ||
         selection.color ||
         selectedProduct?.color,
-      price: selection.price ?? selectedSizePrice?.price ?? selectedProduct?.price,
+      price: selectionPrice,
+      unit_price_egp: selectionPrice,
+      line_total_egp: selectionPrice ? selectionPrice * selectionQuantity : undefined,
       originalPrice:
         selection.originalPrice ??
         selectedSizePrice?.originalPrice ??
@@ -107,10 +218,14 @@ function serializeOrderItem(item: CartItem, products: Product[]) {
   });
 
   return {
+    line_id: lineId,
     id: item.id,
     name: item.name,
     slug: item.slug,
     price_egp: item.price,
+    unit_price_egp: item.price,
+    line_total_egp: item.price * item.quantity,
+    currency: "EGP",
     original_price_egp: item.originalPrice,
     quantity: item.quantity,
     size: item.size,
@@ -299,25 +414,43 @@ function CheckoutContent() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
+    const cachedCities = readCachedAramexCities();
+    const controller = new AbortController();
+
+    if (cachedCities) {
+      setAramexCities(cachedCities);
+    }
+
     async function getCities() {
-      setLoadingCities(true);
+      if (!cachedCities) {
+        setLoadingCities(true);
+      }
+
       try {
-        const res = await fetch("/api/aramex/cities?countryCode=EG");
+        const res = await fetch("/api/aramex/cities?countryCode=EG", {
+          signal: controller.signal,
+        });
+
         if (res.ok) {
           const data = await res.json();
-          // Filter out duplicates and empty strings
-          const uniqueCities = Array.from(new Set(data as string[]))
-            .filter(Boolean)
-            .sort((a, b) => a.localeCompare(b));
+          const uniqueCities = normalizeCitiesPayload(data);
+
+          writeCachedAramexCities(uniqueCities);
           setAramexCities(uniqueCities);
         }
       } catch (err) {
+        if (controller.signal.aborted) return;
         console.error("Error fetching Aramex cities:", err);
       } finally {
-        setLoadingCities(false);
+        if (!controller.signal.aborted) {
+          setLoadingCities(false);
+        }
       }
     }
+
     getCities();
+
+    return () => controller.abort();
   }, []);
 
   const filteredCities = useMemo(() => {
@@ -397,6 +530,8 @@ function CheckoutContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+
     setSubmitError("");
 
     if (!hasCheckoutItems) {
@@ -440,21 +575,25 @@ function CheckoutContent() {
     setIsSubmitting(true);
 
     const orderRef = generateOrderRef();
-    window.sessionStorage.setItem(
-      `meta-purchase-payload-${orderRef}`,
-      JSON.stringify({
-        value: finalTotal,
-        currency: "EGP",
-        content_ids: checkoutItems.map((item) => String(item.id)),
-        contents: checkoutItems.map((item) => ({
-          id: String(item.id),
-          quantity: item.quantity,
-          item_price: item.price,
-        })),
-        content_type: "product",
-        num_items: checkoutItems.reduce((sum, item) => sum + item.quantity, 0),
-      }),
-    );
+    try {
+      window.sessionStorage.setItem(
+        `meta-purchase-payload-${orderRef}`,
+        JSON.stringify({
+          value: finalTotal,
+          currency: "EGP",
+          content_ids: checkoutItems.map((item) => String(item.id)),
+          contents: checkoutItems.map((item) => ({
+            id: String(item.id),
+            quantity: item.quantity,
+            item_price: item.price,
+          })),
+          content_type: "product",
+          num_items: checkoutItems.reduce((sum, item) => sum + item.quantity, 0),
+        }),
+      );
+    } catch {
+      // Pixel enrichment is optional; checkout must continue if storage is unavailable.
+    }
 
     if (paymentMethod === "card") {
       try {
@@ -546,13 +685,11 @@ function CheckoutContent() {
           throw new Error("Paymob response missing client_secret");
         }
 
-        const shippingRule = deliveryMethod === "pickup"
-          ? "pickup_free"
-          : checkoutSubtotal > 1000
-            ? "subtotal_over_1000_free"
-            : formData.city === "cairo" || formData.city === "giza" || formData.city === "alexandria"
-              ? "cairo_giza_alex_75"
-              : "other_governorates_100";
+        const shippingRule = getShippingRule({
+          deliveryMethod,
+          subtotal: checkoutSubtotal,
+          city: formData.city,
+        });
 
         const orderLogRes = await fetch("/api/orders/log", {
           method: "POST",
@@ -673,16 +810,11 @@ function CheckoutContent() {
     }
 
     // Step 2: Log order ONCE
-    const shippingRuleCOD =
-      deliveryMethod === "pickup"
-        ? "pickup_free"
-        : checkoutSubtotal > 1000
-          ? "subtotal_over_1000_free"
-          : formData.city === "cairo" ||
-            formData.city === "giza" ||
-            formData.city === "alexandria"
-            ? "cairo_giza_alex_75"
-            : "other_governorates_100";
+    const shippingRuleCOD = getShippingRule({
+      deliveryMethod,
+      subtotal: checkoutSubtotal,
+      city: formData.city,
+    });
 
     try {
       const logRes = await fetch("/api/orders/log", {
@@ -753,18 +885,7 @@ function CheckoutContent() {
     if (deliveryMethod === "pickup") return 0;
     if (checkoutSubtotal > 1000) return 0;
 
-    // Use the same mapping logic as the backend to identify governorates
-    const cairoDistricts = ["cairo", "new cairo", "nasr city", "maadi", "heliopolis", "zamalek", "down town", "ain shams", "abasya", "el rehab"];
-    const gizaDistricts = ["giza", "dokki", "mohandiseen", "agouza", "imbaba", "sheikh zayed city", "october city"];
-    const alexDistricts = ["alexandria"];
-
-    const cityLower = (formData.city || "").toLowerCase();
-    const isCairoGizaAlex =
-      cairoDistricts.includes(cityLower) ||
-      gizaDistricts.includes(cityLower) ||
-      alexDistricts.includes(cityLower);
-
-    return isCairoGizaAlex ? 75 : 100;
+    return isDiscountShippingCity(formData.city) ? 75 : 100;
   }, [
     deliveryMethod,
     checkoutSubtotal,

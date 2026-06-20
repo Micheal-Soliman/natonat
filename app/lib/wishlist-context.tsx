@@ -37,8 +37,9 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
+          const savedItems = Array.isArray(parsed) ? parsed : [];
           // Filter out old items without slug
-          const validItems = parsed
+          const validItems = savedItems
             .filter((item: WishlistItem) => item.slug)
             .map((item: WishlistItem) => {
               const product = products.find((candidate) => candidate.id === item.id);
@@ -69,7 +70,11 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
   // Save to localStorage when items change
   useEffect(() => {
     if (isHydrated) {
-      localStorage.setItem("natonat-wishlist", JSON.stringify(items));
+      try {
+        localStorage.setItem("natonat-wishlist", JSON.stringify(items));
+      } catch {
+        // Ignore storage quota/privacy errors; wishlist still works for the session.
+      }
     }
   }, [items, isHydrated]);
 

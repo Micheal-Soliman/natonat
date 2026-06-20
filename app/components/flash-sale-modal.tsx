@@ -43,7 +43,12 @@ export function FlashSaleModal({ settings }: { settings: FlashSaleSettings }) {
 
     if (!forceShow && hasCountdown && getRemainingTime(settings.endsAt).total <= 0) return;
 
-    const dismissed = !forceShow && window.sessionStorage.getItem(storageKey);
+    let dismissed: string | null = null;
+    try {
+      dismissed = !forceShow ? window.sessionStorage.getItem(storageKey) : null;
+    } catch {
+      dismissed = null;
+    }
     if (dismissed) return;
 
     const timer = window.setTimeout(() => setIsOpen(true), forceShow ? 100 : 1200);
@@ -66,7 +71,11 @@ export function FlashSaleModal({ settings }: { settings: FlashSaleSettings }) {
   }, [hasCountdown, isOpen, settings.endsAt]);
 
   const closeModal = () => {
-    window.sessionStorage.setItem(storageKey, "1");
+    try {
+      window.sessionStorage.setItem(storageKey, "1");
+    } catch {
+      // Ignore storage errors; closing the modal should still work.
+    }
     setIsOpen(false);
   };
 

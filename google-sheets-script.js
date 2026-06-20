@@ -153,6 +153,8 @@ function createHeaders(sheet) {
     "Additional Items",
     "Products Details",
     "Bundles Details",
+    "Items Flat Details",
+    "Items Flat JSON",
     "Items (Full JSON)",
     "Raw Payload",
     "Catalog Enriched At"
@@ -175,6 +177,8 @@ function ensureExtendedHeaders(sheet) {
   const requiredHeaders = [
     "Products Details",
     "Bundles Details",
+    "Items Flat Details",
+    "Items Flat JSON",
     "Items (Full JSON)",
     "Raw Payload",
     "Catalog Enriched At"
@@ -246,8 +250,9 @@ function buildOrderRow(data) {
     const item = items[i];
 
     if (item) {
-      const unitPrice = Number(item.price_egp || item.price || 0);
+      const unitPrice = Number(item.unit_price_egp || item.price_egp || item.price || 0);
       const qty = Number(item.quantity || 0);
+      const lineTotal = Number(item.line_total_egp || unitPrice * qty);
 
       itemColumns.push(
         item.name || "",
@@ -255,7 +260,7 @@ function buildOrderRow(data) {
         item.size || "",
         item.color || "",
         unitPrice,
-        unitPrice * qty
+        lineTotal
       );
     } else {
       itemColumns.push("", "", "", "", "", "");
@@ -276,6 +281,8 @@ function buildOrderRow(data) {
     .map(formatBundleDetails)
     .filter(Boolean)
     .join("\n");
+  const itemsFlat = Array.isArray(data.items_flat) ? data.items_flat : buildFlatItems(items);
+  const itemsFlatDetails = itemsFlat.map(formatFlatItemDetails).join("\n");
 
   const codAmount =
     String(paymentMethod).toLowerCase() === "cod" ||
@@ -316,6 +323,8 @@ function buildOrderRow(data) {
     additionalItems,
     productsDetails,
     bundlesDetails,
+    itemsFlatDetails,
+    JSON.stringify(itemsFlat),
     JSON.stringify(items),
     JSON.stringify(data),
     data.catalog_enriched_at || ""
@@ -324,6 +333,7 @@ function buildOrderRow(data) {
 
 function formatProductDetails(item) {
   return [
+    item.line_id ? `Line: ${item.line_id}` : "",
     `Name: ${item.name || ""}`,
     item.id ? `ID: ${item.id}` : "",
     item.slug ? `Slug: ${item.slug}` : "",
@@ -331,7 +341,10 @@ function formatProductDetails(item) {
     item.size ? `Size: ${String(item.size).toUpperCase()}` : "",
     item.color ? `Color: ${item.color}` : "",
     `Qty: ${Number(item.quantity || 0)}`,
-    `Unit Price: EGP ${Number(item.price_egp || item.price || 0)}`,
+    `Unit Price: EGP ${Number(item.unit_price_egp || item.price_egp || item.price || 0)}`,
+    item.line_total_egp !== undefined
+      ? `Line Total: EGP ${Number(item.line_total_egp)}`
+      : "",
     item.original_price_egp
       ? `Original Price: EGP ${Number(item.original_price_egp)}`
       : ""
@@ -343,6 +356,8 @@ function formatBundleDetails(item) {
   if (selections.length === 0) return "";
 
   return `${item.name || "Bundle"} => ${selections.map((selection, index) => [
+    selection.selection_id ? `Selection: ${selection.selection_id}` : "",
+    selection.bundle_index ? `Index: ${selection.bundle_index}` : "",
     `${index + 1}. ${selection.label || "Bundle item"}: ${selection.productName || ""}`,
     selection.productId ? `ID: ${selection.productId}` : "",
     selection.productSlug ? `Slug: ${selection.productSlug}` : "",
@@ -350,11 +365,77 @@ function formatBundleDetails(item) {
     selection.size ? `Size: ${String(selection.size).toUpperCase()}` : "",
     selection.color ? `Color: ${selection.color}` : "",
     `Qty: ${Number(selection.quantity || 1)}`,
-    selection.price !== undefined ? `Catalog Price: EGP ${Number(selection.price)}` : "",
+    selection.unit_price_egp !== undefined || selection.price !== undefined
+      ? `Catalog Price: EGP ${Number(selection.unit_price_egp || selection.price)}`
+      : "",
+    selection.line_total_egp !== undefined
+      ? `Line Total: EGP ${Number(selection.line_total_egp)}`
+      : "",
     selection.originalPrice !== undefined
       ? `Original: EGP ${Number(selection.originalPrice)}`
       : ""
   ].filter(Boolean).join(" | ")).join(" || ")}`;
+}
+
+function buildFlatItems(items) {
+  return items.reduce((rows, item, itemIndex) => {
+    rows.push({
+      row_type: item.isBundle ? "bundle" : "product",
+      item_index: itemIndex + 1,
+      line_id: item.line_id || "",
+      product_id: item.id || "",
+      name: item.name || "",
+      slug: item.slug || "",
+      type: item.type || "",
+      size: item.size || "",
+      color: item.color || "",
+      quantity: Number(item.quantity || 1),
+      unit_price_egp: Number(item.unit_price_egp || item.price_egp || item.price || 0),
+      line_total_egp: Number(item.line_total_egp || 0)
+    });
+
+    const selections = Array.isArray(item.bundleSelections) ? item.bundleSelections : [];
+    selections.forEach(selection => {
+      rows.push({
+        row_type: "bundle_selection",
+        parent_line_id: item.line_id || "",
+        item_index: itemIndex + 1,
+        bundle_index: selection.bundle_index || "",
+        selection_id: selection.selection_id || "",
+        product_id: selection.productId || "",
+        name: selection.productName || "",
+        slug: selection.productSlug || "",
+        type: selection.productType || "",
+        label: selection.label || "",
+        size: selection.size || "",
+        color: selection.color || "",
+        quantity: Number(selection.quantity || 1),
+        unit_price_egp: Number(selection.unit_price_egp || selection.price || 0),
+        line_total_egp: Number(selection.line_total_egp || 0)
+      });
+    });
+
+    return rows;
+  }, []);
+}
+
+function formatFlatItemDetails(row) {
+  return [
+    row.row_type ? `Row: ${row.row_type}` : "",
+    row.parent_line_id ? `Parent: ${row.parent_line_id}` : "",
+    row.line_id ? `Line: ${row.line_id}` : "",
+    row.selection_id ? `Selection: ${row.selection_id}` : "",
+    row.label ? `Label: ${row.label}` : "",
+    row.name ? `Name: ${row.name}` : "",
+    row.product_id ? `ID: ${row.product_id}` : "",
+    row.slug ? `Slug: ${row.slug}` : "",
+    row.type ? `Type: ${row.type}` : "",
+    row.size ? `Size: ${String(row.size).toUpperCase()}` : "",
+    row.color ? `Color: ${row.color}` : "",
+    `Qty: ${Number(row.quantity || 0)}`,
+    `Unit Price: EGP ${Number(row.unit_price_egp || 0)}`,
+    row.line_total_egp ? `Line Total: EGP ${Number(row.line_total_egp)}` : ""
+  ].filter(Boolean).join(" | ");
 }
 
 function findOrderRow(sheet, orderRef) {

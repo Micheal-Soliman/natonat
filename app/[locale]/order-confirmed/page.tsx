@@ -89,6 +89,12 @@ function OrderConfirmedContent() {
     }[];
   };
 
+  type OrderLogApiResponse = {
+    success?: boolean;
+    order?: VerifiedOrder;
+    error?: string;
+  };
+
   const [verificationStatus, setVerificationStatus] =
     useState<VerificationStatus>("checking");
   const [verifiedOrder, setVerifiedOrder] = useState<VerifiedOrder | null>(null);
@@ -116,7 +122,14 @@ function OrderConfirmedContent() {
           );
 
           if (response.ok) {
-            const order = (await response.json()) as VerifiedOrder;
+            const result = (await response.json()) as OrderLogApiResponse;
+            const order = result.order;
+
+            if (!order) {
+              setVerificationStatus("not_found");
+              return;
+            }
+
             const paymentStatus = (order.payment_status || "").toLowerCase();
             const orderStatus = (order.status || "").toLowerCase();
             const paymentMethod = (

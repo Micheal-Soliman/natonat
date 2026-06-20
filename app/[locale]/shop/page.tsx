@@ -57,15 +57,24 @@ function ShopContent() {
 
   // Load page from localStorage on mount
   useEffect(() => {
-    const savedPage = localStorage.getItem('shopCurrentPage');
-    if (savedPage) {
-      setCurrentPage(parseInt(savedPage, 10));
+    try {
+      const savedPage = localStorage.getItem('shopCurrentPage');
+      const parsedPage = savedPage ? parseInt(savedPage, 10) : 1;
+      if (Number.isFinite(parsedPage) && parsedPage > 0) {
+        setCurrentPage(parsedPage);
+      }
+    } catch {
+      setCurrentPage(1);
     }
   }, []);
 
   // Save page to localStorage when it changes
   useEffect(() => {
-    localStorage.setItem('shopCurrentPage', currentPage.toString());
+    try {
+      localStorage.setItem('shopCurrentPage', currentPage.toString());
+    } catch {
+      // Ignore storage quota/privacy errors.
+    }
   }, [currentPage]);
 
   // Update activeCategory when URL changes

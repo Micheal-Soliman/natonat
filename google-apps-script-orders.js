@@ -31,10 +31,17 @@ function doPost(e) {
     ensureExtendedHeaders(sheet);
     
     const row = buildOrderRow(data);
-    sheet.appendRow(row);
+    const orderRef = data.order_ref || "";
+    const existingRow = orderRef ? findOrderRow(sheet, orderRef) : null;
+
+    if (existingRow) {
+      sheet.getRange(existingRow, 1, 1, row.length).setValues([row]);
+    } else {
+      sheet.appendRow(row);
+    }
     
     return ContentService
-      .createTextOutput(JSON.stringify({ success: true, rowAdded: true }))
+      .createTextOutput(JSON.stringify({ success: true, rowAdded: !existingRow, updated: Boolean(existingRow) }))
       .setMimeType(ContentService.MimeType.JSON);
       
   } catch (error) {
@@ -109,6 +116,8 @@ function createHeaders(sheet) {
     "Total Items Quantity",
     "Products Details",
     "Bundles Details",
+    "Items Flat Details",
+    "Items Flat JSON",
     "Catalog Enriched At"
   ];
   
@@ -129,6 +138,8 @@ function ensureExtendedHeaders(sheet) {
     "Total Items Quantity",
     "Products Details",
     "Bundles Details",
+    "Items Flat Details",
+    "Items Flat JSON",
     "Catalog Enriched At"
   ];
   const lastColumn = Math.max(sheet.getLastColumn(), 1);
@@ -148,6 +159,7 @@ function ensureExtendedHeaders(sheet) {
 
 function formatProductDetails(item) {
   const details = [
+    item.line_id ? `Line: ${item.line_id}` : "",
     `Name: ${item.name || ""}`,
     item.id ? `ID: ${item.id}` : "",
     item.slug ? `Slug: ${item.slug}` : "",
@@ -155,7 +167,10 @@ function formatProductDetails(item) {
     item.size ? `Size: ${String(item.size).toUpperCase()}` : "",
     item.color ? `Color: ${item.color}` : "",
     `Qty: ${Number(item.quantity || 0)}`,
-    `Unit Price: EGP ${Number(item.price_egp || item.price || 0)}`,
+    `Unit Price: EGP ${Number(item.unit_price_egp || item.price_egp || item.price || 0)}`,
+    item.line_total_egp !== undefined
+      ? `Line Total: EGP ${Number(item.line_total_egp)}`
+      : "",
     item.original_price_egp
       ? `Original Price: EGP ${Number(item.original_price_egp)}`
       : ""
@@ -170,6 +185,8 @@ function formatBundleDetails(item) {
 
   const contents = selections.map((selection, index) => {
     const details = [
+      selection.selection_id ? `Selection: ${selection.selection_id}` : "",
+      selection.bundle_index ? `Index: ${selection.bundle_index}` : "",
       `${index + 1}. ${selection.label || "Bundle item"}: ${selection.productName || ""}`,
       selection.productId ? `ID: ${selection.productId}` : "",
       selection.productSlug ? `Slug: ${selection.productSlug}` : "",
@@ -177,7 +194,12 @@ function formatBundleDetails(item) {
       selection.size ? `Size: ${String(selection.size).toUpperCase()}` : "",
       selection.color ? `Color: ${selection.color}` : "",
       `Qty: ${Number(selection.quantity || 1)}`,
-      selection.price !== undefined ? `Catalog Price: EGP ${Number(selection.price)}` : "",
+      selection.unit_price_egp !== undefined || selection.price !== undefined
+        ? `Catalog Price: EGP ${Number(selection.unit_price_egp || selection.price)}`
+        : "",
+      selection.line_total_egp !== undefined
+        ? `Line Total: EGP ${Number(selection.line_total_egp)}`
+        : "",
       selection.originalPrice !== undefined
         ? `Original: EGP ${Number(selection.originalPrice)}`
         : ""
@@ -187,6 +209,67 @@ function formatBundleDetails(item) {
   });
 
   return `${item.name || "Bundle"} => ${contents.join(" || ")}`;
+}
+
+function buildFlatItems(items) {
+  return items.reduce((rows, item, itemIndex) => {
+    rows.push({
+      row_type: item.isBundle ? "bundle" : "product",
+      item_index: itemIndex + 1,
+      line_id: item.line_id || "",
+      product_id: item.id || "",
+      name: item.name || "",
+      slug: item.slug || "",
+      type: item.type || "",
+      size: item.size || "",
+      color: item.color || "",
+      quantity: Number(item.quantity || 1),
+      unit_price_egp: Number(item.unit_price_egp || item.price_egp || item.price || 0),
+      line_total_egp: Number(item.line_total_egp || 0)
+    });
+
+    const selections = Array.isArray(item.bundleSelections) ? item.bundleSelections : [];
+    selections.forEach(selection => {
+      rows.push({
+        row_type: "bundle_selection",
+        parent_line_id: item.line_id || "",
+        item_index: itemIndex + 1,
+        bundle_index: selection.bundle_index || "",
+        selection_id: selection.selection_id || "",
+        product_id: selection.productId || "",
+        name: selection.productName || "",
+        slug: selection.productSlug || "",
+        type: selection.productType || "",
+        label: selection.label || "",
+        size: selection.size || "",
+        color: selection.color || "",
+        quantity: Number(selection.quantity || 1),
+        unit_price_egp: Number(selection.unit_price_egp || selection.price || 0),
+        line_total_egp: Number(selection.line_total_egp || 0)
+      });
+    });
+
+    return rows;
+  }, []);
+}
+
+function formatFlatItemDetails(row) {
+  return [
+    row.row_type ? `Row: ${row.row_type}` : "",
+    row.parent_line_id ? `Parent: ${row.parent_line_id}` : "",
+    row.line_id ? `Line: ${row.line_id}` : "",
+    row.selection_id ? `Selection: ${row.selection_id}` : "",
+    row.label ? `Label: ${row.label}` : "",
+    row.name ? `Name: ${row.name}` : "",
+    row.product_id ? `ID: ${row.product_id}` : "",
+    row.slug ? `Slug: ${row.slug}` : "",
+    row.type ? `Type: ${row.type}` : "",
+    row.size ? `Size: ${String(row.size).toUpperCase()}` : "",
+    row.color ? `Color: ${row.color}` : "",
+    `Qty: ${Number(row.quantity || 0)}`,
+    `Unit Price: EGP ${Number(row.unit_price_egp || 0)}`,
+    row.line_total_egp ? `Line Total: EGP ${Number(row.line_total_egp)}` : ""
+  ].filter(Boolean).join(" | ");
 }
 
 function buildOrderRow(data) {
@@ -230,6 +313,8 @@ function buildOrderRow(data) {
     .map(formatBundleDetails)
     .filter(Boolean)
     .join("\n");
+  const itemsFlat = Array.isArray(data.items_flat) ? data.items_flat : buildFlatItems(items);
+  const itemsFlatDetails = itemsFlat.map(formatFlatItemDetails).join("\n");
   
   // Paymob data
   const paymob = data.paymob || {};
@@ -304,8 +389,24 @@ function buildOrderRow(data) {
     totalItemsQuantity,
     productsDetails,
     bundlesDetails,
+    itemsFlatDetails,
+    JSON.stringify(itemsFlat),
     data.catalog_enriched_at || ""
   ];
+}
+
+function findOrderRow(sheet, orderRef) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return null;
+
+  const orderRefs = sheet.getRange(2, 3, lastRow - 1, 1).getValues();
+  for (let i = 0; i < orderRefs.length; i++) {
+    if (String(orderRefs[i][0]) === String(orderRef)) {
+      return i + 2;
+    }
+  }
+
+  return null;
 }
 
 function doGet(e) {

@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, ReactNode } from "react";
 
 import { useCatalogProducts } from "@/app/lib/catalog-context";
+import { isProductOutOfStock } from "@/lib/product-stock";
 
 export interface BundleSelection {
   productId: number;
@@ -65,8 +66,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const products = useCatalogProducts();
   const [items, setItems] = useState<CartItem[]>(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('cart');
-      return saved ? JSON.parse(saved) : [];
+      try {
+        const saved = localStorage.getItem('cart');
+        const parsed = saved ? JSON.parse(saved) : [];
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
     }
     return [];
   });
@@ -75,9 +81,32 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const openCart = useCallback(() => setIsOpen(true), []);
   const closeCart = useCallback(() => setIsOpen(false), []);
 
+  const isCartItemUnavailable = useCallback(
+    (item: Omit<CartItem, "quantity"> & { quantity?: number } | CartItem | null) => {
+      if (!item) return false;
+
+      const product = products.find((candidate) => candidate.id === item.id);
+      if (product && isProductOutOfStock(product)) return true;
+
+      return Boolean(
+        item.bundleSelections?.some((selection) => {
+          const selectedProduct = products.find(
+            (candidate) => candidate.id === selection.productId
+          );
+          return selectedProduct ? isProductOutOfStock(selectedProduct) : false;
+        })
+      );
+    },
+    [products]
+  );
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('cart', JSON.stringify(items));
+      try {
+        localStorage.setItem('cart', JSON.stringify(items));
+      } catch {
+        // Ignore storage quota/privacy errors; cart still works for the session.
+      }
     }
   }, [items]);
 
@@ -85,6 +114,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     newItem: Omit<CartItem, "quantity"> & { quantity?: number },
     options?: { openCart?: boolean }
   ) => {
+    if (isCartItemUnavailable(newItem)) return;
+
     const qty = newItem.quantity || 1;
 
     setItems((currentItems) => {
@@ -128,7 +159,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (options?.openCart !== false) {
       setIsOpen(true);
     }
-  }, []);
+  }, [isCartItemUnavailable]);
 
   const removeFromCart = useCallback((id: number, size?: string, color?: string, bundleKey?: string) => {
     setItems((currentItems) => 
@@ -191,7 +222,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems([]);
   }, []);
 
-  const [buyNowItem, setBuyNowItem] = useState<CartItem | null>(null);
+  const [buyNowItem, setBuyNowItemState] = useState<CartItem | null>(null);
+  const setBuyNowItem = useCallback(
+    (item: CartItem | null) => {
+      setBuyNowItemState(isCartItemUnavailable(item) ? null : item);
+    },
+    [isCartItemUnavailable]
+  );
 
   const catalogItems = useMemo(
     () =>

@@ -7,6 +7,7 @@ import ProductPageContent from "./product-content";
 
 import { getTranslations } from 'next-intl/server';
 import { siteConfig } from "@/lib/seo";
+import { isProductOutOfStock } from "@/lib/product-stock";
 
 export const revalidate = 60;
 
@@ -103,6 +104,9 @@ export default async function ProductPage({ params }: { params: Promise<{ locale
   const prevProduct = currentProductIndex > 0 ? products[currentProductIndex - 1] : null;
   const nextProduct = currentProductIndex < products.length - 1 ? products[currentProductIndex + 1] : null;
   const productUrl = `${siteUrl}/${locale}/product/${product.slug}`;
+  const schemaAvailability = isProductOutOfStock(product)
+    ? "https://schema.org/OutOfStock"
+    : "https://schema.org/InStock";
   const productSchema = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -119,7 +123,7 @@ export default async function ProductPage({ params }: { params: Promise<{ locale
       url: productUrl,
       priceCurrency: "EGP",
       price: product.price,
-      availability: "https://schema.org/InStock",
+      availability: schemaAvailability,
       itemCondition: "https://schema.org/NewCondition",
     },
     aggregateRating: {

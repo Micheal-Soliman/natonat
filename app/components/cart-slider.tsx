@@ -81,28 +81,28 @@ export function CartSlider() {
       {/* Slider */}
       <div className="absolute top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-[#0F1A26]/10">
+        <div className="flex items-center justify-between border-b border-[#0F1A26]/10 px-4 py-3 sm:px-5 sm:py-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#EEBC3F]/10 rounded-xl flex items-center justify-center">
-              <ShoppingBag className="w-5 h-5 text-[#EEBC3F]" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#EEBC3F]/10">
+              <ShoppingBag className="h-4 w-4 text-[#EEBC3F]" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-[#0F1A26]">{t("title")}</h2>
-              <p className="text-sm text-[#0F1A26]/60">
+              <h2 className="text-base font-bold text-[#0F1A26] sm:text-lg">{t("title")}</h2>
+              <p className="text-xs text-[#0F1A26]/60 sm:text-sm">
                 {t("cartItems", { count: totalItems })}
               </p>
             </div>
           </div>
           <button
             onClick={closeCart}
-            className="w-10 h-10 rounded-full bg-[#0F1A26]/5 flex items-center justify-center text-[#0F1A26]/60 hover:bg-[#0F1A26]/10 hover:text-[#0F1A26] transition-colors"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0F1A26]/5 text-[#0F1A26]/60 transition-colors hover:bg-[#0F1A26]/10 hover:text-[#0F1A26]"
           >
-            <X className="w-5 h-5" />
+            <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Cart Items */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <div className="flex-1 overflow-y-auto px-3 py-3 sm:px-5 sm:py-4">
           {items.length === 0 ? (
             <div className="text-center py-12">
               <div className="w-20 h-20 rounded-full bg-[#0F1A26]/5 flex items-center justify-center mx-auto mb-6">
@@ -120,7 +120,7 @@ export function CartSlider() {
               </Button>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {items.map((item) => {
                 const product = products.find((candidate) => candidate.id === item.id);
                 const sizeOptions = !item.isBundle ? getSizeOptions(product) : [];
@@ -131,16 +131,16 @@ export function CartSlider() {
                 return (
                 <div
                   key={`${item.id}-${item.size}-${item.color}-${item.isBundle ? JSON.stringify(item.bundleSelections || []) : ""}`}
-                  className="bg-[#F1EBE3] rounded-2xl p-4 flex gap-4"
+                  className="flex gap-3 rounded-2xl bg-[#F1EBE3] p-3"
                 >
                   {/* Image */}
-                  <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-white relative">
+                  <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl bg-white sm:h-20 sm:w-20">
                     <Image
                       src={item.image}
                       alt={item.name}
                       fill
-                      sizes="80px"
-                      className="object-cover"
+                      sizes="(max-width: 640px) 64px, 80px"
+                      className="object-contain p-1"
                     />
                   </div>
 
@@ -148,21 +148,21 @@ export function CartSlider() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <span className="text-[#EEBC3F] text-xs font-semibold tracking-wider uppercase">
+                        <span className="text-[10px] font-semibold uppercase tracking-wider text-[#EEBC3F] sm:text-xs">
                           {item.type}
                         </span>
-                        <h3 className="text-[#0F1A26] font-medium text-sm truncate">
+                        <h3 className="truncate text-sm font-semibold text-[#0F1A26]">
                           {item.name}
                         </h3>
                         {(item.size || item.color) && (
-                          <div className="flex flex-wrap gap-1.5 mt-1.5">
+                          <div className="mt-1.5 flex flex-wrap gap-1">
                             {item.size && (
-                              <span className="bg-[#EEBC3F]/20 px-2 py-0.5 rounded text-[#0F1A26] text-xs font-medium">
+                              <span className="rounded bg-[#EEBC3F]/20 px-2 py-0.5 text-[11px] font-medium text-[#0F1A26]">
                                 {t("size")} {item.size.toUpperCase()}
                               </span>
                             )}
                             {item.color && (
-                              <span className="bg-[#EEBC3F]/20 px-2 py-0.5 rounded text-[#0F1A26] text-xs font-medium capitalize">
+                              <span className="rounded bg-[#EEBC3F]/20 px-2 py-0.5 text-[11px] font-medium capitalize text-[#0F1A26]">
                                 {t("color")} {item.color}
                               </span>
                             )}
@@ -170,12 +170,12 @@ export function CartSlider() {
                         )}
 
                         {item.isBundle && item.bundleSelections && item.bundleSelections.length > 0 && (
-                          <div className="mt-2 space-y-1">
+                          <div className="mt-2 max-h-24 space-y-1 overflow-y-auto pr-1">
                             <p className="text-[#0F1A26]/60 text-[10px] uppercase tracking-wider font-semibold">
                               {t("bundleIncludes")}
                             </p>
                             {item.bundleSelections.map((bundleItem, idx) => (
-                              <div key={idx} className="flex items-center gap-1 text-xs text-[#0F1A26]/70">
+                              <div key={idx} className="flex items-center gap-1 text-[11px] text-[#0F1A26]/70">
                                 <span className="truncate">{bundleItem.productName}</span>
                                 {bundleItem.size && (
                                   <span className="bg-[#0F1A26]/10 px-1.5 py-0.5 rounded text-[10px]">
@@ -187,14 +187,14 @@ export function CartSlider() {
                                     {bundleItem.color}
                                   </span>
                                 )}
-                                <span className="text-[#0F1A26]/50">×{bundleItem.quantity}</span>
+                                <span className="text-[#0F1A26]/50">x{bundleItem.quantity}</span>
                               </div>
                             ))}
                           </div>
                         )}
 
                         {!item.isBundle && (sizeOptions.length > 1 || colorOptions.length > 1) && (
-                          <div className="mt-3 grid grid-cols-1 gap-2">
+                          <div className="mt-2 grid grid-cols-1 gap-2">
                             {sizeOptions.length > 1 && (
                               <label className="block">
                                 <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#0F1A26]/45">
@@ -203,7 +203,7 @@ export function CartSlider() {
                                 <select
                                   value={item.size || ""}
                                   onChange={(event) => updateItemSize(item, event.target.value)}
-                                  className="h-9 w-full rounded-lg border border-[#0F1A26]/10 bg-white px-2 text-xs font-bold text-[#0F1A26] outline-none focus:border-[#EEBC3F]"
+                                  className="h-8 w-full rounded-lg border border-[#0F1A26]/10 bg-white px-2 text-xs font-bold text-[#0F1A26] outline-none focus:border-[#EEBC3F]"
                                 >
                                   {sizeOptions.map((size) => (
                                     <option key={size.id} value={size.id}>
@@ -222,7 +222,7 @@ export function CartSlider() {
                                 <select
                                   value={selectedColorId}
                                   onChange={(event) => updateItemColor(item, event.target.value)}
-                                  className="h-9 w-full rounded-lg border border-[#0F1A26]/10 bg-white px-2 text-xs font-bold text-[#0F1A26] outline-none focus:border-[#EEBC3F]"
+                                  className="h-8 w-full rounded-lg border border-[#0F1A26]/10 bg-white px-2 text-xs font-bold text-[#0F1A26] outline-none focus:border-[#EEBC3F]"
                                 >
                                   {colorOptions.map((color) => (
                                     <option key={color.id} value={color.id}>
@@ -239,7 +239,7 @@ export function CartSlider() {
                           <Link
                             href={`/product/${item.slug}`}
                             onClick={closeCart}
-                            className="mt-3 inline-flex rounded-lg bg-white px-3 py-2 text-xs font-bold text-[#0F1A26] transition hover:bg-[#EEBC3F]/20"
+                            className="mt-2 inline-flex rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-[#0F1A26] transition hover:bg-[#EEBC3F]/20"
                           >
                             {t("editBundle")}
                           </Link>
@@ -247,18 +247,18 @@ export function CartSlider() {
                       </div>
                       <button
                         onClick={() => removeFromCart(item.id, item.size, item.color, item.bundleKey)}
-                        className="w-7 h-7 rounded-full bg-white flex items-center justify-center text-[#0F1A26]/50 hover:bg-red-50 hover:text-red-500 transition-colors flex-shrink-0"
+                        className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-white text-[#0F1A26]/50 transition-colors hover:bg-red-50 hover:text-red-500"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
 
-                    <div className="flex items-center justify-between mt-3">
+                    <div className="mt-2 flex items-center justify-between">
                       {/* Quantity */}
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => updateQuantity(item.id, -1, item.size, item.color, item.bundleKey)}
-                          className="w-7 h-7 rounded-lg bg-white flex items-center justify-center text-[#0F1A26] hover:bg-[#0F1A26]/10 transition-colors"
+                          className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-[#0F1A26] transition-colors hover:bg-[#0F1A26]/10"
                         >
                           <Minus className="w-3.5 h-3.5" />
                         </button>
@@ -267,14 +267,14 @@ export function CartSlider() {
                         </span>
                         <button
                           onClick={() => updateQuantity(item.id, 1, item.size, item.color, item.bundleKey)}
-                          className="w-7 h-7 rounded-lg bg-white flex items-center justify-center text-[#0F1A26] hover:bg-[#0F1A26]/10 transition-colors"
+                          className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-[#0F1A26] transition-colors hover:bg-[#0F1A26]/10"
                         >
                           <Plus className="w-3.5 h-3.5" />
                         </button>
                       </div>
 
                       {/* Price */}
-                      <span className="font-bold text-[#0F1A26]">
+                      <span className="text-sm font-bold text-[#0F1A26] sm:text-base">
                         EGP {item.price * item.quantity}
                       </span>
                     </div>
@@ -288,9 +288,9 @@ export function CartSlider() {
 
         {/* Footer with Summary */}
         {items.length > 0 && (
-          <div className="border-t border-[#0F1A26]/10 bg-[#F1EBE3] p-4 sm:p-5">
-            <div className="mb-3 rounded-2xl bg-white p-3 border border-[#0F1A26]/10">
-              <div className="flex items-center justify-between gap-3 text-xs font-semibold text-[#0F1A26] mb-1.5">
+          <div className="shrink-0 border-t border-[#0F1A26]/10 bg-[#F1EBE3] p-3 sm:p-4">
+            <div className="mb-2 rounded-2xl border border-[#0F1A26]/10 bg-white p-2.5">
+              <div className="mb-1.5 flex items-center justify-between gap-3 text-[11px] font-semibold text-[#0F1A26] sm:text-xs">
                 <span>
                   {remainingForFreeShipping > 0
                     ? t("summary.freeShippingProgress", { amount: remainingForFreeShipping })
@@ -305,39 +305,39 @@ export function CartSlider() {
                 />
               </div>
             </div>
-            <div className="space-y-2 mb-3">
-              <div className="flex justify-between text-sm">
+            <div className="mb-3 space-y-1.5">
+              <div className="flex justify-between text-xs sm:text-sm">
                 <span className="text-[#0F1A26]/60">{t("summary.subtotal")}</span>
                 <span className="text-[#0F1A26] font-medium">EGP {originalSubtotal}</span>
               </div>
               
               {discount > 0 && (
                 <div>
-                  <div className="flex justify-between text-sm text-green-600 font-medium">
+                  <div className="flex justify-between text-xs font-medium text-green-600 sm:text-sm">
                     <span>{t("summary.discount")}</span>
                     <span>-EGP {discount}</span>
                   </div>
                   <div className="hidden flex-col gap-0.5 sm:flex">
                     {appliedDiscounts.map((desc, i) => (
                       <span key={i} className="text-[10px] text-green-600/70 italic text-right block">
-                        • {desc}
+                        - {desc}
                       </span>
                     ))}
                   </div>
                 </div>
               )}
 
-              <div className="border-t border-[#0F1A26]/10 pt-2">
+              <div className="border-t border-[#0F1A26]/10 pt-1.5">
                 <div className="flex justify-between">
                   <span className="text-[#0F1A26] font-semibold">
                     {t("summary.total")}
                   </span>
-                  <span className="text-[#0F1A26] font-bold text-base sm:text-lg">
+                  <span className="text-base font-bold text-[#0F1A26] sm:text-lg">
                     EGP {subtotal}
                   </span>
                 </div>
               </div>
-              <p className="text-[11px] text-[#0F1A26]/45 text-center">
+              <p className="text-center text-[10px] text-[#0F1A26]/45 sm:text-[11px]">
                 {t("summary.shippingAtCheckout")}
               </p>
             </div>
@@ -345,20 +345,21 @@ export function CartSlider() {
             <div className="grid grid-cols-2 gap-2">
               <Link
                 href="/checkout"
+                className="block"
                 onClick={() => {
                   setBuyNowItem(null); // Clear buyNowItem to show all cart items
                   closeCart();
                 }}
               >
-                <Button className="w-full bg-[#EEBC3F] text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white rounded-full h-12 px-2 font-bold text-xs sm:text-sm transition-all duration-300">
+                <Button className="h-11 w-full rounded-full bg-[#EEBC3F] px-2 text-xs font-bold text-[#0F1A26] transition-all duration-300 hover:bg-[#0F1A26] hover:text-white sm:h-12 sm:text-sm">
                   <span className="truncate">{t("summary.proceedToCheckout")}</span>
                 </Button>
               </Link>
 
-              <Link href="/cart" onClick={closeCart}>
+              <Link href="/cart" onClick={closeCart} className="block">
                 <Button
                   variant="outline"
-                  className="w-full border-[#0F1A26]/20 text-[#0F1A26] hover:bg-[#0F1A26] rounded-full h-12 px-2 font-bold text-xs sm:text-sm transition-all duration-300"
+                  className="h-11 w-full rounded-full border-[#0F1A26]/20 px-2 text-xs font-bold text-[#0F1A26] transition-all duration-300 hover:bg-[#0F1A26] sm:h-12 sm:text-sm"
                 >
                   <span className="truncate">{t("summary.proceedToCart")}</span>
                 </Button>

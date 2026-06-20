@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { readFile } from "fs/promises";
 import path from "path";
 import { getCatalogProducts } from "@/lib/sanity-products";
+import { isProductOutOfStock } from "@/lib/product-stock";
 
 export const dynamic = "force-dynamic";
 
@@ -64,18 +65,19 @@ export async function GET(request: Request) {
     const items: CatalogItem[] = [];
 
     for (const p of matchedProducts) {
+      const isUnavailable = isProductOutOfStock(p);
       const base = {
         id: p.slug,
         title: p.name ?? p.slug,
         description: p.description ?? "",
-        availability: "in stock",
+        availability: isUnavailable ? "out of stock" : "in stock",
         condition: "new",
         link: `${siteUrl}/product/${encodeURIComponent(p.slug)}`,
         image_link: p.image ? (p.image.startsWith("http") ? p.image : `${siteUrl}${p.image}`) : "",
         brand: process.env.MEDIA_BUYER_BRAND || "natOnat",
         google_product_category: "",
         fb_product_category: "",
-        quantity_to_sell_on_facebook: 100,
+        quantity_to_sell_on_facebook: isUnavailable ? 0 : p.stockQuantity ?? 100,
         sale_price: "",
         sale_price_effective_date: "",
         item_group_id: p.slug,
