@@ -8,6 +8,7 @@ type OrderHistoryEntry = {
   status: string;
   timestamp: string;
   source: unknown;
+  event_key?: string;
 };
 
 type StoredOrder = OrderLogBody & {
@@ -18,18 +19,63 @@ type StoredOrder = OrderLogBody & {
   };
 };
 
+function getNestedString(value: unknown, key: string) {
+  if (!value || typeof value !== "object") return "";
+
+  const candidate = (value as Record<string, unknown>)[key];
+  if (typeof candidate === "string" && candidate.trim()) return candidate.trim();
+  if (typeof candidate === "number" && Number.isFinite(candidate)) return String(candidate);
+
+  return "";
+}
+
+function getOrderEventKey(body: OrderLogBody, status: string) {
+  const source = typeof body.source === "string" ? body.source : "manual";
+  const payment = body.payment;
+  const aramex = body.aramex;
+  const transactionId =
+    getNestedString(payment, "transaction_id") ||
+    getNestedString(payment, "id");
+  const trackingNumber = getNestedString(aramex, "trackingNumber");
+  return [
+    source,
+    status,
+    transactionId,
+    trackingNumber,
+  ]
+    .filter(Boolean)
+    .join(":");
+}
+
+function hasCheckoutEmailAlreadySent(existing: StoredOrder | undefined) {
+  return Boolean(
+    existing?.source === "checkout" ||
+      existing?.history?.some((entry) => entry.source === "checkout")
+  );
+}
+
 type OrderItem = {
+  line_id?: string;
   id?: number;
   name?: string;
   slug?: string;
   type?: string;
   color?: string;
   size?: string;
+  quantity?: number;
+  price?: number;
+  price_egp?: number;
+  unit_price_egp?: number;
+  line_total_egp?: number;
+  isBundle?: boolean;
+  bundleKey?: string;
   bundleSelections?: BundleOrderItem[];
   [key: string]: unknown;
 };
 
 type BundleOrderItem = {
+  selection_id?: string;
+  bundle_index?: number;
   productId?: number;
   productName?: string;
   productSlug?: string;
@@ -37,7 +83,10 @@ type BundleOrderItem = {
   label?: string;
   size?: string;
   color?: string;
+  quantity?: number;
   price?: number;
+  unit_price_egp?: number;
+  line_total_egp?: number;
   originalPrice?: number;
   [key: string]: unknown;
 };
@@ -53,6 +102,57 @@ function getProductColor(product: Product | undefined, selectedColor?: string) {
   );
 }
 
+function getOrderLineId(item: OrderItem) {
+  return [
+    item.id,
+    item.slug,
+    item.size || "no-size",
+    item.color || "no-color",
+    item.isBundle ? item.bundleKey || "bundle" : "",
+  ]
+    .filter(Boolean)
+    .join(":");
+}
+
+function buildFlatOrderItems(items: OrderItem[]) {
+  return items.flatMap((item, itemIndex) => {
+    const baseRow = {
+      row_type: item.isBundle ? "bundle" : "product",
+      item_index: itemIndex + 1,
+      line_id: item.line_id,
+      product_id: item.id,
+      name: item.name,
+      slug: item.slug,
+      type: item.type,
+      size: item.size,
+      color: item.color,
+      quantity: item.quantity || 1,
+      unit_price_egp: item.unit_price_egp ?? item.price_egp ?? item.price,
+      line_total_egp: item.line_total_egp,
+    };
+
+    const bundleRows = (item.bundleSelections || []).map((selection) => ({
+      row_type: "bundle_selection",
+      parent_line_id: item.line_id,
+      item_index: itemIndex + 1,
+      bundle_index: selection.bundle_index,
+      selection_id: selection.selection_id,
+      product_id: selection.productId,
+      name: selection.productName,
+      slug: selection.productSlug,
+      type: selection.productType,
+      label: selection.label,
+      size: selection.size,
+      color: selection.color,
+      quantity: selection.quantity || 1,
+      unit_price_egp: selection.unit_price_egp ?? selection.price,
+      line_total_egp: selection.line_total_egp,
+    }));
+
+    return [baseRow, ...bundleRows];
+  });
+}
+
 async function enrichOrderItemsFromCms(body: OrderLogBody) {
   if (!Array.isArray(body.items) || body.items.length === 0) return body;
 
@@ -61,6 +161,9 @@ async function enrichOrderItemsFromCms(body: OrderLogBody) {
 
   const items = (body.items as OrderItem[]).map((item) => {
     const product = typeof item.id === "number" ? productById.get(item.id) : undefined;
+    const quantity = Number(item.quantity || 1);
+    const unitPrice = Number(item.unit_price_egp ?? item.price_egp ?? item.price ?? product?.price ?? 0);
+    const lineId = item.line_id || getOrderLineId(item);
 
     const bundleSelections = item.bundleSelections?.map((selection, index) => {
       const selectedProduct =
@@ -73,15 +176,27 @@ async function enrichOrderItemsFromCms(body: OrderLogBody) {
               selection.size as keyof typeof selectedProduct.sizePrices
             ]
           : undefined;
+      const selectionQuantity = Number(selection.quantity || 1);
+      const selectionPrice = Number(
+        selection.unit_price_egp ??
+          selection.price ??
+          selectedSizePrice?.price ??
+          selectedProduct?.price ??
+          0
+      );
 
       return {
         ...selection,
+        selection_id: selection.selection_id || `${lineId}:selection:${index + 1}`,
+        bundle_index: selection.bundle_index || index + 1,
         productName: selectedProduct?.name || selection.productName,
         productSlug: selectedProduct?.slug || selection.productSlug,
         productType: selectedProduct?.type || selection.productType,
         label: product?.bundleItems?.[index]?.label || selection.label,
         color: getProductColor(selectedProduct, selection.color),
-        price: selection.price ?? selectedSizePrice?.price ?? selectedProduct?.price,
+        price: selectionPrice,
+        unit_price_egp: selectionPrice,
+        line_total_egp: selection.line_total_egp ?? selectionPrice * selectionQuantity,
         originalPrice:
           selection.originalPrice ??
           selectedSizePrice?.originalPrice ??
@@ -91,10 +206,15 @@ async function enrichOrderItemsFromCms(body: OrderLogBody) {
 
     return {
       ...item,
+      line_id: lineId,
       name: product?.name || item.name,
       slug: product?.slug || item.slug,
       type: product?.type || item.type,
       color: getProductColor(product, item.color),
+      price_egp: item.price_egp ?? unitPrice,
+      unit_price_egp: unitPrice,
+      line_total_egp: item.line_total_egp ?? unitPrice * quantity,
+      currency: item.currency || "EGP",
       bundleSelections,
       catalog_source: product ? "sanity" : "order_payload",
     };
@@ -103,6 +223,7 @@ async function enrichOrderItemsFromCms(body: OrderLogBody) {
   return {
     ...body,
     items,
+    items_flat: buildFlatOrderItems(items),
     catalog_enriched_at: new Date().toISOString(),
   };
 }
@@ -150,7 +271,10 @@ export async function GET(req: Request) {
     );
   }
 
-  return NextResponse.json(order);
+  return NextResponse.json({
+    success: true,
+    order,
+  });
 }
 
 export async function POST(req: Request) {
@@ -182,13 +306,21 @@ export async function POST(req: Request) {
     
     // Build status history
     const newStatus = (body.status || existing?.status || "confirmed") as string;
+    const eventKey = getOrderEventKey(body, newStatus);
     const historyEntry = {
       status: newStatus,
       timestamp: new Date().toISOString(),
-      source: body.source || "manual"
+      source: body.source || "manual",
+      event_key: eventKey || undefined,
     };
 
-    const history = existing?.history ? [...existing.history, historyEntry] : [historyEntry];
+    const existingHistory = existing?.history || [];
+    const hasDuplicateHistoryEvent =
+      eventKey &&
+      existingHistory.some((entry) => entry.event_key && entry.event_key === eventKey);
+    const history = hasDuplicateHistoryEvent
+      ? existingHistory
+      : [...existingHistory, historyEntry];
     
     // Add Aramex tracking link if tracking number exists
     const bodyAramex = body.aramex as StoredOrder["aramex"] | undefined;
@@ -207,7 +339,7 @@ export async function POST(req: Request) {
     orderStore.set(orderRef, updatedOrder);
     
     // Send email notification for new orders from checkout
-    if (body.source === "checkout") {
+    if (body.source === "checkout" && !hasCheckoutEmailAlreadySent(existing)) {
       // Don't await to avoid blocking the response
       sendOrderEmail(updatedOrder).catch(err => console.error("Failed to send order email:", err));
       sendCustomerConfirmationEmail(updatedOrder).catch(err => console.error("Failed to send customer confirmation email:", err));

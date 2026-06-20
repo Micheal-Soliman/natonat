@@ -39,6 +39,8 @@ export interface Product {
   gender?: "male" | "female" | "unisex" | ("male" | "female" | "unisex")[];
   collection?: "sports" | "pharaoh" | null;
   printType?: "plain" | "printed";
+  stockStatus?: "in_stock" | "low_stock" | "out_of_stock";
+  stockQuantity?: number;
   // Dynamic pricing for bundles
   dynamicPricing?: boolean;
   pricingRule?: string;

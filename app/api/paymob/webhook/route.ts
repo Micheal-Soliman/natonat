@@ -6,6 +6,7 @@ type PaymobTransaction = {
   order?: {
     id?: string | number;
     amount_cents?: number;
+    merchant_order_id?: string;
   };
   order_id?: string | number;
   merchant_order_id?: string;
@@ -13,6 +14,7 @@ type PaymobTransaction = {
   payment_key_claims?: {
     extra?: {
       order_ref?: string;
+      merchant_order_id?: string;
     };
   };
   success?: boolean;
@@ -48,6 +50,11 @@ type PaymobPayload = PaymobTransaction & {
 };
 
 type OrderLogResponse = {
+  success?: boolean;
+  order?: LoggedOrder;
+};
+
+type LoggedOrder = {
   delivery_method?: string;
   customer?: unknown;
   aramex?: {
@@ -113,6 +120,46 @@ function timingSafeEqualHex(a: string, b: string) {
   }
 }
 
+function firstNonEmpty(...values: unknown[]) {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+    if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  }
+
+  return "";
+}
+
+function getPaymobOrderRef(transaction: PaymobTransaction) {
+  return firstNonEmpty(
+    transaction.special_reference,
+    transaction.payment_key_claims?.extra?.order_ref,
+    transaction.payment_key_claims?.extra?.merchant_order_id,
+    transaction.merchant_order_id,
+    transaction.order?.merchant_order_id
+  );
+}
+
+async function fetchLoggedOrder(appOrigin: string, orderRef: string) {
+  try {
+    const orderLogRes = await fetch(
+      `${appOrigin}/api/orders/log?order_ref=${encodeURIComponent(orderRef)}`,
+      {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+      }
+    );
+
+    if (!orderLogRes.ok) return null;
+
+    const result = (await orderLogRes.json()) as OrderLogResponse;
+    return result.order || null;
+  } catch (error) {
+    console.error("[Webhook] Failed to retrieve order details:", error);
+    return null;
+  }
+}
+
 export async function POST(req: Request) {
   let payload: PaymobPayload;
   try {
@@ -136,18 +183,20 @@ export async function POST(req: Request) {
     console.warn("Paymob webhook HMAC verification skipped: PAYMOB_HMAC_SECRET is not set");
   }
 
-  console.log("Paymob webhook received:", {
-    transaction_id: transaction.id || "",
-    order_id: transaction.order?.id || transaction.order_id || "",
-    success: !!transaction.success,
-    pending: !!transaction.pending,
-  });
+  if (process.env.NODE_ENV !== "production") {
+    console.log("Paymob webhook received:", {
+      transaction_id: transaction.id || "",
+      order_id: transaction.order?.id || transaction.order_id || "",
+      success: !!transaction.success,
+      pending: !!transaction.pending,
+    });
+  }
 
   // Extract key payment details from Paymob payload
   const paymentDetails = {
     order_id: transaction?.order?.id || transaction?.order_id || "",
     merchant_order_id: transaction?.merchant_order_id || "",
-    special_reference: transaction?.special_reference || transaction?.payment_key_claims?.extra?.order_ref || "",
+    special_reference: getPaymobOrderRef(transaction),
     payment_status: transaction?.success ? "Paid" : transaction?.pending ? "Pending" : "Failed",
     transaction_id: transaction?.id || "",
     amount_cents: transaction?.amount_cents || transaction?.order?.amount_cents || 0,
@@ -170,6 +219,18 @@ export async function POST(req: Request) {
     process.env.APP_ORIGIN ||
     process.env.NEXT_PUBLIC_APP_URL ||
     new URL(req.url).origin;
+
+  if (!paymentDetails.special_reference) {
+    console.error("[Webhook] Missing order reference in Paymob payload", {
+      transaction_id: transaction.id || "",
+      order_id: transaction.order?.id || transaction.order_id || "",
+      merchant_order_id: transaction.merchant_order_id || "",
+    });
+  }
+
+  const loggedOrderBeforePaymentUpdate = paymentDetails.special_reference
+    ? await fetchLoggedOrder(appOrigin, paymentDetails.special_reference)
+    : null;
 
   if (paymentDetails.special_reference) {
     try {
@@ -198,19 +259,17 @@ export async function POST(req: Request) {
   // Create Aramex shipment for successful card payments with delivery
   if (transaction?.success && paymentDetails.special_reference) {
     try {
-      // Retrieve order details from order log
-      const orderLogRes = await fetch(`${appOrigin}/api/orders/log?order_ref=${paymentDetails.special_reference}`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      });
-      
-      if (orderLogRes.ok) {
-        const orderData = (await orderLogRes.json()) as OrderLogResponse;
+      const orderData =
+        loggedOrderBeforePaymentUpdate ||
+        (await fetchLoggedOrder(appOrigin, paymentDetails.special_reference));
         
+      if (orderData) {
         // --- PREVENT DUPLICATES ---
         // Only create shipment if it's a delivery order AND we haven't already created a tracking number for it
         if (orderData?.delivery_method === "delivery" && orderData?.customer && !orderData?.aramex?.trackingNumber) {
-          console.log(`[Webhook] Proceeding with Aramex shipment for order: ${paymentDetails.special_reference}`);
+          if (process.env.NODE_ENV !== "production") {
+            console.log(`[Webhook] Proceeding with Aramex shipment for order: ${paymentDetails.special_reference}`);
+          }
           
           const shipmentRes = await fetch(`${appOrigin}/api/aramex/shipment`, {
             method: "POST",
@@ -230,7 +289,9 @@ export async function POST(req: Request) {
           const shipmentData = await shipmentRes.json();
           
           if (shipmentData.success) {
-            console.log("[Webhook] Aramex shipment created:", shipmentData.trackingNumber);
+            if (process.env.NODE_ENV !== "production") {
+              console.log("[Webhook] Aramex shipment created:", shipmentData.trackingNumber);
+            }
             
             // Update order with tracking info
             await fetch(`${appOrigin}/api/orders/log`, {
@@ -254,8 +315,20 @@ export async function POST(req: Request) {
             console.error("[Webhook] Failed to create Aramex shipment:", shipmentData.error);
           }
         } else if (orderData?.aramex?.trackingNumber) {
-          console.log(`[Webhook] Shipment already exists for order ${paymentDetails.special_reference}. Skipping Aramex.`);
+          if (process.env.NODE_ENV !== "production") {
+            console.log(`[Webhook] Shipment already exists for order ${paymentDetails.special_reference}. Skipping Aramex.`);
+          }
+        } else {
+          console.error("[Webhook] Cannot create Aramex shipment: order is missing delivery/customer details", {
+            order_ref: paymentDetails.special_reference,
+            delivery_method: orderData?.delivery_method,
+            has_customer: !!orderData?.customer,
+          });
         }
+      } else {
+        console.error("[Webhook] Cannot create Aramex shipment: order details not found", {
+          order_ref: paymentDetails.special_reference,
+        });
       }
     } catch (err) {
       console.error("[Webhook] Aramex shipment creation error:", err);

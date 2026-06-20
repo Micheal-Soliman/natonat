@@ -1,21 +1,33 @@
 "use client";
 
 import { useState, useEffect, useRef, Suspense } from "react";
-import { Link } from "@/i18n/routing";
+import { Link, useRouter } from "@/i18n/routing";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from 'next-intl';
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
 import { Filter, X, ChevronLeft, ChevronRight } from "lucide-react";
-import { categories, sizes, genders, collections, printTypes } from "@/lib/products";
+import { categories, genders, collections, printTypes, type Product } from "@/lib/products";
 import { Loading } from "@/app/components/loading";
 import { SwipeableProductImage } from "@/app/components/swipeable-product-image";
+import { BundleQuickCustomizer } from "@/app/components/bundle-quick-customizer";
+import { WishlistToggleButton } from "@/app/components/wishlist-toggle-button";
+import { useToast } from "@/app/components/toast-provider";
 import { useCatalogProducts } from "@/app/lib/catalog-context";
+import { useSizeGuideSizes } from "@/app/lib/site-settings-context";
+import { useCart } from "@/app/lib/cart-context";
+import { getStockLabel, isProductOutOfStock } from "@/lib/product-stock";
 
 function ShopContent() {
   const t = useTranslations('shop');
+  const toastT = useTranslations('commerceToast');
+  const stockT = useTranslations('stock');
+  const router = useRouter();
   const products = useCatalogProducts();
+  const sizes = useSizeGuideSizes();
+  const { addToCart, setBuyNowItem } = useCart();
+  const { showToast } = useToast();
   const searchParams = useSearchParams();
   const categoryFromUrl = searchParams.get("category") || "all";
   const sizeFromUrl = searchParams.get("size");
@@ -32,22 +44,37 @@ function ShopContent() {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [hideNav, setHideNav] = useState(false);
+  const stockLabels = {
+    inStock: stockT("inStock"),
+    lowStock: stockT("lowStock"),
+    outOfStock: stockT("outOfStock"),
+  };
   const [currentPage, setCurrentPage] = useState(1);
+  const [quickSelections, setQuickSelections] = useState<Record<number, { size?: string; color?: string }>>({});
   const PRODUCTS_PER_PAGE = 12;
   const ref = useRef<HTMLDivElement>(null);
   const categoryTabsRef = useRef<HTMLDivElement>(null);
 
   // Load page from localStorage on mount
   useEffect(() => {
-    const savedPage = localStorage.getItem('shopCurrentPage');
-    if (savedPage) {
-      setCurrentPage(parseInt(savedPage, 10));
+    try {
+      const savedPage = localStorage.getItem('shopCurrentPage');
+      const parsedPage = savedPage ? parseInt(savedPage, 10) : 1;
+      if (Number.isFinite(parsedPage) && parsedPage > 0) {
+        setCurrentPage(parsedPage);
+      }
+    } catch {
+      setCurrentPage(1);
     }
   }, []);
 
   // Save page to localStorage when it changes
   useEffect(() => {
-    localStorage.setItem('shopCurrentPage', currentPage.toString());
+    try {
+      localStorage.setItem('shopCurrentPage', currentPage.toString());
+    } catch {
+      // Ignore storage quota/privacy errors.
+    }
   }, [currentPage]);
 
   // Update activeCategory when URL changes
@@ -221,7 +248,128 @@ function ShopContent() {
     }
   };
 
+  const getProductCategories = (product: Product) =>
+    Array.isArray(product.category) ? product.category : [product.category];
+
+  const isBundleProduct = (product: Product) => getProductCategories(product).includes("bundles");
+
+  const getQuickSizeOptions = (product: Product) => {
+    if (product.sizePrices) {
+      return sizes.filter((size) => product.sizePrices?.[size.id as keyof NonNullable<Product["sizePrices"]>]);
+    }
+
+    if (!product.size) return [];
+
+    const selectedSize = product.size.toLowerCase();
+    return sizes.filter((size) => size.id === selectedSize);
+  };
+
+  const getQuickSelection = (product: Product) => {
+    const sizeOptions = getQuickSizeOptions(product);
+    const colorOptions = product.colors || [];
+    const savedSelection = quickSelections[product.id] || {};
+
+    return {
+      size: savedSelection.size || sizeOptions[0]?.id || product.size?.toLowerCase(),
+      color: savedSelection.color || colorOptions[0]?.id || product.color,
+    };
+  };
+
+  const updateQuickSelection = (productId: number, selection: { size?: string; color?: string }) => {
+    setQuickSelections((current) => ({
+      ...current,
+      [productId]: {
+        ...current[productId],
+        ...selection,
+      },
+    }));
+  };
+
+  const getQuickCartItem = (product: Product) => {
+    const selection = getQuickSelection(product);
+    const sizeKey = selection.size?.toLowerCase() as keyof NonNullable<Product["sizePrices"]>;
+    const sizePrice = sizeKey && product.sizePrices?.[sizeKey];
+    const colorVariant = product.colors?.find((color) => color.id === selection.color);
+
+    return {
+      id: product.id,
+      name: product.name,
+      slug: product.slug,
+      type: product.type,
+      price: sizePrice?.price ?? product.price,
+      originalPrice: sizePrice?.originalPrice ?? product.originalPrice,
+      image: colorVariant?.image || product.image,
+      size: product.sizePrices || product.size ? selection.size : undefined,
+      color: colorVariant?.name || selection.color || product.color,
+      quantity: 1,
+    };
+  };
+
+  const getColorSwatchStyle = (colorName?: string) => {
+    const normalizedColor = colorName?.toLowerCase() || "";
+    const colorMap: Record<string, string> = {
+      black: "#111827",
+      white: "#F8FAFC",
+      grey: "#9CA3AF",
+      gray: "#9CA3AF",
+      blue: "#2563EB",
+      navy: "#1E3A8A",
+      red: "#DC2626",
+      green: "#16A34A",
+      yellow: "#FACC15",
+      gold: "#D6A62C",
+      purple: "#7C3AED",
+      orange: "#F97316",
+      brown: "#8B5E3C",
+      cognac: "#9A5A2E",
+    };
+
+    const matches = Object.entries(colorMap)
+      .filter(([name]) => normalizedColor.includes(name))
+      .map(([, value]) => value);
+
+    if (matches.length >= 2) {
+      return { background: `linear-gradient(135deg, ${matches[0]} 0 50%, ${matches[1]} 50% 100%)` };
+    }
+
+    if (matches.length === 1) {
+      return { backgroundColor: matches[0] };
+    }
+
+    return { background: "linear-gradient(135deg, #EEBC3F, #0F1A26)" };
+  };
+
+  const handleQuickAdd = (product: Product) => {
+    if (isProductOutOfStock(product)) return;
+    addToCart(getQuickCartItem(product), { openCart: false });
+    showToast({
+      title: toastT("addedToCart"),
+      description: product.name,
+      action: {
+        label: toastT("checkout"),
+        onClick: () => router.push("/checkout"),
+      },
+      cancel: {
+        label: toastT("keepShopping"),
+        onClick: () => {},
+      },
+    });
+  };
+
+  const handleQuickBuy = (product: Product) => {
+    if (isProductOutOfStock(product)) return;
+    setBuyNowItem(getQuickCartItem(product));
+    router.push("/checkout");
+  };
+
   const headerContent = getHeaderContent();
+  const categoryCopyKey =
+    activeCategory === "luggage-covers" ||
+    activeCategory === "passport-wallets" ||
+    activeCategory === "packonat" ||
+    activeCategory === "bundles"
+      ? activeCategory
+      : "all";
 
   return (
     <>
@@ -244,12 +392,12 @@ function ShopContent() {
         {/* Category Tabs - Clean */}
         <div ref={categoryTabsRef} className="bg-white border-b border-[#0F1A26]/5 sticky top-0 z-[60]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex overflow-x-auto gap-2 py-4 no-scrollbar">
+            <div className="flex snap-x overflow-x-auto gap-2 py-4 no-scrollbar">
               {categories.map((cat) => (
                 <Link
                   key={cat.id}
                   href={cat.id === "all" ? "/shop" : `/shop?category=${cat.id}`}
-                  className={`px-5 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-300 ${
+                  className={`snap-start px-5 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-300 ${
                     activeCategory === cat.id
                       ? "bg-[#0F1A26] text-white"
                       : "bg-[#F8F6F3] text-[#0F1A26]/70 hover:text-[#0F1A26]"
@@ -329,7 +477,7 @@ function ShopContent() {
                 {/* Gender Filter - For Luggage Covers */}
                 {(activeCategory === "all" || activeCategory === "luggage-covers") && (
                   <div className="mb-8">
-                    <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">{t('filters.gender.title') || 'Gender'}</h3>
+                    <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">{t('filters.gender.title')}</h3>
                     <div className="space-y-2">
                       {genders.map((gender) => (
                         <label 
@@ -351,7 +499,7 @@ function ShopContent() {
                             )}
                           </div>
                           <span className={`text-sm ${selectedGenders.includes(gender.id) ? "text-[#0F1A26] font-medium" : "text-[#0F1A26]/60"}`}>
-                            {gender.label}
+                            {t(`filters.gender.${gender.id}`)}
                           </span>
                         </label>
                       ))}
@@ -362,7 +510,7 @@ function ShopContent() {
                 {/* Collection Filter - For Luggage Covers */}
                 {(activeCategory === "all" || activeCategory === "luggage-covers") && (
                   <div className="mb-8">
-                    <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">{t('filters.collection.title') || 'Collection'}</h3>
+                    <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">{t('filters.collection.title')}</h3>
                     <div className="space-y-2">
                       {collections.map((collection) => (
                         <label 
@@ -384,7 +532,7 @@ function ShopContent() {
                             )}
                           </div>
                           <span className={`text-sm ${selectedCollections.includes(collection.id) ? "text-[#0F1A26] font-medium" : "text-[#0F1A26]/60"}`}>
-                            {collection.label}
+                            {t(`filters.collection.${collection.id}`)}
                           </span>
                         </label>
                       ))}
@@ -395,7 +543,7 @@ function ShopContent() {
                 {/* Print Type Filter - For Luggage Covers */}
                 {(activeCategory === "all" || activeCategory === "luggage-covers") && (
                   <div className="mb-8">
-                    <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">{t('filters.printType.title') || 'Print Type'}</h3>
+                    <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">{t('filters.printType.title')}</h3>
                     <div className="space-y-2">
                       {printTypes.map((printType) => (
                         <label 
@@ -417,7 +565,7 @@ function ShopContent() {
                             )}
                           </div>
                           <span className={`text-sm ${selectedPrintTypes.includes(printType.id) ? "text-[#0F1A26] font-medium" : "text-[#0F1A26]/60"}`}>
-                            {printType.label}
+                            {t(`filters.printType.${printType.id}`)}
                           </span>
                         </label>
                       ))}
@@ -427,7 +575,7 @@ function ShopContent() {
 
                 {/* Color Filter - For All Products */}
                 <div className="mb-8">
-                  <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">{t('filters.color.title') || 'Color'}</h3>
+                  <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">{t('filters.color.title')}</h3>
                   <div className="space-y-2">
                     {/* Get unique colors from products */}
                     {Array.from(new Set(products.filter(p => p.color).map(p => p.color))).map((color) => (
@@ -490,6 +638,15 @@ function ShopContent() {
                 </button>
               </div>
 
+              <div className="mb-6 rounded-2xl border border-[#0F1A26]/10 bg-white px-4 py-4 sm:px-5">
+                <h2 className="text-base sm:text-lg font-bold text-[#0F1A26]">
+                  {t(`categoryCopy.${categoryCopyKey}.title`)}
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-[#0F1A26]/60">
+                  {t(`categoryCopy.${categoryCopyKey}.description`)}
+                </p>
+              </div>
+
               {/* Results count - Clean */}
               <div className="flex items-center justify-between mb-6">
                 <p className="text-[#0F1A26]/50 text-sm">
@@ -499,28 +656,158 @@ function ShopContent() {
 
               {/* Grid - Clean */}
               <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
-                {paginatedProducts.map((product, index) => (
-                  <Link
-                    key={product.id}
-                    href={`/product/${product.slug}`}
-                    className={`group transition-all duration-500 hover:-translate-y-1 sm:hover:-translate-y-2 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
-                    style={{ transitionDelay: `${index * 50}ms` }}
-                  >
-                    <SwipeableProductImage 
-                      product={product}
-                    />
+                {paginatedProducts.map((product, index) => {
+                  const sizeOptions = getQuickSizeOptions(product);
+                  const colorOptions = product.colors || [];
+                  const selection = getQuickSelection(product);
+                  const isBundle = isBundleProduct(product);
+                  const isUnavailable = isProductOutOfStock(product);
 
-                    {/* Product Info - Clean */}
-                    <div className="px-1">
-                      <span className="text-[#EEBC3F] text-[9px] sm:text-[10px] font-semibold tracking-wider uppercase">
-                        {product.type}
-                      </span>
-                      <h3 className="text-[#0F1A26] font-medium text-xs sm:text-sm mt-0.5 mb-0.5 sm:mt-1 sm:mb-1 group-hover:text-[#EEBC3F] transition-colors line-clamp-1">
-                        {product.name}
-                      </h3>
+                  return (
+                    <div
+                      key={product.id}
+                      className={`group transition-all duration-500 hover:-translate-y-1 sm:hover:-translate-y-2 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+                      style={{ transitionDelay: `${index * 50}ms` }}
+                    >
+                      <div className="relative">
+                        <Link href={`/product/${product.slug}`} className="block">
+                          <SwipeableProductImage product={product} />
+                        </Link>
+                        <WishlistToggleButton
+                          product={product}
+                          className="absolute right-2 top-12 sm:right-3 sm:top-14"
+                        />
+                      </div>
+
+                      {/* Product Info - Clean */}
+                      <div className="px-1">
+                        <Link href={`/product/${product.slug}`} className="block">
+                          <span className="text-[#EEBC3F] text-[9px] sm:text-[10px] font-semibold tracking-wider uppercase">
+                            {product.type}
+                          </span>
+                          <h3 className="text-[#0F1A26] font-medium text-xs sm:text-sm mt-0.5 mb-0.5 sm:mt-1 sm:mb-1 group-hover:text-[#EEBC3F] transition-colors line-clamp-1">
+                            {product.name}
+                          </h3>
+                          {product.stockStatus && product.stockStatus !== "in_stock" && (
+                            <span className={`mb-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                              isUnavailable ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"
+                            }`}>
+                              {getStockLabel(product, stockLabels)}
+                            </span>
+                          )}
+                        </Link>
+
+                        {isBundle ? (
+                          <BundleQuickCustomizer product={product} products={products} variant="light" />
+                        ) : (
+                        <div className="mt-2 rounded-2xl border border-[#0F1A26]/8 bg-white/85 p-2 shadow-sm backdrop-blur-sm sm:p-3">
+                          {!isBundle && (sizeOptions.length > 1 || colorOptions.length > 1) && (
+                            <div className="mb-2 space-y-2">
+                              {sizeOptions.length > 1 && (
+                                <div>
+                                  <div className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-[#0F1A26]/45">
+                                    {t('quickAdd.size')}
+                                  </div>
+                                  <div className="grid grid-cols-4 gap-1.5">
+                                    {sizeOptions.map((size) => {
+                                      const isSelected = selection.size === size.id;
+
+                                      return (
+                                        <button
+                                          key={size.id}
+                                          type="button"
+                                          aria-pressed={isSelected}
+                                          onClick={() => updateQuickSelection(product.id, { size: size.id })}
+                                          className={`h-8 rounded-lg border text-xs font-bold transition-all ${
+                                            isSelected
+                                              ? "border-[#EEBC3F] bg-[#EEBC3F] text-[#0F1A26] shadow-sm"
+                                              : "border-[#0F1A26]/10 bg-[#F8F6F3] text-[#0F1A26]/65 hover:border-[#EEBC3F]/60 hover:text-[#0F1A26]"
+                                          }`}
+                                        >
+                                          {size.label}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+
+                              {colorOptions.length > 1 && (
+                                <div>
+                                  <div className="mb-1.5 flex items-center justify-between gap-2">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#0F1A26]/45">
+                                      {t('quickAdd.color')}
+                                    </span>
+                                    <span className="truncate text-[11px] font-semibold text-[#0F1A26]/65">
+                                      {colorOptions.find((color) => color.id === selection.color)?.name}
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {colorOptions.map((color) => {
+                                      const isSelected = selection.color === color.id;
+
+                                      return (
+                                        <button
+                                          key={color.id}
+                                          type="button"
+                                          aria-label={`${t('quickAdd.color')}: ${color.name}`}
+                                          aria-pressed={isSelected}
+                                          onClick={() => updateQuickSelection(product.id, { color: color.id })}
+                                          className={`h-7 w-7 rounded-full border p-0.5 transition-all ${
+                                            isSelected
+                                              ? "border-[#EEBC3F] ring-2 ring-[#EEBC3F]/35"
+                                              : "border-[#0F1A26]/15 hover:border-[#EEBC3F]/70"
+                                          }`}
+                                        >
+                                          <span
+                                            className="block h-full w-full rounded-full border border-black/10"
+                                            style={getColorSwatchStyle(color.name)}
+                                          />
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {isBundle && (
+                            <Link
+                              href={`/product/${product.slug}`}
+                              className="mb-2 block rounded-xl bg-[#EEBC3F]/10 px-3 py-2 text-center text-xs font-bold text-[#0F1A26] hover:bg-[#EEBC3F]/20"
+                            >
+                              {t('quickAdd.customize')}
+                            </Link>
+                          )}
+
+                          <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
+                            <Button
+                              type="button"
+                              aria-label={t('quickAdd.add')}
+                              onClick={() => handleQuickAdd(product)}
+                              disabled={isUnavailable}
+                              className="h-10 rounded-xl bg-[#F8F6F3] border border-[#0F1A26]/10 text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white px-2 text-xs font-bold"
+                              variant="outline"
+                            >
+                              <span className="truncate">{isUnavailable ? getStockLabel(product, stockLabels) : t('quickAdd.add')}</span>
+                            </Button>
+                            <Button
+                              type="button"
+                              aria-label={t('quickAdd.buy')}
+                              onClick={() => handleQuickBuy(product)}
+                              disabled={isUnavailable}
+                              className="h-10 rounded-xl bg-[#EEBC3F] text-[#0F1A26] hover:bg-[#d4a535] px-2 text-xs font-bold shadow-sm shadow-[#EEBC3F]/25"
+                            >
+                              <span className="truncate">{isUnavailable ? getStockLabel(product, stockLabels) : t('quickAdd.buy')}</span>
+                            </Button>
+                          </div>
+                        </div>
+                        )}
+                      </div>
                     </div>
-                  </Link>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Pagination */}
@@ -562,12 +849,12 @@ function ShopContent() {
 
               {filteredProducts.length === 0 && (
                 <div className="text-center py-16">
-                  <p className="text-[#0F1A26]/50 mb-3">{t('noProducts') || 'No products found'}</p>
+                  <p className="text-[#0F1A26]/50 mb-3">{t('noProducts')}</p>
                   <button 
                     onClick={clearFilters} 
                     className="text-[#EEBC3F] hover:text-[#0F1A26] font-medium transition-colors"
                   >
-                    {t('clearFilters') || 'Clear all filters'}
+                    {t('clearFilters')}
                   </button>
                 </div>
               )}
@@ -634,7 +921,7 @@ function ShopContent() {
               {/* Mobile Gender Filter */}
               {(activeCategory === "all" || activeCategory === "luggage-covers") && (
                 <div className="mb-6">
-                  <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">{t('filters.gender.title') || 'Gender'}</h3>
+                  <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">{t('filters.gender.title')}</h3>
                   <div className="space-y-2">
                     {genders.map((gender) => (
                       <label 
@@ -654,7 +941,7 @@ function ShopContent() {
                           )}
                         </div>
                         <span className={`text-sm ${selectedGenders.includes(gender.id) ? "text-[#0F1A26] font-medium" : "text-[#0F1A26]/60"}`}>
-                          {gender.label}
+                          {t(`filters.gender.${gender.id}`)}
                         </span>
                       </label>
                     ))}
@@ -665,7 +952,7 @@ function ShopContent() {
               {/* Mobile Collection Filter */}
               {(activeCategory === "all" || activeCategory === "luggage-covers") && (
                 <div className="mb-6">
-                  <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">{t('filters.collection.title') || 'Collection'}</h3>
+                  <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">{t('filters.collection.title')}</h3>
                   <div className="space-y-2">
                     {collections.map((collection) => (
                       <label 
@@ -685,7 +972,7 @@ function ShopContent() {
                           )}
                         </div>
                         <span className={`text-sm ${selectedCollections.includes(collection.id) ? "text-[#0F1A26] font-medium" : "text-[#0F1A26]/60"}`}>
-                          {collection.label}
+                          {t(`filters.collection.${collection.id}`)}
                         </span>
                       </label>
                     ))}
@@ -696,7 +983,7 @@ function ShopContent() {
               {/* Mobile Print Type Filter */}
               {(activeCategory === "all" || activeCategory === "luggage-covers") && (
                 <div className="mb-6">
-                  <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">{t('filters.printType.title') || 'Print Type'}</h3>
+                  <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">{t('filters.printType.title')}</h3>
                   <div className="space-y-2">
                     {printTypes.map((printType) => (
                       <label 
@@ -716,7 +1003,7 @@ function ShopContent() {
                           )}
                         </div>
                         <span className={`text-sm ${selectedPrintTypes.includes(printType.id) ? "text-[#0F1A26] font-medium" : "text-[#0F1A26]/60"}`}>
-                          {printType.label}
+                          {t(`filters.printType.${printType.id}`)}
                         </span>
                       </label>
                     ))}
@@ -726,7 +1013,7 @@ function ShopContent() {
 
               {/* Mobile Color Filter - For All Products */}
               <div className="mb-6">
-                <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">{t('filters.color.title') || 'Color'}</h3>
+                <h3 className="text-xs font-semibold text-[#0F1A26] mb-3 tracking-wider uppercase">{t('filters.color.title')}</h3>
                 <div className="space-y-2">
                   {Array.from(new Set(products.filter(p => p.color).map(p => p.color))).map((color) => (
                     <label 

@@ -11,6 +11,8 @@ export const activeProductsQuery = groq`
     tag,
     price,
     originalPrice,
+    stockStatus,
+    stockQuantity,
     description,
     features,
     size,
@@ -54,6 +56,8 @@ export const productBySlugQuery = groq`
     tag,
     price,
     originalPrice,
+    stockStatus,
+    stockQuantity,
     description,
     features,
     size,
@@ -83,5 +87,96 @@ export const productBySlugQuery = groq`
     dynamicPricing,
     pricingRule,
     sortOrder
+  }
+`;
+
+export const siteSettingsQuery = groq`
+  {
+    "legacy": *[_type == "siteSettings"][0] {
+      flashSale {
+        _updatedAt,
+        enabled,
+        eyebrow,
+        title,
+        description,
+        badge,
+        discountLabel,
+        endsAt,
+        ctaLabel,
+        secondaryLabel,
+        "imageUrl": image.asset->url,
+        product->{
+          legacyId,
+          name,
+          "slug": slug.current,
+          price,
+          originalPrice,
+          type,
+          "imageUrl": coalesce(mainImage.asset->url, imageUrl)
+        }
+      },
+      sizeGuide {
+        label,
+        title,
+        subtitle,
+        videoTitle,
+        videoSubtitle,
+        videoDuration,
+        videoUrl,
+        "videoFileUrl": videoFile.asset->url,
+        "posterUrl": poster.asset->url,
+        tips,
+        sizes[] {
+          size,
+          cm,
+          inch,
+          type,
+          note
+        },
+        note
+      }
+    },
+    "flashSale": *[_type == "flashSaleSettings"][0] {
+      _updatedAt,
+      enabled,
+      eyebrow,
+      title,
+      description,
+      badge,
+      discountLabel,
+      endsAt,
+      ctaLabel,
+      secondaryLabel,
+      "imageUrl": image.asset->url,
+      product->{
+        legacyId,
+        name,
+        "slug": slug.current,
+        price,
+        originalPrice,
+        type,
+        "imageUrl": coalesce(mainImage.asset->url, imageUrl)
+      }
+    },
+    "sizeGuide": *[_type == "sizeGuideSettings"][0] {
+      label,
+      title,
+      subtitle,
+      videoTitle,
+      videoSubtitle,
+      videoDuration,
+      videoUrl,
+      "videoFileUrl": videoFile.asset->url,
+      "posterUrl": poster.asset->url,
+      tips,
+      sizes[] {
+        size,
+        cm,
+        inch,
+        type,
+        note
+      },
+      note
+    }
   }
 `;

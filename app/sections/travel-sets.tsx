@@ -4,6 +4,8 @@ import { getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/button";
 import { getDiscountPercentage } from "@/lib/products";
 import { getCatalogProducts } from "@/lib/sanity-products";
+import { BundleQuickCustomizer } from "@/app/components/bundle-quick-customizer";
+import { WishlistToggleButton } from "@/app/components/wishlist-toggle-button";
 
 export async function TravelSets() {
   const [t, products] = await Promise.all([
@@ -33,39 +35,42 @@ export async function TravelSets() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 items-stretch">
+        <div className="-mx-4 flex snap-x items-stretch gap-4 overflow-x-auto px-4 pb-3 no-scrollbar sm:-mx-6 sm:px-6 md:mx-0 md:grid md:grid-cols-2 md:gap-6 md:overflow-visible md:px-0 md:pb-0 lg:grid-cols-3">
           {bundles.map((bundle) => (
             <div
               key={bundle.id}
-              className="group bg-white rounded-2xl overflow-hidden border border-[#0F1A26]/10 hover:border-[#EEBC3F] transition-all hover:shadow-xl flex flex-col h-full"
+              className="group flex h-full w-[86vw] max-w-[350px] shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-[#0F1A26]/10 bg-white transition-all hover:border-[#EEBC3F] hover:shadow-xl md:w-auto md:max-w-none"
             >
               {/* Bundle Image - Smaller aspect ratio */}
-              <Link href={`/product/${bundle.slug}`} className="block">
-                <div className="relative overflow-hidden aspect-square">
-                  <Image
-                    src={bundle.image}
-                    alt={bundle.name}
-                    fill
-                    sizes="(max-width: 640px) 92vw, (max-width: 1024px) 45vw, 30vw"
-                    className="object-contain transition-transform duration-700 group-hover:scale-105"
-                    loading="lazy"
-                    quality={55}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                  <div className="absolute bottom-4 left-4 right-4 z-10">
-                    <span className="text-[#EEBC3F] text-xs font-bold tracking-wider uppercase bg-[#0F1A26]/80 px-3 py-1 rounded-full">
-                      {(() => {
-                        const discountPercent = getDiscountPercentage(bundle);
-                        if (discountPercent) {
-                          return `${discountPercent}% OFF`;
-                        }
-                        const saveAmount = bundle.originalPrice - bundle.price;
-                        return saveAmount > 0 ? t('save', { amount: saveAmount }) : '';
-                      })()}
-                    </span>
+              <div className="relative">
+                <Link href={`/product/${bundle.slug}`} className="block">
+                  <div className="relative overflow-hidden aspect-square">
+                    <Image
+                      src={bundle.image}
+                      alt={bundle.name}
+                      fill
+                      sizes="(max-width: 640px) 92vw, (max-width: 1024px) 45vw, 30vw"
+                      className="object-contain transition-transform duration-700 group-hover:scale-105"
+                      loading="lazy"
+                      quality={55}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                    <div className="absolute bottom-4 left-4 right-4 z-10">
+                      <span className="text-[#EEBC3F] text-xs font-bold tracking-wider uppercase bg-[#0F1A26]/80 px-3 py-1 rounded-full">
+                        {(() => {
+                          const discountPercent = getDiscountPercentage(bundle);
+                          if (discountPercent) {
+                            return `${discountPercent}% OFF`;
+                          }
+                          const saveAmount = bundle.originalPrice - bundle.price;
+                          return saveAmount > 0 ? t('save', { amount: saveAmount }) : '';
+                        })()}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              </Link>
+                </Link>
+                <WishlistToggleButton product={bundle} className="absolute right-3 top-3" />
+              </div>
 
               <div className="p-5 flex flex-col flex-grow">
                 <h3 className="text-base font-bold text-[#0F1A26] mb-2 line-clamp-1">
@@ -79,7 +84,7 @@ export async function TravelSets() {
                   {(() => {
                     const discountPercent = getDiscountPercentage(bundle);
                     if (discountPercent && bundle.price === 0) {
-                      return <span className="text-xl font-bold text-[#EEBC3F]">Get {discountPercent}% Discount</span>;
+                      return <span className="text-xl font-bold text-[#EEBC3F]">{t('discountPercent', { percent: discountPercent })}</span>;
                     }
                     return (
                       <>
@@ -94,12 +99,9 @@ export async function TravelSets() {
                   })()}
                 </div>
 
-                <Button
-                  asChild
-                  className="w-full bg-[#0F1A26] text-[#F1EBE3] hover:bg-[#EEBC3F] hover:text-[#0F1A26] transition-all duration-300 mt-auto h-10 text-sm"
-                >
-                  <Link href={`/product/${bundle.slug}`}>{t('viewProduct')}</Link>
-                </Button>
+                <div className="mt-auto">
+                  <BundleQuickCustomizer product={bundle} products={products} variant="light" />
+                </div>
               </div>
             </div>
           ))}

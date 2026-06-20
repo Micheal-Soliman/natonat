@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import dynamic from "next/dynamic";
+import type { Metadata } from "next";
 import { Navigation } from "@/app/sections/navigation";
 import Hero from "@/app/sections/hero";
 import { BenefitsStrip } from "@/app/sections/benefits-strip";
@@ -9,6 +10,9 @@ import { HowItWorks } from "@/app/sections/how-it-works";
 import { ArticlesSection } from "@/app/sections/articles-section";
 import { Footer } from "@/app/sections/footer";
 import { Loading } from "@/app/components/loading";
+import { FlashSaleModal } from "@/app/components/flash-sale-modal";
+import { createPageMetadata } from "@/lib/seo";
+import { getSiteSettings } from "@/lib/sanity-site-settings";
 
 const BestSellers = dynamic(
   () => import("@/app/sections/best-sellers").then((mod) => mod.BestSellers),
@@ -24,12 +28,28 @@ const SocialProof = dynamic(
   }
 );
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+
+  return createPageMetadata({
+    locale,
+    title: "natOnat | Travel Accessories in Egypt",
+    description:
+      "Shop natOnat luggage covers, passport wallets, PackOnat organizers, and travel bundle offers in Egypt. Protect your luggage and travel smarter.",
+  });
+}
+
 export default async function Home({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
+  const settings = await getSiteSettings();
 
   return (
     <Suspense fallback={<Loading />}>
-      <HomeContent locale={locale} />
+      <HomeContent locale={locale} flashSale={settings.flashSale} />
     </Suspense>
   );
 }
@@ -44,9 +64,16 @@ function SectionPlaceholder() {
   );
 }
 
-function HomeContent({ locale }: { locale: string }) {
+function HomeContent({
+  locale,
+  flashSale,
+}: {
+  locale: string;
+  flashSale: Awaited<ReturnType<typeof getSiteSettings>>["flashSale"];
+}) {
   return (
     <>
+      <FlashSaleModal settings={flashSale} />
       <Navigation />
       <main>
         <Hero />

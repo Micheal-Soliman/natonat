@@ -14,6 +14,10 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'images.unsplash.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'cdn.sanity.io',
+      },
     ],
     dangerouslyAllowSVG: true,
   },
@@ -32,6 +36,30 @@ const nextConfig: NextConfig = {
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
         ],
+      },
+    ];
+  },
+  async redirects() {
+    return [
+      {
+        source: '/blog',
+        destination: '/en/articles',
+        permanent: true,
+      },
+      {
+        source: '/blog/:slug',
+        destination: '/en/articles/:slug',
+        permanent: true,
+      },
+      {
+        source: '/:locale(en|ar)/blog',
+        destination: '/:locale/articles',
+        permanent: true,
+      },
+      {
+        source: '/:locale(en|ar)/blog/:slug',
+        destination: '/:locale/articles/:slug',
+        permanent: true,
       },
     ];
   },

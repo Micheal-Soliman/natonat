@@ -36,8 +36,7 @@
     "tagline": "نظّم شنطتك. سافر بأسلوبك.",
     "cta": "تسوق الآن",
     "freeShipping": "شحن مجاني للطلبات فوق 1000 جنيه",
-    "egyptOnly": "داخل مصر فقط",
-    "symplCashback": "ادفع بـ Sympl وخد 30% كاش باك حتى 100 جنيه"
+    "egyptOnly": "داخل مصر فقط"
   },
   "benefits": {
     "sectionLabel": "المميزات",
@@ -107,6 +106,7 @@
     "title": "اختيار ذكي، كل رحلتك في باقة واحدة",
     "subtitle": "مجموعات سفر متكاملة للتنظيم، الحماية، والأناقة. باقات بقيمة أوفر حتى %30.",
     "save": "وفّر {amount} جنيه",
+    "discountPercent": "احصل على خصم {percent}%",
     "addToCart": "أضف إلى السلة",
     "viewAll": "عرض جميع الباقات",
     "viewProduct": "عرض المنتج"
@@ -411,8 +411,41 @@
         "printed": "موديلات مطبوعة"
       }
     },
+    "categoryCopy": {
+      "all": {
+        "title": "مستلزمات سفر عملية لكل رحلة",
+        "description": "تصفح أغلفة الشنط، محافظ الجوازات، منظمات باك أونات والباقات مع فلاتر للمقاس واللون وستايل السفر."
+      },
+      "luggage-covers": {
+        "title": "اختار غطاء الشنطة حسب المقاس والتصميم",
+        "description": "فلتر حسب ارتفاع الشنطة والمجموعة ونوع الطباعة. قيس جسم الشنطة من غير العجل عشان المقاس يطلع مظبوط."
+      },
+      "passport-wallets": {
+        "title": "محافظ جوازات بتفاصيل آمنة للسفر اليومي",
+        "description": "اختار اللون والخامة المناسبة لطريقتك في السفر، مع حماية RFID ومساحة للمستندات المهمة."
+      },
+      "packonat": {
+        "title": "باك أونات لتنظيم الشنطة بشكل أسهل",
+        "description": "خلي الهدوم متطبقة ومنفصلة وسهل تنقلها من الشنطة لغرفة الفندق."
+      },
+      "bundles": {
+        "title": "باقات جاهزة لاحتياجات السفر الكاملة",
+        "description": "تسوق مجموعات متناسقة للهدايا أو سفر العيلة أو حماية الشنطة بالكامل."
+      }
+    },
     "results": {
       "showing": "عرض {count} منتجات"
+    },
+    "quickAdd": {
+      "size": "اختر المقاس",
+      "color": "اختر اللون",
+      "add": "أضف",
+      "buy": "اشتري",
+      "customize": "خصص",
+      "total": "إجمالي الباقة",
+      "next": "المنتج التالي",
+      "back": "السابق",
+      "step": "خطوة {current}/{total}"
     },
     "noProducts": "لا توجد منتجات",
     "clearFilters": "إزالة الفلاتر",
@@ -508,6 +541,11 @@
       "subtitle": "راجع عناصرك وأكمل طلبك"
     },
     "cartItems": "{count, plural, =0 {لا توجد عناصر} =1 {عنصر واحد} =2 {عنصران} few {# عناصر} many {# عنصر} other {# عنصر}}",
+    "bundleIncludes": "محتويات الباقة:",
+    "editBundle": "تعديل الباقة",
+    "securePayment": "دفع آمن",
+    "aramexShipping": "شحن Aramex",
+    "saved": "وفرت",
     "continueShopping": "مواصلة التسوق",
     "empty": {
       "title": "سلتك فارغة",
@@ -537,7 +575,9 @@
       "note": "يتم حساب الشحن والضرائب عند الدفع",
       "egyptOnly": "🚚 توصيل لجميع محافظات مصر فقط",
       "shippingAtCheckout": "سيتم حساب الشحن عند الدفع",
-      "discount": "الخصم"
+      "discount": "الخصم",
+      "freeShippingProgress": "أضف {amount} جنيه كمان للشحن المجاني",
+      "freeShippingUnlocked": "وصلت للشحن المجاني"
     },
     "savings": "سوف توفر {amount} جنيه"
   },
@@ -547,6 +587,33 @@
       "subtitle": "أكمل طلبك وسنقوم بالشحن فورًا"
     },
     "backToCart": "العودة للسلة",
+    "emptyCart": {
+      "title": "السلة فاضية",
+      "description": "اختار المنتجات والمقاسات الأول، وبعدها ارجع لإتمام الطلب بسهولة.",
+      "shopNow": "تسوق الآن",
+      "viewCart": "عرض السلة",
+      "submitError": "السلة فاضية. ارجع اختار المنتجات قبل إتمام الطلب."
+    },
+    "validation": {
+      "required": "الخانة دي مطلوبة",
+      "invalidEmail": "اكتب بريد إلكتروني صحيح",
+      "invalidPhone": "اكتب رقم موبايل مصري صحيح",
+      "invalidCity": "اختار مدينة من القائمة",
+      "reviewFields": "راجع البيانات المطلوبة قبل إتمام الطلب."
+    },
+    "steps": ["بياناتك", "الشحن", "الدفع", "المراجعة"],
+    "hints": {
+      "address": "اكتب المنطقة، الشارع، رقم العمارة، الدور، وأي علامة مميزة لتسهيل التوصيل.",
+      "city": "اكتب أول حروف المدينة واختارها من القائمة، أو اضغط Enter لأول نتيجة.",
+      "securePayment": "الدفع آمن. بيانات الكارت لا يتم تخزينها عندنا، وطلبات الدفع الإلكتروني يتم تأكيدها قبل الشحن."
+    },
+    "aramexStatus": {
+      "success": "تم إنشاء شحنة Aramex",
+      "pending": "جاري إنشاء شحنة Aramex...",
+      "failed": "فشل إنشاء شحنة Aramex",
+      "trackingNumber": "رقم التتبع",
+      "manualShipment": "طلبك متأكد. هننشئ الشحنة يدويًا."
+    },
     "success": {
       "title": "تم تأكيد طلبك!",
       "subtitle": "شكراً لطلبك. سيتم إرسال بريد إلكتروني للتأكيد قريباً.",
@@ -656,14 +723,83 @@
       "size": "المقاس",
       "color": "اللون",
       "selectCityForShipping": "اختر المدينة لحساب الشحن",
+      "itemCount": "{count, plural, =0 {0 قطعة} =1 {قطعة واحدة} =2 {قطعتين} few {# قطع} many {# قطعة} other {# قطعة}}",
+      "shippingLabel": "الشحن",
+      "freeShipping": "الشحن مجاني",
+      "paymentMethodDiscount": "خصم الدفع الإلكتروني (2%)",
+      "paymentDiscount": "خصم الدفع الإلكتروني {amount} جنيه",
       "buyNowMode": "🛒 شراء فوري",
       "cartMode": "🛍️ من السلة"
+    }
+  },
+  "orderConfirmed": {
+    "loading": "جاري تحميل حالة الطلب...",
+    "status": {
+      "checkingTitle": "بنتأكد من الطلب",
+      "successTitle": "تم تأكيد الطلب",
+      "pendingTitle": "الدفع قيد التأكيد",
+      "notFoundTitle": "الطلب غير موجود",
+      "failedTitle": "الدفع لم يكتمل",
+      "checkingDescription": "استنى لحظات لحد ما نراجع حالة الطلب.",
+      "successDescription": "شكرًا لك. طلبك اتسجل بنجاح وهنبعتلك أي تحديثات.",
+      "pendingDescription": "الدفع لسه قيد التأكيد. هنحدّث الطلب أول ما الدفع يتأكد.",
+      "notFoundDescription": "مش قادرين نأكد رقم الطلب ده. راجع اللينك أو كلم الدعم.",
+      "failedDescription": "الدفع ماكملش. تقدر تحاول تاني أو تكلم الدعم."
+    },
+    "labels": {
+      "orderReference": "رقم الطلب",
+      "paymentMethod": "طريقة الدفع",
+      "transactionId": "رقم عملية الدفع",
+      "amount": "الإجمالي",
+      "orderItems": "تفاصيل الطلب",
+      "product": "منتج",
+      "shippingStatus": "حالة الشحن"
+    },
+    "messages": {
+      "recorded": "تم تسجيل طلبك بنجاح. هنراجع الطلب ونبلغك بأي تحديث.",
+      "shipmentCreated": "تم إنشاء شحنة Aramex.",
+      "trackingPending": "رقم التتبع هيظهر/يتبعت لما الشحنة تتجهز.",
+      "cannotConfirm": "مش قادرين نأكد الطلب من غير رقم طلب صحيح.",
+      "moneyDeducted": "لو الفلوس اتخصمت، كلم الدعم برقم الطلب.",
+      "supportWhatsapp": "أهلا natOnat، محتاج مساعدة في الطلب {orderRef}"
+    },
+    "actions": {
+      "whatsappSupport": "مساعدة واتساب",
+      "tryAgain": "حاول تاني",
+      "continueShopping": "كمل تسوق"
+    }
+  },
+  "paymentReturn": {
+    "loading": "بنتأكد من حالة الدفع...",
+    "status": {
+      "successTitle": "تم الدفع بنجاح",
+      "pendingTitle": "الدفع قيد التأكيد",
+      "failedTitle": "الدفع لم يكتمل",
+      "successDescription": "الدفع اتقبل. بنحوّلك دلوقتي...",
+      "pendingDescription": "الدفع لسه قيد التأكيد. هنحدّث الطلب أول ما الدفع يتأكد.",
+      "failedDescription": "الدفع ماكملش. تقدر تحاول تاني."
+    },
+    "labels": {
+      "orderReference": "رقم الطلب"
+    },
+    "actions": {
+      "tryAgain": "حاول تاني",
+      "backToShop": "العودة للمتجر"
     }
   },
   "product": {
     "badge": "مميز",
     "sale": "عرض خاص",
     "notFound": "المنتج غير متوفر",
+    "rating": {
+      "value": "٤.٩",
+      "reviews": "١٢٧ تقييم موثق"
+    },
+    "price": {
+      "save": "وفّر {percent}%",
+      "unavailable": "سعر المنتج لم يتم تحميله. من فضلك حدّث الصفحة."
+    },
+    "unavailable": "غير متاح",
     "aria": {
       "previousImage": "الصورة السابقة",
       "nextImage": "الصورة التالية",
@@ -678,12 +814,23 @@
     },
     "size": {
       "select": "اختر المقاس",
+      "confirm": "اختيار المقاس",
       "howToMeasure": "كيف تقيس؟",
       "heightNote": "* الارتفاع بدون العجلات",
-      "heightLabel": "الارتفاع"
+      "heightLabel": "الارتفاع",
+      "selectedGuide": "مقاس {size} مناسب لارتفاع {range} بدون العجل.",
+      "recommended": "المقاس المقترح غالبًا: {size}"
     },
     "color": {
       "select": "اختر اللون"
+    },
+    "bundle": {
+      "selectionUnavailable": "اختيار داخل الباقة غير متاح",
+      "itemUnavailable": "اختيار داخل الباقة غير متاح",
+      "popular": "مقترح",
+      "qty": "الكمية: {quantity}",
+      "swipeToChoose": "اسحب للاختيار",
+      "selected": "مختار"
     },
     "bundleItemsTitle": "محتويات الحزمة - خصص كل عنصر",
     "addToCart": "أضف إلى السلة",
@@ -704,6 +851,18 @@
       "returns": {
         "title": "ضمان الاسترجاع",
         "desc": "30 يومًا"
+      }
+    },
+    "trust": {
+      "measure": "قيس الارتفاع من غير العجل",
+      "shipping": "شحن مجاني فوق 1000 جنيه",
+      "returns": "استبدال واسترجاع خلال 30 يوم",
+      "payment": "دفع آمن بالكارت أو عند الاستلام",
+      "whatsapp": {
+        "cta": "محتاج مساعدة في المقاس على واتساب؟",
+        "message": "أهلا natOnat، محتاج مساعدة في اختيار المقاس المناسب لـ {product}. المقاس المختار: {size}. اللون: {color}.",
+        "noSize": "غير محدد",
+        "noColor": "غير محدد"
       }
     },
     "description": {
@@ -730,7 +889,13 @@
     "videoSection": {
       "title": "شاهدها في العمل",
       "subtitle": "شاهد كيف يحافظ باك أونات على ملابسك منظمة وخالية من التجاعيد",
-      "passportSubtitle": "اكتشف الجلد الفاخر وحماية RFID في محفظة جواز السفر"
+      "passportSubtitle": "اكتشف الجلد الفاخر وحماية RFID في محفظة جواز السفر",
+      "luggageSubtitle": "شاهد كيف يحمي غطاء الشنطة شنطتك بشكل أنيق",
+      "luggageLabels": {
+        "protection": "حماية فاخرة للشنطة",
+        "easyWear": "سهل التركيب في ثوان",
+        "secureFit": "ثبات مناسب للسفر"
+      }
     }
   },
   "common": {
@@ -748,6 +913,33 @@
     "delete": "حذف",
     "view": "عرض"
   },
+  "commerceToast": {
+    "addedToCart": "اتضاف للسلة",
+    "bundleAddedToCart": "اتضافت الباقة للسلة",
+    "checkout": "إتمام الطلب",
+    "keepShopping": "كمل تسوق",
+    "removedFromWishlist": "اتشال من المفضلة",
+    "addedToWishlist": "اتضاف للمفضلة"
+  },
+  "wishlistButton": {
+    "add": "أضف للمفضلة",
+    "remove": "شيل من المفضلة"
+  },
+  "localeSwitcher": {
+    "label": "اللغة / Language",
+    "switchToEnglish": "التبديل للإنجليزية",
+    "switchToArabic": "التبديل للعربية"
+  },
+  "stock": {
+    "inStock": "متاح",
+    "lowStock": "كمية محدودة",
+    "outOfStock": "غير متاح حاليًا"
+  },
+  "bundleCustomizer": {
+    "unavailable": "غير متاح",
+    "oneItemUnavailable": "اختيار داخل الباقة غير متاح حاليًا",
+    "review": "مراجعة الباقة"
+  },
   "wishlist": {
     "label": "المفضلة",
     "title": "قائمة المفضلة",
@@ -758,7 +950,23 @@
     },
     "clearAll": "مسح الكل",
     "discoverMore": "اكتشف المزيد من المنتجات",
-    "continueShopping": "مواصلة التسوق"
+    "continueShopping": "مواصلة التسوق",
+    "actions": {
+      "addToCart": "أضف للسلة",
+      "buyNow": "شراء الآن",
+      "customizeBundle": "اختار الباقة",
+      "checkout": "إتمام الطلب",
+      "keepShopping": "كمل تسوق"
+    },
+    "item": {
+      "size": "المقاس",
+      "color": "اللون",
+      "updatedFromCatalog": "البيانات محدثة من الكتالوج"
+    },
+    "toast": {
+      "removed": "اتشال من المفضلة",
+      "added": "اتضاف للسلة"
+    }
   },
   "contact": {
     "hero": {
@@ -836,7 +1044,17 @@
     "readTime": "دقيقة قراءة",
     "share": "شارك المقال",
     "related": "مقالات ذات صلة",
-    "backToArticles": "العودة للمقالات"
+    "backToArticles": "العودة للمقالات",
+    "detail": {
+      "breadcrumbHome": "الرئيسية",
+      "breadcrumbArticles": "المقالات",
+      "inThisGuide": "داخل المقال",
+      "shopCtaTitle": "جهز شنطتك قبل الرحلة",
+      "shopCtaText": "اختار غطاء شنطة مناسب أو محفظة باسبور ذكية من natOnat وسافر وأنت مطمّن.",
+      "shopCtaAction": "تسوق المنتجات",
+      "sizeCtaAction": "دليل المقاسات",
+      "articleSummary": "ملخص المقال"
+    }
   },
   "about": {
     "hero": {
@@ -3645,7 +3863,9 @@
   },
   "components": {
     "floatingContact": {
-      "label": "محتاج مساعدة؟"
+      "label": "محتاج مساعدة؟",
+      "whatsapp": "واتساب",
+      "phone": "اتصل بنا"
     }
   }
 }

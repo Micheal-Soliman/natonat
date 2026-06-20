@@ -9,6 +9,7 @@ const transporter = nodemailer.createTransport({
 });
 
 type OrderEmailItem = {
+  line_id?: string;
   id?: number;
   name: string;
   slug?: string;
@@ -18,9 +19,13 @@ type OrderEmailItem = {
   type?: string;
   price?: number;
   price_egp?: number;
+  unit_price_egp?: number;
+  line_total_egp?: number;
   original_price_egp?: number;
   isBundle?: boolean;
   bundleSelections?: {
+    selection_id?: string;
+    bundle_index?: number;
     productId?: number;
     productName?: string;
     productSlug?: string;
@@ -30,6 +35,8 @@ type OrderEmailItem = {
     color?: string;
     quantity?: number;
     price?: number;
+    unit_price_egp?: number;
+    line_total_egp?: number;
     originalPrice?: number;
   }[];
 };
@@ -80,10 +87,11 @@ function renderBundleSelectionsHtml(item: OrderEmailItem) {
       `Qty: ${selection.quantity || 1}`,
     ].filter(Boolean).join(' | ');
     const identity = [
+      selection.selection_id ? `Selection: ${escapeHtml(selection.selection_id)}` : '',
       selection.productId ? `ID: ${selection.productId}` : '',
       selection.productSlug ? `Slug: ${escapeHtml(selection.productSlug)}` : '',
     ].filter(Boolean).join(' | ');
-    const price = selection.price;
+    const price = selection.unit_price_egp ?? selection.price;
     const originalPrice = selection.originalPrice;
     const priceHtml = price !== undefined
       ? `<div style="font-size: 13px; color: #555;">Catalog unit price: EGP ${price}${
@@ -119,9 +127,11 @@ export function renderItemHtml(item: OrderEmailItem) {
     : '';
 
   const typeLabel = item.type || 'Product';
-  const unitPrice = item.price_egp ?? item.price ?? 0;
+  const unitPrice = item.unit_price_egp ?? item.price_egp ?? item.price ?? 0;
+  const lineTotal = item.line_total_egp ?? unitPrice * item.quantity;
   const bundleHtml = renderBundleSelectionsHtml(item);
   const identityHtml = [
+    item.line_id ? `Line: ${escapeHtml(item.line_id)}` : '',
     item.id ? `Product ID: ${item.id}` : '',
     item.slug ? `Slug: ${escapeHtml(item.slug)}` : '',
   ].filter(Boolean).join(' | ');
@@ -143,7 +153,7 @@ export function renderItemHtml(item: OrderEmailItem) {
       </td>
       <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.quantity}</td>
       <td style="padding: 10px; border-bottom: 1px solid #eee;">EGP ${unitPrice}</td>
-      <td style="padding: 10px; border-bottom: 1px solid #eee;">EGP ${unitPrice * item.quantity}</td>
+      <td style="padding: 10px; border-bottom: 1px solid #eee;">EGP ${lineTotal}</td>
     </tr>
   `;
 }

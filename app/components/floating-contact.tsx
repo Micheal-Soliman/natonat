@@ -12,7 +12,7 @@ export function FloatingContact() {
   const contacts = [
     {
       id: "whatsapp",
-      label: "واتساب",
+      label: t("whatsapp"),
       icon: MessageCircle,
       href: "https://wa.me/201070004227",
       color: "bg-[#0F1A26]",
@@ -20,7 +20,7 @@ export function FloatingContact() {
     },
     {
       id: "phone",
-      label: "اتصل بنا",
+      label: t("phone"),
       icon: Phone,
       href: "tel:+201070004227",
       color: "bg-[#EEBC3F]",
@@ -29,7 +29,7 @@ export function FloatingContact() {
   ];
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div className="fixed bottom-6 right-4 z-50 sm:right-6">
       {/* Contacts Container - allows flex layout without affecting button position */}
       <div className="flex flex-col items-end gap-3 mb-3">
         <AnimatePresence>
@@ -110,7 +110,7 @@ export function FloatingContact() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute bottom-16 right-0 bg-white px-4 py-2 rounded-lg shadow-lg whitespace-nowrap"
+            className="absolute bottom-16 right-0 hidden whitespace-nowrap rounded-lg bg-white px-4 py-2 shadow-lg sm:block"
           >
             <p className="text-sm font-medium text-[#0F1A26]">{t('label')}</p>
           </motion.div>

@@ -1,11 +1,12 @@
 "use client";
 
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { usePathname, useRouter } from '@/i18n/routing';
 import { Globe } from 'lucide-react';
 
 export function LocaleSwitcher({ scrolled = false }: { scrolled?: boolean }) {
   const locale = useLocale();
+  const t = useTranslations("localeSwitcher");
   const router = useRouter();
   const pathname = usePathname();
 
@@ -31,7 +32,7 @@ export function LocaleSwitcher({ scrolled = false }: { scrolled?: boolean }) {
               ? 'text-white/70 hover:text-white hover:bg-white/10' 
               : 'text-[#0F1A26]/70 hover:text-[#0F1A26] hover:bg-[#0F1A26]/10'
         }`}
-        aria-label="Switch to English"
+        aria-label={t("switchToEnglish")}
       >
         EN
       </button>
@@ -47,7 +48,7 @@ export function LocaleSwitcher({ scrolled = false }: { scrolled?: boolean }) {
               ? 'text-white/70 hover:text-white hover:bg-white/10' 
               : 'text-[#0F1A26]/70 hover:text-[#0F1A26] hover:bg-[#0F1A26]/10'
         }`}
-        aria-label="Switch to Arabic"
+        aria-label={t("switchToArabic")}
       >
         AR
       </button>
@@ -57,6 +58,7 @@ export function LocaleSwitcher({ scrolled = false }: { scrolled?: boolean }) {
 
 export function LocaleSwitcherMobile() {
   const locale = useLocale();
+  const t = useTranslations("localeSwitcher");
   const router = useRouter();
   const pathname = usePathname();
 
@@ -70,7 +72,7 @@ export function LocaleSwitcherMobile() {
       <div className="flex items-center gap-2">
         <Globe className="w-5 h-5 text-[#EEBC3F]" />
         <span className="text-white/80 text-sm font-medium">
-          {locale === 'ar' ? 'اللغة / Language' : 'Language / اللغة'}
+          {t("label")}
         </span>
       </div>
       

@@ -35,8 +35,7 @@
     "tagline": "Pack Smart. Travel Bold.",
     "cta": "Shop Now",
     "freeShipping": "Free shipping on orders over 1000 EGP",
-    "egyptOnly": "Egypt Only",
-    "symplCashback": "Pay with Sympl and get 30% cashback up to 100 EGP"
+    "egyptOnly": "Egypt Only"
   },
   "benefits": {
     "sectionLabel": "Features",
@@ -106,6 +105,7 @@
     "title": "Travel Smarter with Bundles",
     "subtitle": "Complete travel sets designed for every type of journey. Save up to 30% when you bundle.",
     "save": "Save EGP {amount}",
+    "discountPercent": "Get {percent}% Discount",
     "addToCart": "Add to Cart",
     "viewAll": "View All Bundles",
     "viewProduct": "View Product"
@@ -383,8 +383,41 @@
         "printed": "Printed Models"
       }
     },
+    "categoryCopy": {
+      "all": {
+        "title": "Travel essentials built for everyday trips",
+        "description": "Browse luggage covers, passport wallets, PackOnat organizers and bundles with filters for size, color and travel style."
+      },
+      "luggage-covers": {
+        "title": "Choose the right luggage cover by size and style",
+        "description": "Filter by suitcase height, design collection and print type. Measure the suitcase body without wheels for the best fit."
+      },
+      "passport-wallets": {
+        "title": "Passport wallets with secure everyday details",
+        "description": "Pick the color and finish that fits your travel routine, with RFID protection and space for key documents."
+      },
+      "packonat": {
+        "title": "PackOnat organizers for cleaner packing",
+        "description": "Keep clothes folded, separated and easier to move between suitcase and hotel room."
+      },
+      "bundles": {
+        "title": "Bundles that match complete travel needs",
+        "description": "Shop curated sets with product combinations already grouped for gifting, family travel or full suitcase protection."
+      }
+    },
     "results": {
       "showing": "Showing {count} products"
+    },
+    "quickAdd": {
+      "size": "Select size",
+      "color": "Select color",
+      "add": "Add",
+      "buy": "Buy",
+      "customize": "Customize",
+      "total": "Bundle total",
+      "next": "Next product",
+      "back": "Back",
+      "step": "Step {current}/{total}"
     },
     "noProducts": "No products found",
     "clearFilters": "Clear all filters",
@@ -407,17 +440,30 @@
       "reviews": "127 verified reviews"
     },
     "price": {
-      "save": "Save {{percent}}%"
+      "save": "Save {percent}%",
+      "unavailable": "Product price is not loaded. Please refresh the page."
     },
+    "unavailable": "Unavailable",
     "size": {
       "select": "Select Size",
       "title": "Select Size",
+      "confirm": "Select size",
       "howToMeasure": "How to Measure?",
       "heightNote": "* Height without wheels",
-      "heightLabel": "Height"
+      "heightLabel": "Height",
+      "selectedGuide": "Size {size} fits height {range} without wheels.",
+      "recommended": "Recommended size: {size}"
     },
     "color": {
       "select": "Select Color"
+    },
+    "bundle": {
+      "selectionUnavailable": "Bundle selection unavailable",
+      "itemUnavailable": "Bundle item unavailable",
+      "popular": "Popular",
+      "qty": "Qty: {quantity}",
+      "swipeToChoose": "Swipe to choose",
+      "selected": "Selected"
     },
     "bundleItemsTitle": "Bundle Items - Customize Each",
     "quantity": "Quantity",
@@ -443,6 +489,18 @@
       "scratchProtection": {
         "title": "Scratch Protection",
         "desc": "Protects your luggage"
+      }
+    },
+    "trust": {
+      "measure": "Measure height without wheels",
+      "shipping": "Free shipping over 1000 EGP",
+      "returns": "30-day exchange and returns",
+      "payment": "Secure card and COD payments",
+      "whatsapp": {
+        "cta": "Need size help on WhatsApp?",
+        "message": "Hi natOnat, I need help choosing the right size for {product}. Selected size: {size}. Color: {color}.",
+        "noSize": "not selected",
+        "noColor": "not selected"
       }
     },
     "description": {
@@ -492,7 +550,13 @@
     "videoSection": {
       "title": "See It In Action",
       "subtitle": "Watch how PackOnat keeps your clothes organized and wrinkle-free",
-      "passportSubtitle": "Discover the premium leather and RFID protection of our passport wallet"
+      "passportSubtitle": "Discover the premium leather and RFID protection of our passport wallet",
+      "luggageSubtitle": "Watch how our luggage covers protect your suitcase in style",
+      "luggageLabels": {
+        "protection": "Premium suitcase protection",
+        "easyWear": "Easy to wear in seconds",
+        "secureFit": "Travel-ready secure fit"
+      }
     }
   },
   "sizeModal": {
@@ -521,6 +585,10 @@
       "subtitle": "Review your items and proceed to checkout"
     },
     "bundleIncludes": "Bundle includes:",
+    "editBundle": "Edit bundle",
+    "securePayment": "Secure payment",
+    "aramexShipping": "Aramex shipping",
+    "saved": "You saved",
     "cartItems": "{count, plural, =0 {No items} =1 {1 item} other {# items}}",
     "continueShopping": "Continue Shopping",
     "empty": {
@@ -551,7 +619,9 @@
       "note": "Shipping and taxes calculated at checkout",
       "egyptOnly": "🚚 Egypt delivery only",
       "shippingAtCheckout": "Shipping calculated at checkout",
-      "discount": "Discount"
+      "discount": "Discount",
+      "freeShippingProgress": "Add EGP {amount} more for free shipping",
+      "freeShippingUnlocked": "You unlocked free shipping"
     },
     "savings": "You're saving EGP {amount}"
   },
@@ -561,6 +631,33 @@
       "subtitle": "Complete your order and we'll ship it right away"
     },
     "backToCart": "Back to Cart",
+    "emptyCart": {
+      "title": "Your cart is empty",
+      "description": "Choose your products and options first, then come back to checkout.",
+      "shopNow": "Shop now",
+      "viewCart": "View cart",
+      "submitError": "Your cart is empty. Add products before placing an order."
+    },
+    "validation": {
+      "required": "This field is required",
+      "invalidEmail": "Enter a valid email address",
+      "invalidPhone": "Enter a valid Egyptian mobile number",
+      "invalidCity": "Choose a city from the list",
+      "reviewFields": "Please review the highlighted fields before placing the order."
+    },
+    "steps": ["Details", "Delivery", "Payment", "Review"],
+    "hints": {
+      "address": "Add area, street, building number, floor, and a nearby landmark for smoother delivery.",
+      "city": "Type the first letters and choose from the list, or press Enter for the first result.",
+      "securePayment": "Secure checkout. We do not store card details, and online payments are verified before shipping."
+    },
+    "aramexStatus": {
+      "success": "Aramex Shipment Created",
+      "pending": "Creating Aramex Shipment...",
+      "failed": "Aramex Shipment Failed",
+      "trackingNumber": "Tracking Number",
+      "manualShipment": "Your order is confirmed. We'll create the shipment manually."
+    },
     "success": {
       "title": "Order Confirmed!",
       "subtitle": "Thank you for your order. We'll send you a confirmation email shortly.",
@@ -670,8 +767,68 @@
       "size": "Size",
       "color": "Color",
       "selectCityForShipping": "Select city to calculate shipping",
+      "itemCount": "{count, plural, =1 {# item} other {# items}}",
+      "shippingLabel": "Shipping",
+      "freeShipping": "Free shipping",
+      "paymentMethodDiscount": "Payment Method Discount (2%)",
+      "paymentDiscount": "Payment discount EGP {amount}",
       "buyNowMode": "🛒 Buy Now - Quick Purchase",
       "cartMode": "🛍️ From Cart"
+    }
+  },
+  "orderConfirmed": {
+    "loading": "Loading order status...",
+    "status": {
+      "checkingTitle": "Checking Order",
+      "successTitle": "Order Confirmed",
+      "pendingTitle": "Payment Pending",
+      "notFoundTitle": "Order Not Found",
+      "failedTitle": "Payment Failed",
+      "checkingDescription": "Please wait while we verify your order.",
+      "successDescription": "Thank you. Your order has been confirmed successfully.",
+      "pendingDescription": "Your payment is pending. We will update your order once confirmed.",
+      "notFoundDescription": "We could not verify this order reference. Please check the link or contact support.",
+      "failedDescription": "Your payment was not completed. Please try again."
+    },
+    "labels": {
+      "orderReference": "Order Reference",
+      "paymentMethod": "Payment Method",
+      "transactionId": "Transaction ID",
+      "amount": "Amount",
+      "orderItems": "Order items",
+      "product": "Product",
+      "shippingStatus": "Shipping status"
+    },
+    "messages": {
+      "recorded": "Your order was recorded successfully. We will review it and share updates.",
+      "shipmentCreated": "Aramex shipment has been created.",
+      "trackingPending": "Tracking will be shared once the shipment is ready.",
+      "cannotConfirm": "This page cannot confirm an order without a valid order record.",
+      "moneyDeducted": "If money was deducted, please contact support with your order reference.",
+      "supportWhatsapp": "Hello natOnat, I need help with order {orderRef}"
+    },
+    "actions": {
+      "whatsappSupport": "WhatsApp Support",
+      "tryAgain": "Try Again",
+      "continueShopping": "Continue Shopping"
+    }
+  },
+  "paymentReturn": {
+    "loading": "Checking payment status...",
+    "status": {
+      "successTitle": "Payment Successful",
+      "pendingTitle": "Payment Pending",
+      "failedTitle": "Payment Failed",
+      "successDescription": "Payment approved. Redirecting you now...",
+      "pendingDescription": "Your payment is pending. We will update your order once confirmed.",
+      "failedDescription": "Your payment was not completed. Please try again."
+    },
+    "labels": {
+      "orderReference": "Order Reference"
+    },
+    "actions": {
+      "tryAgain": "Try Again",
+      "backToShop": "Back to Shop"
     }
   },
   "common": {
@@ -689,6 +846,33 @@
     "delete": "Delete",
     "view": "View"
   },
+  "commerceToast": {
+    "addedToCart": "Added to cart",
+    "bundleAddedToCart": "Bundle added to cart",
+    "checkout": "Checkout",
+    "keepShopping": "Keep shopping",
+    "removedFromWishlist": "Removed from wishlist",
+    "addedToWishlist": "Added to wishlist"
+  },
+  "wishlistButton": {
+    "add": "Add to wishlist",
+    "remove": "Remove from wishlist"
+  },
+  "localeSwitcher": {
+    "label": "Language / اللغة",
+    "switchToEnglish": "Switch to English",
+    "switchToArabic": "Switch to Arabic"
+  },
+  "stock": {
+    "inStock": "In stock",
+    "lowStock": "Low stock",
+    "outOfStock": "Out of stock"
+  },
+  "bundleCustomizer": {
+    "unavailable": "Unavailable",
+    "oneItemUnavailable": "One bundle item is currently unavailable",
+    "review": "Bundle review"
+  },
   "wishlist": {
     "label": "Favorites",
     "title": "My Wishlist",
@@ -699,7 +883,23 @@
     },
     "clearAll": "Clear All",
     "discoverMore": "Discover More Products",
-    "continueShopping": "Continue Shopping"
+    "continueShopping": "Continue Shopping",
+    "actions": {
+      "addToCart": "Add to cart",
+      "buyNow": "Buy now",
+      "customizeBundle": "Customize bundle",
+      "checkout": "Checkout",
+      "keepShopping": "Keep shopping"
+    },
+    "item": {
+      "size": "Size",
+      "color": "Color",
+      "updatedFromCatalog": "Updated from catalog"
+    },
+    "toast": {
+      "removed": "Removed from wishlist",
+      "added": "Added to cart"
+    }
   },
   "contact": {
     "hero": {
@@ -777,7 +977,17 @@
     "readTime": "min read",
     "share": "Share This Article",
     "related": "More Articles",
-    "backToArticles": "Back to Articles"
+    "backToArticles": "Back to Articles",
+    "detail": {
+      "breadcrumbHome": "Home",
+      "breadcrumbArticles": "Articles",
+      "inThisGuide": "In this guide",
+      "shopCtaTitle": "Get your travel gear ready",
+      "shopCtaText": "Choose a washable luggage cover or smart passport wallet from natOnat before your next trip.",
+      "shopCtaAction": "Shop products",
+      "sizeCtaAction": "Size guide",
+      "articleSummary": "Article summary"
+    }
   },
   "about": {
     "hero": {
@@ -3559,7 +3769,9 @@
   },
   "components": {
     "floatingContact": {
-      "label": "Need help?"
+      "label": "Need help?",
+      "whatsapp": "WhatsApp",
+      "phone": "Call us"
     }
   }
 }

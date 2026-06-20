@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { CartProvider } from "../lib/cart-context";
 import { CatalogProvider } from "../lib/catalog-context";
+import { SiteSettingsProvider } from "../lib/site-settings-context";
 import { WishlistProvider } from "../lib/wishlist-context";
 import { ToastProvider } from "../components/toast-provider";
 import FloatingContactLoader from "../components/floating-contact-loader";
@@ -11,6 +12,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { getMessages, setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
 import { getCatalogProducts } from "@/lib/sanity-products";
+import { getSiteSettings } from "@/lib/sanity-site-settings";
 
 export const metadata: Metadata = {
   title: "natOnat | Pack Smart. Travel Easy.",
@@ -39,9 +41,10 @@ export default async function LocaleLayout({
 
   setRequestLocale(locale);
 
-  const [messages, products] = await Promise.all([
+  const [messages, products, siteSettings] = await Promise.all([
     getMessages({ locale }),
     getCatalogProducts(),
+    getSiteSettings(),
   ]);
 
   return (
@@ -56,17 +59,19 @@ export default async function LocaleLayout({
       }}
     >
         <NextIntlClientProvider messages={messages}>
-          <CatalogProvider products={products}>
-            <ToastProvider>
-              <CartProvider>
-                <WishlistProvider>
-                  {children}
-                  <FloatingContactLoader />
-                  <CartSliderWrapper />
-                </WishlistProvider>
-              </CartProvider>
-            </ToastProvider>
-          </CatalogProvider>
+          <SiteSettingsProvider settings={siteSettings}>
+            <CatalogProvider products={products}>
+              <ToastProvider>
+                <CartProvider>
+                  <WishlistProvider>
+                    {children}
+                    <FloatingContactLoader />
+                    <CartSliderWrapper />
+                  </WishlistProvider>
+                </CartProvider>
+              </ToastProvider>
+            </CatalogProvider>
+          </SiteSettingsProvider>
         </NextIntlClientProvider>
     </div>
   );

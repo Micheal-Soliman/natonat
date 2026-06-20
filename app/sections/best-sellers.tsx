@@ -2,12 +2,18 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { Link } from "@/i18n/routing";
+import { Link, useRouter } from "@/i18n/routing";
 import { useTranslations, useLocale } from 'next-intl';
 import { Button } from "@/components/ui/button";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { useCatalogProducts } from "@/app/lib/catalog-context";
+import { useSizeGuideSizes } from "@/app/lib/site-settings-context";
+import { useCart } from "@/app/lib/cart-context";
+import { BundleQuickCustomizer } from "@/app/components/bundle-quick-customizer";
+import { WishlistToggleButton } from "@/app/components/wishlist-toggle-button";
+import { useToast } from "@/app/components/toast-provider";
 import type { Product } from "@/lib/products";
+import { getStockLabel, isProductOutOfStock } from "@/lib/product-stock";
 
 // Get products from all 3 categories for display
 const hasCategory = (product: Product, category: string) =>
@@ -32,16 +38,29 @@ const getDisplayProducts = (products: Product[]) => {
 
 export function BestSellers() {
   const t = useTranslations('bestSellers');
+  const tq = useTranslations('shop');
+  const toastT = useTranslations('commerceToast');
+  const stockT = useTranslations('stock');
+  const router = useRouter();
   const products = useCatalogProducts();
+  const sizes = useSizeGuideSizes();
+  const { addToCart, setBuyNowItem } = useCart();
+  const { showToast } = useToast();
   const displayProducts = getDisplayProducts(products);
   const locale = useLocale();
   const isRTL = locale === 'ar';
+  const stockLabels = {
+    inStock: stockT("inStock"),
+    lowStock: stockT("lowStock"),
+    outOfStock: stockT("outOfStock"),
+  };
   const [isVisible, setIsVisible] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
+  const [quickSelections, setQuickSelections] = useState<Record<number, { size?: string; color?: string }>>({});
   const isDraggingRef = useRef(false);
   const hasDraggedRef = useRef(false);
   const dragStartX = useRef(0);
@@ -147,6 +166,124 @@ export function BestSellers() {
     }
   };
 
+  const getQuickSizeOptions = (product: Product) => {
+    if (product.sizePrices) {
+      return sizes.filter((size) => product.sizePrices?.[size.id as keyof NonNullable<Product["sizePrices"]>]);
+    }
+
+    if (!product.size) return [];
+
+    const selectedSize = product.size.toLowerCase();
+    return sizes.filter((size) => size.id === selectedSize);
+  };
+
+  const getQuickSelection = (product: Product) => {
+    const sizeOptions = getQuickSizeOptions(product);
+    const colorOptions = product.colors || [];
+    const savedSelection = quickSelections[product.id] || {};
+
+    return {
+      size: savedSelection.size || sizeOptions[0]?.id || product.size?.toLowerCase(),
+      color: savedSelection.color || colorOptions[0]?.id || product.color,
+    };
+  };
+
+  const updateQuickSelection = (productId: number, selection: { size?: string; color?: string }) => {
+    setQuickSelections((current) => ({
+      ...current,
+      [productId]: {
+        ...current[productId],
+        ...selection,
+      },
+    }));
+  };
+
+  const isBundleProduct = (product: Product) => hasCategory(product, "bundles");
+
+  const getQuickCartItem = (product: Product) => {
+    const selection = getQuickSelection(product);
+    const sizeKey = selection.size?.toLowerCase() as keyof NonNullable<Product["sizePrices"]>;
+    const sizePrice = sizeKey && product.sizePrices?.[sizeKey];
+    const colorVariant = product.colors?.find((color) => color.id === selection.color);
+
+    return {
+      id: product.id,
+      name: product.name,
+      slug: product.slug,
+      type: product.type,
+      price: sizePrice?.price ?? product.price,
+      originalPrice: sizePrice?.originalPrice ?? product.originalPrice,
+      image: colorVariant?.image || product.image,
+      size: product.sizePrices || product.size ? selection.size : undefined,
+      color: colorVariant?.name || selection.color || product.color,
+      quantity: 1,
+    };
+  };
+
+  const getColorSwatchStyle = (colorName?: string) => {
+    const normalizedColor = colorName?.toLowerCase() || "";
+    const colorMap: Record<string, string> = {
+      black: "#111827",
+      white: "#F8FAFC",
+      grey: "#9CA3AF",
+      gray: "#9CA3AF",
+      blue: "#2563EB",
+      navy: "#1E3A8A",
+      red: "#DC2626",
+      green: "#16A34A",
+      yellow: "#FACC15",
+      gold: "#D6A62C",
+      purple: "#7C3AED",
+      orange: "#F97316",
+      brown: "#8B5E3C",
+      cognac: "#9A5A2E",
+    };
+
+    const matches = Object.entries(colorMap)
+      .filter(([name]) => normalizedColor.includes(name))
+      .map(([, value]) => value);
+
+    if (matches.length >= 2) {
+      return { background: `linear-gradient(135deg, ${matches[0]} 0 50%, ${matches[1]} 50% 100%)` };
+    }
+
+    if (matches.length === 1) {
+      return { backgroundColor: matches[0] };
+    }
+
+    return { background: "linear-gradient(135deg, #EEBC3F, #0F1A26)" };
+  };
+
+  const handleQuickAdd = (product: Product) => {
+    if (isProductOutOfStock(product)) return;
+    addToCart(getQuickCartItem(product), { openCart: false });
+    showToast({
+      title: toastT("addedToCart"),
+      description: product.name,
+      action: {
+        label: toastT("checkout"),
+        onClick: () => router.push("/checkout"),
+      },
+      cancel: {
+        label: toastT("keepShopping"),
+        onClick: () => {},
+      },
+    });
+  };
+
+  const handleQuickBuy = (product: Product) => {
+    if (isProductOutOfStock(product)) return;
+    setBuyNowItem(getQuickCartItem(product));
+    router.push("/checkout");
+  };
+
+  const stopCarouselDrag = (event: React.MouseEvent | React.TouchEvent) => {
+    event.stopPropagation();
+    isDraggingRef.current = false;
+    setIsDragging(false);
+    hasDraggedRef.current = false;
+  };
+
   return (
     <section ref={ref} className="py-24 bg-[#0F1A26]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -187,66 +324,224 @@ export function BestSellers() {
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseLeave}
           >
-            {displayProducts.map((product, index) => (
-              <div
-                key={product.id}
-                className={`group flex-shrink-0 w-[260px] sm:w-[280px] md:w-[300px] transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-                  }`}
-                style={{ transitionDelay: `${(index + 1) * 80}ms` }}
-              >
-                <Link
-                  href={`/product/${product.slug}`}
-                  className="block"
-                  onClick={(e) => {
-                    if (hasDraggedRef.current) {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }
-                  }}
+            {displayProducts.map((product, index) => {
+              const sizeOptions = getQuickSizeOptions(product);
+              const colorOptions = product.colors || [];
+              const selection = getQuickSelection(product);
+              const isBundle = isBundleProduct(product);
+              const isUnavailable = isProductOutOfStock(product);
+
+              return (
+                <div
+                  key={product.id}
+                  className={`group flex-shrink-0 w-[260px] sm:w-[280px] md:w-[300px] transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                    }`}
+                  style={{ transitionDelay: `${(index + 1) * 80}ms` }}
                 >
-                  {/* Product Image */}
-                  <div className="relative aspect-[3/4] rounded-xl sm:rounded-2xl overflow-hidden mb-3 sm:mb-4 border border-white/10 bg-[#F1EBE3]">
-                    <Image
-                      src={product.image}
-                      alt={product.name}
-                      fill
-                      sizes="(max-width: 640px) 65vw, (max-width: 1024px) 33vw, 300px"
-                      className="object-contain transition-transform duration-500 group-hover:scale-105"
-                      loading="lazy"
-                      quality={55}
-                    />
+                  <div className="relative">
+                    <Link
+                      href={`/product/${product.slug}`}
+                      className="block"
+                      onClick={(e) => {
+                        if (hasDraggedRef.current) {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }
+                      }}
+                    >
+                      {/* Product Image */}
+                    <div className="relative aspect-[3/4] rounded-xl sm:rounded-2xl overflow-hidden mb-3 sm:mb-4 border border-white/10 bg-[#F1EBE3]">
+                      <Image
+                        src={product.image}
+                        alt={product.name}
+                        fill
+                        sizes="(max-width: 640px) 65vw, (max-width: 1024px) 33vw, 300px"
+                        className="object-contain transition-transform duration-500 group-hover:scale-105"
+                        loading="lazy"
+                        quality={55}
+                      />
 
-                    {product.tag && (
-                      <span className={`absolute top-2 left-2 sm:top-3 sm:left-3 z-10 text-[9px] sm:text-[10px] font-semibold tracking-wider uppercase px-2 sm:px-3 py-1 sm:py-1.5 rounded-full ${product.tag === 'Best Seller' ? 'bg-[#EEBC3F] text-[#0F1A26]' :
-                        product.tag === 'New' ? 'bg-white text-[#0F1A26]' :
-                          product.tag === 'Limited' ? 'bg-[#4B1F1F] text-[#F1EBE3]' :
-                            'bg-[#EEBC3F]/20 text-[#EEBC3F] border border-[#EEBC3F]/30'
-                        }`}>
-                        {product.tag === 'Best Seller' ? t('bestSeller') :
-                          product.tag === 'Best Value' ? t('bestValue') :
-                            product.tag === 'Popular' ? t('popular') :
-                              product.tag === 'Bundle' ? t('bundle') :
-                                product.tag === 'Essential' ? t('essential') :
-                                  product.tag === 'New' ? t('new') :
-                                    product.tag === 'Limited' ? t('limited') : product.tag}
-                      </span>
-                    )}
-                  </div>
+                      {product.tag && (
+                        <span className={`absolute top-2 left-2 sm:top-3 sm:left-3 z-10 text-[9px] sm:text-[10px] font-semibold tracking-wider uppercase px-2 sm:px-3 py-1 sm:py-1.5 rounded-full ${product.tag === 'Best Seller' ? 'bg-[#EEBC3F] text-[#0F1A26]' :
+                          product.tag === 'New' ? 'bg-white text-[#0F1A26]' :
+                            product.tag === 'Limited' ? 'bg-[#4B1F1F] text-[#F1EBE3]' :
+                              'bg-[#EEBC3F]/20 text-[#EEBC3F] border border-[#EEBC3F]/30'
+                          }`}>
+                          {product.tag === 'Best Seller' ? t('bestSeller') :
+                            product.tag === 'Best Value' ? t('bestValue') :
+                              product.tag === 'Popular' ? t('popular') :
+                                product.tag === 'Bundle' ? t('bundle') :
+                                  product.tag === 'Essential' ? t('essential') :
+                                    product.tag === 'New' ? t('new') :
+                                      product.tag === 'Limited' ? t('limited') : product.tag}
+                        </span>
+                      )}
 
-                  {/* Product Info */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[#EEBC3F]/80 text-[10px] font-semibold tracking-[0.15em] uppercase">
-                        {product.type}
-                      </span>
+                      {!product.dynamicPricing && product.originalPrice > product.price && (
+                        <span className="absolute top-2 right-2 sm:top-3 sm:right-3 z-10 rounded-full bg-[#EEBC3F] px-2 py-1 text-[10px] font-bold text-[#0F1A26] shadow-lg sm:px-3 sm:py-1.5">
+                          -{Math.round((1 - product.price / product.originalPrice) * 100)}%
+                        </span>
+                      )}
                     </div>
-                    <h3 className="text-white font-medium text-sm sm:text-base tracking-tight group-hover:text-[#EEBC3F] transition-colors duration-300 line-clamp-1">
-                      {product.name}
-                    </h3>
+                    </Link>
+                    <WishlistToggleButton
+                      product={product}
+                      variant="dark"
+                      className="absolute bottom-6 right-2 sm:bottom-7 sm:right-3"
+                    />
                   </div>
-                </Link>
-              </div>
-            ))}
+
+                  <Link
+                    href={`/product/${product.slug}`}
+                    className="block"
+                    onClick={(e) => {
+                      if (hasDraggedRef.current) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }
+                    }}
+                  >
+                    {/* Product Info */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[#EEBC3F]/80 text-[10px] font-semibold tracking-[0.15em] uppercase">
+                          {product.type}
+                        </span>
+                      </div>
+                      <h3 className="text-white font-medium text-sm sm:text-base tracking-tight group-hover:text-[#EEBC3F] transition-colors duration-300 line-clamp-1">
+                        {product.name}
+                      </h3>
+                      {product.stockStatus && product.stockStatus !== "in_stock" && (
+                        <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                          isUnavailable ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"
+                        }`}>
+                          {getStockLabel(product, stockLabels)}
+                        </span>
+                      )}
+                    </div>
+                  </Link>
+
+                  {isBundle ? (
+                    <BundleQuickCustomizer
+                      product={product}
+                      products={products}
+                      variant="dark"
+                      stopInteraction={stopCarouselDrag}
+                    />
+                  ) : (
+                  <div
+                    className="mt-3 rounded-2xl border border-white/10 bg-white/[0.07] p-2.5 shadow-lg shadow-black/10 backdrop-blur-sm"
+                    onMouseDown={stopCarouselDrag}
+                    onMouseMove={(event) => event.stopPropagation()}
+                    onTouchStart={stopCarouselDrag}
+                    onTouchMove={(event) => event.stopPropagation()}
+                  >
+                    {!isBundle && (sizeOptions.length > 1 || colorOptions.length > 1) && (
+                      <div className="mb-2 space-y-2">
+                        {sizeOptions.length > 1 && (
+                          <div>
+                            <div className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-white/45">
+                              {t('size')}
+                            </div>
+                            <div className="grid grid-cols-4 gap-1.5">
+                              {sizeOptions.map((size) => {
+                                const isSelected = selection.size === size.id;
+
+                                return (
+                                  <button
+                                    key={size.id}
+                                    type="button"
+                                    aria-pressed={isSelected}
+                                    onClick={() => updateQuickSelection(product.id, { size: size.id })}
+                                    className={`h-8 rounded-lg border text-xs font-bold transition-all ${
+                                      isSelected
+                                        ? "border-[#EEBC3F] bg-[#EEBC3F] text-[#0F1A26] shadow-sm"
+                                        : "border-white/10 bg-white/10 text-white/70 hover:border-[#EEBC3F]/60 hover:text-white"
+                                    }`}
+                                  >
+                                    {size.label}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {colorOptions.length > 1 && (
+                          <div>
+                            <div className="mb-1.5 flex items-center justify-between gap-2">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-white/45">
+                                {tq('quickAdd.color')}
+                              </span>
+                              <span className="truncate text-[11px] font-semibold text-white/60">
+                                {colorOptions.find((color) => color.id === selection.color)?.name}
+                              </span>
+                            </div>
+                            <div className="flex flex-wrap gap-1.5">
+                              {colorOptions.map((color) => {
+                                const isSelected = selection.color === color.id;
+
+                                return (
+                                  <button
+                                    key={color.id}
+                                    type="button"
+                                    aria-label={`${tq('quickAdd.color')}: ${color.name}`}
+                                    aria-pressed={isSelected}
+                                    onClick={() => updateQuickSelection(product.id, { color: color.id })}
+                                    className={`h-7 w-7 rounded-full border p-0.5 transition-all ${
+                                      isSelected
+                                        ? "border-[#EEBC3F] ring-2 ring-[#EEBC3F]/35"
+                                        : "border-white/20 hover:border-[#EEBC3F]/70"
+                                    }`}
+                                  >
+                                    <span
+                                      className="block h-full w-full rounded-full border border-black/10"
+                                      style={getColorSwatchStyle(color.name)}
+                                    />
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {isBundle && (
+                      <Link
+                        href={`/product/${product.slug}`}
+                        className="mb-2 block rounded-xl bg-[#EEBC3F]/10 px-3 py-2 text-center text-xs font-bold text-[#EEBC3F] hover:bg-[#EEBC3F]/20"
+                      >
+                        {tq('quickAdd.customize')}
+                      </Link>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        type="button"
+                        aria-label={tq('quickAdd.add')}
+                        onClick={() => handleQuickAdd(product)}
+                        disabled={isUnavailable}
+                        className="h-10 rounded-xl bg-white/10 border border-white/10 text-white hover:bg-white hover:text-[#0F1A26] px-2 text-xs font-bold"
+                        variant="outline"
+                      >
+                        <span className="truncate">{isUnavailable ? getStockLabel(product, stockLabels) : tq('quickAdd.add')}</span>
+                      </Button>
+                      <Button
+                        type="button"
+                        aria-label={tq('quickAdd.buy')}
+                        onClick={() => handleQuickBuy(product)}
+                        disabled={isUnavailable}
+                        className="h-10 rounded-xl bg-[#EEBC3F] text-[#0F1A26] hover:bg-[#d4a535] px-2 text-xs font-bold shadow-sm shadow-[#EEBC3F]/25"
+                      >
+                        <span className="truncate">{isUnavailable ? getStockLabel(product, stockLabels) : tq('quickAdd.buy')}</span>
+                      </Button>
+                    </div>
+                  </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
 

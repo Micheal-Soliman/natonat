@@ -7,7 +7,7 @@ const FloatingContact = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+      <div className="fixed bottom-6 right-4 z-50 flex flex-col items-end sm:right-6">
         <div className="w-14 h-14 rounded-full bg-[#0F1A26]" />
       </div>
     ),

@@ -81,7 +81,9 @@ export async function POST(req: Request) {
 
     // Create shipment with Aramex
     const result = await createShipment(shipmentData);
-    console.log("[Aramex API Response]:", JSON.stringify(result, null, 2));
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[Aramex API Response]:", JSON.stringify(result, null, 2));
+    }
 
     // Check for errors
     if (!result.success) {
@@ -97,7 +99,9 @@ export async function POST(req: Request) {
     }
 
     // Success
-    console.log("[Aramex Shipment] Success:", result);
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[Aramex Shipment] Success:", result);
+    }
     return NextResponse.json({
       success: true,
       trackingNumber: result.trackingNumber,

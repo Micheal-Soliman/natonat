@@ -8,7 +8,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, CreditCard, Truck, Check, MapPin, Phone, Mail, Newspaper, Store, Package, Search, ChevronDown } from "lucide-react";
+import { ArrowLeft, CreditCard, Truck, Check, MapPin, Phone, Mail, Newspaper, Store, Package, Search, ChevronDown, ShoppingBag } from "lucide-react";
 import { useCart, type CartItem } from "@/app/lib/cart-context";
 import { trackMetaPixelEvent } from "@/lib/meta-pixel";
 import { useCatalogProducts } from "@/app/lib/catalog-context";
@@ -18,22 +18,188 @@ function generateOrderRef() {
   return `NAT-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 }
 
+const popularCityNames = [
+  "Cairo",
+  "New Cairo",
+  "Nasr City",
+  "Maadi",
+  "Giza",
+  "Sheikh Zayed City",
+  "October City",
+  "Alexandria",
+  "Mansoura",
+  "Tanta",
+  "Zagazig",
+  "Ismailia",
+  "Port Said",
+];
+
+const ARAMEX_CITIES_CACHE_KEY = "natonat-aramex-cities-eg";
+const ARAMEX_CITIES_CACHE_TTL = 24 * 60 * 60 * 1000;
+
+const citySearchAliases: Record<string, string[]> = {
+  cairo: ["cairo", "القاهرة", "قاهره", "القاهره", "el qahera", "alqahira"],
+  "new cairo": ["new cairo", "التجمع", "القاهرة الجديدة", "القاهره الجديده", "tagamoa", "tagamo3", "newcairo"],
+  "nasr city": ["nasr city", "مدينة نصر", "مدينه نصر", "nasr", "madinet nasr"],
+  maadi: ["maadi", "المعادي", "معادي"],
+  giza: ["giza", "الجيزة", "الجيزه", "جيزة", "جيزه"],
+  "sheikh zayed city": ["sheikh zayed", "sheikh zayed city", "زايد", "الشيخ زايد", "zayed"],
+  "october city": ["october", "october city", "6 october", "6th october", "اكتوبر", "أكتوبر", "٦ اكتوبر", "6 اكتوبر"],
+  alexandria: ["alexandria", "alex", "اسكندرية", "اسكندريه", "الإسكندرية", "الاسكندرية"],
+  mansoura: ["mansoura", "المنصورة", "المنصوره"],
+  tanta: ["tanta", "طنطا"],
+  zagazig: ["zagazig", "الزقازيق", "زقازيق"],
+  ismailia: ["ismailia", "الإسماعيلية", "الاسماعيلية", "اسماعيليه"],
+  "port said": ["port said", "portsaid", "بورسعيد"],
+};
+
+function normalizeCitySearch(value: string) {
+  return value
+    .trim()
+    .toLocaleLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u064B-\u065F\u0670]/g, "")
+    .replace(/[إأآا]/g, "ا")
+    .replace(/ى/g, "ي")
+    .replace(/ة/g, "ه")
+    .replace(/ؤ/g, "و")
+    .replace(/ئ/g, "ي")
+    .replace(/\s+/g, " ");
+}
+
+function getCitySearchTerms(city: string) {
+  const cityKey = normalizeCitySearch(city);
+  const aliasTerms = Object.entries(citySearchAliases).flatMap(([key, aliases]) =>
+    cityKey === normalizeCitySearch(key) || aliases.some((alias) => cityKey.includes(normalizeCitySearch(alias)))
+      ? aliases
+      : []
+  );
+
+  return [city, ...aliasTerms].map(normalizeCitySearch);
+}
+
+function isDiscountShippingCity(city: string) {
+  const cityLower = normalizeCitySearch(city);
+  const cairoDistricts = [
+    "cairo",
+    "new cairo",
+    "nasr city",
+    "maadi",
+    "heliopolis",
+    "zamalek",
+    "down town",
+    "ain shams",
+    "abasya",
+    "el rehab",
+  ];
+  const gizaDistricts = [
+    "giza",
+    "dokki",
+    "mohandiseen",
+    "agouza",
+    "imbaba",
+    "sheikh zayed city",
+    "october city",
+  ];
+  const alexDistricts = ["alexandria"];
+
+  return (
+    cairoDistricts.includes(cityLower) ||
+    gizaDistricts.includes(cityLower) ||
+    alexDistricts.includes(cityLower)
+  );
+}
+
+function getShippingRule({
+  deliveryMethod,
+  subtotal,
+  city,
+}: {
+  deliveryMethod: string;
+  subtotal: number;
+  city: string;
+}) {
+  if (deliveryMethod === "pickup") return "pickup_free";
+  if (subtotal > 1000) return "subtotal_over_1000_free";
+  return isDiscountShippingCity(city)
+    ? "cairo_giza_alex_75"
+    : "other_governorates_100";
+}
+
+function normalizeCitiesPayload(data: unknown) {
+  return Array.from(new Set(Array.isArray(data) ? data : []))
+    .filter((city): city is string => typeof city === "string" && city.trim().length > 0)
+    .sort((a, b) => a.localeCompare(b));
+}
+
+function readCachedAramexCities() {
+  try {
+    const raw = window.localStorage.getItem(ARAMEX_CITIES_CACHE_KEY);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as {
+      cachedAt?: number;
+      cities?: unknown;
+    };
+
+    if (
+      !parsed.cachedAt ||
+      Date.now() - parsed.cachedAt > ARAMEX_CITIES_CACHE_TTL
+    ) {
+      return null;
+    }
+
+    const cities = normalizeCitiesPayload(parsed.cities);
+    return cities.length > 0 ? cities : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedAramexCities(cities: string[]) {
+  try {
+    window.localStorage.setItem(
+      ARAMEX_CITIES_CACHE_KEY,
+      JSON.stringify({
+        cachedAt: Date.now(),
+        cities,
+      })
+    );
+  } catch {
+    // Ignore storage errors; checkout can still fetch cities normally.
+  }
+}
+
 function serializeOrderItem(item: CartItem, products: Product[]) {
   const catalogProduct = products.find((product) => product.id === item.id);
   const color =
     catalogProduct?.colors?.find((variant) => variant.id === item.color)?.name ||
     item.color ||
     catalogProduct?.color;
+  const lineId = [
+    item.id,
+    item.slug,
+    item.size || "no-size",
+    item.color || "no-color",
+    item.isBundle ? item.bundleKey || "bundle" : "",
+  ]
+    .filter(Boolean)
+    .join(":");
 
-  const bundleSelections = item.bundleSelections?.map((selection) => {
+  const bundleSelections = item.bundleSelections?.map((selection, index) => {
     const selectedProduct = products.find((product) => product.id === selection.productId);
     const selectedSizePrice =
       selection.size && selectedProduct?.sizePrices
         ? selectedProduct.sizePrices[selection.size as keyof typeof selectedProduct.sizePrices]
         : undefined;
+    const selectionPrice =
+      selection.price ?? selectedSizePrice?.price ?? selectedProduct?.price;
+    const selectionQuantity = selection.quantity || 1;
 
     return {
       ...selection,
+      selection_id: `${lineId}:selection:${index + 1}`,
+      bundle_index: index + 1,
       productName: selection.productName || selectedProduct?.name || "",
       productSlug: selection.productSlug || selectedProduct?.slug,
       productType: selection.productType || selectedProduct?.type,
@@ -41,7 +207,9 @@ function serializeOrderItem(item: CartItem, products: Product[]) {
         selectedProduct?.colors?.find((variant) => variant.id === selection.color)?.name ||
         selection.color ||
         selectedProduct?.color,
-      price: selection.price ?? selectedSizePrice?.price ?? selectedProduct?.price,
+      price: selectionPrice,
+      unit_price_egp: selectionPrice,
+      line_total_egp: selectionPrice ? selectionPrice * selectionQuantity : undefined,
       originalPrice:
         selection.originalPrice ??
         selectedSizePrice?.originalPrice ??
@@ -50,10 +218,14 @@ function serializeOrderItem(item: CartItem, products: Product[]) {
   });
 
   return {
+    line_id: lineId,
     id: item.id,
     name: item.name,
     slug: item.slug,
     price_egp: item.price,
+    unit_price_egp: item.price,
+    line_total_egp: item.price * item.quantity,
+    currency: "EGP",
     original_price_egp: item.originalPrice,
     quantity: item.quantity,
     size: item.size,
@@ -223,6 +395,7 @@ function CheckoutContent() {
   const checkoutSubtotal = buyNowItem
     ? (buyNowItem.price || 0) * (buyNowItem.quantity || 1)
     : subtotal;
+  const checkoutItemCount = checkoutItems.reduce((sum, item) => sum + item.quantity, 0);
 
   const [formData, setFormData] = useState({
     email: "",
@@ -238,39 +411,73 @@ function CheckoutContent() {
   const [loadingCities, setLoadingCities] = useState(false);
   const [citySearch, setCitySearch] = useState("");
   const [cityListOpen, setCityListOpen] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
+    const cachedCities = readCachedAramexCities();
+    const controller = new AbortController();
+
+    if (cachedCities) {
+      setAramexCities(cachedCities);
+    }
+
     async function getCities() {
-      setLoadingCities(true);
+      if (!cachedCities) {
+        setLoadingCities(true);
+      }
+
       try {
-        const res = await fetch("/api/aramex/cities?countryCode=EG");
+        const res = await fetch("/api/aramex/cities?countryCode=EG", {
+          signal: controller.signal,
+        });
+
         if (res.ok) {
           const data = await res.json();
-          // Filter out duplicates and empty strings
-          const uniqueCities = Array.from(new Set(data as string[]))
-            .filter(Boolean)
-            .sort((a, b) => a.localeCompare(b));
+          const uniqueCities = normalizeCitiesPayload(data);
+
+          writeCachedAramexCities(uniqueCities);
           setAramexCities(uniqueCities);
         }
       } catch (err) {
+        if (controller.signal.aborted) return;
         console.error("Error fetching Aramex cities:", err);
       } finally {
-        setLoadingCities(false);
+        if (!controller.signal.aborted) {
+          setLoadingCities(false);
+        }
       }
     }
+
     getCities();
+
+    return () => controller.abort();
   }, []);
 
   const filteredCities = useMemo(() => {
-    const query = citySearch.trim().toLocaleLowerCase();
-    if (!query) return aramexCities.slice(0, 60);
+    const query = normalizeCitySearch(citySearch);
+    const popularCities = popularCityNames
+      .map((name) => aramexCities.find((city) => normalizeCitySearch(city) === normalizeCitySearch(name)))
+      .filter(Boolean) as string[];
+    const uniquePopularCities = Array.from(new Set(popularCities));
+
+    if (!query) {
+      return [
+        ...uniquePopularCities,
+        ...aramexCities.filter((city) => !uniquePopularCities.includes(city)),
+      ].slice(0, 60);
+    }
 
     return aramexCities
-      .filter((city) => city.toLocaleLowerCase().includes(query))
+      .filter((city) => getCitySearchTerms(city).some((term) => term.includes(query)))
       .sort((a, b) => {
-        const aStartsWith = a.toLocaleLowerCase().startsWith(query);
-        const bStartsWith = b.toLocaleLowerCase().startsWith(query);
+        const aTerms = getCitySearchTerms(a);
+        const bTerms = getCitySearchTerms(b);
+        const aStartsWith = aTerms.some((term) => term.startsWith(query));
+        const bStartsWith = bTerms.some((term) => term.startsWith(query));
+        const aPopular = uniquePopularCities.includes(a);
+        const bPopular = uniquePopularCities.includes(b);
         if (aStartsWith !== bStartsWith) return aStartsWith ? -1 : 1;
+        if (aPopular !== bPopular) return aPopular ? -1 : 1;
         return a.localeCompare(b);
       })
       .slice(0, 60);
@@ -279,11 +486,33 @@ function CheckoutContent() {
   const selectCity = (city: string) => {
     setFormData((current) => ({ ...current, city }));
     setCitySearch(city);
+    setFieldErrors((current) => ({ ...current, city: "" }));
     setCityListOpen(false);
   };
 
-  const [paymentMethod, setPaymentMethod] = useState("cod");
-  const [deliveryMethod, setDeliveryMethod] = useState("delivery");
+  const validateCitySearch = () => {
+    if (deliveryMethod !== "delivery" || loadingCities) return;
+
+    const normalizedValue = normalizeCitySearch(citySearch);
+    const exactCity = aramexCities.find((city) =>
+      getCitySearchTerms(city).some((term) => term === normalizedValue)
+    );
+
+    if (exactCity) {
+      selectCity(exactCity);
+      return;
+    }
+
+    if (citySearch.trim()) {
+      setFieldErrors((current) => ({
+        ...current,
+        city: t("validation.invalidCity"),
+      }));
+    }
+  };
+
+  const [paymentMethod, setPaymentMethod] = useState("");
+  const [deliveryMethod, setDeliveryMethod] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess] = useState(false);
   const [orderId] = useState<string>("");
@@ -297,27 +526,81 @@ function CheckoutContent() {
     setMounted(true);
   }, []);
 
+  const hasCheckoutItems = checkoutItems.length > 0;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+
     setSubmitError("");
+
+    if (!hasCheckoutItems) {
+      setSubmitError(t("emptyCart.submitError"));
+      return;
+    }
+
+    const nextErrors: Record<string, string> = {};
+    const requiredMessage = t("validation.required");
+    const invalidEmailMessage = t("validation.invalidEmail");
+    const invalidPhoneMessage = t("validation.invalidPhone");
+    const invalidCityMessage = t("validation.invalidCity");
+    const emailValue = formData.email.trim();
+    const phoneDigits = formData.phone.replace(/\D/g, "");
+    const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue);
+    const isValidEgyptPhone =
+      /^01[0125]\d{8}$/.test(phoneDigits) ||
+      /^201[0125]\d{8}$/.test(phoneDigits);
+
+    if (!emailValue) nextErrors.email = requiredMessage;
+    else if (!isValidEmail) nextErrors.email = invalidEmailMessage;
+
+    if (!deliveryMethod) nextErrors.deliveryMethod = requiredMessage;
+
+    if (deliveryMethod) {
+      if (!formData.firstName.trim()) nextErrors.firstName = requiredMessage;
+      if (!formData.lastName.trim()) nextErrors.lastName = requiredMessage;
+      if (!formData.phone.trim()) nextErrors.phone = requiredMessage;
+      else if (!isValidEgyptPhone) nextErrors.phone = invalidPhoneMessage;
+    }
+
+    if (deliveryMethod === "delivery") {
+      if (!formData.address.trim()) nextErrors.address = requiredMessage;
+      if (!formData.city || !aramexCities.includes(formData.city)) {
+        nextErrors.city = invalidCityMessage;
+      }
+    }
+
+    if (!paymentMethod) nextErrors.paymentMethod = requiredMessage;
+
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors);
+      setSubmitError(t("validation.reviewFields"));
+      return;
+    }
+
+    setFieldErrors({});
     setIsSubmitting(true);
 
     const orderRef = generateOrderRef();
-    window.sessionStorage.setItem(
-      `meta-purchase-payload-${orderRef}`,
-      JSON.stringify({
-        value: finalTotal,
-        currency: "EGP",
-        content_ids: checkoutItems.map((item) => String(item.id)),
-        contents: checkoutItems.map((item) => ({
-          id: String(item.id),
-          quantity: item.quantity,
-          item_price: item.price,
-        })),
-        content_type: "product",
-        num_items: checkoutItems.reduce((sum, item) => sum + item.quantity, 0),
-      }),
-    );
+    try {
+      window.sessionStorage.setItem(
+        `meta-purchase-payload-${orderRef}`,
+        JSON.stringify({
+          value: finalTotal,
+          currency: "EGP",
+          content_ids: checkoutItems.map((item) => String(item.id)),
+          contents: checkoutItems.map((item) => ({
+            id: String(item.id),
+            quantity: item.quantity,
+            item_price: item.price,
+          })),
+          content_type: "product",
+          num_items: checkoutItems.reduce((sum, item) => sum + item.quantity, 0),
+        }),
+      );
+    } catch {
+      // Pixel enrichment is optional; checkout must continue if storage is unavailable.
+    }
 
     if (paymentMethod === "card") {
       try {
@@ -328,9 +611,7 @@ function CheckoutContent() {
           throw new Error("NEXT_PUBLIC_PAYMOB_PUBLIC_KEY is not set");
         }
 
-        const origin = window.location.origin;
-        const notificationUrl = `${origin}/api/paymob/webhook`;
-        const redirectionUrl = `${origin}/${locale}/order-confirmed?order_ref=${encodeURIComponent(orderRef)}&method=card`;
+        const origin = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
 
         const intentionItems = checkoutItems.map((item) => ({
           name: item.name,
@@ -394,8 +675,6 @@ function CheckoutContent() {
               payment_discount_percent: paymentDiscount > 0 ? 2 : null,
             },
             special_reference: orderRef,
-            notification_url: notificationUrl,
-            redirection_url: redirectionUrl,
           }),
         });
 
@@ -409,15 +688,13 @@ function CheckoutContent() {
           throw new Error("Paymob response missing client_secret");
         }
 
-        const shippingRule = deliveryMethod === "pickup"
-          ? "pickup_free"
-          : checkoutSubtotal > 1000
-            ? "subtotal_over_1000_free"
-            : formData.city === "cairo" || formData.city === "giza" || formData.city === "alexandria"
-              ? "cairo_giza_alex_75"
-              : "other_governorates_100";
+        const shippingRule = getShippingRule({
+          deliveryMethod,
+          subtotal: checkoutSubtotal,
+          city: formData.city,
+        });
 
-        await fetch("/api/orders/log", {
+        const orderLogRes = await fetch("/api/orders/log", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -457,6 +734,10 @@ function CheckoutContent() {
             created_at: new Date().toISOString(),
           }),
         });
+        if (!orderLogRes.ok) {
+          const logError = await orderLogRes.json().catch(() => null);
+          throw new Error(logError?.error || "Could not save order before payment");
+        }
 
         const checkoutUrl = `${paymobBaseUrl}/unifiedcheckout/?publicKey=${encodeURIComponent(publicKey)}&clientSecret=${encodeURIComponent(clientSecret)}`;
         window.location.href = checkoutUrl;
@@ -532,16 +813,11 @@ function CheckoutContent() {
     }
 
     // Step 2: Log order ONCE
-    const shippingRuleCOD =
-      deliveryMethod === "pickup"
-        ? "pickup_free"
-        : checkoutSubtotal > 1000
-          ? "subtotal_over_1000_free"
-          : formData.city === "cairo" ||
-            formData.city === "giza" ||
-            formData.city === "alexandria"
-            ? "cairo_giza_alex_75"
-            : "other_governorates_100";
+    const shippingRuleCOD = getShippingRule({
+      deliveryMethod,
+      subtotal: checkoutSubtotal,
+      city: formData.city,
+    });
 
     try {
       const logRes = await fetch("/api/orders/log", {
@@ -609,21 +885,11 @@ function CheckoutContent() {
 
   // Shipping: 75 EGP for Cairo, Giza & Alexandria, 100 EGP for other cities, free for orders > 1000, pickup = 0
   const shipping = useMemo(() => {
+    if (!deliveryMethod) return 0;
     if (deliveryMethod === "pickup") return 0;
     if (checkoutSubtotal > 1000) return 0;
 
-    // Use the same mapping logic as the backend to identify governorates
-    const cairoDistricts = ["cairo", "new cairo", "nasr city", "maadi", "heliopolis", "zamalek", "down town", "ain shams", "abasya", "el rehab"];
-    const gizaDistricts = ["giza", "dokki", "mohandiseen", "agouza", "imbaba", "sheikh zayed city", "october city"];
-    const alexDistricts = ["alexandria"];
-
-    const cityLower = (formData.city || "").toLowerCase();
-    const isCairoGizaAlex =
-      cairoDistricts.includes(cityLower) ||
-      gizaDistricts.includes(cityLower) ||
-      alexDistricts.includes(cityLower);
-
-    return isCairoGizaAlex ? 75 : 100;
+    return isDiscountShippingCity(formData.city) ? 75 : 100;
   }, [
     deliveryMethod,
     checkoutSubtotal,
@@ -637,7 +903,7 @@ function CheckoutContent() {
   // 2% discount for non-COD payment methods
   const paymentDiscount = useMemo(
     () =>
-      paymentMethod !== "cod"
+      paymentMethod && paymentMethod !== "cod"
         ? Math.round((checkoutSubtotal + shipping) * 0.02)
         : 0,
     [paymentMethod, checkoutSubtotal, shipping]
@@ -649,7 +915,7 @@ function CheckoutContent() {
   );
 
   useEffect(() => {
-    if (checkoutTracked.current || checkoutItems.length === 0) return;
+    if (checkoutTracked.current || !hasCheckoutItems) return;
 
     checkoutTracked.current = true;
     trackMetaPixelEvent("InitiateCheckout", {
@@ -664,7 +930,7 @@ function CheckoutContent() {
       value: finalTotal,
       currency: "EGP",
     });
-  }, [checkoutItems, finalTotal]);
+  }, [checkoutItems, finalTotal, hasCheckoutItems]);
 
   const controlBase =
     "border border-[#0F1A26]/10 bg-white text-[#0F1A26] placeholder:text-[#0F1A26]/40 caret-[#0F1A26] focus:border-[#EEBC3F] focus:outline-none transition-colors [color-scheme:light]";
@@ -673,7 +939,39 @@ function CheckoutContent() {
   const inputIconClass = `w-full px-4 py-3 pl-11 rounded-xl ${controlBase}`;
   const inputSmallClass = `w-full px-3 py-2.5 rounded-lg text-sm ${controlBase}`;
   const inputSmallIconClass = `w-full px-3 py-2.5 pl-10 rounded-lg text-sm ${controlBase}`;
+  const getInputClass = (field: string, baseClass: string) =>
+    fieldErrors[field] ? `${baseClass} border-red-400 focus:border-red-500` : baseClass;
+  const renderFieldError = (field: string) =>
+    fieldErrors[field] ? (
+      <p className="mt-1.5 text-xs font-semibold text-red-600">{fieldErrors[field]}</p>
+    ) : null;
 
+  const checkoutStepLabels = t.raw("steps") as string[];
+  const contactStepDone = Boolean(formData.email.trim());
+  const deliveryStepDone =
+    Boolean(deliveryMethod) &&
+    Boolean(formData.firstName.trim() && formData.lastName.trim() && formData.phone.trim()) &&
+    (deliveryMethod === "pickup" || Boolean(formData.city && formData.address.trim()));
+  const paymentStepDone = Boolean(paymentMethod);
+  const reviewStepDone = contactStepDone && deliveryStepDone && paymentStepDone && hasCheckoutItems;
+  const checkoutStepStatus = [
+    contactStepDone,
+    deliveryStepDone,
+    paymentStepDone,
+    reviewStepDone,
+  ];
+  const visibleCheckoutStepLabels = checkoutStepLabels;
+  const checkoutStepAnchors = [
+    "#checkout-details",
+    "#checkout-shipping",
+    "#checkout-payment",
+    "#checkout-review",
+  ];
+  const firstIncompleteCheckoutStep = checkoutStepStatus.findIndex((isDone) => !isDone);
+  const currentCheckoutStepIndex =
+    firstIncompleteCheckoutStep === -1
+      ? visibleCheckoutStepLabels.length - 1
+      : firstIncompleteCheckoutStep;
 
   if (isSuccess) {
     return (
@@ -713,16 +1011,16 @@ function CheckoutContent() {
                           : "text-red-600"
                         }`}>
                         {aramexStatus === "success"
-                          ? "Aramex Shipment Created"
+                          ? t("aramexStatus.success")
                           : aramexStatus === "pending"
-                            ? "Creating Aramex Shipment..."
-                            : "Aramex Shipment Failed"
+                            ? t("aramexStatus.pending")
+                            : t("aramexStatus.failed")
                         }
                       </p>
                     </div>
                     {trackingNumber && (
                       <>
-                        <p className="text-sm text-[#0F1A26]/60 mb-0.5">Tracking Number - \u0631\u0642\u0645 \u0627\u0644\u062A\u062A\u0628\u0639</p>
+                        <p className="text-sm text-[#0F1A26]/60 mb-0.5">{t("aramexStatus.trackingNumber")}</p>
                         <p className="text-lg font-semibold text-[#EEBC3F]">{trackingNumber}</p>
                       </>
                     )}
@@ -730,7 +1028,7 @@ function CheckoutContent() {
                       <p className="text-xs text-red-500 mt-1">{aramexError}</p>
                     )}
                     {aramexStatus === "failed" && (
-                      <p className="text-xs text-[#0F1A26]/40 mt-1">Your order is confirmed. We\u2019ll create the shipment manually.</p>
+                      <p className="text-xs text-[#0F1A26]/40 mt-1">{t("aramexStatus.manualShipment")}</p>
                     )}
                   </div>
                 )}
@@ -748,10 +1046,47 @@ function CheckoutContent() {
     );
   }
 
+  if (mounted && !hasCheckoutItems) {
+    return (
+      <>
+        <Navigation />
+        <main className="min-h-screen bg-[#F1EBE3] px-4 py-32">
+          <div className="mx-auto max-w-xl rounded-3xl border border-[#0F1A26]/5 bg-white p-8 text-center shadow-lg">
+            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#EEBC3F]/15">
+              <ShoppingBag className="h-8 w-8 text-[#EEBC3F]" />
+            </div>
+            <h1 className="mb-3 text-2xl font-bold text-[#0F1A26]">
+              {t("emptyCart.title")}
+            </h1>
+            <p className="mx-auto mb-6 max-w-md text-sm leading-6 text-[#0F1A26]/60">
+              {t("emptyCart.description")}
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+              <Link href="/shop">
+                <Button className="h-12 w-full rounded-full bg-[#EEBC3F] px-8 font-bold text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white sm:w-auto">
+                  {t("emptyCart.shopNow")}
+                </Button>
+              </Link>
+              <Link href="/cart">
+                <Button
+                  variant="outline"
+                  className="h-12 w-full rounded-full border-[#0F1A26]/10 px-8 font-bold text-[#0F1A26] hover:bg-[#F1EBE3] sm:w-auto"
+                >
+                  {t("emptyCart.viewCart")}
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </>
+    );
+  }
+
   return (
     <>
       <Navigation />
-      <main className="min-h-screen bg-[#F1EBE3]">
+      <main className="min-h-screen bg-[#F1EBE3] pb-28 lg:pb-0">
         {/* Header - Clean */}
         <div className="bg-[#0F1A26] pt-28 pb-16 md:pt-40 md:pb-24">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -773,12 +1108,81 @@ function CheckoutContent() {
             {t('backToCart')}
           </Link>
 
+          <div className="mb-8 rounded-2xl border border-[#0F1A26]/5 bg-white p-4 shadow-sm shadow-[#0F1A26]/5 sm:p-5">
+            <div className="mb-4 flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#EEBC3F]">
+                  {currentCheckoutStepIndex + 1}/{visibleCheckoutStepLabels.length}
+                </p>
+                <h2 className="mt-1 truncate text-lg font-black text-[#0F1A26] sm:text-xl">
+                  {visibleCheckoutStepLabels[currentCheckoutStepIndex]}
+                </h2>
+              </div>
+              <div className="hidden rounded-full bg-[#F1EBE3] px-4 py-2 text-xs font-bold text-[#0F1A26]/60 sm:block">
+                {checkoutStepStatus.filter(Boolean).length}/{visibleCheckoutStepLabels.length}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {visibleCheckoutStepLabels.map((label, index) => {
+                const isDone = checkoutStepStatus[index];
+                const isCurrent =
+                  !isDone &&
+                  checkoutStepStatus.slice(0, index).every(Boolean);
+                const isActive = isDone || isCurrent || index === currentCheckoutStepIndex;
+
+                return (
+                  <a
+                    key={label}
+                    href={checkoutStepAnchors[index]}
+                    aria-current={index === currentCheckoutStepIndex ? "step" : undefined}
+                    className={`min-w-0 rounded-2xl border p-3 transition-all ${
+                      isCurrent
+                        ? "border-[#EEBC3F] bg-[#EEBC3F]/10 shadow-sm"
+                        : isDone
+                          ? "border-[#0F1A26]/10 bg-[#F8F6F3]"
+                          : "border-[#0F1A26]/10 bg-white"
+                    }`}
+                  >
+                    <div className="mb-2 h-1.5 rounded-full bg-[#0F1A26]/10">
+                      <div
+                        className={`h-full rounded-full transition-all ${
+                          isActive ? "w-full bg-[#EEBC3F]" : "w-0 bg-[#EEBC3F]"
+                        }`}
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+                          isDone
+                            ? "bg-[#0F1A26] text-white"
+                            : isCurrent
+                              ? "bg-[#EEBC3F] text-[#0F1A26]"
+                              : "bg-[#0F1A26]/5 text-[#0F1A26]/35"
+                        }`}
+                      >
+                        {isDone ? <Check className="h-3.5 w-3.5" /> : index + 1}
+                      </span>
+                      <span
+                        className={`min-w-0 truncate text-xs font-bold sm:text-[13px] ${
+                          isDone || isCurrent ? "text-[#0F1A26]" : "text-[#0F1A26]/35"
+                        }`}
+                      >
+                        {label}
+                      </span>
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Checkout Form */}
             <div className="flex-1">
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form id="checkout-form" onSubmit={handleSubmit} className="space-y-6" noValidate>
                 {/* Contact */}
-                <div className="bg-white rounded-2xl p-6 border border-[#0F1A26]/5">
+                <div id="checkout-details" className="scroll-mt-28 bg-white rounded-2xl p-6 border border-[#0F1A26]/5">
                   <h2 className="text-lg font-semibold text-[#0F1A26] mb-4 flex items-center gap-2">
                     <Mail className="w-5 h-5 text-[#EEBC3F]" />
                     {t("form.contact.title")}
@@ -793,10 +1197,14 @@ function CheckoutContent() {
                         type="email"
                         required
                         value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className={inputClass}
+                        onChange={(e) => {
+                          setFormData({ ...formData, email: e.target.value });
+                          setFieldErrors((current) => ({ ...current, email: "" }));
+                        }}
+                        className={getInputClass("email", inputClass)}
                         placeholder="your@email.com"
                       />
+                      {renderFieldError("email")}
                     </div>
 
                     {/* Newsletter Subscribe */}
@@ -838,7 +1246,10 @@ function CheckoutContent() {
                         name="delivery"
                         value="delivery"
                         checked={deliveryMethod === "delivery"}
-                        onChange={(e) => setDeliveryMethod(e.target.value)}
+                        onChange={(e) => {
+                          setDeliveryMethod(e.target.value);
+                          setFieldErrors((current) => ({ ...current, deliveryMethod: "" }));
+                        }}
                         className="w-4 h-4 accent-[#EEBC3F] [color-scheme:light]"
                       />
                       <div className="flex-1">
@@ -862,7 +1273,10 @@ function CheckoutContent() {
                         name="delivery"
                         value="pickup"
                         checked={deliveryMethod === "pickup"}
-                        onChange={(e) => setDeliveryMethod(e.target.value)}
+                        onChange={(e) => {
+                          setDeliveryMethod(e.target.value);
+                          setFieldErrors((current) => ({ ...current, deliveryMethod: "" }));
+                        }}
                         className="w-4 h-4 accent-[#EEBC3F] [color-scheme:light]"
                       />
                       <div className="flex-1">
@@ -897,12 +1311,14 @@ function CheckoutContent() {
                                 type="text"
                                 required
                                 value={formData.firstName}
-                                onChange={(e) =>
-                                  setFormData({ ...formData, firstName: e.target.value })
-                                }
-                                className={inputSmallClass}
+                                onChange={(e) => {
+                                  setFormData({ ...formData, firstName: e.target.value });
+                                  setFieldErrors((current) => ({ ...current, firstName: "" }));
+                                }}
+                                className={getInputClass("firstName", inputSmallClass)}
                                 placeholder={t("form.shipping.firstNamePlaceholder")}
                               />
+                              {renderFieldError("firstName")}
                             </div>
 
                             <div>
@@ -913,12 +1329,14 @@ function CheckoutContent() {
                                 type="text"
                                 required
                                 value={formData.lastName}
-                                onChange={(e) =>
-                                  setFormData({ ...formData, lastName: e.target.value })
-                                }
-                                className={inputSmallClass}
+                                onChange={(e) => {
+                                  setFormData({ ...formData, lastName: e.target.value });
+                                  setFieldErrors((current) => ({ ...current, lastName: "" }));
+                                }}
+                                className={getInputClass("lastName", inputSmallClass)}
                                 placeholder={t("form.shipping.lastNamePlaceholder")}
                               />
+                              {renderFieldError("lastName")}
                             </div>
                           </div>
 
@@ -932,12 +1350,14 @@ function CheckoutContent() {
                                 type="tel"
                                 required
                                 value={formData.phone}
-                                onChange={(e) =>
-                                  setFormData({ ...formData, phone: e.target.value })
-                                }
-                                className={inputSmallIconClass}
+                                onChange={(e) => {
+                                  setFormData({ ...formData, phone: e.target.value });
+                                  setFieldErrors((current) => ({ ...current, phone: "" }));
+                                }}
+                                className={getInputClass("phone", inputSmallIconClass)}
                                 placeholder={t("form.shipping.phonePlaceholder")}
                               />
+                              {renderFieldError("phone")}
                             </div>
                           </div>
 
@@ -969,12 +1389,13 @@ function CheckoutContent() {
                         </div>
                       </div>
                     )}
+                    {renderFieldError("deliveryMethod")}
                   </div>
                 </div>
 
                 {/* Shipping - only show when delivery is selected */}
                 {deliveryMethod === "delivery" && (
-                  <div className="bg-white rounded-2xl p-6 border border-[#0F1A26]/5">
+                  <div id="checkout-shipping" className="scroll-mt-28 bg-white rounded-2xl p-6 border border-[#0F1A26]/5">
                     <h2 className="text-lg font-semibold text-[#0F1A26] mb-4 flex items-center gap-2">
                       <Truck className="w-5 h-5 text-[#EEBC3F]" />
                       {t("form.shipping.title")}
@@ -993,12 +1414,14 @@ function CheckoutContent() {
                           type="text"
                           required
                           value={formData.firstName}
-                          onChange={(e) =>
-                            setFormData({ ...formData, firstName: e.target.value })
-                          }
-                          className={inputClass}
+                          onChange={(e) => {
+                            setFormData({ ...formData, firstName: e.target.value });
+                            setFieldErrors((current) => ({ ...current, firstName: "" }));
+                          }}
+                          className={getInputClass("firstName", inputClass)}
                           placeholder={t("form.shipping.firstNamePlaceholder")}
                         />
+                        {renderFieldError("firstName")}
                       </div>
 
                       <div>
@@ -1009,12 +1432,14 @@ function CheckoutContent() {
                           type="text"
                           required
                           value={formData.lastName}
-                          onChange={(e) =>
-                            setFormData({ ...formData, lastName: e.target.value })
-                          }
-                          className={inputClass}
+                          onChange={(e) => {
+                            setFormData({ ...formData, lastName: e.target.value });
+                            setFieldErrors((current) => ({ ...current, lastName: "" }));
+                          }}
+                          className={getInputClass("lastName", inputClass)}
                           placeholder={t("form.shipping.lastNamePlaceholder")}
                         />
+                        {renderFieldError("lastName")}
                       </div>
 
                       <div className="sm:col-span-2">
@@ -1029,10 +1454,11 @@ function CheckoutContent() {
                               type="text"
                               required
                               value={formData.address}
-                              onChange={(e) =>
-                                setFormData({ ...formData, address: e.target.value })
-                              }
-                              className={inputIconClass}
+                              onChange={(e) => {
+                                setFormData({ ...formData, address: e.target.value });
+                                setFieldErrors((current) => ({ ...current, address: "" }));
+                              }}
+                              className={getInputClass("address", inputIconClass)}
                               placeholder={t("form.shipping.addressPlaceholder")}
                             />
                           </div>
@@ -1067,6 +1493,10 @@ function CheckoutContent() {
                             </span>
                           </button> */}
                         </div>
+                        <p className="mt-2 rounded-lg bg-[#EEBC3F]/10 px-3 py-2 text-xs font-semibold text-[#0F1A26]/65">
+                          {t("hints.address")}
+                        </p>
+                        {renderFieldError("address")}
                       </div>
 
                       <div>
@@ -1085,11 +1515,17 @@ function CheckoutContent() {
                             autoComplete="off"
                             value={citySearch}
                             onFocus={() => setCityListOpen(true)}
-                            onBlur={() => window.setTimeout(() => setCityListOpen(false), 150)}
+                            onBlur={() => {
+                              window.setTimeout(() => {
+                                validateCitySearch();
+                                setCityListOpen(false);
+                              }, 150);
+                            }}
                             onChange={(e) => {
                               const value = e.target.value;
+                              const normalizedValue = normalizeCitySearch(value);
                               const exactCity = aramexCities.find(
-                                (city) => city.toLocaleLowerCase() === value.trim().toLocaleLowerCase()
+                                (city) => getCitySearchTerms(city).some((term) => term === normalizedValue)
                               );
 
                               setCitySearch(value);
@@ -1097,6 +1533,7 @@ function CheckoutContent() {
                                 ...current,
                                 city: exactCity || "",
                               }));
+                              setFieldErrors((current) => ({ ...current, city: "" }));
                               setCityListOpen(true);
                             }}
                             onKeyDown={(e) => {
@@ -1106,7 +1543,7 @@ function CheckoutContent() {
                               }
                               if (e.key === "Escape") setCityListOpen(false);
                             }}
-                            className={`${inputIconClass} pr-11 disabled:opacity-50`}
+                            className={`${getInputClass("city", inputIconClass)} pr-11 disabled:opacity-50`}
                             disabled={loadingCities}
                             placeholder={
                               loadingCities
@@ -1155,6 +1592,12 @@ function CheckoutContent() {
                             </div>
                           )}
                         </div>
+                        {!fieldErrors.city && (
+                          <p className="mt-1.5 text-xs font-semibold text-[#0F1A26]/45">
+                            {t("hints.city")}
+                          </p>
+                        )}
+                        {renderFieldError("city")}
                       </div>
 
                       <div>
@@ -1185,20 +1628,22 @@ function CheckoutContent() {
                             type="tel"
                             required
                             value={formData.phone}
-                            onChange={(e) =>
-                              setFormData({ ...formData, phone: e.target.value })
-                            }
-                            className={inputIconClass}
+                            onChange={(e) => {
+                              setFormData({ ...formData, phone: e.target.value });
+                              setFieldErrors((current) => ({ ...current, phone: "" }));
+                            }}
+                            className={getInputClass("phone", inputIconClass)}
                             placeholder={t("form.shipping.phonePlaceholder")}
                           />
                         </div>
+                        {renderFieldError("phone")}
                       </div>
                     </div>
                   </div>
                 )}
 
                 {/* Payment */}
-                <div className="bg-white rounded-2xl p-6 border border-[#0F1A26]/10 shadow-sm">
+                <div id="checkout-payment" className="scroll-mt-28 bg-white rounded-2xl p-6 border border-[#0F1A26]/10 shadow-sm">
                   <h2 className="text-lg font-bold text-[#0F1A26] mb-4 flex items-center gap-2">
                     <CreditCard className="w-5 h-5 text-[#EEBC3F]" />
                     {t("form.payment.title")}
@@ -1217,7 +1662,10 @@ function CheckoutContent() {
                         name="payment"
                         value="card"
                         checked={paymentMethod === "card"}
-                        onChange={(e) => setPaymentMethod(e.target.value)}
+                        onChange={(e) => {
+                          setPaymentMethod(e.target.value);
+                          setFieldErrors((current) => ({ ...current, paymentMethod: "" }));
+                        }}
                         className="w-5 h-5 mt-1 accent-[#EEBC3F] [color-scheme:light]"
                       />
 
@@ -1250,7 +1698,10 @@ function CheckoutContent() {
                         name="payment"
                         value="cod"
                         checked={paymentMethod === "cod"}
-                        onChange={(e) => setPaymentMethod(e.target.value)}
+                        onChange={(e) => {
+                          setPaymentMethod(e.target.value);
+                          setFieldErrors((current) => ({ ...current, paymentMethod: "" }));
+                        }}
                         className="w-5 h-5 accent-[#EEBC3F] [color-scheme:light]"
                       />
                       <div className="flex-1">
@@ -1274,7 +1725,10 @@ function CheckoutContent() {
                         name="payment"
                         value="instapay"
                         checked={paymentMethod === "instapay"}
-                        onChange={(e) => setPaymentMethod(e.target.value)}
+                        onChange={(e) => {
+                          setPaymentMethod(e.target.value);
+                          setFieldErrors((current) => ({ ...current, paymentMethod: "" }));
+                        }}
                         className="w-5 h-5 mt-1 accent-[#EEBC3F] [color-scheme:light]"
                       />
 
@@ -1332,18 +1786,26 @@ function CheckoutContent() {
                         </p>
                       </div>
                     )}
+                    {renderFieldError("paymentMethod")}
+                  </div>
+                  <div className="mt-4 rounded-xl bg-[#0F1A26]/5 px-4 py-3 text-xs font-semibold text-[#0F1A26]/65">
+                    {t("hints.securePayment")}
                   </div>
                 </div>
 
                 <Button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !hasCheckoutItems}
                   className="w-full bg-[#EEBC3F] text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white rounded-full h-14 font-bold text-base transition-all duration-300 disabled:opacity-50"
                 >
                   {isSubmitting
                     ? t("form.processing")
                     : mounted
-                      ? deliveryMethod === "delivery" && !formData.city
+                      ? !deliveryMethod
+                        ? `${t("form.completeOrder", {
+                          total: checkoutSubtotal.toString(),
+                        })} (${t("form.delivery.title")})`
+                        : deliveryMethod === "delivery" && !formData.city
                         ? `${t("form.completeOrder", {
                           total: checkoutSubtotal.toString(),
                         })} (${t("form.selectCity")})`
@@ -1359,7 +1821,7 @@ function CheckoutContent() {
 
             {/* Order Summary */}
             <div className="lg:w-96 order-first lg:order-last">
-              <div className="bg-white rounded-2xl p-6 border border-[#0F1A26]/5 lg:sticky lg:top-28">
+              <div id="checkout-review" className="scroll-mt-28 bg-white rounded-2xl p-6 border border-[#0F1A26]/5 lg:sticky lg:top-28">
                 <h2 className="text-lg font-semibold text-[#0F1A26] mb-2">{t('summary.title')}</h2>
                 {buyNowItem ? (
                   <p className="text-xs text-[#EEBC3F] font-medium mb-4">{t('summary.buyNowMode') || '🛒 Buy Now - Quick Purchase'}</p>
@@ -1442,7 +1904,9 @@ function CheckoutContent() {
                   <div className="flex justify-between text-sm">
                     <span className="text-[#0F1A26]/60">{t('summary.shipping')}</span>
                     <span className="text-[#0F1A26] font-medium">
-                      {deliveryMethod === "delivery" && formData.city ? (
+                      {!deliveryMethod ? (
+                        <span className="text-[#0F1A26]/50 font-medium text-xs">{t("form.delivery.title")}</span>
+                      ) : deliveryMethod === "delivery" && formData.city ? (
                         shipping === 0
                           ? `${t('summary.free')} ${t('summary.freeShippingOver1000') || '(Order > 1000 EGP)'}`
                           : `EGP ${shipping}`
@@ -1455,7 +1919,7 @@ function CheckoutContent() {
                   </div>
                   {paymentDiscount > 0 && (
                     <div className="flex justify-between text-sm text-green-600">
-                      <span>Payment Method Discount (2%)</span>
+                      <span>{t("summary.paymentMethodDiscount")}</span>
                       <span className="font-medium">-EGP {paymentDiscount}</span>
                     </div>
                   )}
@@ -1477,6 +1941,69 @@ function CheckoutContent() {
           </div>
         </div>
       </main>
+
+      {checkoutItems.length > 0 && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-[#0F1A26]/10 bg-white/95 px-4 py-3 shadow-[0_-8px_28px_rgba(15,26,38,0.14)] backdrop-blur-xl">
+          <div className="mb-2 flex items-start justify-between gap-3">
+            <div className="min-w-0 text-xs font-semibold text-[#0F1A26]/60">
+              <p className="truncate">
+                {t("summary.itemCount", { count: checkoutItemCount })}
+                {" · "}
+                {!deliveryMethod
+                  ? t("form.delivery.title")
+                  : deliveryMethod === "delivery" && !formData.city
+                  ? t("summary.selectCityForShipping")
+                  : shipping === 0
+                    ? t("summary.freeShipping")
+                    : `${t("summary.shippingLabel")} EGP ${shipping}`}
+              </p>
+              {paymentDiscount > 0 && (
+                <p className="mt-0.5 text-green-600">
+                  {t("summary.paymentDiscount", { amount: paymentDiscount })}
+                </p>
+              )}
+            </div>
+            <div className="shrink-0 text-right">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#0F1A26]/40">
+                {t("summary.total")}
+              </p>
+              <p className="text-base font-black text-[#0F1A26]">
+                EGP {deliveryMethod === "delivery" && !formData.city ? checkoutSubtotal : finalTotal}
+              </p>
+            </div>
+          </div>
+          <div className="hidden">
+            <span>
+              {!deliveryMethod
+                ? t("form.delivery.title")
+                : deliveryMethod === "delivery" && !formData.city
+                ? t("summary.selectCityForShipping")
+                : shipping === 0
+                  ? t("summary.freeShipping")
+                  : `${t("summary.shippingLabel")} EGP ${shipping}`}
+            </span>
+            <span className="text-base font-black text-[#0F1A26]">
+              EGP {deliveryMethod === "delivery" && !formData.city ? checkoutSubtotal : finalTotal}
+            </span>
+          </div>
+          <Button
+            type="submit"
+            form="checkout-form"
+            disabled={isSubmitting || !hasCheckoutItems}
+            className="h-12 w-full rounded-full bg-[#EEBC3F] text-sm font-black text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white disabled:opacity-50"
+          >
+            {isSubmitting
+              ? t("form.processing")
+              : mounted
+                ? !deliveryMethod
+                  ? `${t("form.completeOrder", { total: checkoutSubtotal.toString() })} (${t("form.delivery.title")})`
+                  : deliveryMethod === "delivery" && !formData.city
+                    ? `${t("form.completeOrder", { total: checkoutSubtotal.toString() })} (${t("form.selectCity")})`
+                    : t("form.completeOrder", { total: finalTotal.toString() })
+                : t("form.completeOrder", { total: "--" })}
+          </Button>
+        </div>
+      )}
       <Footer />
     </>
   );

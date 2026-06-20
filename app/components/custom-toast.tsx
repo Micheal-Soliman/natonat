@@ -10,7 +10,7 @@ interface CustomToastProps {
 
 export function CustomToast({ toast, onClose }: CustomToastProps) {
   return (
-    <div className="bg-[#0F1A26] text-[#F1EBE3] border-2 border-[#EEBC3F] rounded-2xl p-4 min-w-[320px] max-w-[400px] shadow-[0_20px_40px_rgba(0,0,0,0.3),0_0_20px_rgba(238,188,63,0.3)] animate-in slide-in-from-right duration-300">
+    <div className="pointer-events-auto w-full bg-[#0F1A26] text-[#F1EBE3] border-2 border-[#EEBC3F] rounded-2xl p-4 shadow-[0_20px_40px_rgba(0,0,0,0.3),0_0_20px_rgba(238,188,63,0.3)] animate-in slide-in-from-right duration-300">
       <div className="flex items-start gap-3">
         {/* Success Icon */}
         <div className="flex-shrink-0 w-8 h-8 bg-[#EEBC3F]/20 rounded-full flex items-center justify-center">

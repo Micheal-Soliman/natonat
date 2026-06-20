@@ -1,71 +1,24 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Image from "next/image";
 import { Link } from "@/i18n/routing";
-import { useTranslations } from 'next-intl';
+import { useTranslations } from "next-intl";
+import { ArrowLeft, Minus, Plus, ShieldCheck, ShoppingBag, Trash2, Truck } from "lucide-react";
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
-import { Button } from "@/components/ui/button";
-import { ShoppingBag, Trash2, Plus, Minus, ArrowLeft } from "lucide-react";
-import { useCart } from "@/app/lib/cart-context";
 import { Loading } from "@/app/components/loading";
+import { Button } from "@/components/ui/button";
+import { useCart, type CartItem } from "@/app/lib/cart-context";
+import { useCatalogProducts } from "@/app/lib/catalog-context";
+import { useSizeGuideSizes } from "@/app/lib/site-settings-context";
+import type { Product } from "@/lib/products";
 
-interface GroupedItem {
-  groupKey: string;
-  id: number;
-  slug: string;
-  name: string;
-  type: string;
-  price: number;
-  originalPrice?: number;
-  image: string;
-  variants: {
-    size?: string;
-    color?: string;
-    quantity: number;
-    bundleKey?: string;
-  }[];
-}
+type SizeOption = ReturnType<typeof useSizeGuideSizes>[number];
 
-function groupCartItems(items: ReturnType<typeof useCart>['items']): GroupedItem[] {
-  const grouped = new Map<string, GroupedItem>();
-
-  items.forEach((item) => {
-    const groupKey = item.isBundle ? `${item.id}:${item.bundleKey || ""}` : String(item.id);
-
-    if (!grouped.has(groupKey)) {
-      grouped.set(groupKey, {
-        groupKey,
-        id: item.id,
-        slug: item.slug,
-        name: item.name,
-        type: item.type,
-        price: item.price,
-        originalPrice: item.originalPrice,
-        image: item.image,
-        variants: [],
-      });
-    }
-
-    const group = grouped.get(groupKey)!;
-    group.variants.push({
-      size: item.size,
-      color: item.color,
-      quantity: item.quantity,
-      bundleKey: item.bundleKey,
-    });
-  });
-
-  return Array.from(grouped.values());
-}
-
-function getTotalQuantity(variants: GroupedItem['variants']) {
-  return variants.reduce((sum, v) => sum + v.quantity, 0);
-}
-
-function getTotalPrice(price: number, variants: GroupedItem['variants']) {
-  return price * getTotalQuantity(variants);
+function getSizeOptions(product: Product | undefined, sizes: SizeOption[]) {
+  if (!product?.sizePrices) return [];
+  return sizes.filter((size) => product.sizePrices?.[size.id as keyof NonNullable<Product["sizePrices"]>]);
 }
 
 export default function CartPage() {
@@ -77,43 +30,80 @@ export default function CartPage() {
 }
 
 function CartContent() {
-  const t = useTranslations('cart');
-  const { items, removeFromCart, updateQuantity, subtotal, discount, originalSubtotal, appliedDiscounts, setBuyNowItem } = useCart();
-  const groupedItems = groupCartItems(items);
-  const shipping = subtotal > 1000 ? 0 : 75;
-  const total = subtotal + shipping;
+  const t = useTranslations("cart");
+  const products = useCatalogProducts();
+  const sizes = useSizeGuideSizes();
+  const {
+    items,
+    removeFromCart,
+    updateQuantity,
+    updateCartItem,
+    subtotal,
+    discount,
+    originalSubtotal,
+    appliedDiscounts,
+    totalItems,
+    setBuyNowItem,
+  } = useCart();
   const [mounted, setMounted] = useState(false);
+
+  const freeShippingThreshold = 1000;
+  const remainingForFreeShipping = Math.max(0, freeShippingThreshold - subtotal);
+  const freeShippingProgress = Math.min(100, (subtotal / freeShippingThreshold) * 100);
 
   useEffect(() => {
     const frameId = requestAnimationFrame(() => {
       setMounted(true);
-      // Clear buyNowItem when viewing cart - user is using cart checkout flow
       setBuyNowItem(null);
     });
 
     return () => cancelAnimationFrame(frameId);
   }, [setBuyNowItem]);
 
-  // Prevent hydration mismatch - render loading state until mounted
+  const updateItemSize = (item: CartItem, nextSize: string) => {
+    const product = products.find((candidate) => candidate.id === item.id);
+    const sizePrice = product?.sizePrices?.[nextSize as keyof NonNullable<Product["sizePrices"]>];
+
+    updateCartItem(
+      item.id,
+      { size: item.size, color: item.color, bundleKey: item.bundleKey },
+      {
+        size: nextSize,
+        price: sizePrice?.price ?? item.price,
+        originalPrice: sizePrice?.originalPrice ?? item.originalPrice,
+      }
+    );
+  };
+
+  const updateItemColor = (item: CartItem, nextColorId: string) => {
+    const product = products.find((candidate) => candidate.id === item.id);
+    const color = product?.colors?.find((candidate) => candidate.id === nextColorId);
+
+    updateCartItem(
+      item.id,
+      { size: item.size, color: item.color, bundleKey: item.bundleKey },
+      {
+        color: color?.name || nextColorId,
+        image: color?.image || item.image,
+      }
+    );
+  };
+
+  const labels = {
+    editBundle: t("editBundle"),
+    bundleIncludes: t("bundleIncludes"),
+    secure: t("securePayment"),
+    aramex: t("aramexShipping"),
+    saved: t("saved"),
+  };
+
   if (!mounted) {
     return (
       <>
         <Navigation />
-        <main className="min-h-screen bg-[#F1EBE3]">
-          <div className="bg-[#0F1A26] pt-32 pb-16 md:pt-40 md:pb-24">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white tracking-tight">
-                {t('header.title').split(' ')[0]} <span className="text-[#EEBC3F]">{t('header.title').split(' ').slice(1).join(' ')}</span>
-              </h1>
-              <p className="text-white/50 mt-4 max-w-xl mx-auto font-light text-lg">
-                {t('header.subtitle')}
-              </p>
-            </div>
-          </div>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <div className="animate-pulse">
-              <div className="h-96 bg-[#0F1A26]/5 rounded-2xl"></div>
-            </div>
+        <main className="min-h-screen bg-[#F1EBE3] pt-28">
+          <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+            <div className="h-96 animate-pulse rounded-2xl bg-[#0F1A26]/5" />
           </div>
         </main>
         <Footer />
@@ -124,224 +114,309 @@ function CartContent() {
   return (
     <>
       <Navigation />
-      <main className="min-h-screen bg-[#F1EBE3]">
-        {/* Header - Clean */}
-        <div className="bg-[#0F1A26] pt-28 pb-16 md:pt-40 md:pb-24">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold text-white tracking-tight">
-              {t('header.title').split(' ')[0]} <span className="text-[#EEBC3F]">{t('header.title').split(' ').slice(1).join(' ')}</span>
-            </h1>
-            <p className="text-white/50 mt-4 max-w-xl mx-auto font-light text-base md:text-lg">
-              {t('header.subtitle')}
-            </p>
+      <main className="min-h-screen bg-[#F1EBE3] pt-24 pb-28 lg:pb-0">
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-[0.2em] text-[#EEBC3F]">
+                {t("title")}
+              </span>
+              <h1 className="mt-2 text-3xl font-bold tracking-tight text-[#0F1A26] sm:text-4xl">
+                {t("header.title")}
+              </h1>
+              <p className="mt-2 max-w-xl text-sm text-[#0F1A26]/55 sm:text-base">
+                {t("header.subtitle")}
+              </p>
+            </div>
+            <Link
+              href="/shop"
+              className="inline-flex items-center gap-2 text-sm font-bold text-[#0F1A26] transition-colors hover:text-[#EEBC3F]"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              {t("continueShopping")}
+            </Link>
           </div>
-        </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           {items.length === 0 ? (
-            <div className="text-center py-20">
-              <div className="w-20 h-20 rounded-full bg-[#0F1A26]/5 flex items-center justify-center mx-auto mb-6">
-                <ShoppingBag className="w-8 h-8 text-[#0F1A26]/30" />
+            <div className="mx-auto max-w-xl rounded-3xl bg-white p-8 text-center shadow-sm sm:p-12">
+              <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#EEBC3F]/15">
+                <ShoppingBag className="h-8 w-8 text-[#0F1A26]/45" />
               </div>
-              <h2 className="text-xl font-semibold text-[#0F1A26] mb-2">{t('empty.title')}</h2>
-              <p className="text-[#0F1A26]/50 mb-6">{t('empty.subtitle')}</p>
+              <h2 className="mb-2 text-2xl font-bold text-[#0F1A26]">{t("empty.title")}</h2>
+              <p className="mb-8 text-[#0F1A26]/55">{t("empty.subtitle")}</p>
               <Link href="/shop">
-                <Button className="bg-[#0F1A26] text-white hover:bg-[#EEBC3F] hover:text-[#0F1A26] rounded-full px-8 h-12 font-semibold transition-all duration-300">
-                  {t('empty.continueShopping')}
+                <Button className="h-12 rounded-full bg-[#0F1A26] px-8 font-bold text-white hover:bg-[#EEBC3F] hover:text-[#0F1A26]">
+                  {t("empty.continueShopping")}
                 </Button>
               </Link>
             </div>
           ) : (
-            <div className="flex flex-col lg:flex-row gap-8">
-              {/* Cart Items */}
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-lg font-semibold text-[#0F1A26]">
-                    {t('cartItems', { count: groupedItems.length })}
+            <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
+              <section>
+                <div className="mb-4 flex items-center justify-between">
+                  <h2 className="text-lg font-bold text-[#0F1A26]">
+                    {t("cartItems", { count: totalItems })}
                   </h2>
-                  <Link
-                    href="/shop"
-                    className="text-sm text-[#EEBC3F] hover:text-[#0F1A26] font-medium flex items-center gap-2 transition-colors"
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                    {t('continueShopping')}
-                  </Link>
+                  {discount > 0 && (
+                    <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-bold text-green-700">
+                      {labels.saved} EGP {discount}
+                    </span>
+                  )}
                 </div>
 
                 <div className="space-y-4">
-                  {groupedItems.map((item) => (
-                    <div
-                      key={item.groupKey}
-                      className="bg-white rounded-2xl p-4 border border-[#0F1A26]/5 flex gap-4"
-                    >
-                      {/* Image */}
-                      <Link href={`/product/${item.slug}`} className="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 bg-[#F8F6F3] relative group">
-                        <Image
-                          src={item.image}
-                          alt={item.name}
-                          fill
-                          sizes="96px"
-                          className="object-cover group-hover:scale-105 transition-transform"
-                          loading="lazy"
-                          quality={45}
-                        />
-                      </Link>
+                  {items.map((item) => {
+                    const product = products.find((candidate) => candidate.id === item.id);
+                    const sizeOptions = !item.isBundle ? getSizeOptions(product, sizes) : [];
+                    const colorOptions = !item.isBundle ? product?.colors || [] : [];
+                    const selectedColorId =
+                      colorOptions.find((color) => color.name === item.color || color.id === item.color)?.id || "";
 
-                      {/* Details */}
-                      <div className="flex-1 flex flex-col justify-between">
-                        <div>
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <span className="text-[#EEBC3F] text-xs font-semibold tracking-wider uppercase">
-                                {item.type}
-                              </span>
-                              <Link href={`/product/${item.slug}`}>
-                                <h3 className="text-[#0F1A26] font-medium mt-0.5 hover:text-[#EEBC3F] transition-colors cursor-pointer">{item.name}</h3>
-                              </Link>
+                    return (
+                      <article
+                        key={`${item.id}-${item.size}-${item.color}-${item.bundleKey || ""}`}
+                        className="rounded-3xl border border-[#0F1A26]/8 bg-white p-4 shadow-sm sm:p-5"
+                      >
+                        <div className="grid gap-4 sm:grid-cols-[132px_1fr]">
+                          <Link
+                            href={`/product/${item.slug}`}
+                            className="relative aspect-square overflow-hidden rounded-2xl bg-[#F8F6F3]"
+                          >
+                            <Image
+                              src={item.image}
+                              alt={item.name}
+                              fill
+                              sizes="132px"
+                              className="object-contain transition-transform duration-300 hover:scale-105"
+                            />
+                          </Link>
+
+                          <div className="min-w-0">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <span className="text-xs font-bold uppercase tracking-[0.18em] text-[#EEBC3F]">
+                                  {item.type}
+                                </span>
+                                <Link href={`/product/${item.slug}`}>
+                                  <h3 className="mt-1 text-lg font-bold text-[#0F1A26] transition-colors hover:text-[#EEBC3F]">
+                                    {item.name}
+                                  </h3>
+                                </Link>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => removeFromCart(item.id, item.size, item.color, item.bundleKey)}
+                                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#0F1A26]/5 text-[#0F1A26]/50 transition-colors hover:bg-red-50 hover:text-red-500"
+                                aria-label={t("item.remove")}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
                             </div>
-                            <button
-                              onClick={() => {
-                                // Remove all variants of this item
-                                item.variants.forEach(v => {
-                                  removeFromCart(item.id, v.size, v.color, v.bundleKey);
-                                });
-                              }}
-                              className="w-8 h-8 rounded-full bg-[#0F1A26]/5 flex items-center justify-center text-[#0F1A26]/50 hover:bg-red-50 hover:text-red-500 transition-colors"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
 
-                          {/* Variants with Individual Controls */}
-                          {item.variants.length > 0 && (
-                            <div className="mt-3 space-y-2">
-                              {item.variants.map((variant, idx) => (
-                                <div key={idx} className="flex items-center justify-between bg-[#F8F6F3] rounded-lg px-3 py-2">
-                                  <div className="flex items-center gap-2">
-                                    {variant.size && (
-                                      <span className="bg-[#EEBC3F]/20 text-[#0F1A26] px-2 py-0.5 rounded text-xs font-medium">
-                                        {t('size')} {variant.size.toUpperCase()}
-                                      </span>
-                                    )}
-                                    {variant.color && (
-                                      <span className="text-[#0F1A26]/60 text-xs">{variant.color}</span>
-                                    )}
-                                  </div>
-
-                                  <div className="flex items-center gap-2">
-                                    <button
-                                      onClick={() => {
-                                        const originalItem = items.find(i =>
-                                          i.id === item.id &&
-                                          i.size === variant.size &&
-                                          i.color === variant.color
-                                        );
-                                        if (originalItem) {
-                                          updateQuantity(originalItem.id, -1, variant.size, variant.color, originalItem.bundleKey);
-                                        }
-                                      }}
-                                      className="w-6 h-6 rounded bg-white flex items-center justify-center text-[#0F1A26] hover:bg-[#EEBC3F]/20 transition-colors"
-                                    >
-                                      <Minus className="w-3 h-3" />
-                                    </button>
-                                    <span className="w-6 text-center font-medium text-[#0F1A26] text-sm">
-                                      {variant.quantity}
-                                    </span>
-                                    <button
-                                      onClick={() => {
-                                        const originalItem = items.find(i =>
-                                          i.id === item.id &&
-                                          i.size === variant.size &&
-                                          i.color === variant.color
-                                        );
-                                        if (originalItem) {
-                                          updateQuantity(originalItem.id, 1, variant.size, variant.color, originalItem.bundleKey);
-                                        }
-                                      }}
-                                      className="w-6 h-6 rounded bg-white flex items-center justify-center text-[#0F1A26] hover:bg-[#EEBC3F]/20 transition-colors"
-                                    >
-                                      <Plus className="w-3 h-3" />
-                                    </button>
-                                    <span className="text-sm font-medium text-[#0F1A26] ml-2">
-                                      EGP {item.price * variant.quantity}
-                                    </span>
-                                  </div>
+                            {item.isBundle && item.bundleSelections?.length ? (
+                              <div className="mt-4 rounded-2xl bg-[#F8F6F3] p-3">
+                                <p className="mb-2 text-xs font-bold uppercase tracking-wider text-[#0F1A26]/50">
+                                  {labels.bundleIncludes}
+                                </p>
+                                <div className="grid gap-2 sm:grid-cols-2">
+                                  {item.bundleSelections.map((bundleItem, index) => (
+                                    <div key={`${bundleItem.productId}-${index}`} className="rounded-xl bg-white px-3 py-2">
+                                      <p className="truncate text-sm font-bold text-[#0F1A26]">
+                                        {bundleItem.label || bundleItem.productName}
+                                      </p>
+                                      <div className="mt-1 flex flex-wrap gap-1.5 text-[11px] font-semibold text-[#0F1A26]/65">
+                                        {bundleItem.productName && <span>{bundleItem.productName}</span>}
+                                        {bundleItem.size && <span>{t("size")} {bundleItem.size.toUpperCase()}</span>}
+                                        {bundleItem.color && <span>{bundleItem.color}</span>}
+                                        <span>x{bundleItem.quantity}</span>
+                                      </div>
+                                    </div>
+                                  ))}
                                 </div>
-                              ))}
+                                <Link
+                                  href={`/product/${item.slug}`}
+                                  className="mt-3 inline-flex rounded-full bg-white px-4 py-2 text-xs font-bold text-[#0F1A26] transition-colors hover:bg-[#EEBC3F]/20"
+                                >
+                                  {labels.editBundle}
+                                </Link>
+                              </div>
+                            ) : (
+                              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                                {sizeOptions.length > 1 && (
+                                  <label className="block">
+                                    <span className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-[#0F1A26]/45">
+                                      {t("size")}
+                                    </span>
+                                    <select
+                                      value={item.size || ""}
+                                      onChange={(event) => updateItemSize(item, event.target.value)}
+                                      className="h-11 w-full rounded-xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-3 text-sm font-bold text-[#0F1A26] outline-none focus:border-[#EEBC3F]"
+                                    >
+                                      {sizeOptions.map((size) => (
+                                        <option key={size.id} value={size.id}>
+                                          {size.label} - {size.range}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </label>
+                                )}
+
+                                {colorOptions.length > 1 && (
+                                  <label className="block">
+                                    <span className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-[#0F1A26]/45">
+                                      {t("color")}
+                                    </span>
+                                    <select
+                                      value={selectedColorId}
+                                      onChange={(event) => updateItemColor(item, event.target.value)}
+                                      className="h-11 w-full rounded-xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-3 text-sm font-bold text-[#0F1A26] outline-none focus:border-[#EEBC3F]"
+                                    >
+                                      {colorOptions.map((color) => (
+                                        <option key={color.id} value={color.id}>
+                                          {color.name}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </label>
+                                )}
+                              </div>
+                            )}
+
+                            <div className="mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-[#0F1A26]/8 pt-4">
+                              <div className="flex items-center gap-2 rounded-full bg-[#F8F6F3] p-1">
+                                <button
+                                  type="button"
+                                  onClick={() => updateQuantity(item.id, -1, item.size, item.color, item.bundleKey)}
+                                  className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#0F1A26] transition-colors hover:bg-[#EEBC3F]/25"
+                                >
+                                  <Minus className="h-4 w-4" />
+                                </button>
+                                <span className="w-8 text-center text-sm font-bold text-[#0F1A26]">
+                                  {item.quantity}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => updateQuantity(item.id, 1, item.size, item.color, item.bundleKey)}
+                                  className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#0F1A26] transition-colors hover:bg-[#EEBC3F]/25"
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </button>
+                              </div>
+
+                              <div className="text-end">
+                                {item.originalPrice && item.originalPrice > item.price && (
+                                  <p className="text-sm text-[#0F1A26]/35 line-through">
+                                    EGP {item.originalPrice * item.quantity}
+                                  </p>
+                                )}
+                                <p className="text-xl font-black text-[#0F1A26]">
+                                  EGP {item.price * item.quantity}
+                                </p>
+                              </div>
                             </div>
-                          )}
+                          </div>
                         </div>
-
-                        {/* Total Price for this item */}
-                        <div className="flex items-center justify-end mt-3 pt-3 border-t border-[#0F1A26]/5">
-                          <span className="text-sm text-[#0F1A26]/60 mr-2">{t('summary.total')}:</span>
-                          <span className="font-bold text-[#0F1A26]">
-                            EGP {getTotalPrice(item.price, item.variants)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                      </article>
+                    );
+                  })}
                 </div>
-              </div>
+              </section>
 
-              {/* Order Summary */}
-              <div className="lg:w-96 order-first lg:order-last">
-                <div className="bg-white rounded-2xl p-6 border border-[#0F1A26]/5 lg:sticky lg:top-28">
-                  <h2 className="text-lg font-semibold text-[#0F1A26] mb-6">{t('summary.title')}</h2>
+              <aside className="lg:sticky lg:top-28 lg:self-start">
+                <div className="rounded-3xl border border-[#0F1A26]/8 bg-white p-5 shadow-sm sm:p-6">
+                  <h2 className="mb-4 text-xl font-bold text-[#0F1A26]">{t("summary.title")}</h2>
 
-                  <p className="text-xs text-[#EEBC3F] font-medium mb-4 text-center">
-                    {t('summary.egyptOnly')}
-                  </p>
+                  <div className="mb-5 rounded-2xl bg-[#F8F6F3] p-4">
+                    <div className="mb-2 flex items-center justify-between gap-3 text-xs font-bold text-[#0F1A26]">
+                      <span>
+                        {remainingForFreeShipping > 0
+                          ? t("summary.freeShippingProgress", { amount: remainingForFreeShipping })
+                          : t("summary.freeShippingUnlocked")}
+                      </span>
+                      <span>{Math.round(freeShippingProgress)}%</span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-[#0F1A26]/10">
+                      <div
+                        className="h-full rounded-full bg-[#EEBC3F] transition-all duration-300"
+                        style={{ width: `${freeShippingProgress}%` }}
+                      />
+                    </div>
+                  </div>
 
-                  <div className="space-y-3 mb-6">
+                  <div className="space-y-3">
                     <div className="flex justify-between text-sm">
-                      <span className="text-[#0F1A26]/60">{t('summary.subtotal')}</span>
-                      <span className="text-[#0F1A26] font-medium">EGP {mounted ? originalSubtotal : "--"}</span>
+                      <span className="text-[#0F1A26]/60">{t("summary.subtotal")}</span>
+                      <span className="font-bold text-[#0F1A26]">EGP {originalSubtotal}</span>
                     </div>
                     {discount > 0 && (
                       <div className="space-y-1">
-                        <div className="flex justify-between text-sm text-green-600">
-                          <span>{t('summary.discount') || 'Discount'}</span>
-                          <span className="font-medium">-EGP {mounted ? discount : "--"}</span>
+                        <div className="flex justify-between text-sm font-bold text-green-600">
+                          <span>{t("summary.discount")}</span>
+                          <span>-EGP {discount}</span>
                         </div>
-                        <div className="flex flex-col gap-0.5">
-                          {appliedDiscounts.map((desc, i) => (
-                            <span key={i} className="text-[10px] text-green-600/70 italic text-right block">
-                              • {desc}
-                            </span>
-                          ))}
-                        </div>
+                        {appliedDiscounts.map((desc, index) => (
+                          <p key={index} className="text-end text-[11px] text-green-600/70">
+                            {desc}
+                          </p>
+                        ))}
                       </div>
                     )}
                     <div className="flex justify-between text-sm">
-                      <span className="text-[#0F1A26]/60">{t('summary.shipping')}</span>
-                      <span className="text-[#0F1A26] font-medium">
-                        {shipping === 0 ? t('summary.free') : `EGP ${shipping}`}
-                      </span>
+                      <span className="text-[#0F1A26]/60">{t("summary.shipping")}</span>
+                      <span className="font-bold text-[#0F1A26]">{t("summary.shippingAtCheckout")}</span>
                     </div>
-                    <div className="border-t border-[#0F1A26]/10 pt-3">
+                    <div className="border-t border-[#0F1A26]/10 pt-4">
                       <div className="flex justify-between">
-                        <span className="text-[#0F1A26] font-semibold">{t('summary.total')}</span>
-                        <span className="text-[#0F1A26] font-bold text-lg">EGP {total}</span>
+                        <span className="text-lg font-bold text-[#0F1A26]">{t("summary.total")}</span>
+                        <span className="text-2xl font-black text-[#0F1A26]">EGP {subtotal}</span>
                       </div>
                     </div>
                   </div>
 
-                  <Link href="/checkout">
-                    <Button className="w-full bg-[#EEBC3F] text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white rounded-full h-14 font-bold text-base transition-all duration-300 mb-4">
-                      {t('summary.proceedToCheckout')}
+                  <div className="mt-5 grid grid-cols-2 gap-2">
+                    <div className="flex items-center gap-2 rounded-2xl bg-[#F8F6F3] px-3 py-2 text-xs font-bold text-[#0F1A26]/70">
+                      <ShieldCheck className="h-4 w-4 text-[#EEBC3F]" />
+                      {labels.secure}
+                    </div>
+                    <div className="flex items-center gap-2 rounded-2xl bg-[#F8F6F3] px-3 py-2 text-xs font-bold text-[#0F1A26]/70">
+                      <Truck className="h-4 w-4 text-[#EEBC3F]" />
+                      {labels.aramex}
+                    </div>
+                  </div>
+
+                  <Link href="/checkout" onClick={() => setBuyNowItem(null)}>
+                    <Button className="mt-5 h-14 w-full rounded-full bg-[#EEBC3F] text-base font-black text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white">
+                      {t("summary.proceedToCheckout")}
                     </Button>
                   </Link>
-
-                  <p className="text-xs text-[#0F1A26]/40 text-center">
-                    {t('summary.note')}
+                  <p className="mt-3 text-center text-xs text-[#0F1A26]/45">
+                    {t("summary.note")}
                   </p>
                 </div>
-              </div>
+              </aside>
             </div>
           )}
         </div>
+        {items.length > 0 && (
+          <div className="lg:hidden fixed bottom-0 left-0 right-0 z-[90] border-t border-[#0F1A26]/10 bg-white/97 px-3 pt-2 shadow-[0_-4px_20px_rgba(0,0,0,0.12)] backdrop-blur-xl pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-[#0F1A26]/45">
+                  {t("summary.total")}
+                </p>
+                <p className="text-lg font-black text-[#0F1A26]">EGP {subtotal}</p>
+              </div>
+              <p className="text-xs font-semibold text-[#0F1A26]/45">
+                {t("cartItems", { count: totalItems })}
+              </p>
+            </div>
+            <Link href="/checkout" onClick={() => setBuyNowItem(null)}>
+              <Button className="h-11 w-full rounded-xl bg-[#EEBC3F] px-3 text-sm font-black text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white">
+                {t("summary.proceedToCheckout")}
+              </Button>
+            </Link>
+          </div>
+        )}
       </main>
       <Footer />
     </>

@@ -3,19 +3,25 @@
 import { useCart } from "@/app/lib/cart-context";
 import { useWishlist } from "@/app/lib/wishlist-context";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import type { PointerEvent as ReactPointerEvent } from "react";
 import Image from "next/image";
 import { Link } from "@/i18n/routing";
 import { useRouter } from "@/i18n/routing";
-import { useTranslations } from 'next-intl';
+import { useMessages, useTranslations } from 'next-intl';
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
-import { Shield, Sparkles, Ruler, Heart, Share2, Check, Star, Truck, RotateCcw, ArrowUpRight, Award, ArrowLeft, ChevronLeft, ChevronRight as ChevronRightIcon, ChevronDown } from "lucide-react";
+import { Shield, Sparkles, Ruler, Heart, Share2, Check, Star, Truck, RotateCcw, ArrowUpRight, Award, ArrowLeft, ChevronLeft, ChevronRight as ChevronRightIcon, ChevronDown, MessageCircle, CreditCard } from "lucide-react";
 import { FAQSection } from "@/app/components/faq-section";
 import { SwipeableProductImage } from "@/app/components/swipeable-product-image";
+import { WishlistToggleButton } from "@/app/components/wishlist-toggle-button";
+import { SizeModal } from "@/app/components/size-modal";
+import { useToast } from "@/app/components/toast-provider";
+import { useSizeGuideSizes } from "@/app/lib/site-settings-context";
 import { type Product } from "@/lib/products";
 import { calculateBundlePrice, getPricingRuleKey } from "@/lib/bundle-pricing";
 import { trackMetaPixelEvent } from "@/lib/meta-pixel";
+import { getStockLabel, isProductOutOfStock } from "@/lib/product-stock";
 
 // Separate component for detailed product description
 interface ProductDetailedDescriptionProps {
@@ -46,6 +52,35 @@ type ProductVideoItem = {
   poster: string;
   src: string;
   label?: string;
+};
+
+const getNestedProductMessage = (source: unknown, path: string): unknown => {
+  if (!source || typeof source !== "object") return undefined;
+
+  return path.split(".").reduce<unknown>((current, key) => {
+    if (!current || typeof current !== "object") return undefined;
+    return (current as Record<string, unknown>)[key];
+  }, source);
+};
+
+const getProductDetailMessages = (messages: unknown, slug: string) => {
+  const productsMessages = getNestedProductMessage(messages, "products");
+  if (!productsMessages || typeof productsMessages !== "object") return null;
+
+  const productMessages = (productsMessages as Record<string, unknown>)[slug];
+  return productMessages && typeof productMessages === "object"
+    ? productMessages
+    : null;
+};
+
+const getProductDetailString = (messages: unknown, path: string) => {
+  const value = getNestedProductMessage(messages, path);
+  return typeof value === "string" ? value : "";
+};
+
+const getProductDetailArray = (messages: unknown, path: string) => {
+  const value = getNestedProductMessage(messages, path);
+  return Array.isArray(value) ? value : [];
 };
 
 function ProductVideoSection({
@@ -147,32 +182,11 @@ function ProductVideoSection({
 
 // Component for showing just the intro (partially open)
 function ProductDetailedDescriptionIntro({ product, onExpand }: ProductDetailedDescriptionIntroProps) {
-  const tp = useTranslations('products');
+  const messages = useMessages();
   const t = useTranslations('product');
+  const productMessages = getProductDetailMessages(messages, product.slug);
+  const intro = getProductDetailString(productMessages, "intro");
 
-  // Check if this product has detailed description data
-  const hasDetailedDescription = () => {
-    try {
-      const intro = tp(`${product.slug}.intro`);
-      return intro && intro !== `${product.slug}.intro`;
-    } catch {
-      return false;
-    }
-  };
-
-  const getIntro = () => {
-    try {
-      return tp(`${product.slug}.intro`);
-    } catch {
-      return null;
-    }
-  };
-
-  if (!hasDetailedDescription()) {
-    return null;
-  }
-
-  const intro = getIntro();
   if (!intro) return null;
 
   return (
@@ -194,26 +208,16 @@ function ProductDetailedDescriptionIntro({ product, onExpand }: ProductDetailedD
 
 // Component for showing intro text only (no button) when expanded
 function ProductDetailedDescriptionTextOnly({ product }: { product: Product }) {
-  const tp = useTranslations('products');
+  const messages = useMessages();
+  const productMessages = getProductDetailMessages(messages, product.slug);
+  const intro = getProductDetailString(productMessages, "intro");
 
-  // Check if this product has detailed description data
-  const hasDetailedDescription = () => {
-    try {
-      const intro = tp(`${product.slug}.intro`);
-      return intro && intro !== `${product.slug}.intro`;
-    } catch {
-      return false;
-    }
-  };
-
-  if (!hasDetailedDescription()) {
-    return null;
-  }
+  if (!intro) return null;
 
   return (
     <div className="p-5 bg-white rounded-xl border border-[#0F1A26]/5 shadow-md">
       <p className="text-[#0F1A26]/80 text-sm leading-relaxed">
-        {tp(`${product.slug}.intro`)}
+        {intro}
       </p>
     </div>
   );
@@ -221,26 +225,30 @@ function ProductDetailedDescriptionTextOnly({ product }: { product: Product }) {
 
 // Component for showing full content when expanded
 function ProductDetailedDescriptionFull({ product, selectedSize, quantity, t, addToCart }: ProductDetailedDescriptionProps) {
+  const messages = useMessages();
   const tp = useTranslations('products');
+  const productMessages = getProductDetailMessages(messages, product.slug);
+
+  if (!productMessages) {
+    return null;
+  }
 
   // Helper to safely get array data
   const getArray = (path: string): string[] => {
-    try {
-      const raw = tp.raw(`${product.slug}.${path}`);
-      return Array.isArray(raw) ? raw : [];
-    } catch {
-      return [];
-    }
+    return getProductDetailArray(productMessages, path).filter(
+      (item): item is string => typeof item === "string"
+    );
   };
 
   // Helper to safely get features array
   const getFeatures = (): { title: string; desc: string }[] => {
-    try {
-      const raw = tp.raw(`${product.slug}.whyChoose.features`);
-      return Array.isArray(raw) ? raw : [];
-    } catch {
-      return [];
-    }
+    return getProductDetailArray(productMessages, "whyChoose.features").filter(
+      (item): item is { title: string; desc: string } =>
+        !!item &&
+        typeof item === "object" &&
+        typeof (item as { title?: unknown }).title === "string" &&
+        typeof (item as { desc?: unknown }).desc === "string"
+    );
   };
 
   const perfectFor = getArray('designInspiration.perfectFor');
@@ -391,14 +399,27 @@ export default function ProductPageContent({
   products,
 }: ProductPageContentProps) {
   const t = useTranslations('product');
+  const toastT = useTranslations('commerceToast');
+  const stockT = useTranslations('stock');
+  const { showToast } = useToast();
   const { addToCart, setBuyNowItem } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const router = useRouter();
   const [selectedSize, setSelectedSize] = useState("m");
   const [selectedColor, setSelectedColor] = useState<string | null>(product.colors?.[0]?.id || null);
+  const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
   const selectedProductColor =
     product.colors?.find((color) => color.id === selectedColor)?.name ||
     product.color;
+  const sizeHelpUrl = useMemo(() => {
+    const message = t("trust.whatsapp.message", {
+      product: product.name,
+      size: product.size ? selectedSize.toUpperCase() : t("trust.whatsapp.noSize"),
+      color: selectedProductColor || t("trust.whatsapp.noColor"),
+    });
+
+    return `https://wa.me/201070004227?text=${encodeURIComponent(message)}`;
+  }, [product.name, product.size, selectedProductColor, selectedSize, t]);
 
   useEffect(() => {
     trackMetaPixelEvent("ViewContent", {
@@ -438,9 +459,10 @@ export default function ProductPageContent({
         const productId = item.productId || item.productIds?.[0];
         const bundleProduct = productId ? products.find((p) => p.id === productId) : undefined;
         const sizeOptions = bundleProduct ? getBundleSizeOptions(bundleProduct) : [];
+        const defaultSize = sizeOptions.includes("m") ? "m" : sizeOptions[0];
         initial[index] = {
           productId: productId,
-          size: sizeOptions[0],
+          size: defaultSize,
           color: bundleProduct?.colors?.[0]?.id,
         };
       });
@@ -479,6 +501,131 @@ export default function ProductPageContent({
   }, [product, bundleSelections, products]);
 
   const currentPrice = product.dynamicPricing ? calculateDynamicBundlePrice() : getPriceBySize(selectedSize);
+  const selectedBundleHasOutOfStockItem = useMemo(() => {
+    if (!isBundle || !product.bundleItems) return false;
+
+    return product.bundleItems.some((item, index) => {
+      const selection = bundleSelections[index] || {};
+      const selectedProductId = selection.productId || item.productId || item.productIds?.[0];
+      const bundleProduct = selectedProductId ? getBundleProduct(selectedProductId) : undefined;
+      return bundleProduct ? isProductOutOfStock(bundleProduct) : false;
+    });
+  }, [bundleSelections, getBundleProduct, isBundle, product.bundleItems]);
+  const isUnavailable = isProductOutOfStock(product) || selectedBundleHasOutOfStockItem;
+  const stockLabel = getStockLabel(product, {
+    inStock: stockT("inStock"),
+    lowStock: stockT("lowStock"),
+    outOfStock: stockT("outOfStock"),
+  });
+
+  const buildCartBundleSelections = useCallback(() => {
+    if (!isBundle || !product.bundleItems) return undefined;
+
+    return product.bundleItems.map((item, index) => {
+      const selection = bundleSelections[index] || {};
+      const selectedProductId = selection.productId || item.productId || item.productIds?.[0];
+      const bundleProduct = selectedProductId ? getBundleProduct(selectedProductId) : undefined;
+
+      return {
+        productId: selectedProductId || 0,
+        productName: bundleProduct?.name || "",
+        productSlug: bundleProduct?.slug,
+        productType: bundleProduct?.type,
+        label: item.label,
+        size: selection.size,
+        color:
+          bundleProduct?.colors?.find((color) => color.id === selection.color)?.name ||
+          selection.color ||
+          bundleProduct?.color,
+        quantity: item.quantity,
+        price:
+          selection.size && bundleProduct?.sizePrices
+            ? bundleProduct.sizePrices[selection.size as keyof typeof bundleProduct.sizePrices]?.price
+            : bundleProduct?.price,
+        originalPrice:
+          selection.size && bundleProduct?.sizePrices
+            ? bundleProduct.sizePrices[selection.size as keyof typeof bundleProduct.sizePrices]?.originalPrice
+            : bundleProduct?.originalPrice,
+      };
+    });
+  }, [bundleSelections, getBundleProduct, isBundle, product.bundleItems]);
+
+  const buildCartItem = useCallback(() => ({
+    id: product.id,
+    name: product.name,
+    slug: product.slug,
+    type: product.type,
+    price: currentPrice.price,
+    originalPrice: currentPrice.originalPrice,
+    image: product.colors && selectedColor
+      ? product.colors.find(c => c.id === selectedColor)?.image || product.image
+      : product.image,
+    size: product.size ? selectedSize : undefined,
+    color: selectedProductColor,
+    quantity,
+    isBundle,
+    bundleSelections: buildCartBundleSelections(),
+  }), [
+    buildCartBundleSelections,
+    currentPrice.originalPrice,
+    currentPrice.price,
+    isBundle,
+    product.colors,
+    product.id,
+    product.image,
+    product.name,
+    product.size,
+    product.slug,
+    product.type,
+    quantity,
+    selectedColor,
+    selectedProductColor,
+    selectedSize,
+  ]);
+
+  const trackAddToCart = useCallback(() => {
+    trackMetaPixelEvent("AddToCart", {
+      content_ids: [String(product.id)],
+      contents: [{
+        id: String(product.id),
+        quantity,
+        item_price: currentPrice.price,
+      }],
+      content_name: product.name,
+      content_type: "product",
+      value: currentPrice.price * quantity,
+      currency: "EGP",
+    });
+  }, [currentPrice.price, product.id, product.name, quantity]);
+
+  const handleStickyAddToCart = useCallback(() => {
+    if (isUnavailable) return;
+    addToCart(buildCartItem(), { openCart: false });
+    trackAddToCart();
+    showToast({
+      title: toastT("addedToCart"),
+      description: product.name,
+      action: {
+        label: toastT("checkout"),
+        onClick: () => router.push("/checkout"),
+      },
+      cancel: {
+        label: toastT("keepShopping"),
+        onClick: () => {},
+      },
+    });
+  }, [addToCart, buildCartItem, isUnavailable, product.name, router, showToast, toastT, trackAddToCart]);
+
+  const handleStickyBuyNow = useCallback(() => {
+    if (isUnavailable) return;
+    if (!currentPrice.price) {
+      alert(t("price.unavailable"));
+      return;
+    }
+
+    setBuyNowItem(buildCartItem());
+    router.push("/checkout");
+  }, [buildCartItem, currentPrice.price, isUnavailable, router, setBuyNowItem, t]);
 
   // Filter images based on selected color - memoized to prevent infinite loops
   const colorImages = useMemo(() => {
@@ -496,14 +643,70 @@ export default function ProductPageContent({
   const [showShareToast, setShowShareToast] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const touchStartXRef = useRef<number | null>(null);
+  const bundleOptionsDragRef = useRef<{
+    element: HTMLDivElement;
+    pointerId: number;
+    startX: number;
+    scrollLeft: number;
+  } | null>(null);
+  const bundleOptionsDraggedRef = useRef(false);
+
+  const handleBundleOptionsPointerDown = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+
+    bundleOptionsDraggedRef.current = false;
+    bundleOptionsDragRef.current = {
+      element: event.currentTarget,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      scrollLeft: event.currentTarget.scrollLeft,
+    };
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  }, []);
+
+  const handleBundleOptionsPointerMove = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    const dragState = bundleOptionsDragRef.current;
+    if (!dragState || dragState.pointerId !== event.pointerId) return;
+
+    const deltaX = event.clientX - dragState.startX;
+    if (Math.abs(deltaX) > 4) {
+      bundleOptionsDraggedRef.current = true;
+      event.preventDefault();
+    }
+
+    dragState.element.scrollLeft = dragState.scrollLeft - deltaX;
+  }, []);
+
+  const stopBundleOptionsDrag = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    const dragState = bundleOptionsDragRef.current;
+    if (dragState?.pointerId === event.pointerId) {
+      dragState.element.releasePointerCapture?.(event.pointerId);
+    }
+    bundleOptionsDragRef.current = null;
+    window.setTimeout(() => {
+      bundleOptionsDraggedRef.current = false;
+    }, 0);
+  }, []);
 
 
-  const sizes = [
-    { id: "s", label: "S", range: "48-53 cm" },
-    { id: "m", label: "M", range: "58-63 cm" },
-    { id: "l", label: "L", range: "65-70 cm" },
-    { id: "xl", label: "XL", range: "72-80 cm" },
-  ];
+  const sizes = useSizeGuideSizes();
+  const recommendedSize = useMemo(() => {
+    if (!product.size || sizes.length === 0) return null;
+    return sizes.find((size) => size.id === "m") || sizes[0];
+  }, [product.size, sizes]);
+  const selectedSizeInfo = useMemo(
+    () => sizes.find((size) => size.id === selectedSize) || recommendedSize,
+    [recommendedSize, selectedSize, sizes]
+  );
+  const selectedSizeGuideText = selectedSizeInfo
+    ? t("size.selectedGuide", {
+      size: selectedSizeInfo.label,
+      range: selectedSizeInfo.range || selectedSizeInfo.cm,
+    })
+    : "";
+  const recommendedSizeText = recommendedSize
+    ? t("size.recommended", { size: recommendedSize.label })
+    : "";
 
 
   const relatedProducts = useMemo(() => {
@@ -762,7 +965,7 @@ export default function ProductPageContent({
     );
 
     if (currentIsBundle) {
-      // لو المنتج Bundle: اعرض منتجات من مكونات الباندل + باندل شبهه
+      // For bundles: recommend bundle items plus similar bundles.
       currentBundleCategories.forEach((category) => {
         addProducts(
           (item) =>
@@ -774,7 +977,7 @@ export default function ProductPageContent({
 
       addProducts((item) => isBundleProduct(item), 1);
     } else {
-      // 1) منتج من نفس الـ category
+      // 1) Product from the same category.
       currentDirectCategories.forEach((category) => {
         addProducts(
           (item) =>
@@ -784,7 +987,7 @@ export default function ProductPageContent({
         );
       });
 
-      // 2) Bundle فيه نفس نوع المنتج الحالي
+      // 2) Bundle containing the same product type.
       addProducts(
         (item) =>
           isBundleProduct(item) &&
@@ -792,7 +995,7 @@ export default function ProductPageContent({
         1
       );
 
-      // 3) Cross-sell categories متعلمة من الباندلز
+      // 3) Cross-sell categories inferred from bundles.
       affinityCategories.forEach((category) => {
         addProducts(
           (item) =>
@@ -803,7 +1006,7 @@ export default function ProductPageContent({
       });
     }
 
-    // Fallback: كمل العدد بأقوى منتجات حسب السكور
+    // Fallback: fill the remaining slots with the highest scored products.
     scoredProducts
       .filter(({ item }) => !selected.has(item.id))
       .slice(0, RELATED_LIMIT - selected.size)
@@ -849,7 +1052,7 @@ export default function ProductPageContent({
         </div>
       )}
 
-      <main className="min-h-screen bg-[#F1EBE3] overflow-x-hidden pb-20 lg:pb-0" ref={ref}>
+      <main className="min-h-screen bg-[#F1EBE3] overflow-x-hidden pb-32 lg:pb-0" ref={ref}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12">
           {/* Product Navigation - Top */}
           <div className="flex items-center justify-between mb-8">
@@ -912,12 +1115,14 @@ export default function ProductPageContent({
           </div>
 
           {/* Section 1 & 2: Gallery + Info Grid */}
-          <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-start">
+          <div className="grid min-w-0 grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-start">
             {/* Section 1: Gallery */}
-            <div className={`space-y-4 sm:space-y-6 transition-all duration-700 w-full max-w-full overflow-hidden ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'}`}>
+            <div className="min-w-0 space-y-4 sm:space-y-6 w-full max-w-full overflow-hidden">
               {/* Main Image - Premium with Navigation Arrows + Swipe Support */}
               <div
-                className="relative aspect-square bg-white/50 backdrop-blur-sm rounded-2xl sm:rounded-3xl flex items-center justify-center overflow-hidden border border-[#0F1A26]/10 shadow-2xl shadow-[#0F1A26]/10 touch-pan-y"
+                className={`relative w-full bg-white/50 backdrop-blur-sm rounded-2xl sm:rounded-3xl flex items-center justify-center overflow-hidden border border-[#0F1A26]/10 shadow-2xl shadow-[#0F1A26]/10 touch-pan-y ${
+                  isBundle ? "h-[280px] sm:aspect-square sm:h-auto" : "aspect-square"
+                }`}
                 onTouchStart={(e) => {
                   const touch = e.touches[0];
                   touchStartXRef.current = touch.clientX;
@@ -946,7 +1151,7 @@ export default function ProductPageContent({
                     alt={product.name}
                     fill
                     sizes="(max-width: 768px) 92vw, (max-width: 1280px) 45vw, 40vw"
-                    className="object-contain p-2 sm:p-4"
+                    className={isBundle ? "h-full w-full object-cover" : "h-full w-full object-contain p-2 sm:p-4"}
                     priority={activeImage === 0}
                     quality={65}
                   />
@@ -979,7 +1184,7 @@ export default function ProductPageContent({
               {/* Thumbnails - Horizontal Scrollable with Index */}
               <div className="space-y-2 sm:space-y-3 w-full max-w-full overflow-hidden">
                 {/* Thumbnails Row */}
-                <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 sm:pb-3 px-1 scrollbar-thin scrollbar-thumb-[#EEBC3F]/40 scrollbar-track-transparent hover:scrollbar-thumb-[#EEBC3F] max-w-full">
+                <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 sm:pb-3 px-1 no-scrollbar max-w-full">
                   {(colorImages || [product.image]).map((img, idx) => (
                     <button
                       key={idx}
@@ -994,7 +1199,7 @@ export default function ProductPageContent({
                         alt={`${product.name} view ${idx + 1}`}
                         width={96}
                         height={96}
-                        className="w-full h-full object-contain p-1"
+                        className={isBundle ? "h-full w-full object-cover" : "w-full h-full object-contain p-1"}
                         loading="lazy"
                         quality={45}
                       />
@@ -1031,7 +1236,7 @@ export default function ProductPageContent({
             </div>
 
             {/* Section 2: Product Info */}
-            <div className={`lg:pl-8 transition-all duration-700 delay-100 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'}`}>
+            <div className="lg:pl-8">
               {/* Buy Box - Price + Size + Add to Cart */}
               <div className="space-y-4">
                 {/* Category & Actions */}
@@ -1075,16 +1280,29 @@ export default function ProductPageContent({
                     {[1, 2, 3, 4, 5].map((star) => (
                       <Star key={star} className="w-3 h-3 sm:w-4 sm:h-4 fill-[#EEBC3F] text-[#EEBC3F]" strokeWidth={1.5} />
                     ))}
-                    <span className="text-xs sm:text-sm font-bold text-[#0F1A26] ml-1 sm:ml-2">4.9</span>
+                    <span className="text-xs sm:text-sm font-bold text-[#0F1A26] ml-1 sm:ml-2">{t('rating.value')}</span>
                   </div>
-                  <span className="text-xs sm:text-sm text-[#0F1A26]/50 underline decoration-[#0F1A26]/20 underline-offset-4">127 verified reviews</span>
+                  <span className="text-xs sm:text-sm text-[#0F1A26]/50 underline decoration-[#0F1A26]/20 underline-offset-4">{t('rating.reviews')}</span>
                 </div>
 
                 {/* Price - Premium */}
                 <div className="flex flex-wrap items-baseline gap-2 sm:gap-4 mb-6 sm:mb-8 p-3 sm:p-6 bg-gradient-to-r from-[#EEBC3F]/20 to-[#EEBC3F]/5 rounded-xl sm:rounded-2xl border-2 border-[#EEBC3F]/30">
                   <span className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#0F1A26] tracking-tight">EGP {currentPrice.price}</span>
                   <span className="text-lg sm:text-xl md:text-2xl text-[#0F1A26]/50 line-through font-medium">EGP {currentPrice.originalPrice}</span>
-                  <span className="bg-[#EEBC3F] text-[#0F1A26] text-xs sm:text-sm font-bold px-3 sm:px-4 py-1 sm:py-2 rounded-full shadow-lg">Save {Math.round((1 - currentPrice.price / currentPrice.originalPrice) * 100)}%</span>
+                  <span className="bg-[#EEBC3F] text-[#0F1A26] text-xs sm:text-sm font-bold px-3 sm:px-4 py-1 sm:py-2 rounded-full shadow-lg">
+                    {t('price.save', { percent: Math.round((1 - currentPrice.price / currentPrice.originalPrice) * 100) })}
+                  </span>
+                  <span className={`text-xs sm:text-sm font-bold px-3 sm:px-4 py-1 sm:py-2 rounded-full ${
+                    isUnavailable
+                      ? "bg-red-100 text-red-700"
+                      : product.stockStatus === "low_stock"
+                        ? "bg-orange-100 text-orange-700"
+                        : "bg-green-100 text-green-700"
+                  }`}>
+                    {selectedBundleHasOutOfStockItem
+                      ? t("bundle.selectionUnavailable")
+                      : stockLabel}
+                  </span>
                 </div>
 
                 {/* Size Selection */}
@@ -1095,30 +1313,56 @@ export default function ProductPageContent({
                         <Award className="w-3 h-3 sm:w-4 sm:h-4 text-[#EEBC3F]" />
                         {t('size.select')}
                       </label>
-                      <Link href="/how-it-works" className="text-xs sm:text-sm bg-[#EEBC3F] hover:bg-[#d4a535] text-[#0F1A26] transition-all flex items-center gap-1.5 font-bold px-3 sm:px-4 py-2 rounded-lg shadow-md hover:shadow-lg hover:scale-105">
+                      <button
+                        type="button"
+                        onClick={() => setIsSizeGuideOpen(true)}
+                        className="text-xs sm:text-sm bg-[#EEBC3F] hover:bg-[#d4a535] text-[#0F1A26] transition-all flex items-center gap-1.5 font-bold px-3 sm:px-4 py-2 rounded-lg shadow-md hover:shadow-lg hover:scale-105"
+                      >
                         <Ruler className="w-3 h-3 sm:w-4 sm:h-4" />
                         {t('size.howToMeasure')}
-                      </Link>
+                      </button>
                     </div>
                     <div className="flex items-center gap-2 mb-3 sm:mb-4 bg-[#EEBC3F]/10 rounded-lg px-3 py-2">
                       <Ruler className="w-4 h-4 text-[#EEBC3F] flex-shrink-0" />
                       <p className="text-[#0F1A26] text-xs font-semibold">{t('size.heightNote')}</p>
                     </div>
+                    {(selectedSizeGuideText || recommendedSizeText) && (
+                      <div className="mb-3 rounded-xl border border-[#EEBC3F]/30 bg-white px-3 py-2.5 text-xs sm:text-sm font-semibold text-[#0F1A26] shadow-sm">
+                        {selectedSizeGuideText && <p>{selectedSizeGuideText}</p>}
+                        {recommendedSizeText && (
+                          <p className="mt-1 text-[#0F1A26]/55">{recommendedSizeText}</p>
+                        )}
+                      </div>
+                    )}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
-                      {sizes.map((size) => (
-                        <button
-                          key={size.id}
-                          onClick={() => setSelectedSize(size.id)}
-                          className={`py-3 sm:py-5 rounded-xl sm:rounded-2xl border-2 text-center transition-all duration-300 ${selectedSize === size.id
-                            ? "border-[#EEBC3F] bg-[#EEBC3F] text-white shadow-xl shadow-[#EEBC3F]/30 scale-105"
-                            : "border-[#0F1A26]/10 hover:border-[#EEBC3F]/50 bg-white hover:shadow-lg"
-                            }`}
-                        >
-                          <span className={`block font-bold text-base sm:text-lg ${selectedSize === size.id ? "text-white" : "text-[#0F1A26]"}`}>{size.label}</span>
-                          <span className={`block text-[10px] uppercase tracking-wider mt-0.5 ${selectedSize === size.id ? "text-white/60" : "text-[#0F1A26]/40"}`}>{t('size.heightLabel')}</span>
-                          <span className={`block text-xs mt-0.5 ${selectedSize === size.id ? "text-white/70" : "text-[#0F1A26]/50"}`}>{size.range}</span>
-                        </button>
-                      ))}
+                      {sizes.map((size) => {
+                        const isRecommended = recommendedSize?.id === size.id;
+                        return (
+                          <button
+                            key={size.id}
+                            onClick={() => setSelectedSize(size.id)}
+                            className={`relative py-3 sm:py-5 rounded-xl sm:rounded-2xl border-2 text-center transition-all duration-300 ${selectedSize === size.id
+                              ? "border-[#EEBC3F] bg-[#EEBC3F] text-white shadow-xl shadow-[#EEBC3F]/30 scale-105"
+                              : isRecommended
+                                ? "border-[#EEBC3F]/70 bg-white shadow-lg shadow-[#EEBC3F]/10"
+                                : "border-[#0F1A26]/10 hover:border-[#EEBC3F]/50 bg-white hover:shadow-lg"
+                              }`}
+                          >
+                            {isRecommended && (
+                              <span className={`absolute -top-2 left-1/2 -translate-x-1/2 rounded-full px-2 py-0.5 text-[9px] font-bold shadow-sm ${
+                                selectedSize === size.id
+                                  ? "bg-white text-[#0F1A26]"
+                                  : "bg-[#EEBC3F] text-[#0F1A26]"
+                              }`}>
+                                {t("bundle.popular")}
+                              </span>
+                            )}
+                            <span className={`block font-bold text-base sm:text-lg ${selectedSize === size.id ? "text-white" : "text-[#0F1A26]"}`}>{size.label}</span>
+                            <span className={`block text-[10px] uppercase tracking-wider mt-0.5 ${selectedSize === size.id ? "text-white/60" : "text-[#0F1A26]/40"}`}>{t('size.heightLabel')}</span>
+                            <span className={`block text-xs mt-0.5 ${selectedSize === size.id ? "text-white/70" : "text-[#0F1A26]/50"}`}>{size.range}</span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -1137,27 +1381,29 @@ export default function ProductPageContent({
                         const selectedProductId = selection.productId || item.productId || item.productIds?.[0];
                         const bundleProduct = selectedProductId ? getBundleProduct(selectedProductId) : undefined;
                         const sizeOptions = bundleProduct ? getBundleSizeOptions(bundleProduct) : [];
+                        const selectedBundleColorImage =
+                          bundleProduct?.colors?.find((color) => color.id === selection.color)?.image;
 
                         // Get available product options for this bundle item
                         const productOptions = item.productIds
                           ? item.productIds.map(id => {
                             const p = getBundleProduct(id);
-                            return p ? { id: p.id, name: p.name, image: p.image } : null;
+                            return p || null;
                           }).filter(Boolean)
                           : item.productId && bundleProduct
-                            ? [{ id: bundleProduct.id, name: bundleProduct.name, image: bundleProduct.image }]
+                            ? [bundleProduct]
                             : [];
 
                         return (
-                          <div key={index} className="bg-white rounded-xl p-4 border border-[#0F1A26]/10">
+                          <div key={index} className="overflow-hidden rounded-2xl border border-[#0F1A26]/10 bg-white p-3 sm:p-4">
                             <div className="flex items-center gap-3 mb-3">
-                              <div className="relative w-12 h-12 rounded-lg bg-[#F1EBE3] flex items-center justify-center overflow-hidden">
+                              <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-[#F1EBE3] sm:h-16 sm:w-16">
                                 {bundleProduct ? (
                                   <Image
-                                    src={bundleProduct.image}
+                                    src={selectedBundleColorImage || bundleProduct.image}
                                     alt={bundleProduct.name}
                                     fill
-                                    sizes="48px"
+                                    sizes="64px"
                                     className="object-contain"
                                     loading="lazy"
                                     quality={45}
@@ -1166,38 +1412,91 @@ export default function ProductPageContent({
                                   <div className="w-full h-full bg-[#EEBC3F]/20" />
                                 )}
                               </div>
-                              <div className="flex-1">
+                              <div className="min-w-0 flex-1">
                                 {item.label && <p className="text-[#0F1A26]/50 text-xs mb-0.5">{item.label}</p>}
-                                {productOptions.length > 1 ? (
-                                  <select
-                                    value={selectedProductId || ""}
-                                    onChange={(e) => {
-                                      const newProductId = parseInt(e.target.value);
-                                      const newProduct = getBundleProduct(newProductId);
-                                      const newSizeOptions = newProduct ? getBundleSizeOptions(newProduct) : [];
-                                      setBundleSelections((prev) => ({
-                                        ...prev,
-                                        [index]: {
-                                          ...prev[index],
-                                          productId: newProductId,
-                                          size: newSizeOptions[0],
-                                          color: newProduct?.colors?.[0]?.id,
-                                        },
-                                      }));
-                                    }}
-                                    className="w-full text-sm font-semibold text-[#0F1A26] bg-transparent border border-[#0F1A26]/20 rounded-lg px-2 py-1 focus:border-[#EEBC3F] focus:outline-none"
-                                  >
-                                    <option value="">Select product...</option>
-                                    {productOptions.map((opt) => opt && (
-                                      <option key={opt.id} value={opt.id}>{opt.name}</option>
-                                    ))}
-                                  </select>
-                                ) : bundleProduct ? (
-                                  <h5 className="font-semibold text-[#0F1A26] text-sm">{bundleProduct.name}</h5>
+                                {bundleProduct ? (
+                                  <h5 className="truncate font-semibold text-[#0F1A26] text-sm">{bundleProduct.name}</h5>
                                 ) : null}
-                                <span className="text-[#EEBC3F] text-xs font-medium block mt-1">Qty: {item.quantity}</span>
+                                <span className="text-[#EEBC3F] text-xs font-bold block mt-1">
+                                  {t("bundle.qty", { quantity: item.quantity })}
+                                </span>
                               </div>
                             </div>
+
+                            {productOptions.length > 1 && (
+                              <div className="mb-3">
+                                <div className="mb-2 flex items-center justify-between gap-2">
+                                  <label className="text-[#0F1A26]/60 text-xs font-bold block">
+                                    {item.label || t("bundleItemsTitle")}
+                                  </label>
+                                  <span className="text-[10px] font-semibold text-[#0F1A26]/40">
+                                    {t("bundle.swipeToChoose")}
+                                  </span>
+                                </div>
+                                <div
+                                  className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-2 no-scrollbar cursor-grab active:cursor-grabbing"
+                                  onPointerDown={handleBundleOptionsPointerDown}
+                                  onPointerMove={handleBundleOptionsPointerMove}
+                                  onPointerUp={stopBundleOptionsDrag}
+                                  onPointerCancel={stopBundleOptionsDrag}
+                                  onPointerLeave={stopBundleOptionsDrag}
+                                >
+                                  {productOptions.map((opt) => {
+                                    if (!opt) return null;
+                                    const isSelected = selectedProductId === opt.id;
+
+                                    return (
+                                      <button
+                                        key={opt.id}
+                                        type="button"
+                                        onClick={(event) => {
+                                          if (bundleOptionsDraggedRef.current) {
+                                            event.preventDefault();
+                                            return;
+                                          }
+                                          const newSizeOptions = getBundleSizeOptions(opt);
+                                          const defaultSize = newSizeOptions.includes("m") ? "m" : newSizeOptions[0];
+                                          setBundleSelections((prev) => ({
+                                            ...prev,
+                                            [index]: {
+                                              ...prev[index],
+                                              productId: opt.id,
+                                              size: defaultSize,
+                                              color: opt.colors?.[0]?.id,
+                                            },
+                                          }));
+                                        }}
+                                        className={`relative w-[42vw] max-w-[138px] shrink-0 snap-start rounded-2xl border p-2.5 text-center transition-all sm:w-32 ${
+                                          isSelected
+                                            ? "border-[#EEBC3F] bg-[#EEBC3F]/10 ring-2 ring-[#EEBC3F]/20"
+                                            : "border-[#0F1A26]/10 bg-[#F8F6F3] hover:border-[#EEBC3F]/50"
+                                        }`}
+                                      >
+                                        {isSelected && (
+                                          <span className="absolute right-2 top-2 z-10 rounded-full bg-[#EEBC3F] px-2 py-0.5 text-[10px] font-black text-[#0F1A26]">
+                                            {t("bundle.selected")}
+                                          </span>
+                                        )}
+                                        <span className="relative mb-2 block h-20 overflow-hidden rounded-xl bg-white sm:h-24">
+                                          <Image
+                                            src={opt.image}
+                                            alt={opt.name}
+                                            fill
+                                            sizes="140px"
+                                            className="object-contain p-1"
+                                            loading="lazy"
+                                            quality={45}
+                                          />
+                                        </span>
+                                        <span className="line-clamp-2 min-h-[28px] text-[11px] font-bold leading-tight text-[#0F1A26]">
+                                          {opt.name}
+                                        </span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
 
                             {sizeOptions.length > 0 && (
                               <div className="mb-3">
@@ -1212,7 +1511,7 @@ export default function ProductPageContent({
                                           [index]: { ...prev[index], size },
                                         }))
                                       }
-                                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${selection.size === size
+                                      className={`min-h-10 min-w-11 px-3 py-2 rounded-xl text-xs font-bold transition-all ${selection.size === size
                                         ? "bg-[#EEBC3F] text-[#0F1A26]"
                                         : "bg-white text-[#0F1A26]/70 hover:bg-[#EEBC3F]/20"
                                         }`}
@@ -1237,7 +1536,7 @@ export default function ProductPageContent({
                                           [index]: { ...prev[index], color: color.id },
                                         }))
                                       }
-                                      className={`relative w-8 h-8 rounded-full border-2 transition-all overflow-hidden ${selection.color === color.id
+                                      className={`relative h-10 w-10 rounded-full border-2 transition-all overflow-hidden ${selection.color === color.id
                                         ? "border-[#EEBC3F] ring-2 ring-[#EEBC3F]/30"
                                         : "border-[#0F1A26]/10 hover:border-[#EEBC3F]/50"
                                         }`}
@@ -1307,6 +1606,31 @@ export default function ProductPageContent({
                   </div>
                 )}
 
+                <div className="mb-4 sm:mb-6 rounded-2xl border border-[#0F1A26]/10 bg-white/70 p-3 sm:p-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {[
+                      { icon: Ruler, label: t("trust.measure") },
+                      { icon: Truck, label: t("trust.shipping") },
+                      { icon: RotateCcw, label: t("trust.returns") },
+                      { icon: CreditCard, label: t("trust.payment") },
+                    ].map((item) => (
+                      <div key={item.label} className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-[#0F1A26]/70">
+                        <item.icon className="w-4 h-4 text-[#EEBC3F] flex-shrink-0" strokeWidth={1.7} />
+                        <span>{item.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <a
+                    href={sizeHelpUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-[#25D366]/10 px-3 py-2 text-sm font-bold text-[#128C4A] transition-colors hover:bg-[#25D366]/15"
+                  >
+                    <MessageCircle className="w-4 h-4" strokeWidth={1.8} />
+                    {t("trust.whatsapp.cta")}
+                  </a>
+                </div>
+
                 {/* Quantity & Add to Cart - Premium */}
                 <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6 sm:mb-8">
                   <div className="flex items-center bg-white border-2 border-[#0F1A26]/10 rounded-2xl overflow-hidden hover:border-[#EEBC3F]/30 transition-colors w-full sm:w-auto">
@@ -1325,130 +1649,18 @@ export default function ProductPageContent({
                     </button>
                   </div>
                   <Button
-                    onClick={() => {
-                      const cartBundleSelections =
-                        isBundle && product.bundleItems
-                          ? product.bundleItems.map((item, index) => {
-                            const selection = bundleSelections[index] || {};
-                            const selectedProductId = selection.productId || item.productId || item.productIds?.[0];
-                            const bundleProduct = selectedProductId ? getBundleProduct(selectedProductId) : undefined;
-                            return {
-                              productId: selectedProductId || 0,
-                              productName: bundleProduct?.name || "",
-                              productSlug: bundleProduct?.slug,
-                              productType: bundleProduct?.type,
-                              label: item.label,
-                              size: selection.size,
-                              color:
-                                bundleProduct?.colors?.find((color) => color.id === selection.color)?.name ||
-                                selection.color ||
-                                bundleProduct?.color,
-                              quantity: item.quantity,
-                              price:
-                                selection.size && bundleProduct?.sizePrices
-                                  ? bundleProduct.sizePrices[selection.size as keyof typeof bundleProduct.sizePrices]?.price
-                                  : bundleProduct?.price,
-                              originalPrice:
-                                selection.size && bundleProduct?.sizePrices
-                                  ? bundleProduct.sizePrices[selection.size as keyof typeof bundleProduct.sizePrices]?.originalPrice
-                                  : bundleProduct?.originalPrice,
-                            };
-                          })
-                          : undefined;
-
-                      addToCart({
-                        id: product.id,
-                        name: product.name,
-                        slug: product.slug,
-                        type: product.type,
-                        price: currentPrice.price,
-                        originalPrice: currentPrice.originalPrice,
-                        image: product.colors && selectedColor
-                          ? product.colors.find(c => c.id === selectedColor)?.image || product.image
-                          : product.image,
-                        size: product.size ? selectedSize : undefined,
-                        color: selectedProductColor,
-                        quantity: quantity,
-                        isBundle,
-                        bundleSelections: cartBundleSelections,
-                      });
-                      trackMetaPixelEvent("AddToCart", {
-                        content_ids: [String(product.id)],
-                        contents: [{
-                          id: String(product.id),
-                          quantity,
-                          item_price: currentPrice.price,
-                        }],
-                        content_name: product.name,
-                        content_type: "product",
-                        value: currentPrice.price * quantity,
-                        currency: "EGP",
-                      });
-                    }}
+                    onClick={handleStickyAddToCart}
+                    disabled={isUnavailable}
                     className="flex-1 bg-[#0F1A26] text-white hover:bg-[#EEBC3F] hover:text-[#0F1A26] h-14 sm:h-16 rounded-2xl font-bold text-base sm:text-lg transition-all duration-300 hover:shadow-xl hover:shadow-[#EEBC3F]/20 group"
                   >
-                    {t('addToCart')}
+                    {isUnavailable ? t("unavailable") : t('addToCart')}
                   </Button>
                   <Button
-                    onClick={() => {
-                      const priceToUse = currentPrice?.price || product?.price || 0;
-                      if (!priceToUse || priceToUse === 0) {
-                        console.error("[Product] Cannot buy now - invalid price:", { currentPrice, product });
-                        alert("Error: Product price not loaded. Please refresh the page.");
-                        return;
-                      }
-
-                      const cartBundleSelections =
-                        isBundle && product.bundleItems
-                          ? product.bundleItems.map((item, index) => {
-                            const selection = bundleSelections[index] || {};
-                            const selectedProductId = selection.productId || item.productId || item.productIds?.[0];
-                            const bundleProduct = selectedProductId ? getBundleProduct(selectedProductId) : undefined;
-                            return {
-                              productId: selectedProductId || 0,
-                              productName: bundleProduct?.name || "",
-                              productSlug: bundleProduct?.slug,
-                              productType: bundleProduct?.type,
-                              label: item.label,
-                              size: selection.size,
-                              color:
-                                bundleProduct?.colors?.find((color) => color.id === selection.color)?.name ||
-                                selection.color ||
-                                bundleProduct?.color,
-                              quantity: item.quantity,
-                              price:
-                                selection.size && bundleProduct?.sizePrices
-                                  ? bundleProduct.sizePrices[selection.size as keyof typeof bundleProduct.sizePrices]?.price
-                                  : bundleProduct?.price,
-                              originalPrice:
-                                selection.size && bundleProduct?.sizePrices
-                                  ? bundleProduct.sizePrices[selection.size as keyof typeof bundleProduct.sizePrices]?.originalPrice
-                                  : bundleProduct?.originalPrice,
-                            };
-                          })
-                          : undefined;
-
-                      setBuyNowItem({
-                        id: product.id,
-                        name: product.name,
-                        slug: product.slug,
-                        type: product.type,
-                        price: priceToUse,
-                        originalPrice: currentPrice?.originalPrice || product?.originalPrice || priceToUse,
-                        image: product.colors && selectedColor
-                          ? product.colors.find(c => c.id === selectedColor)?.image || product.image
-                          : product.image,
-                        size: product.size ? selectedSize : undefined,
-                        color: selectedProductColor,
-                        quantity: quantity,
-                        isBundle,
-                        bundleSelections: cartBundleSelections,
-                      });
-                      router.push("/checkout");
-                    }}
+                    onClick={handleStickyBuyNow}
+                    disabled={isUnavailable}
                     className="flex-1 sm:flex-none bg-gradient-to-r from-[#EEBC3F] to-[#d4a535] text-[#0F1A26] hover:shadow-xl hover:shadow-[#EEBC3F]/30 h-14 sm:h-16 px-4 sm:px-10 rounded-2xl font-bold text-base sm:text-lg transition-all duration-300 group"
                   >
-                    {t('buyNow')}
+                    {isUnavailable ? t("unavailable") : t('buyNow')}
                   </Button>
                 </div>
               </div>{/* End Sticky Buy Box */}
@@ -1478,11 +1690,8 @@ export default function ProductPageContent({
           {/* Video Section - Full Width */}
           {product.category === "passport-wallets" && (
             <ProductVideoSection
-              title={t('videoSection.title') || 'See It In Action'}
-              subtitle={
-                t('videoSection.passportSubtitle') ||
-                'Discover the premium leather and RFID protection of our passport wallet'
-              }
+              title={t('videoSection.title')}
+              subtitle={t('videoSection.passportSubtitle')}
               poster="/passport%20wallet/Cognac%20brown/1.png"
               src="/passport%20wallet/Wallet%20landscape%20without%20logo.mov"
               fullWidth
@@ -1491,11 +1700,8 @@ export default function ProductPageContent({
 
           {product.category === "packonat" && (
             <ProductVideoSection
-              title={t('videoSection.title') || 'See It In Action'}
-              subtitle={
-                t('videoSection.subtitle') ||
-                'Watch how PackOnat keeps your clothes organized and wrinkle-free'
-              }
+              title={t('videoSection.title')}
+              subtitle={t('videoSection.subtitle')}
               poster="/packOnat/Black/1.png"
               src="/packOnat/Cloth%20case%20landscape%20without%20logo.mov"
               fullWidth
@@ -1505,28 +1711,25 @@ export default function ProductPageContent({
 
           {product.category === "luggage-covers" && (
             <ProductVideoSection
-              title={t('videoSection.title') || 'See It In Action'}
-              subtitle={
-                t('videoSection.subtitle') ||
-                'Watch how our luggage covers protect your suitcase in style'
-              }
+              title={t('videoSection.title')}
+              subtitle={t('videoSection.luggageSubtitle')}
               fullWidth
               videoFit="contain"
               videos={[
                 {
                   poster: "/octopus photo/Black/1.png",
                   src: "/octopus photo/Wear2.mp4",
-                  label: "Premium suitcase protection",
+                  label: t('videoSection.luggageLabels.protection'),
                 },
                 {
                   poster: "/octopus photo/Green/1.png",
                   src: "/octopus photo/Wear.mp4",
-                  label: "Easy to wear in seconds",
+                  label: t('videoSection.luggageLabels.easyWear'),
                 },
                 {
                   poster: "/octopus photo/Black/1.png",
                   src: "/octopus photo/Wear3.mp4",
-                  label: "Travel-ready secure fit",
+                  label: t('videoSection.luggageLabels.secureFit'),
                 },
               ]}
             />
@@ -1649,98 +1852,131 @@ export default function ProductPageContent({
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
               {relatedProducts.map((relatedProduct, index) => (
-                <Link
+                <div
                   key={relatedProduct.id}
-                  href={`/product/${relatedProduct.slug}`}
                   className={`group transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
                   style={{ transitionDelay: `${index * 100 + 200}ms` }}
                 >
-                  <SwipeableProductImage product={relatedProduct} />
-                  <div className="mt-3">
-                    <h3 className="text-[#0F1A26] font-bold group-hover:text-[#EEBC3F] transition-colors duration-300 text-sm sm:text-lg line-clamp-1">{relatedProduct.name}</h3>
+                  <div className="relative">
+                    <Link href={`/product/${relatedProduct.slug}`} className="block">
+                      <SwipeableProductImage product={relatedProduct} />
+                    </Link>
+                    <WishlistToggleButton
+                      product={relatedProduct}
+                      className="absolute right-2 top-12 sm:right-3 sm:top-14"
+                    />
                   </div>
-                </Link>
+                  <Link href={`/product/${relatedProduct.slug}`} className="mt-3 block">
+                    <h3 className="text-[#0F1A26] font-bold group-hover:text-[#EEBC3F] transition-colors duration-300 text-sm sm:text-lg line-clamp-1">{relatedProduct.name}</h3>
+                  </Link>
+                </div>
               ))}
             </div>
           </div>
         </div>
 
-        {/* Mobile Sticky Buy Bar */}
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#0F1A26]/10 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] z-50 px-4 py-3">
-          <div className="flex items-center gap-3">
-            <div className="flex-1 min-w-0">
-              <h3 className="text-[#0F1A26] font-bold text-sm truncate">{product.name}</h3>
-              <div className="flex items-baseline gap-2">
-                <span className="text-[#0F1A26] font-bold text-base">EGP {currentPrice.price}</span>
-                <span className="text-[#0F1A26]/40 text-xs line-through">EGP {currentPrice.originalPrice}</span>
+        {/* Desktop Sticky Buy Bar */}
+        <div className="hidden lg:block fixed bottom-5 left-1/2 z-50 w-[min(1120px,calc(100vw-48px))] -translate-x-1/2 rounded-3xl border border-[#0F1A26]/10 bg-white/95 px-5 py-4 shadow-2xl shadow-[#0F1A26]/15 backdrop-blur-xl">
+          <div className="flex items-center gap-5">
+            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl bg-[#F1EBE3]">
+              <Image
+                src={
+                  product.colors && selectedColor
+                    ? product.colors.find(c => c.id === selectedColor)?.image || product.image
+                    : product.image
+                }
+                alt={product.name}
+                fill
+                sizes="64px"
+                className="object-contain p-1.5"
+              />
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-bold text-[#0F1A26]">{product.name}</p>
+              <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-semibold text-[#0F1A26]/55">
+                {product.size && <span>{selectedSize.toUpperCase()}</span>}
+                {selectedProductColor && <span>{selectedProductColor}</span>}
+                <span>{quantity}x</span>
               </div>
             </div>
-            <Button
-              onClick={() => {
-                const cartBundleSelections =
-                  isBundle && product.bundleItems
-                    ? product.bundleItems.map((item, index) => {
-                      const selection = bundleSelections[index] || {};
-                      const selectedProductId = selection.productId || item.productId || item.productIds?.[0];
-                      const bundleProduct = selectedProductId ? getBundleProduct(selectedProductId) : undefined;
-                      return {
-                        productId: selectedProductId || 0,
-                        productName: bundleProduct?.name || "",
-                        productSlug: bundleProduct?.slug,
-                        productType: bundleProduct?.type,
-                        label: item.label,
-                        size: selection.size,
-                        color:
-                          bundleProduct?.colors?.find((color) => color.id === selection.color)?.name ||
-                          selection.color ||
-                          bundleProduct?.color,
-                        quantity: item.quantity,
-                        price:
-                          selection.size && bundleProduct?.sizePrices
-                            ? bundleProduct.sizePrices[selection.size as keyof typeof bundleProduct.sizePrices]?.price
-                            : bundleProduct?.price,
-                        originalPrice:
-                          selection.size && bundleProduct?.sizePrices
-                            ? bundleProduct.sizePrices[selection.size as keyof typeof bundleProduct.sizePrices]?.originalPrice
-                            : bundleProduct?.originalPrice,
-                      };
-                    })
-                    : undefined;
 
-                addToCart({
-                  id: product.id,
-                  name: product.name,
-                  slug: product.slug,
-                  type: product.type,
-                  price: currentPrice.price,
-                  originalPrice: currentPrice.originalPrice,
-                  image: product.image,
-                  size: product.size ? selectedSize : undefined,
-                  color: selectedProductColor,
-                  quantity: quantity,
-                  isBundle,
-                  bundleSelections: cartBundleSelections,
-                });
-                trackMetaPixelEvent("AddToCart", {
-                  content_ids: [String(product.id)],
-                  contents: [{
-                    id: String(product.id),
-                    quantity,
-                    item_price: currentPrice.price,
-                  }],
-                  content_name: product.name,
-                  content_type: "product",
-                  value: currentPrice.price * quantity,
-                  currency: "EGP",
-                });
-              }}
-              className="bg-[#0F1A26] text-white hover:bg-[#EEBC3F] hover:text-[#0F1A26] h-12 px-6 rounded-xl font-bold text-sm transition-all duration-300 flex-shrink-0"
+            <div className="shrink-0 text-right">
+              <p className="text-xl font-black text-[#0F1A26]">EGP {currentPrice.price}</p>
+              {currentPrice.originalPrice > currentPrice.price && (
+                <p className="text-xs font-semibold text-[#0F1A26]/35 line-through">
+                  EGP {currentPrice.originalPrice}
+                </p>
+              )}
+            </div>
+
+            <div className="grid w-[300px] grid-cols-2 gap-2">
+              <Button
+                type="button"
+                onClick={handleStickyAddToCart}
+                disabled={isUnavailable}
+                className="h-12 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] text-sm font-bold text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white"
+                variant="outline"
+              >
+                {isUnavailable ? t("unavailable") : t('addToCart')}
+              </Button>
+              <Button
+                type="button"
+                onClick={handleStickyBuyNow}
+                disabled={isUnavailable}
+                className="h-12 rounded-2xl bg-[#EEBC3F] text-sm font-bold text-[#0F1A26] shadow-sm shadow-[#EEBC3F]/25 hover:bg-[#d4a535]"
+              >
+                {isUnavailable ? t("unavailable") : t('buyNow')}
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Sticky Buy Bar */}
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-[90] border-t border-[#0F1A26]/10 bg-white/97 px-3 pt-2 shadow-[0_-4px_20px_rgba(0,0,0,0.12)] backdrop-blur-xl pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-bold text-[#0F1A26]">{product.name}</p>
+            </div>
+            <div className="shrink-0 text-end">
+              <span className="text-base font-black text-[#0F1A26]">EGP {currentPrice.price}</span>
+              {currentPrice.originalPrice > currentPrice.price && (
+                <span className="ms-1 text-[11px] font-semibold text-[#0F1A26]/40 line-through">
+                  EGP {currentPrice.originalPrice}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              type="button"
+              onClick={handleStickyAddToCart}
+              disabled={isUnavailable}
+              className="h-11 rounded-xl bg-[#0F1A26] px-2 text-sm font-black text-white transition-all duration-300 hover:bg-[#EEBC3F] hover:text-[#0F1A26]"
             >
-              {t('addToCart')}
+              {isUnavailable ? t("unavailable") : t('addToCart')}
+            </Button>
+            <Button
+              type="button"
+              onClick={handleStickyBuyNow}
+              disabled={isUnavailable}
+              className="h-11 rounded-xl bg-[#EEBC3F] px-2 text-sm font-black text-[#0F1A26] shadow-sm shadow-[#EEBC3F]/25 transition-all duration-300 hover:bg-[#d4a535]"
+            >
+              {isUnavailable ? t("unavailable") : t('buyNow')}
             </Button>
           </div>
         </div>
       </main>
+      <SizeModal
+        isOpen={isSizeGuideOpen}
+        onClose={() => setIsSizeGuideOpen(false)}
+        onConfirm={(size) => {
+          setSelectedSize(size);
+          setIsSizeGuideOpen(false);
+        }}
+        productName={product.name}
+        confirmLabel={t("size.confirm")}
+      />
       <Footer />
     </>
   );

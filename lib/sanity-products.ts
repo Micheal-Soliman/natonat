@@ -39,6 +39,7 @@ function normalizeProduct(product: SanityProduct): Product | null {
         ? product.category[0]
         : product.category,
     image: product.mainImageUrl || product.imageUrl || "",
+    stockStatus: product.stockStatus || "in_stock",
     images:
       product.galleryImageUrls?.filter(Boolean) ||
       product.galleryUrls?.filter(Boolean) ||
@@ -68,7 +69,7 @@ export async function getCatalogProducts(): Promise<Product[]> {
     const sanityProducts = await sanityClient.fetch<SanityProduct[]>(
       activeProductsQuery,
       {},
-      { cache: "no-store" },
+      { next: { revalidate: 60 } },
     );
     const normalized = normalizeProducts(sanityProducts);
     return normalized.length > 0 ? normalized : fallbackProducts;
@@ -80,7 +81,11 @@ export async function getCatalogProducts(): Promise<Product[]> {
 
 export async function getCatalogProductBySlug(slug: string): Promise<Product | undefined> {
   try {
-    const sanityProduct = await sanityClient.fetch<SanityProduct | null>(productBySlugQuery, { slug });
+    const sanityProduct = await sanityClient.fetch<SanityProduct | null>(
+      productBySlugQuery,
+      { slug },
+      { next: { revalidate: 60 } },
+    );
     const normalized = sanityProduct ? normalizeProduct(sanityProduct) : null;
     return normalized || fallbackProducts.find((product) => product.slug === slug);
   } catch (error) {

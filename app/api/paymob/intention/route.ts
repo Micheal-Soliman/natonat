@@ -140,14 +140,16 @@ export async function POST(req: Request) {
     expiration: body.expiration,
   };
 
-  console.log("Paymob intention payload:", {
-    amount: payload.amount,
-    currency: payload.currency,
-    payment_methods: payload.payment_methods,
-    special_reference: payload.special_reference,
-    notification_url: payload.notification_url,
-    redirection_url: payload.redirection_url,
-  });
+  if (process.env.NODE_ENV !== "production") {
+    console.log("Paymob intention payload:", {
+      amount: payload.amount,
+      currency: payload.currency,
+      payment_methods: payload.payment_methods,
+      special_reference: payload.special_reference,
+      notification_url: payload.notification_url,
+      redirection_url: payload.redirection_url,
+    });
+  }
 
   const res = await fetch(`${baseUrl}/v1/intention/`, {
     method: "POST",

@@ -461,7 +461,7 @@ export function getFeaturedArticles(locale: string = 'en'): Article[] {
 
 export function getLatestArticles(count: number = 3, locale: string = 'en'): Article[] {
   const articles = getArticlesByLocale(locale);
-  return articles
+  return [...articles]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, count);
 }
