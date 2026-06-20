@@ -151,15 +151,32 @@ export async function POST(req: Request) {
     });
   }
 
-  const res = await fetch(`${baseUrl}/v1/intention/`, {
-    method: "POST",
-    headers: {
-      Authorization: `Token ${secretKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-    cache: "no-store",
-  });
+  let res: Response;
+
+  try {
+    res = await fetch(`${baseUrl}/v1/intention/`, {
+      method: "POST",
+      headers: {
+        Authorization: `Token ${secretKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      cache: "no-store",
+    });
+  } catch (error) {
+    console.error("Paymob intention network error", {
+      message: error instanceof Error ? error.message : String(error),
+      baseUrl,
+      special_reference: payload.special_reference,
+    });
+
+    return NextResponse.json(
+      {
+        error: "Could not reach Paymob",
+      },
+      { status: 502 }
+    );
+  }
 
   const text = await res.text();
 
@@ -172,6 +189,18 @@ export async function POST(req: Request) {
   }
 
   if (!res.ok) {
+    console.error("Paymob intention rejected", {
+      status: res.status,
+      data,
+      amount: payload.amount,
+      currency: payload.currency,
+      payment_methods: payload.payment_methods,
+      has_items: Boolean(payload.items?.length),
+      special_reference: payload.special_reference,
+      notification_url: payload.notification_url,
+      redirection_url: payload.redirection_url,
+    });
+
     return NextResponse.json(
       {
         error: "Paymob request failed",
