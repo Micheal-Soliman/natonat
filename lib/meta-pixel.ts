@@ -21,6 +21,14 @@ type CommerceContent = {
   price?: number;
 };
 
+function createEventId(event: string) {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return `${event}.${crypto.randomUUID()}`;
+  }
+
+  return `${event}.${Date.now()}.${Math.random().toString(36).slice(2)}`;
+}
+
 const googleEventNames: Record<string, string> = {
   ViewContent: "view_item",
   AddToCart: "add_to_cart",
@@ -61,11 +69,42 @@ export function trackMetaPixelEvent(event: string, params?: MetaPixelParams) {
   if (typeof window === "undefined") return false;
 
   const eventParams = params || {};
+  const eventId =
+    typeof eventParams.event_id === "string" && eventParams.event_id
+      ? eventParams.event_id
+      : createEventId(event);
+  const paramsWithEventId: MetaPixelParams = {
+    ...eventParams,
+    event_id: eventId,
+  };
   const contents = normalizeContents(eventParams);
   const currency = String(eventParams.currency || "EGP");
   const value = Number(eventParams.value || 0);
 
-  window.fbq?.("track", event, eventParams);
+  window.fbq?.("track", event, paramsWithEventId, { eventID: eventId });
+
+  const capiPayload = JSON.stringify({
+    event_name: event,
+    event_id: eventId,
+    event_source_url: window.location.href,
+    custom_data: paramsWithEventId,
+  });
+
+  if (navigator.sendBeacon) {
+    navigator.sendBeacon(
+      "/api/meta/events",
+      new Blob([capiPayload], { type: "application/json" })
+    );
+  } else {
+    fetch("/api/meta/events", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: capiPayload,
+      keepalive: true,
+    }).catch(() => {
+      // Browser tracking should never block the purchase flow.
+    });
+  }
 
   const googleEvent = googleEventNames[event];
   if (googleEvent) {
@@ -73,10 +112,10 @@ export function trackMetaPixelEvent(event: string, params?: MetaPixelParams) {
       currency,
       value,
       transaction_id:
-        eventParams.transaction_id || eventParams.order_id || undefined,
+        paramsWithEventId.transaction_id || paramsWithEventId.order_id || undefined,
       items: contents.map((content) => ({
         item_id: String(content.id || content.content_id || ""),
-        item_name: eventParams.content_name,
+        item_name: paramsWithEventId.content_name,
         price: Number(content.item_price ?? content.price ?? 0),
         quantity: Number(content.quantity || 1),
       })),
@@ -87,12 +126,12 @@ export function trackMetaPixelEvent(event: string, params?: MetaPixelParams) {
   if (tiktokEvent) {
     window.ttq?.track?.(tiktokEvent, {
       content_ids:
-        eventParams.content_ids ||
+        paramsWithEventId.content_ids ||
         contents.map((content) =>
           String(content.id || content.content_id || "")
         ),
-      content_name: eventParams.content_name,
-      content_type: eventParams.content_type || "product",
+      content_name: paramsWithEventId.content_name,
+      content_type: paramsWithEventId.content_type || "product",
       contents: contents.map((content) => ({
         content_id: String(content.id || content.content_id || ""),
         quantity: Number(content.quantity || 1),

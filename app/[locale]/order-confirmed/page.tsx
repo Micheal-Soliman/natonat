@@ -62,6 +62,10 @@ function OrderConfirmedContent() {
       transaction_id?: string | number;
       amount_cents?: number;
     };
+    customer?: {
+      email?: string;
+      phone?: string;
+    };
     aramex?: {
       trackingNumber?: string;
       labelUrl?: string;
@@ -239,6 +243,8 @@ function OrderConfirmedContent() {
           currency: "EGP",
           order_id: orderRef,
           transaction_id: transactionId,
+          email: verifiedOrder?.customer?.email,
+          phone: verifiedOrder?.customer?.phone,
         });
 
         if (dedupeKey) {
@@ -257,6 +263,8 @@ function OrderConfirmedContent() {
     amount,
     orderRef,
     transactionId,
+    verifiedOrder?.customer?.email,
+    verifiedOrder?.customer?.phone,
     clearCart,
     setBuyNowItem,
   ]);
