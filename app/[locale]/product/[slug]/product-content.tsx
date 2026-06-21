@@ -1940,6 +1940,8 @@ export default function ProductPageContent({
             )}
           </div>
 
+          <ProductComparisonTable t={t} />
+
           {/* Related Products */}
           <div className="mt-12 pt-12 lg:mt-24 lg:pt-20 border-t border-[#0F1A26]/10">
             <div className={`flex items-center justify-between mb-10 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
@@ -1975,8 +1977,6 @@ export default function ProductPageContent({
               ))}
             </div>
           </div>
-
-          <ProductComparisonTable t={t} />
         </div>
 
         {/* Desktop Sticky Buy Bar */}
