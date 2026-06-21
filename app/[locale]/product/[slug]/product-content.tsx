@@ -17,6 +17,10 @@ import { DeliveryCountdown } from "@/app/components/delivery-countdown";
 import { SwipeableProductImage } from "@/app/components/swipeable-product-image";
 import { WishlistToggleButton } from "@/app/components/wishlist-toggle-button";
 import { SizeModal } from "@/app/components/size-modal";
+import {
+  ReviewsLightbox,
+  type ReviewImage,
+} from "@/app/components/reviews-lightbox";
 import { useToast } from "@/app/components/toast-provider";
 import { useSizeGuideSizes } from "@/app/lib/site-settings-context";
 import { type Product } from "@/lib/products";
@@ -257,6 +261,109 @@ function ProductComparisonTable({ t }: { t: (key: string) => string }) {
         </div>
       </div>
     </section>
+  );
+}
+
+function ProductReviewsLoop({ t }: { t: (key: string) => string }) {
+  const [reviewImages, setReviewImages] = useState<ReviewImage[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+
+  useEffect(() => {
+    async function loadReviewImages() {
+      try {
+        const res = await fetch("/api/reviews", { cache: "no-store" });
+        const data = await res.json();
+        setReviewImages(Array.isArray(data.images) ? data.images : []);
+      } catch (error) {
+        console.error("Failed to load product review images:", error);
+        setReviewImages([]);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadReviewImages();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <section className="mt-12 rounded-[2rem] bg-white p-5 shadow-[0_24px_70px_rgba(15,26,38,0.08)] sm:p-8">
+        <div className="mb-6 h-8 w-56 rounded-full bg-[#F1EBE3] animate-pulse" />
+        <div className="flex gap-4 overflow-hidden">
+          {[0, 1, 2, 3, 4].map((item) => (
+            <div key={item} className="h-64 w-44 shrink-0 rounded-2xl bg-[#F1EBE3] animate-pulse" />
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  if (reviewImages.length === 0) return null;
+
+  const loopImages = [...reviewImages, ...reviewImages];
+
+  return (
+    <>
+      <section className="mt-12 overflow-hidden rounded-[2rem] bg-[#0F1A26] py-8 shadow-[0_24px_70px_rgba(15,26,38,0.16)] sm:py-10">
+        <div className="mb-7 px-5 text-center sm:px-8">
+          <span className="text-xs font-black uppercase tracking-[0.24em] text-[#EEBC3F]">
+            {t("reviewsLoop.eyebrow")}
+          </span>
+          <h2 className="mt-2 text-2xl font-black tracking-tight text-white sm:text-4xl">
+            {t("reviewsLoop.title")}
+          </h2>
+          <p className="mt-2 text-sm font-semibold text-white/55">
+            {t("reviewsLoop.subtitle")}
+          </p>
+        </div>
+
+        <div className="relative">
+          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-[#0F1A26] to-transparent" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-[#0F1A26] to-transparent" />
+
+          <div className="animate-reviews-marquee flex w-max gap-4 px-4 hover:[animation-play-state:paused]">
+            {loopImages.map((review, index) => {
+              const realIndex = index % reviewImages.length;
+
+              return (
+                <button
+                  key={`${review.src}-${index}`}
+                  type="button"
+                  onClick={() => {
+                    setSelectedImageIndex(realIndex);
+                    setLightboxOpen(true);
+                  }}
+                  className="group relative h-72 w-48 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-white p-2 shadow-xl shadow-black/15 transition-transform duration-300 hover:-translate-y-1 sm:h-80 sm:w-56"
+                  aria-label={t("reviewsLoop.openReview")}
+                >
+                  <Image
+                    src={review.src}
+                    alt={review.alt}
+                    fill
+                    sizes="(max-width: 640px) 50vw, 224px"
+                    className="object-contain p-2 transition-transform duration-500 group-hover:scale-[1.03]"
+                    loading="lazy"
+                    quality={55}
+                  />
+                  <span className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-[#0F1A26]/90 px-3 py-1.5 text-[11px] font-black text-white opacity-0 shadow-lg transition-opacity duration-300 group-hover:opacity-100">
+                    {t("reviewsLoop.tap")}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      <ReviewsLightbox
+        images={reviewImages}
+        open={lightboxOpen}
+        initialIndex={selectedImageIndex}
+        onClose={() => setLightboxOpen(false)}
+      />
+    </>
   );
 }
 
@@ -1977,6 +2084,8 @@ export default function ProductPageContent({
               ))}
             </div>
           </div>
+
+          <ProductReviewsLoop t={t} />
         </div>
 
         {/* Desktop Sticky Buy Bar */}

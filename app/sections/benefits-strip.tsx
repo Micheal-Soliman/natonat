@@ -11,34 +11,34 @@ export async function BenefitsStrip() {
       icon: Shield,
       title: t("items.protection.title"),
       subtitle: t("items.protection.subtitle"),
-      image: "/8.png",
+      image: "/Artboard-1.jpeg",
     },
     {
       number: t("items.durability.number"),
       icon: Sparkles,
       title: t("items.durability.title"),
       subtitle: t("items.durability.subtitle"),
-      image: "/7.png",
+      image: "/Artboard-2.jpeg",
     },
     {
       number: t("items.recognition.number"),
       icon: Eye,
       title: t("items.recognition.title"),
       subtitle: t("items.recognition.subtitle"),
-      image: "/1111.png",
+      image: "/Artboard-3.jpeg",
     },
     {
       number: t("items.ecosystem.number"),
       icon: Briefcase,
       title: t("items.ecosystem.title"),
       subtitle: t("items.ecosystem.subtitle"),
-      image: "/15.png",
+      image: "/Artboard-4.jpeg",
     },
   ];
 
   return (
     <section className="py-24 bg-[#F5F0EB] overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1480px] px-4 sm:px-6 lg:px-8">
         {/* Section Header - Minimal */}
         <div className="mb-20">
           <div className="flex items-end justify-between">
@@ -56,11 +56,11 @@ export async function BenefitsStrip() {
         </div>
 
         {/* Editorial Grid / Mobile Carousel */}
-        <div className="-mx-4 flex snap-x gap-4 overflow-x-auto px-4 pb-3 no-scrollbar sm:-mx-6 sm:px-6 md:mx-0 md:grid md:grid-cols-2 md:overflow-visible md:px-0 md:pb-0 lg:grid-cols-4">
+        <div className="-mx-4 flex snap-x gap-4 overflow-x-auto px-4 pb-3 no-scrollbar sm:-mx-6 sm:px-6 md:mx-0 md:grid md:grid-cols-2 md:gap-5 md:overflow-visible md:px-0 md:pb-0 lg:grid-cols-4 lg:gap-6">
           {benefits.map((benefit, index) => (
             <div
               key={index}
-              className="group relative w-[82vw] max-w-[330px] shrink-0 snap-start overflow-hidden rounded-2xl bg-white shadow-lg shadow-[#0F1A26]/5 transition-all duration-700 hover:shadow-xl hover:shadow-[#0F1A26]/10 md:w-auto md:max-w-none"
+              className="group relative w-[88vw] max-w-[390px] shrink-0 snap-start overflow-hidden rounded-2xl bg-white shadow-lg shadow-[#0F1A26]/5 transition-all duration-700 hover:shadow-xl hover:shadow-[#0F1A26]/10 sm:w-[74vw] md:w-auto md:max-w-none"
               style={{ transitionDelay: `${index * 150}ms` }}
             >
               {/* Image Layer */}

@@ -591,6 +591,13 @@
       "title": "You May Also Like",
       "viewAll": "View All"
     },
+    "reviewsLoop": {
+      "eyebrow": "Real Reviews",
+      "title": "Customers are already traveling with natOnat",
+      "subtitle": "Swipe the moving wall or tap any review to see it closer.",
+      "tap": "Tap to enlarge",
+      "openReview": "Open customer review"
+    },
     "nav": {
       "previous": "Previous",
       "next": "Next",

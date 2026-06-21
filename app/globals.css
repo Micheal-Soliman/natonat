@@ -126,6 +126,16 @@ a, button {
   flex: none;
 }
 
+@keyframes reviews-marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-reviews-marquee {
+  animation: reviews-marquee 45s linear infinite;
+  will-change: transform;
+}
+
 /* Custom Scrollbar for Thumbnails */
 .scrollbar-thin {
   scrollbar-width: thin;
