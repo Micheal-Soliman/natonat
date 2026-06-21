@@ -324,9 +324,10 @@ export function BundleQuickCustomizer({
                   <button
                     key={size.id}
                     type="button"
+                    aria-label={`${t("size")}: ${size.label}, ${size.cm} cm`}
                     aria-pressed={isSelected}
                     onClick={() => updateSelection(activeIndex, { size: size.id })}
-                    className={`h-7 rounded-lg border text-xs font-bold transition-all ${
+                    className={`min-h-10 rounded-lg border px-1 py-1 text-center transition-all ${
                       isSelected
                         ? "border-[#EEBC3F] bg-[#EEBC3F] text-[#0F1A26]"
                         : isDark
@@ -334,7 +335,10 @@ export function BundleQuickCustomizer({
                           : "border-[#0F1A26]/10 bg-white text-[#0F1A26]/65 hover:border-[#EEBC3F]/60"
                     }`}
                   >
-                    {size.label}
+                    <span className="block text-xs font-black leading-none">{size.label}</span>
+                    <span className="mt-1 block whitespace-nowrap text-[8px] font-bold leading-none opacity-75">
+                      {size.cm} cm
+                    </span>
                   </button>
                 );
               })}
