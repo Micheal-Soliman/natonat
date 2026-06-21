@@ -302,11 +302,9 @@ function ProductReviewsLoop({ t }: { t: (key: string) => string }) {
 
   if (reviewImages.length === 0) return null;
 
-  const loopImages = [...reviewImages, ...reviewImages];
-
   return (
     <>
-      <section className="mt-12 overflow-hidden rounded-[2rem] bg-[#0F1A26] py-8 shadow-[0_24px_70px_rgba(15,26,38,0.16)] sm:py-10">
+      <section dir="ltr" className="group/reviews mt-12 overflow-hidden rounded-[2rem] bg-[#0F1A26] py-8 shadow-[0_24px_70px_rgba(15,26,38,0.16)] sm:py-10">
         <div className="mb-7 px-5 text-center sm:px-8">
           <span className="text-xs font-black uppercase tracking-[0.24em] text-[#EEBC3F]">
             {t("reviewsLoop.eyebrow")}
@@ -323,36 +321,36 @@ function ProductReviewsLoop({ t }: { t: (key: string) => string }) {
           <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-[#0F1A26] to-transparent" />
           <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-[#0F1A26] to-transparent" />
 
-          <div className="animate-reviews-marquee flex w-max gap-4 px-4 hover:[animation-play-state:paused]">
-            {loopImages.map((review, index) => {
-              const realIndex = index % reviewImages.length;
-
-              return (
-                <button
-                  key={`${review.src}-${index}`}
-                  type="button"
-                  onClick={() => {
-                    setSelectedImageIndex(realIndex);
-                    setLightboxOpen(true);
-                  }}
-                  className="group relative h-72 w-48 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-white p-2 shadow-xl shadow-black/15 transition-transform duration-300 hover:-translate-y-1 sm:h-80 sm:w-56"
-                  aria-label={t("reviewsLoop.openReview")}
-                >
-                  <Image
-                    src={review.src}
-                    alt={review.alt}
-                    fill
-                    sizes="(max-width: 640px) 50vw, 224px"
-                    className="object-contain p-2 transition-transform duration-500 group-hover:scale-[1.03]"
-                    loading="lazy"
-                    quality={55}
-                  />
-                  <span className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-[#0F1A26]/90 px-3 py-1.5 text-[11px] font-black text-white opacity-0 shadow-lg transition-opacity duration-300 group-hover:opacity-100">
-                    {t("reviewsLoop.tap")}
-                  </span>
-                </button>
-              );
-            })}
+          <div className="animate-reviews-marquee flex w-max gap-4 px-4 group-hover/reviews:[animation-play-state:paused]">
+            {[0, 1].map((groupIndex) => (
+              <div key={groupIndex} className="flex shrink-0 gap-4">
+                {reviewImages.map((review, index) => (
+                  <button
+                    key={`${review.src}-${groupIndex}-${index}`}
+                    type="button"
+                    onClick={() => {
+                      setSelectedImageIndex(index);
+                      setLightboxOpen(true);
+                    }}
+                    className="group relative h-72 w-48 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-white p-2 shadow-xl shadow-black/15 transition-transform duration-300 hover:-translate-y-1 sm:h-80 sm:w-56"
+                    aria-label={t("reviewsLoop.openReview")}
+                  >
+                    <Image
+                      src={review.src}
+                      alt={review.alt}
+                      fill
+                      sizes="(max-width: 640px) 50vw, 224px"
+                      className="object-contain p-2 transition-transform duration-500 group-hover:scale-[1.03]"
+                      loading="lazy"
+                      quality={55}
+                    />
+                    <span className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-[#0F1A26]/90 px-3 py-1.5 text-[11px] font-black text-white opacity-0 shadow-lg transition-opacity duration-300 group-hover:opacity-100">
+                      {t("reviewsLoop.tap")}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -2048,6 +2046,7 @@ export default function ProductPageContent({
           </div>
 
           <ProductComparisonTable t={t} />
+          <ProductReviewsLoop t={t} />
 
           {/* Related Products */}
           <div className="mt-12 pt-12 lg:mt-24 lg:pt-20 border-t border-[#0F1A26]/10">
@@ -2084,8 +2083,6 @@ export default function ProductPageContent({
               ))}
             </div>
           </div>
-
-          <ProductReviewsLoop t={t} />
         </div>
 
         {/* Desktop Sticky Buy Bar */}

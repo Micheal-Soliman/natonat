@@ -132,7 +132,7 @@ a, button {
 }
 
 .animate-reviews-marquee {
-  animation: reviews-marquee 45s linear infinite;
+  animation: reviews-marquee 180s linear infinite;
   will-change: transform;
 }
 
