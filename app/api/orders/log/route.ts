@@ -327,14 +327,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  body = await enrichOrderItemsFromCms(body);
+  const isInitialCardCheckout =
+    getOrderStatusValue(body.source) === "checkout" &&
+    getOrderStatusValue(body.payment_method) === "paymob_card" &&
+    getOrderStatusValue(body.status) === "created" &&
+    getOrderStatusValue(body.payment_status) === "pending";
+
+  if (!isInitialCardCheckout) {
+    body = await enrichOrderItemsFromCms(body);
+  }
 
   // Store in memory for retrieval by webhook
   const orderRef = body.order_ref as string | undefined;
   if (orderRef) {
     const existing =
       (orderStore.get(orderRef) as StoredOrder | undefined) ||
-      ((await fetchOrderFromGoogleSheets(orderRef)) as StoredOrder | null) ||
+      (isInitialCardCheckout
+        ? undefined
+        : ((await fetchOrderFromGoogleSheets(orderRef)) as StoredOrder | null)) ||
       undefined;
     
     // Build status history
