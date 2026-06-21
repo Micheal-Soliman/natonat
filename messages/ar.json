@@ -38,6 +38,14 @@
     "freeShipping": "شحن مجاني للطلبات فوق 1000 جنيه",
     "egyptOnly": "داخل مصر فقط"
   },
+  "deliveryCountdown": {
+    "title": "توصيل خلال يومين",
+    "badge": "تجهيز سريع",
+    "orderWithin": "اطلب خلال",
+    "hours": "ساعة",
+    "minutes": "دقيقة",
+    "seconds": "ثانية"
+  },
   "benefits": {
     "sectionLabel": "المميزات",
     "title": "ليه ناتونات؟",

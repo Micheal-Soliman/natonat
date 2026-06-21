@@ -10,6 +10,7 @@ import { useCatalogProducts } from "@/app/lib/catalog-context";
 import { useSizeGuideSizes } from "@/app/lib/site-settings-context";
 import { useCart } from "@/app/lib/cart-context";
 import { BundleQuickCustomizer } from "@/app/components/bundle-quick-customizer";
+import { DeliveryCountdown } from "@/app/components/delivery-countdown";
 import { WishlistToggleButton } from "@/app/components/wishlist-toggle-button";
 import { useToast } from "@/app/components/toast-provider";
 import type { Product } from "@/lib/products";
@@ -285,7 +286,7 @@ export function BestSellers() {
   };
 
   return (
-    <section ref={ref} className="py-24 bg-[#0F1A26]">
+    <section ref={ref} className="bg-[#0F1A26] py-14 sm:py-20 lg:py-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className={`flex items-end justify-between mb-12 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           <div>
@@ -307,6 +308,11 @@ export function BestSellers() {
             </Button>
           </Link>
         </div>
+
+        <DeliveryCountdown
+          variant="showcase"
+          className={`mb-6 sm:mb-8 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+        />
 
         {/* Carousel Container with drag support */}
         <div className="relative">

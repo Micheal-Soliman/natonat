@@ -37,6 +37,14 @@
     "freeShipping": "Free shipping on orders over 1000 EGP",
     "egyptOnly": "Egypt Only"
   },
+  "deliveryCountdown": {
+    "title": "Delivery within 2 days",
+    "badge": "Fast dispatch",
+    "orderWithin": "Order within",
+    "hours": "Hours",
+    "minutes": "Min",
+    "seconds": "Sec"
+  },
   "benefits": {
     "sectionLabel": "Features",
     "title": "Why",

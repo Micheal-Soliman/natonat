@@ -13,6 +13,7 @@ import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
 import { Shield, Sparkles, Ruler, Heart, Share2, Check, Star, Truck, RotateCcw, ArrowUpRight, Award, ArrowLeft, ChevronLeft, ChevronRight as ChevronRightIcon, ChevronDown, MessageCircle, CreditCard } from "lucide-react";
 import { FAQSection } from "@/app/components/faq-section";
+import { DeliveryCountdown } from "@/app/components/delivery-countdown";
 import { SwipeableProductImage } from "@/app/components/swipeable-product-image";
 import { WishlistToggleButton } from "@/app/components/wishlist-toggle-button";
 import { SizeModal } from "@/app/components/size-modal";
@@ -1305,6 +1306,8 @@ export default function ProductPageContent({
                   </span>
                 </div>
 
+                <DeliveryCountdown variant="light" className="mb-6 sm:mb-8" />
+
                 {/* Size Selection */}
                 {product.size && (
                   <div className="mb-6 sm:mb-8">
@@ -1892,25 +1895,28 @@ export default function ProductPageContent({
               />
             </div>
 
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-bold text-[#0F1A26]">{product.name}</p>
-              <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-semibold text-[#0F1A26]/55">
-                {product.size && <span>{selectedSize.toUpperCase()}</span>}
-                {selectedProductColor && <span>{selectedProductColor}</span>}
-                <span>{quantity}x</span>
+            <div className="flex min-w-0 shrink-0 items-center gap-3">
+              <div className="w-[150px] min-w-0 xl:w-[170px]">
+                <p className="truncate text-sm font-black text-[#0F1A26]">{product.name}</p>
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-semibold text-[#0F1A26]/55">
+                  {product.size && <span>{selectedSize.toUpperCase()}</span>}
+                  {selectedProductColor && <span>{selectedProductColor}</span>}
+                  <span>{quantity}x</span>
+                </div>
+              </div>
+              <div className="shrink-0 text-start">
+                <p className="text-xl font-black leading-none text-[#0F1A26]">EGP {currentPrice.price}</p>
+                {currentPrice.originalPrice > currentPrice.price && (
+                  <p className="mt-1 text-xs font-semibold leading-none text-[#0F1A26]/35 line-through">
+                    EGP {currentPrice.originalPrice}
+                  </p>
+                )}
               </div>
             </div>
 
-            <div className="shrink-0 text-right">
-              <p className="text-xl font-black text-[#0F1A26]">EGP {currentPrice.price}</p>
-              {currentPrice.originalPrice > currentPrice.price && (
-                <p className="text-xs font-semibold text-[#0F1A26]/35 line-through">
-                  EGP {currentPrice.originalPrice}
-                </p>
-              )}
-            </div>
+            <DeliveryCountdown variant="sticky" className="ml-auto min-w-[280px] justify-between" />
 
-            <div className="grid w-[300px] grid-cols-2 gap-2">
+            <div className="grid w-[300px] shrink-0 grid-cols-2 gap-2">
               <Button
                 type="button"
                 onClick={handleStickyAddToCart}
@@ -1947,6 +1953,7 @@ export default function ProductPageContent({
               )}
             </div>
           </div>
+          <DeliveryCountdown variant="sticky" className="mb-2 w-full justify-between" />
           <div className="grid grid-cols-2 gap-2">
             <Button
               type="button"

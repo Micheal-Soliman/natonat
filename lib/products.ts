@@ -936,7 +936,7 @@ export const products: Product[] = [
       "/octopus%20photo/Vibra/5.webp",
       "/octopus%20photo/Vibra/6.webp"
     ],
-    description: "غطاء شنط مستوحى من الطاقة الموسيقية والنيون. تصميم عصري جريء بخطوط لامعة وتفاصيل ناعمة بيعكس روح الإيقاع والحركة. مثالي للمسافرين اللي بيحبوا الطاقة والتميز.",
+    description: "Music and neon inspired luggage cover with bold rhythm, glossy lines, and modern travel energy.",
     sizePrices: {
       s: { price: 549, originalPrice: 750 },
       m: { price: 649, originalPrice: 800 },
