@@ -297,13 +297,15 @@ export function BestSellers() {
               {t('subtitle')}
             </p>
           </div>
-          <Button
-            variant="outline"
-            className="hidden md:flex border-white/20 text-white hover:bg-white hover:text-[#0F1A26] rounded-full px-6 h-11 transition-all duration-300"
-          >
-            {t('viewAll')}
-            <ArrowRight className={`w-4 h-4 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'}`} />
-          </Button>
+          <Link href="/shop?sort=best-sellers" className="hidden md:block">
+            <Button
+              variant="outline"
+              className="border-white/20 text-white hover:bg-white hover:text-[#0F1A26] rounded-full px-6 h-11 transition-all duration-300"
+            >
+              {t('viewAll')}
+              <ArrowRight className={`w-4 h-4 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'}`} />
+            </Button>
+          </Link>
         </div>
 
         {/* Carousel Container with drag support */}
@@ -565,12 +567,14 @@ export function BestSellers() {
 
         {/* Mobile CTA */}
         <div className="mt-8 text-center md:hidden">
-          <Button
-            variant="outline"
-            className="border-white/20 text-white hover:bg-white hover:text-[#0F1A26] rounded-full"
-          >
-            {t('viewAll')}
-          </Button>
+          <Link href="/shop?sort=best-sellers">
+            <Button
+              variant="outline"
+              className="border-white/20 text-white hover:bg-white hover:text-[#0F1A26] rounded-full"
+            >
+              {t('viewAll')}
+            </Button>
+          </Link>
         </div>
       </div>
 
