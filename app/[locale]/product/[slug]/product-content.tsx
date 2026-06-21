@@ -7,11 +7,11 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 import Image from "next/image";
 import { Link } from "@/i18n/routing";
 import { useRouter } from "@/i18n/routing";
-import { useMessages, useTranslations } from 'next-intl';
+import { useLocale, useMessages, useTranslations } from 'next-intl';
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
-import { Shield, Sparkles, Ruler, Heart, Share2, Check, Star, Truck, RotateCcw, ArrowUpRight, Award, ArrowLeft, ChevronLeft, ChevronRight as ChevronRightIcon, ChevronDown, MessageCircle, CreditCard } from "lucide-react";
+import { Shield, Sparkles, Ruler, Heart, Share2, Check, Star, Truck, RotateCcw, ArrowUpRight, Award, ArrowLeft, ChevronLeft, ChevronRight as ChevronRightIcon, ChevronDown, MessageCircle, CreditCard, BadgeCheck } from "lucide-react";
 import { FAQSection } from "@/app/components/faq-section";
 import { DeliveryCountdown } from "@/app/components/delivery-countdown";
 import { SwipeableProductImage } from "@/app/components/swipeable-product-image";
@@ -23,6 +23,7 @@ import { type Product } from "@/lib/products";
 import { calculateBundlePrice, getPricingRuleKey } from "@/lib/bundle-pricing";
 import { trackMetaPixelEvent } from "@/lib/meta-pixel";
 import { getStockLabel, isProductOutOfStock } from "@/lib/product-stock";
+import { getProductRating } from "@/lib/product-rating";
 
 // Separate component for detailed product description
 interface ProductDetailedDescriptionProps {
@@ -180,6 +181,82 @@ function ProductVideoSection({
         </div>
       </div>
     </div>
+  );
+}
+
+function ProductComparisonTable({ t }: { t: (key: string) => string }) {
+  const rows = [
+    "elastic",
+    "zipper",
+    "fabric",
+    "print",
+    "designs",
+    "ecosystem",
+    "guarantee",
+  ];
+
+  return (
+    <section className="mt-8 lg:mt-10">
+      <div className="overflow-hidden rounded-[2rem] border border-[#0F1A26]/8 bg-white shadow-[0_24px_70px_rgba(15,26,38,0.08)]">
+        <div className="bg-[#0F1A26] px-5 py-6 text-center sm:px-8">
+          <span className="text-xs font-black uppercase tracking-[0.24em] text-[#EEBC3F]">
+            {t("comparison.eyebrow")}
+          </span>
+          <h2 className="mt-2 text-2xl font-black tracking-tight text-white sm:text-3xl">
+            {t("comparison.title")}
+          </h2>
+          <p className="mt-2 text-sm font-semibold text-white/55">
+            {t("comparison.subtitle")}
+          </p>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="min-w-[760px] w-full border-collapse text-start">
+            <thead>
+              <tr className="border-b border-[#0F1A26]/8 bg-[#F8F6F3]">
+                <th className="w-[24%] px-5 py-4 text-sm font-black text-[#0F1A26]">
+                  {t("comparison.feature")}
+                </th>
+                <th className="w-[38%] bg-[#0F1A26] px-5 py-4 text-sm font-black text-white">
+                  <span className="inline-flex items-center gap-2">
+                    <span className="rounded-full bg-[#EEBC3F] px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-[#0F1A26]">
+                      {t("comparison.bestChoice")}
+                    </span>
+                    {t("comparison.natonat")}
+                  </span>
+                </th>
+                <th className="w-[38%] px-5 py-4 text-sm font-black text-[#0F1A26]/55">
+                  {t("comparison.competitors")}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, index) => (
+                <tr
+                  key={row}
+                  className={`border-b border-[#0F1A26]/8 last:border-0 ${
+                    index % 2 === 0 ? "bg-white" : "bg-[#F8F6F3]/70"
+                  }`}
+                >
+                  <td className="px-5 py-4 text-sm font-black text-[#0F1A26]">
+                    {t(`comparison.rows.${row}.feature`)}
+                  </td>
+                  <td className="bg-[#0F1A26] px-5 py-4 text-sm font-bold leading-relaxed text-white">
+                    <span className="inline-flex items-start gap-2">
+                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#EEBC3F]" strokeWidth={2.5} />
+                      {t(`comparison.rows.${row}.natonat`)}
+                    </span>
+                  </td>
+                  <td className="px-5 py-4 text-sm font-semibold leading-relaxed text-[#0F1A26]/50">
+                    {t(`comparison.rows.${row}.competitors`)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -404,6 +481,7 @@ export default function ProductPageContent({
   const t = useTranslations('product');
   const toastT = useTranslations('commerceToast');
   const stockT = useTranslations('stock');
+  const locale = useLocale();
   const { showToast } = useToast();
   const { addToCart, setBuyNowItem } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
@@ -423,6 +501,11 @@ export default function ProductPageContent({
 
     return `https://wa.me/201070004227?text=${encodeURIComponent(message)}`;
   }, [product.name, product.size, selectedProductColor, selectedSize, t]);
+  const productRating = useMemo(() => getProductRating(product), [product]);
+  const formattedReviewCount = useMemo(
+    () => new Intl.NumberFormat(locale).format(productRating.reviewCount),
+    [locale, productRating.reviewCount]
+  );
 
   useEffect(() => {
     trackMetaPixelEvent("ViewContent", {
@@ -1278,14 +1361,29 @@ export default function ProductPageContent({
                 </div>
 
                 {/* Rating - Premium */}
-                <div className="flex items-center gap-2 sm:gap-4 mb-6 sm:mb-8 flex-wrap">
-                  <div className="flex items-center gap-1 bg-white rounded-full px-3 sm:px-4 py-1.5 sm:py-2 border border-[#0F1A26]/5">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star key={star} className="w-3 h-3 sm:w-4 sm:h-4 fill-[#EEBC3F] text-[#EEBC3F]" strokeWidth={1.5} />
-                    ))}
-                    <span className="text-xs sm:text-sm font-bold text-[#0F1A26] ml-1 sm:ml-2">{t('rating.value')}</span>
+                <div className="mb-6 flex flex-wrap items-center sm:mb-8">
+                  <div dir="ltr" className="inline-flex max-w-full items-center gap-2 rounded-full border border-[#0F1A26]/5 bg-white px-3 py-2 text-xs font-bold text-[#0F1A26] shadow-[0_12px_35px_rgba(15,26,38,0.08)] sm:gap-3 sm:px-4 sm:text-sm">
+                    <span dir={locale === "ar" ? "rtl" : "ltr"} className="inline-flex items-center gap-1.5 text-[#2597DC] sm:gap-2">
+                      <span>{t("rating.verifiedStore")}</span>
+                      <BadgeCheck className="h-5 w-5 shrink-0 fill-[#2F9BE8] text-white sm:h-6 sm:w-6" strokeWidth={2.4} />
+                    </span>
+
+                    <span className="h-6 w-px bg-[#0F1A26]/10" />
+
+                    <span className="whitespace-nowrap text-[#0F1A26]/55">
+                      {t('rating.reviewCount', { count: formattedReviewCount })}
+                    </span>
+
+                    <span className="text-base font-black text-[#0F1A26] sm:text-lg">
+                      {productRating.ratingValue.toFixed(1)}
+                    </span>
+
+                    <span className="flex items-center gap-0.5">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star key={star} className="h-3.5 w-3.5 fill-[#EEBC3F] text-[#EEBC3F] sm:h-4 sm:w-4" strokeWidth={1.5} />
+                      ))}
+                    </span>
                   </div>
-                  <span className="text-xs sm:text-sm text-[#0F1A26]/50 underline decoration-[#0F1A26]/20 underline-offset-4">{t('rating.reviews')}</span>
                 </div>
 
                 {/* Price - Premium */}
@@ -1691,7 +1789,6 @@ export default function ProductPageContent({
               </div>
             </div>
           </div>
-
           {/* Video Section - Full Width */}
           {product.category === "passport-wallets" && (
             <ProductVideoSection
@@ -1878,6 +1975,8 @@ export default function ProductPageContent({
               ))}
             </div>
           </div>
+
+          <ProductComparisonTable t={t} />
         </div>
 
         {/* Desktop Sticky Buy Bar */}

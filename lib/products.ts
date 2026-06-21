@@ -41,6 +41,8 @@ export interface Product {
   printType?: "plain" | "printed";
   stockStatus?: "in_stock" | "low_stock" | "out_of_stock";
   stockQuantity?: number;
+  ratingValue?: number;
+  reviewCount?: number;
   // Dynamic pricing for bundles
   dynamicPricing?: boolean;
   pricingRule?: string;
