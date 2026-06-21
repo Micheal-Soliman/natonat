@@ -1,7 +1,7 @@
 ﻿import Image from "next/image";
 import { Link } from "@/i18n/routing";
 import { getTranslations } from "next-intl/server";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, ShieldCheck, Shirt, TicketPercent } from "lucide-react";
 
 export async function FeaturedCollections() {
   const t = await getTranslations('collections');
@@ -11,105 +11,77 @@ export async function FeaturedCollections() {
       title: t('luggageCovers.title'),
       description: t('luggageCovers.description'),
       badge: t('luggageCovers.badge'),
+      cta: t('luggageCovers.cta'),
       href: "/shop?category=luggage-covers",
       image: "/octopus photo/Anara/1.png",
-      bgColor: "from-[#0F1A26] to-[#364353]",
-      accent: "#EEBC3F",
+      icon: ShieldCheck,
     },
     {
       title: t('passportWallets.title'),
       description: t('passportWallets.description'),
       badge: t('passportWallets.badge'),
+      cta: t('passportWallets.cta'),
       href: "/shop?category=passport-wallets",
       image: "/wallet.png",
-      bgColor: "from-[#364353] to-[#0F1A26]",
-      accent: "#EEBC3F",
+      icon: TicketPercent,
     },
     {
       title: t('packOnat.title'),
       description: t('packOnat.description'),
       badge: t('packOnat.badge'),
+      cta: t('packOnat.cta'),
       href: "/shop?category=packonat",
       image: "/pack.png",
-      bgColor: "from-[#0F1A26] to-[#EEBC3F]/30",
-      accent: "#EEBC3F",
+      icon: Shirt,
     },
   ];
-
   return (
-    <section className="py-24 bg-[#F1EBE3]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16 transition-all duration-700 opacity-100 translate-y-0">
-          <span className="text-[#EEBC3F] text-xs font-semibold tracking-[0.2em] uppercase">{t('sectionLabel')}</span>
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-semibold text-[#0F1A26] mt-4 tracking-tight">
+    <section className="bg-[#F1EBE3] py-14 sm:py-18 lg:py-20">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mb-9 text-center transition-all duration-700 opacity-100 translate-y-0 sm:mb-11">
+          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#EEBC3F]">{t('sectionLabel')}</span>
+          <h2 className="mt-4 text-3xl font-semibold tracking-tight text-[#0F1A26] md:text-4xl lg:text-5xl">
             {t('title')}
           </h2>
         </div>
 
-        <div className="-mx-4 flex snap-x gap-4 overflow-x-auto px-4 pb-3 no-scrollbar sm:-mx-6 sm:px-6 md:mx-0 md:grid md:grid-cols-3 md:gap-8 md:overflow-visible md:px-0 md:pb-0">
+        <div className="-mx-4 flex snap-x gap-4 overflow-x-auto px-4 pb-3 no-scrollbar sm:-mx-6 sm:px-6 lg:mx-0 lg:grid lg:grid-cols-3 lg:gap-5 lg:overflow-visible lg:px-0 lg:pb-0">
           {collections.map((collection, index) => (
             <Link
               key={collection.title}
               href={collection.href}
-              className="group relative w-[82vw] max-w-[330px] shrink-0 snap-start overflow-hidden rounded-3xl bg-[#0F1A26] opacity-100 translate-y-0 transition-all duration-700 hover:-translate-y-2 hover:shadow-2xl hover:shadow-[#EEBC3F]/10 md:w-auto md:max-w-none"
-              style={{ transitionDelay: `${(index + 1) * 150}ms` }}
+              className="group relative w-[82vw] max-w-[340px] shrink-0 snap-start overflow-hidden rounded-[1.75rem] border border-[#0F1A26]/10 bg-white shadow-lg shadow-[#0F1A26]/5 transition-all duration-500 hover:-translate-y-1 hover:border-[#EEBC3F]/50 hover:shadow-2xl hover:shadow-[#0F1A26]/10 lg:w-auto lg:max-w-none"
+              style={{ transitionDelay: `${(index + 1) * 120}ms` }}
             >
-              {/* Image Container - Full Card */}
-              <div className="relative aspect-[4/5] overflow-hidden">
+              <div className="relative aspect-[4/3] overflow-hidden bg-[#0F1A26]">
                 <Image
                   src={collection.image}
                   alt={collection.title}
                   fill
-                  sizes="(max-width: 640px) 92vw, (max-width: 1024px) 45vw, 30vw"
-                  className="object-contain transition-all duration-700 group-hover:scale-110"
+                  sizes="(max-width: 640px) 82vw, (max-width: 1024px) 45vw, 30vw"
+                  className="object-contain p-5 transition-transform duration-500 group-hover:scale-110"
                   loading="lazy"
-                  quality={55}
+                  quality={58}
                 />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_30%,rgba(238,188,63,0.24),transparent_32%),linear-gradient(180deg,transparent_45%,rgba(15,26,38,0.72)_100%)]" />
+                <span className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full bg-[#EEBC3F] px-3 py-1.5 text-[10px] font-black uppercase tracking-wide text-[#0F1A26]">
+                  <collection.icon className="h-3.5 w-3.5" strokeWidth={2} />
+                  {collection.badge}
+                </span>
+                <span className="absolute bottom-4 right-4 text-5xl font-black leading-none text-white/10">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+              </div>
 
-                {/* Gradient Overlay - Always visible but intensifies on hover */}
-                <div className={`absolute inset-0 bg-gradient-to-t ${collection.bgColor} opacity-60 group-hover:opacity-40 transition-opacity duration-700`} />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0F1A26] via-[#0F1A26]/50 to-transparent" />
-
-                {/* Animated border on hover */}
-                <div className="absolute inset-0 rounded-3xl border-2 border-transparent group-hover:border-[#EEBC3F]/50 transition-colors duration-500" />
-
-                {/* Shine effect on hover */}
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none">
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                </div>
-
-                {/* Content - Positioned at bottom */}
-                <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-8">
-                  {/* Badge with animation */}
-                  <span
-                    className="inline-block self-start text-[10px] font-bold tracking-[0.2em] uppercase mb-3 px-4 py-1.5 rounded-full transform translate-y-2 opacity-80 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500"
-                    style={{
-                      color: '#0F1A26',
-                      backgroundColor: collection.accent
-                    }}
-                  >
-                    {collection.badge}
-                  </span>
-
-                  {/* Title with reveal animation */}
-                  <h3 className="text-2xl md:text-3xl font-bold text-white mb-2 transform translate-y-0 group-hover:-translate-y-1 transition-transform duration-500">
-                    {collection.title}
-                  </h3>
-
-                  {/* Description - slides up on hover */}
-                  <p className="text-white/70 text-sm mb-4 line-clamp-2 transform translate-y-2 opacity-80 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 delay-75">
-                    {collection.description}
-                  </p>
-
-                  {/* Explore button with arrow animation */}
-                  <span className="inline-flex items-center gap-2 text-[#EEBC3F] font-semibold text-sm transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500 delay-100">
-                    <span className="relative">
-                      {t('explore')}
-                      <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#EEBC3F] group-hover:w-full transition-all duration-500" />
-                    </span>
-                    <ArrowUpRight className="w-5 h-5 transform group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform duration-300" />
-                  </span>
-                </div>
+              <div className="p-5">
+                <h3 className="text-xl font-black text-[#0F1A26]">{collection.title}</h3>
+                <p className="mt-2 min-h-[44px] text-sm font-medium leading-relaxed text-[#0F1A26]/60">
+                  {collection.description}
+                </p>
+                <span className="mt-5 inline-flex items-center gap-2 rounded-full bg-[#0F1A26] px-4 py-2.5 text-sm font-black text-white transition-colors duration-300 group-hover:bg-[#EEBC3F] group-hover:text-[#0F1A26]">
+                  {collection.cta}
+                  <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-1" />
+                </span>
               </div>
             </Link>
           ))}

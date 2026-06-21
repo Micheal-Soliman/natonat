@@ -79,17 +79,27 @@
     "luggageCovers": {
       "title": "Luggage Covers",
       "description": "Protect your suitcase with style",
-      "badge": "Essential"
+      "badge": "Essential",
+      "stat": "Stretchy, washable, easy to spot",
+      "cta": "Shop Covers"
     },
     "passportWallets": {
       "title": "Passport Wallets",
       "description": "Smart organization for your documents",
-      "badge": "Premium Leather"
+      "badge": "Premium Leather",
+      "cta": "Shop Wallets"
     },
     "packOnat": {
       "title": "PackOnat",
       "description": "Smart packing organizers for travel",
-      "badge": "New"
+      "badge": "New",
+      "cta": "Shop PackOnat"
+    },
+    "bundles": {
+      "title": "Travel Bundles",
+      "description": "Build a smarter travel set and save more",
+      "badge": "Save More",
+      "cta": "Shop Bundles"
     },
     "explore": "Explore Collection"
   },
