@@ -161,6 +161,7 @@ function HowItWorksContent() {
                   poster={sizeGuide?.posterUrl || "/videos/measurement-poster.jpg"}
                 >
                   <source src={sizeGuide?.videoUrl || "/size.mp4"} type="video/mp4" />
+                  <track kind="captions" src="/captions/silent-video.vtt" srcLang="en" label="English captions" />
                   Your browser does not support the video tag.
                 </video>
 

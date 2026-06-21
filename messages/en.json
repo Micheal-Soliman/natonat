@@ -889,6 +889,7 @@
   "bundleCustomizer": {
     "unavailable": "Unavailable",
     "oneItemUnavailable": "One bundle item is currently unavailable",
+    "selectProduct": "Select bundle product",
     "review": "Bundle review"
   },
   "wishlist": {

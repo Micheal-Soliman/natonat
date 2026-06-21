@@ -287,6 +287,7 @@ export function BundleQuickCustomizer({
 
           {activeProductOptions.length > 1 ? (
             <select
+              aria-label={bundleT("selectProduct")}
               value={activeSelectedProductId || ""}
               onChange={(event) => {
                 const nextProductId = Number(event.target.value);

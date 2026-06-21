@@ -101,6 +101,7 @@ export async function HowItWorks() {
                   poster={sizeGuide.posterUrl}
                 >
                   <source src={sizeGuide.videoUrl} type="video/mp4" />
+                  <track kind="captions" src="/captions/silent-video.vtt" srcLang="en" label="English captions" />
                 </video>
               </div>
 

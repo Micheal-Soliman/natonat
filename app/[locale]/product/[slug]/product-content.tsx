@@ -141,6 +141,7 @@ function ProductVideoSection({
                     >
                       <source src={video.src} type="video/mp4" />
                       <source src={video.src} type="video/quicktime" />
+                      <track kind="captions" src="/captions/silent-video.vtt" srcLang="en" label="English captions" />
                       Your browser does not support the video tag.
                     </video>
                   </div>
@@ -167,6 +168,7 @@ function ProductVideoSection({
               >
                 {src && <source src={src} type="video/mp4" />}
                 {src && <source src={src} type="video/quicktime" />}
+                <track kind="captions" src="/captions/silent-video.vtt" srcLang="en" label="English captions" />
                 Your browser does not support the video tag.
               </video>
             </div>

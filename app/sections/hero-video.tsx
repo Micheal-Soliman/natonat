@@ -46,6 +46,7 @@ export function HeroVideo() {
       className="absolute inset-0 w-full h-full object-cover"
     >
       {loadVideo ? <source src="/hero.mp4" type="video/mp4" /> : null}
+      <track kind="captions" src="/captions/silent-video.vtt" srcLang="en" label="English captions" />
     </video>
   );
 }

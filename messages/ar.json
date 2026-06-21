@@ -956,6 +956,7 @@
   "bundleCustomizer": {
     "unavailable": "غير متاح",
     "oneItemUnavailable": "اختيار داخل الباقة غير متاح حاليًا",
+    "selectProduct": "اختيار منتج من الباقة",
     "review": "مراجعة الباقة"
   },
   "wishlist": {

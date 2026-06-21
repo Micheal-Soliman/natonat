@@ -13,18 +13,30 @@ import { getMessages, setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
 import { getCatalogProducts } from "@/lib/sanity-products";
 import { getSiteSettings } from "@/lib/sanity-site-settings";
+import { createPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "natOnat | Pack Smart. Travel Easy.",
-  description:
-    "Premium travel accessories - stretchy, washable luggage covers and smart passport wallets that protect your gear and make it stand out.",
-  icons: {
-    icon: "/favicon.ico",
-  },
-  verification: {
-    google: "EUu-r19QGPFxdT77LqBBqvBBRtW6CfEJTLqc-8V6pKo",
-  },
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+
+  return {
+    ...createPageMetadata({
+      locale,
+      title: "natOnat | Pack Smart. Travel Easy.",
+      description:
+        "Premium travel accessories - stretchy, washable luggage covers and smart passport wallets that protect your gear and make it stand out.",
+    }),
+    icons: {
+      icon: "/favicon.ico",
+    },
+    verification: {
+      google: "EUu-r19QGPFxdT77LqBBqvBBRtW6CfEJTLqc-8V6pKo",
+    },
+  };
+}
 
 export default async function LocaleLayout({
   children,
