@@ -16,32 +16,21 @@
  */
 
 const SHEET_NAME = "orders";
+const COD_SHEET_NAME = "cod_orders";
 
 function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents);
     const ss = SpreadsheetApp.getActiveSpreadsheet();
-    let sheet = ss.getSheetByName(SHEET_NAME);
-    
-    if (!sheet) {
-      sheet = ss.insertSheet(SHEET_NAME);
-      createHeaders(sheet);
-    }
-
-    ensureExtendedHeaders(sheet);
-    
-    const row = buildOrderRow(data);
-    const orderRef = data.order_ref || "";
-    const existingRow = orderRef ? findOrderRow(sheet, orderRef) : null;
-
-    if (existingRow) {
-      sheet.getRange(existingRow, 1, 1, row.length).setValues([row]);
-    } else {
-      sheet.appendRow(row);
-    }
+    const allOrdersResult = upsertOrderRow(ss, SHEET_NAME, data);
+    const codResult = isCodOrder(data) ? upsertOrderRow(ss, COD_SHEET_NAME, data) : null;
     
     return ContentService
-      .createTextOutput(JSON.stringify({ success: true, rowAdded: !existingRow, updated: Boolean(existingRow) }))
+      .createTextOutput(JSON.stringify({
+        success: true,
+        orders: allOrdersResult,
+        cod_orders: codResult,
+      }))
       .setMimeType(ContentService.MimeType.JSON);
       
   } catch (error) {
@@ -49,6 +38,34 @@ function doPost(e) {
       .createTextOutput(JSON.stringify({ success: false, error: error.toString() }))
       .setMimeType(ContentService.MimeType.JSON);
   }
+}
+
+function isCodOrder(data) {
+  const paymentMethod = String(data.payment_method || "").toLowerCase();
+  return paymentMethod === "cod" || paymentMethod === "cash on delivery";
+}
+
+function upsertOrderRow(ss, sheetName, data) {
+  let sheet = ss.getSheetByName(sheetName);
+
+  if (!sheet) {
+    sheet = ss.insertSheet(sheetName);
+    createHeaders(sheet);
+  }
+
+  ensureExtendedHeaders(sheet);
+
+  const row = buildOrderRow(data);
+  const orderRef = data.order_ref || "";
+  const existingRow = orderRef ? findOrderRow(sheet, orderRef) : null;
+
+  if (existingRow) {
+    sheet.getRange(existingRow, 1, 1, row.length).setValues([row]);
+    return { sheet: sheetName, updated: true, row: existingRow, order_ref: orderRef };
+  }
+
+  sheet.appendRow(row);
+  return { sheet: sheetName, inserted: true, row: sheet.getLastRow(), order_ref: orderRef };
 }
 
 function createHeaders(sheet) {
@@ -61,7 +78,7 @@ function createHeaders(sheet) {
     "Order Ref",
     "Special Reference (Paymob)",
     "Intention Order ID",
-    "Paymob Client Secret",
+    "Paymob Reference",
     
     // Order Status
     "Status",
@@ -134,6 +151,11 @@ function createHeaders(sheet) {
 }
 
 function ensureExtendedHeaders(sheet) {
+  const paymobSecretHeader = sheet.getRange(1, 6).getValue();
+  if (paymobSecretHeader === "Paymob Client Secret") {
+    sheet.getRange(1, 6).setValue("Paymob Reference");
+  }
+
   const requiredHeaders = [
     "Total Items Quantity",
     "Products Details",
@@ -320,7 +342,7 @@ function buildOrderRow(data) {
   const paymob = data.paymob || {};
   const specialReference = paymob.special_reference || data.special_reference || "";
   const intentionOrderId = paymob.intention_order_id || "";
-  const clientSecret = paymob.client_secret || "";
+  const paymobReference = paymob.id || paymob.intention_order_id || "";
   
   // Extras
   const extras = data.extras || {};
@@ -340,7 +362,7 @@ function buildOrderRow(data) {
     orderRef,
     specialReference,
     intentionOrderId,
-    clientSecret,
+    paymobReference,
     
     // Order Status
     status,
