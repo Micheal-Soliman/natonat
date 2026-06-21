@@ -412,13 +412,37 @@ export async function POST(req: Request) {
   });
 
   const text = await res.text();
+  let sheetsResponse: unknown = text;
+
+  try {
+    sheetsResponse = JSON.parse(text);
+  } catch {
+    // Keep the raw response for diagnostics.
+  }
 
   if (!res.ok) {
     return NextResponse.json(
-      { error: "Failed to write to Google Sheets", status: res.status, data: text },
+      { error: "Failed to write to Google Sheets", status: res.status, data: sheetsResponse },
       { status: 502 }
     );
   }
 
-  return NextResponse.json({ ok: true, data: text, order_ref: orderRef });
+  if (
+    sheetsResponse &&
+    typeof sheetsResponse === "object" &&
+    (
+      (sheetsResponse as { success?: boolean }).success === false ||
+      (sheetsResponse as { skipped?: boolean }).skipped === true
+    )
+  ) {
+    return NextResponse.json(
+      {
+        error: "Google Sheets webhook did not store the order",
+        data: sheetsResponse,
+      },
+      { status: 502 }
+    );
+  }
+
+  return NextResponse.json({ ok: true, data: sheetsResponse, order_ref: orderRef });
 }
