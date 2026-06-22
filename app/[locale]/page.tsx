@@ -34,12 +34,16 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
+  const isArabic = locale === "ar";
 
   return createPageMetadata({
     locale,
-    title: "natOnat | Travel Accessories in Egypt",
-    description:
-      "Shop natOnat luggage covers, passport wallets, PackOnat organizers, and travel bundle offers in Egypt. Protect your luggage and travel smarter.",
+    title: isArabic
+      ? "نات أونات | مستلزمات سفر في مصر"
+      : "natOnat | Travel Accessories in Egypt",
+    description: isArabic
+      ? "تسوق أغلفة شنط السفر، محافظ الباسبور، باك أونات، وباقات السفر من نات أونات داخل مصر."
+      : "Shop natOnat luggage covers, passport wallets, PackOnat organizers, and travel bundle offers in Egypt. Protect your luggage and travel smarter.",
   });
 }
 

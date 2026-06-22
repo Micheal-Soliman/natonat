@@ -5,12 +5,28 @@ export const siteConfig = {
   title: "natOnat | Pack Smart. Travel Easy.",
   description:
     "Premium travel accessories in Egypt, including washable luggage covers, smart passport wallets, PackOnat organizers, and curated travel bundles.",
-  url: (process.env.NEXT_PUBLIC_SITE_URL || "https://www.natonat.com").replace(/\/$/, ""),
+  url: normalizeSiteUrl(process.env.NEXT_PUBLIC_SITE_URL || "https://www.natonat.com"),
   defaultLocale: "en",
   locales: ["en", "ar"] as const,
   ogImage: "/logo-after.png",
   twitterHandle: "@natonat",
 };
+
+function normalizeSiteUrl(value: string) {
+  try {
+    const url = new URL(value);
+    const cleanPath = url.pathname.replace(/\/(en|ar)\/?$/, "").replace(/\/$/, "");
+    if (url.hostname.replace(/^www\./, "") === "natonat.com") {
+      return `https://www.natonat.com${cleanPath}`;
+    }
+    url.pathname = cleanPath;
+    url.search = "";
+    url.hash = "";
+    return url.toString().replace(/\/$/, "");
+  } catch {
+    return "https://www.natonat.com";
+  }
+}
 
 export type SiteLocale = (typeof siteConfig.locales)[number];
 
@@ -65,7 +81,9 @@ export function createPageMetadata({
   const images = [absoluteUrl(image)];
 
   return {
-    title,
+    title: {
+      absolute: title,
+    },
     description,
     metadataBase: new URL(siteConfig.url),
         alternates: noIndex

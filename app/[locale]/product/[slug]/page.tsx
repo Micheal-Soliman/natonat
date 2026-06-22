@@ -12,7 +12,22 @@ import { getProductRating } from "@/lib/product-rating";
 
 export const revalidate = 60;
 
-const siteUrl = siteConfig.url;
+const siteUrl = "https://www.natonat.com";
+
+function getLocalizedProductType(type: string | undefined, locale: string) {
+  if (locale !== "ar") return type || "Product";
+
+  const normalized = type?.toLowerCase() || "";
+  if (normalized.includes("luggage")) return "غطاء شنطة سفر";
+  if (normalized.includes("passport")) return "محفظة باسبور";
+  if (normalized.includes("packonat")) return "باك أونات";
+  if (normalized.includes("bundle")) return "باقة سفر";
+  return "منتج سفر";
+}
+
+function getProductCategories(product: { category: string | string[] }) {
+  return Array.isArray(product.category) ? product.category : [product.category];
+}
 
 function absoluteUrl(path: string) {
   if (!path) return siteUrl;
@@ -33,10 +48,15 @@ export async function generateMetadata({
     };
   }
 
-  const title = `${product.name} ${product.type ? `| ${product.type}` : ""} | natOnat`;
-  const description =
-    product.description ||
-    `Shop ${product.name} from natOnat. Premium travel accessories in Egypt with washable protection and easy ordering.`;
+  const isArabic = locale === "ar";
+  const localizedType = getLocalizedProductType(product.type, locale);
+  const title = isArabic
+    ? `${product.name} | ${localizedType} | نات أونات`
+    : `${product.name} ${product.type ? `| ${product.type}` : ""} | natOnat`;
+  const description = isArabic
+    ? `تسوق ${product.name} من نات أونات. ${localizedType} بجودة عالية وتجربة طلب سهلة داخل مصر.`
+    : product.description ||
+      `Shop ${product.name} from natOnat. Premium travel accessories in Egypt with washable protection and easy ordering.`;
   const url = `${siteUrl}/${locale}/product/${product.slug}`;
   const images = [product.image, ...(product.images || [])]
     .filter(Boolean)
@@ -45,7 +65,9 @@ export async function generateMetadata({
 
   return {
     metadataBase: new URL(siteUrl),
-    title,
+    title: {
+      absolute: title,
+    },
     description,
     alternates: {
       canonical: url,
@@ -114,8 +136,10 @@ export default async function ProductPage({ params }: { params: Promise<{ locale
     "@type": "Product",
     name: product.name,
     description: product.description,
+    url: productUrl,
+    category: getProductCategories(product).join(", "),
     image: [product.image, ...(product.images || [])].filter(Boolean).map(absoluteUrl),
-    sku: String(product.id),
+    sku: `NAT-${String(product.id).padStart(4, "0")}`,
     brand: {
       "@type": "Brand",
       name: "natOnat",
