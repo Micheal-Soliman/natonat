@@ -17,7 +17,7 @@ import { useToast } from "@/app/components/toast-provider";
 import { useCatalogProducts } from "@/app/lib/catalog-context";
 import { useSizeGuideSizes } from "@/app/lib/site-settings-context";
 import { useCart } from "@/app/lib/cart-context";
-import { getStockLabel, isProductOutOfStock } from "@/lib/product-stock";
+import { getStockLabel, isProductOutOfStock, isProductSizeOutOfStock } from "@/lib/product-stock";
 
 function ShopContent() {
   const t = useTranslations('shop');
@@ -268,9 +268,15 @@ function ShopContent() {
     const sizeOptions = getQuickSizeOptions(product);
     const colorOptions = product.colors || [];
     const savedSelection = quickSelections[product.id] || {};
+    const availableSizeOptions = sizeOptions.filter((size) => !isProductSizeOutOfStock(product, size.id));
+    const savedSizeIsAvailable =
+      savedSelection.size && !isProductSizeOutOfStock(product, savedSelection.size);
+    const defaultSize =
+      (availableSizeOptions.find((size) => size.id === "m") || availableSizeOptions[0] || sizeOptions[0])?.id ||
+      product.size?.toLowerCase();
 
     return {
-      size: savedSelection.size || sizeOptions[0]?.id || product.size?.toLowerCase(),
+      size: savedSizeIsAvailable ? savedSelection.size : defaultSize,
       color: savedSelection.color || colorOptions[0]?.id || product.color,
     };
   };
@@ -340,7 +346,8 @@ function ShopContent() {
   };
 
   const handleQuickAdd = (product: Product) => {
-    if (isProductOutOfStock(product)) return;
+    const selection = getQuickSelection(product);
+    if (isProductOutOfStock(product) || isProductSizeOutOfStock(product, selection.size)) return;
     addToCart(getQuickCartItem(product), { openCart: false });
     showToast({
       title: toastT("addedToCart"),
@@ -357,7 +364,8 @@ function ShopContent() {
   };
 
   const handleQuickBuy = (product: Product) => {
-    if (isProductOutOfStock(product)) return;
+    const selection = getQuickSelection(product);
+    if (isProductOutOfStock(product) || isProductSizeOutOfStock(product, selection.size)) return;
     setBuyNowItem(getQuickCartItem(product));
     router.push("/checkout");
   };
@@ -661,7 +669,7 @@ function ShopContent() {
                   const colorOptions = product.colors || [];
                   const selection = getQuickSelection(product);
                   const isBundle = isBundleProduct(product);
-                  const isUnavailable = isProductOutOfStock(product);
+                  const isUnavailable = isProductOutOfStock(product) || isProductSizeOutOfStock(product, selection.size);
 
                   return (
                     <div
@@ -711,6 +719,7 @@ function ShopContent() {
                                   <div className="grid grid-cols-4 gap-1.5">
                                     {sizeOptions.map((size) => {
                                       const isSelected = selection.size === size.id;
+                                      const isSizeUnavailable = isProductSizeOutOfStock(product, size.id);
 
                                       return (
                                         <button
@@ -718,8 +727,9 @@ function ShopContent() {
                                           type="button"
                                           aria-label={`${t('quickAdd.size')}: ${size.label}, ${size.cm} cm`}
                                           aria-pressed={isSelected}
+                                          disabled={isSizeUnavailable}
                                           onClick={() => updateQuickSelection(product.id, { size: size.id })}
-                                          className={`min-h-11 rounded-xl border px-1 py-1 text-center transition-all ${
+                                          className={`min-h-11 rounded-xl border px-1 py-1 text-center transition-all disabled:cursor-not-allowed disabled:opacity-45 ${
                                             isSelected
                                               ? "border-[#EEBC3F] bg-[#EEBC3F] text-[#0F1A26] shadow-sm"
                                               : "border-[#0F1A26]/10 bg-[#F8F6F3] text-[#0F1A26]/65 hover:border-[#EEBC3F]/60 hover:text-[#0F1A26]"
@@ -729,6 +739,11 @@ function ShopContent() {
                                           <span className="mt-1 block whitespace-nowrap text-[9px] font-bold leading-none opacity-70">
                                             {size.cm} cm
                                           </span>
+                                          {isSizeUnavailable && (
+                                            <span className="mt-1 block text-[8px] font-bold text-red-600">
+                                              {stockT("outOfStock")}
+                                            </span>
+                                          )}
                                         </button>
                                       );
                                     })}

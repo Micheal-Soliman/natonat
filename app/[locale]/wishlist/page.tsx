@@ -13,7 +13,7 @@ import { useSizeGuideSizes } from "@/app/lib/site-settings-context";
 import { useToast } from "@/app/components/toast-provider";
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
-import { getStockLabel, isProductOutOfStock } from "@/lib/product-stock";
+import { getStockLabel, isProductOutOfStock, isProductSizeOutOfStock } from "@/lib/product-stock";
 import type { Product } from "@/lib/products";
 
 type QuickSelection = {
@@ -81,9 +81,15 @@ export default function WishlistPage() {
     const sizeOptions = getSizeOptions(product, sizes);
     const colorOptions = product.colors || [];
     const saved = quickSelections[product.id] || {};
+    const availableSizeOptions = sizeOptions.filter((size) => !isProductSizeOutOfStock(product, size.id));
+    const savedSizeIsAvailable =
+      saved.size && !isProductSizeOutOfStock(product, saved.size);
+    const defaultSize =
+      (availableSizeOptions.find((size) => size.id === "m") || availableSizeOptions[0] || sizeOptions[0])?.id ||
+      product.size?.toLowerCase();
 
     return {
-      size: saved.size || sizeOptions[0]?.id || product.size?.toLowerCase(),
+      size: savedSizeIsAvailable ? saved.size : defaultSize,
       color: saved.color || colorOptions[0]?.id || product.color,
     };
   };
@@ -119,7 +125,8 @@ export default function WishlistPage() {
   };
 
   const handleQuickAdd = (product: Product) => {
-    if (isProductOutOfStock(product)) return;
+    const selection = getQuickSelection(product);
+    if (isProductOutOfStock(product) || isProductSizeOutOfStock(product, selection.size)) return;
     addToCart(getQuickCartItem(product), { openCart: false });
     showToast({
       title: copy.added,
@@ -136,7 +143,8 @@ export default function WishlistPage() {
   };
 
   const handleQuickBuy = (product: Product) => {
-    if (isProductOutOfStock(product)) return;
+    const selection = getQuickSelection(product);
+    if (isProductOutOfStock(product) || isProductSizeOutOfStock(product, selection.size)) return;
     setBuyNowItem(getQuickCartItem(product));
     router.push("/checkout");
   };
@@ -216,7 +224,7 @@ export default function WishlistPage() {
               const selectedColor = colorOptions.find((color) => color.id === selection.color);
               const previewImage = selectedColor?.image || product.image;
               const bundle = isBundleProduct(product);
-              const unavailable = isProductOutOfStock(product);
+              const unavailable = isProductOutOfStock(product) || isProductSizeOutOfStock(product, selection.size);
 
               return (
                 <article
@@ -272,11 +280,16 @@ export default function WishlistPage() {
                               onChange={(event) => updateQuickSelection(product.id, { size: event.target.value })}
                               className="h-10 w-full rounded-xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-3 text-xs font-bold text-[#0F1A26] outline-none focus:border-[#EEBC3F]"
                             >
-                              {sizeOptions.map((size) => (
-                                <option key={size.id} value={size.id}>
-                                  {size.label} - {size.range}
-                                </option>
-                              ))}
+                              {sizeOptions.map((size) => {
+                                const isSizeUnavailable = isProductSizeOutOfStock(product, size.id);
+
+                                return (
+                                  <option key={size.id} value={size.id} disabled={isSizeUnavailable}>
+                                    {size.label} - {size.range}
+                                    {isSizeUnavailable ? ` (${stockT("outOfStock")})` : ""}
+                                  </option>
+                                );
+                              })}
                             </select>
                           </label>
                         )}

@@ -26,7 +26,7 @@ import { useSizeGuideSizes } from "@/app/lib/site-settings-context";
 import { type Product } from "@/lib/products";
 import { calculateBundlePrice, getPricingRuleKey } from "@/lib/bundle-pricing";
 import { trackMetaPixelEvent } from "@/lib/meta-pixel";
-import { getStockLabel, isProductOutOfStock } from "@/lib/product-stock";
+import { getStockLabel, isProductOutOfStock, isProductSizeOutOfStock } from "@/lib/product-stock";
 import { getProductRating } from "@/lib/product-rating";
 
 // Separate component for detailed product description
@@ -577,6 +577,14 @@ interface ProductPageContentProps {
   products: Product[];
 }
 
+function getInitialSelectedSize(product: Product) {
+  const sizeOptions = product.sizePrices ? Object.keys(product.sizePrices) : [];
+  const availableSizes = sizeOptions.filter((size) => !isProductSizeOutOfStock(product, size));
+
+  if (availableSizes.includes("m")) return "m";
+  return availableSizes[0] || sizeOptions[0] || product.size?.toLowerCase() || "m";
+}
+
 export default function ProductPageContent({
   product,
   prevProduct,
@@ -591,7 +599,7 @@ export default function ProductPageContent({
   const { addToCart, setBuyNowItem } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const router = useRouter();
-  const [selectedSize, setSelectedSize] = useState("m");
+  const [selectedSize, setSelectedSize] = useState(() => getInitialSelectedSize(product));
   const [selectedColor, setSelectedColor] = useState<string | null>(product.colors?.[0]?.id || null);
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
   const selectedProductColor =
@@ -643,17 +651,25 @@ export default function ProductPageContent({
     return [];
   }, []);
 
+  const getFirstAvailableBundleSize = useCallback(
+    (bundleProduct: Product) => {
+      const sizeOptions = getBundleSizeOptions(bundleProduct);
+      const availableSizes = sizeOptions.filter((size) => !isProductSizeOutOfStock(bundleProduct, size));
+      if (availableSizes.includes("m")) return "m";
+      return availableSizes[0] || sizeOptions[0];
+    },
+    [getBundleSizeOptions],
+  );
+
   const [bundleSelections, setBundleSelections] = useState<{ [key: number]: { productId?: number; size?: string; color?: string } }>(() => {
     const initial: { [key: number]: { productId?: number; size?: string; color?: string } } = {};
     if (isBundle && product.bundleItems) {
       product.bundleItems.forEach((item, index) => {
         const productId = item.productId || item.productIds?.[0];
         const bundleProduct = productId ? products.find((p) => p.id === productId) : undefined;
-        const sizeOptions = bundleProduct ? getBundleSizeOptions(bundleProduct) : [];
-        const defaultSize = sizeOptions.includes("m") ? "m" : sizeOptions[0];
         initial[index] = {
           productId: productId,
-          size: defaultSize,
+          size: bundleProduct ? getFirstAvailableBundleSize(bundleProduct) : undefined,
           color: bundleProduct?.colors?.[0]?.id,
         };
       });
@@ -699,10 +715,11 @@ export default function ProductPageContent({
       const selection = bundleSelections[index] || {};
       const selectedProductId = selection.productId || item.productId || item.productIds?.[0];
       const bundleProduct = selectedProductId ? getBundleProduct(selectedProductId) : undefined;
-      return bundleProduct ? isProductOutOfStock(bundleProduct) : false;
+      return bundleProduct ? isProductSizeOutOfStock(bundleProduct, selection.size) : false;
     });
   }, [bundleSelections, getBundleProduct, isBundle, product.bundleItems]);
-  const isUnavailable = isProductOutOfStock(product) || selectedBundleHasOutOfStockItem;
+  const isSelectedSizeUnavailable = product.size ? isProductSizeOutOfStock(product, selectedSize) : false;
+  const isUnavailable = isProductOutOfStock(product) || isSelectedSizeUnavailable || selectedBundleHasOutOfStockItem;
   const stockLabel = getStockLabel(product, {
     inStock: stockT("inStock"),
     lowStock: stockT("lowStock"),
@@ -881,10 +898,15 @@ export default function ProductPageContent({
 
 
   const sizes = useSizeGuideSizes();
+  const availableProductSizes = useMemo(
+    () => sizes.filter((size) => !isProductSizeOutOfStock(product, size.id)),
+    [product, sizes],
+  );
   const recommendedSize = useMemo(() => {
     if (!product.size || sizes.length === 0) return null;
-    return sizes.find((size) => size.id === "m") || sizes[0];
-  }, [product.size, sizes]);
+    return availableProductSizes.find((size) => size.id === "m") || availableProductSizes[0] || sizes[0];
+  }, [availableProductSizes, product.size, sizes]);
+
   const selectedSizeInfo = useMemo(
     () => sizes.find((size) => size.id === selectedSize) || recommendedSize,
     [recommendedSize, selectedSize, sizes]
@@ -1507,6 +1529,8 @@ export default function ProductPageContent({
                   }`}>
                     {selectedBundleHasOutOfStockItem
                       ? t("bundle.selectionUnavailable")
+                      : isSelectedSizeUnavailable
+                        ? stockT("outOfStock")
                       : stockLabel}
                   </span>
                 </div>
@@ -1545,11 +1569,13 @@ export default function ProductPageContent({
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
                       {sizes.map((size) => {
                         const isRecommended = recommendedSize?.id === size.id;
+                        const isSizeUnavailable = isProductSizeOutOfStock(product, size.id);
                         return (
                           <button
                             key={size.id}
+                            disabled={isSizeUnavailable}
                             onClick={() => setSelectedSize(size.id)}
-                            className={`relative py-3 sm:py-5 rounded-xl sm:rounded-2xl border-2 text-center transition-all duration-300 ${selectedSize === size.id
+                            className={`relative py-3 sm:py-5 rounded-xl sm:rounded-2xl border-2 text-center transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-45 ${selectedSize === size.id
                               ? "border-[#EEBC3F] bg-[#EEBC3F] text-white shadow-xl shadow-[#EEBC3F]/30 scale-105"
                               : isRecommended
                                 ? "border-[#EEBC3F]/70 bg-white shadow-lg shadow-[#EEBC3F]/10"
@@ -1568,6 +1594,11 @@ export default function ProductPageContent({
                             <span className={`block font-bold text-base sm:text-lg ${selectedSize === size.id ? "text-white" : "text-[#0F1A26]"}`}>{size.label}</span>
                             <span className={`block text-[10px] uppercase tracking-wider mt-0.5 ${selectedSize === size.id ? "text-white/60" : "text-[#0F1A26]/40"}`}>{t('size.heightLabel')}</span>
                             <span className={`block text-xs mt-0.5 ${selectedSize === size.id ? "text-white/70" : "text-[#0F1A26]/50"}`}>{size.range}</span>
+                            {isSizeUnavailable && (
+                              <span className="mt-1 block text-[10px] font-bold text-red-600">
+                                {stockT("outOfStock")}
+                              </span>
+                            )}
                           </button>
                         );
                       })}
@@ -1662,14 +1693,12 @@ export default function ProductPageContent({
                                             event.preventDefault();
                                             return;
                                           }
-                                          const newSizeOptions = getBundleSizeOptions(opt);
-                                          const defaultSize = newSizeOptions.includes("m") ? "m" : newSizeOptions[0];
                                           setBundleSelections((prev) => ({
                                             ...prev,
                                             [index]: {
                                               ...prev[index],
                                               productId: opt.id,
-                                              size: defaultSize,
+                                              size: getFirstAvailableBundleSize(opt),
                                               color: opt.colors?.[0]?.id,
                                             },
                                           }));
@@ -1711,21 +1740,33 @@ export default function ProductPageContent({
                                 <label className="text-[#0F1A26]/60 text-xs mb-2 block">{t("size.select")}</label>
                                 <div className="flex flex-wrap gap-2">
                                   {sizeOptions.map((size: string) => (
-                                    <button
-                                      key={size}
-                                      onClick={() =>
-                                        setBundleSelections((prev) => ({
-                                          ...prev,
-                                          [index]: { ...prev[index], size },
-                                        }))
-                                      }
-                                      className={`min-h-10 min-w-11 px-3 py-2 rounded-xl text-xs font-bold transition-all ${selection.size === size
-                                        ? "bg-[#EEBC3F] text-[#0F1A26]"
-                                        : "bg-white text-[#0F1A26]/70 hover:bg-[#EEBC3F]/20"
-                                        }`}
-                                    >
-                                      {size.toUpperCase()}
-                                    </button>
+                                    (() => {
+                                      const isSizeUnavailable = bundleProduct
+                                        ? isProductSizeOutOfStock(bundleProduct, size)
+                                        : false;
+
+                                      return (
+                                        <button
+                                          key={size}
+                                          disabled={isSizeUnavailable}
+                                          onClick={() =>
+                                            setBundleSelections((prev) => ({
+                                              ...prev,
+                                              [index]: { ...prev[index], size },
+                                            }))
+                                          }
+                                          className={`min-h-10 min-w-11 px-3 py-2 rounded-xl text-xs font-bold transition-all disabled:cursor-not-allowed disabled:opacity-45 ${selection.size === size
+                                            ? "bg-[#EEBC3F] text-[#0F1A26]"
+                                            : "bg-white text-[#0F1A26]/70 hover:bg-[#EEBC3F]/20"
+                                            }`}
+                                        >
+                                          <span className="block">{size.toUpperCase()}</span>
+                                          {isSizeUnavailable && (
+                                            <span className="block text-[9px] text-red-600">{stockT("outOfStock")}</span>
+                                          )}
+                                        </button>
+                                      );
+                                    })()
                                   ))}
                                 </div>
                               </div>

@@ -11,7 +11,7 @@ import { useToast } from "@/app/components/toast-provider";
 import { useSizeGuideSizes } from "@/app/lib/site-settings-context";
 import { calculateBundlePrice, getPricingRuleKey } from "@/lib/bundle-pricing";
 import type { Product } from "@/lib/products";
-import { isProductOutOfStock } from "@/lib/product-stock";
+import { isProductOutOfStock, isProductSizeOutOfStock } from "@/lib/product-stock";
 
 type BundleQuickCustomizerProps = {
   product: Product;
@@ -35,6 +35,11 @@ const getSizeOptions = (product: Product | undefined, sizes: SizeOption[]) => {
 
 const getDefaultSize = (product: Product | undefined, sizes: SizeOption[]) => {
   const sizeOptions = getSizeOptions(product, sizes).map((size) => size.id);
+  const availableSizeOptions = sizeOptions.filter((size) =>
+    product ? !isProductSizeOutOfStock(product, size) : true
+  );
+  if (availableSizeOptions.includes("m")) return "m";
+  if (availableSizeOptions[0]) return availableSizeOptions[0];
   if (sizeOptions.includes("m")) return "m";
   return sizeOptions[0] || product?.size?.toLowerCase();
 };
@@ -88,7 +93,10 @@ export function BundleQuickCustomizer({
       const selection = selections[index] || {};
       const selectedProductId = selection.productId || item.productId || item.productIds?.[0] || 0;
       const selectedProduct = products.find((candidate) => candidate.id === selectedProductId);
-      const size = selection.size || getDefaultSize(selectedProduct, sizes);
+      const size =
+        selection.size && selectedProduct && !isProductSizeOutOfStock(selectedProduct, selection.size)
+          ? selection.size
+          : getDefaultSize(selectedProduct, sizes);
       const colorId = selection.color || selectedProduct?.colors?.[0]?.id;
       const color = selectedProduct?.colors?.find((candidate) => candidate.id === colorId);
       const sizePrice =
@@ -181,7 +189,7 @@ export function BundleQuickCustomizer({
     isProductOutOfStock(product) ||
     resolvedSelections.some((selection) => {
       const selectedProduct = products.find((candidate) => candidate.id === selection.productId);
-      return selectedProduct ? isProductOutOfStock(selectedProduct) : false;
+      return selectedProduct ? isProductSizeOutOfStock(selectedProduct, selection.size) : false;
     });
   const unavailableLabel = bundleT("unavailable");
 
@@ -320,14 +328,18 @@ export function BundleQuickCustomizer({
             <div className="mt-2 grid grid-cols-4 gap-1.5">
               {activeSizeOptions.map((size) => {
                 const isSelected = activeSelection.size === size.id;
+                const isSizeUnavailable = activeSelectedProduct
+                  ? isProductSizeOutOfStock(activeSelectedProduct, size.id)
+                  : false;
                 return (
                   <button
                     key={size.id}
                     type="button"
                     aria-label={`${t("size")}: ${size.label}, ${size.cm} cm`}
                     aria-pressed={isSelected}
+                    disabled={isSizeUnavailable}
                     onClick={() => updateSelection(activeIndex, { size: size.id })}
-                    className={`min-h-10 rounded-lg border px-1 py-1 text-center transition-all ${
+                    className={`min-h-10 rounded-lg border px-1 py-1 text-center transition-all disabled:cursor-not-allowed disabled:opacity-45 ${
                       isSelected
                         ? "border-[#EEBC3F] bg-[#EEBC3F] text-[#0F1A26]"
                         : isDark
@@ -339,6 +351,11 @@ export function BundleQuickCustomizer({
                     <span className="mt-1 block whitespace-nowrap text-[8px] font-bold leading-none opacity-75">
                       {size.cm} cm
                     </span>
+                    {isSizeUnavailable && (
+                      <span className="mt-1 block text-[8px] font-bold text-red-600">
+                        {unavailableLabel}
+                      </span>
+                    )}
                   </button>
                 );
               })}

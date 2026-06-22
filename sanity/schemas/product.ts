@@ -31,6 +31,30 @@ const pricePairFields = [
   }),
 ];
 
+const stockFields = [
+  defineField({
+    name: "status",
+    title: "Status",
+    type: "string",
+    initialValue: "in_stock",
+    options: {
+      layout: "radio",
+      list: [
+        { title: "In stock", value: "in_stock" },
+        { title: "Low stock", value: "low_stock" },
+        { title: "Out of stock", value: "out_of_stock" },
+      ],
+    },
+  }),
+  defineField({
+    name: "quantity",
+    title: "Quantity",
+    type: "number",
+    description: "Optional. If this is 0, this size is treated as out of stock.",
+    validation: (Rule) => Rule.min(0).integer(),
+  }),
+];
+
 export const product = defineType({
   name: "product",
   title: "Products",
@@ -154,6 +178,21 @@ export const product = defineType({
       group: "inventory",
       description: "Optional internal quantity. Leave empty if you only want to use the stock status.",
       validation: (Rule) => Rule.min(0).integer(),
+    }),
+    defineField({
+      name: "sizeStock",
+      title: "Stock by size",
+      type: "object",
+      group: "inventory",
+      description: "Control availability for each size. Empty sizes stay available unless the whole product is out of stock.",
+      fields: sizeOptions.map((size) =>
+        defineField({
+          name: size.value,
+          title: size.title,
+          type: "object",
+          fields: stockFields,
+        }),
+      ),
     }),
     defineField({
       name: "description",

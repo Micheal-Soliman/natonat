@@ -9,9 +9,11 @@ import { Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
 import { useCatalogProducts } from "@/app/lib/catalog-context";
 import { useSizeGuideSizes } from "@/app/lib/site-settings-context";
 import type { Product } from "@/lib/products";
+import { isProductSizeOutOfStock } from "@/lib/product-stock";
 
 export function CartSlider() {
   const t = useTranslations("cart");
+  const stockT = useTranslations("stock");
   const products = useCatalogProducts();
   const sizes = useSizeGuideSizes();
   const {
@@ -41,6 +43,8 @@ export function CartSlider() {
 
   const updateItemSize = (item: typeof items[number], nextSize: string) => {
     const product = products.find((candidate) => candidate.id === item.id);
+    if (product && isProductSizeOutOfStock(product, nextSize)) return;
+
     const sizePrice = product?.sizePrices?.[nextSize as keyof NonNullable<Product["sizePrices"]>];
 
     updateCartItem(
@@ -205,11 +209,18 @@ export function CartSlider() {
                                   onChange={(event) => updateItemSize(item, event.target.value)}
                                   className="h-8 w-full rounded-lg border border-[#0F1A26]/10 bg-white px-2 text-xs font-bold text-[#0F1A26] outline-none focus:border-[#EEBC3F]"
                                 >
-                                  {sizeOptions.map((size) => (
-                                    <option key={size.id} value={size.id}>
-                                      {size.label} - {size.range}
-                                    </option>
-                                  ))}
+                                  {sizeOptions.map((size) => {
+                                    const isSizeUnavailable = product
+                                      ? isProductSizeOutOfStock(product, size.id)
+                                      : false;
+
+                                    return (
+                                      <option key={size.id} value={size.id} disabled={isSizeUnavailable}>
+                                        {size.label} - {size.range}
+                                        {isSizeUnavailable ? ` (${stockT("outOfStock")})` : ""}
+                                      </option>
+                                    );
+                                  })}
                                 </select>
                               </label>
                             )}

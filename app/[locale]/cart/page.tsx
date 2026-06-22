@@ -13,6 +13,7 @@ import { useCart, type CartItem } from "@/app/lib/cart-context";
 import { useCatalogProducts } from "@/app/lib/catalog-context";
 import { useSizeGuideSizes } from "@/app/lib/site-settings-context";
 import type { Product } from "@/lib/products";
+import { isProductSizeOutOfStock } from "@/lib/product-stock";
 
 type SizeOption = ReturnType<typeof useSizeGuideSizes>[number];
 
@@ -31,6 +32,7 @@ export default function CartPage() {
 
 function CartContent() {
   const t = useTranslations("cart");
+  const stockT = useTranslations("stock");
   const products = useCatalogProducts();
   const sizes = useSizeGuideSizes();
   const {
@@ -62,6 +64,8 @@ function CartContent() {
 
   const updateItemSize = (item: CartItem, nextSize: string) => {
     const product = products.find((candidate) => candidate.id === item.id);
+    if (product && isProductSizeOutOfStock(product, nextSize)) return;
+
     const sizePrice = product?.sizePrices?.[nextSize as keyof NonNullable<Product["sizePrices"]>];
 
     updateCartItem(
@@ -252,11 +256,18 @@ function CartContent() {
                                       onChange={(event) => updateItemSize(item, event.target.value)}
                                       className="h-11 w-full rounded-xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-3 text-sm font-bold text-[#0F1A26] outline-none focus:border-[#EEBC3F]"
                                     >
-                                      {sizeOptions.map((size) => (
-                                        <option key={size.id} value={size.id}>
-                                          {size.label} - {size.range}
-                                        </option>
-                                      ))}
+                                      {sizeOptions.map((size) => {
+                                        const isSizeUnavailable = product
+                                          ? isProductSizeOutOfStock(product, size.id)
+                                          : false;
+
+                                        return (
+                                          <option key={size.id} value={size.id} disabled={isSizeUnavailable}>
+                                            {size.label} - {size.range}
+                                            {isSizeUnavailable ? ` (${stockT("outOfStock")})` : ""}
+                                          </option>
+                                        );
+                                      })}
                                     </select>
                                   </label>
                                 )}

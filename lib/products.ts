@@ -41,6 +41,15 @@ export interface Product {
   printType?: "plain" | "printed";
   stockStatus?: "in_stock" | "low_stock" | "out_of_stock";
   stockQuantity?: number;
+  sizeStock?: Partial<
+    Record<
+      "s" | "m" | "l" | "xl",
+      {
+        status?: "in_stock" | "low_stock" | "out_of_stock";
+        quantity?: number;
+      }
+    >
+  >;
   ratingValue?: number;
   reviewCount?: number;
   // Dynamic pricing for bundles

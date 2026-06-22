@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, ReactNode } from "react";
 
 import { useCatalogProducts } from "@/app/lib/catalog-context";
-import { isProductOutOfStock } from "@/lib/product-stock";
+import { isProductOutOfStock, isProductSizeOutOfStock } from "@/lib/product-stock";
 
 export interface BundleSelection {
   productId: number;
@@ -86,14 +86,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (!item) return false;
 
       const product = products.find((candidate) => candidate.id === item.id);
-      if (product && isProductOutOfStock(product)) return true;
+      if (product && isProductSizeOutOfStock(product, item.size)) return true;
 
       return Boolean(
         item.bundleSelections?.some((selection) => {
           const selectedProduct = products.find(
             (candidate) => candidate.id === selection.productId
           );
-          return selectedProduct ? isProductOutOfStock(selectedProduct) : false;
+          return selectedProduct
+            ? isProductOutOfStock(selectedProduct) ||
+                isProductSizeOutOfStock(selectedProduct, selection.size)
+            : false;
         })
       );
     },
