@@ -716,7 +716,7 @@ function ShopContent() {
                                   <div className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-[#0F1A26]/45">
                                     {t('quickAdd.size')}
                                   </div>
-                                  <div className="grid grid-cols-4 gap-1.5">
+                                  <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
                                     {sizeOptions.map((size) => {
                                       const isSelected = selection.size === size.id;
                                       const isSizeUnavailable = isProductSizeOutOfStock(product, size.id);
@@ -729,14 +729,14 @@ function ShopContent() {
                                           aria-pressed={isSelected}
                                           disabled={isSizeUnavailable}
                                           onClick={() => updateQuickSelection(product.id, { size: size.id })}
-                                          className={`min-h-11 rounded-xl border px-1 py-1 text-center transition-all disabled:cursor-not-allowed disabled:opacity-45 ${
+                                          className={`min-h-12 rounded-xl border px-1.5 py-1.5 text-center transition-all disabled:cursor-not-allowed disabled:opacity-45 ${
                                             isSelected
                                               ? "border-[#EEBC3F] bg-[#EEBC3F] text-[#0F1A26] shadow-sm"
                                               : "border-[#0F1A26]/10 bg-[#F8F6F3] text-[#0F1A26]/65 hover:border-[#EEBC3F]/60 hover:text-[#0F1A26]"
                                           }`}
                                         >
                                           <span className="block text-sm font-black leading-none">{size.label}</span>
-                                          <span className="mt-1 block whitespace-nowrap text-[9px] font-bold leading-none opacity-70">
+                                          <span className="mt-1 block whitespace-nowrap text-[10px] font-bold leading-none opacity-75">
                                             {size.cm} cm
                                           </span>
                                           {isSizeUnavailable && (

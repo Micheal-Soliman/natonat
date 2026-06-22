@@ -472,14 +472,14 @@ export function BestSellers() {
                                     aria-pressed={isSelected}
                                     disabled={isSizeUnavailable}
                                     onClick={() => updateQuickSelection(product.id, { size: size.id })}
-                                    className={`min-h-11 rounded-xl border px-1 py-1 text-center transition-all disabled:cursor-not-allowed disabled:opacity-45 ${
+                                    className={`min-h-12 rounded-xl border px-1.5 py-1.5 text-center transition-all disabled:cursor-not-allowed disabled:opacity-45 ${
                                       isSelected
                                         ? "border-[#EEBC3F] bg-[#EEBC3F] text-[#0F1A26] shadow-sm"
                                         : "border-white/10 bg-white/10 text-white/70 hover:border-[#EEBC3F]/60 hover:text-white"
                                     }`}
                                   >
                                     <span className="block text-sm font-black leading-none">{size.label}</span>
-                                    <span className="mt-1 block whitespace-nowrap text-[9px] font-bold leading-none opacity-75">
+                                    <span className="mt-1 block whitespace-nowrap text-[10px] font-bold leading-none opacity-75">
                                       {size.cm} cm
                                     </span>
                                     {isSizeUnavailable && (

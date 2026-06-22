@@ -339,7 +339,7 @@ export function BundleQuickCustomizer({
                     aria-pressed={isSelected}
                     disabled={isSizeUnavailable}
                     onClick={() => updateSelection(activeIndex, { size: size.id })}
-                    className={`min-h-10 rounded-lg border px-1 py-1 text-center transition-all disabled:cursor-not-allowed disabled:opacity-45 ${
+                    className={`min-h-11 rounded-lg border px-1.5 py-1.5 text-center transition-all disabled:cursor-not-allowed disabled:opacity-45 ${
                       isSelected
                         ? "border-[#EEBC3F] bg-[#EEBC3F] text-[#0F1A26]"
                         : isDark
@@ -348,7 +348,7 @@ export function BundleQuickCustomizer({
                     }`}
                   >
                     <span className="block text-xs font-black leading-none">{size.label}</span>
-                    <span className="mt-1 block whitespace-nowrap text-[8px] font-bold leading-none opacity-75">
+                    <span className="mt-1 block whitespace-nowrap text-[9px] font-bold leading-none opacity-75">
                       {size.cm} cm
                     </span>
                     {isSizeUnavailable && (
