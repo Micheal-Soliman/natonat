@@ -39,7 +39,7 @@
   },
   "deliveryCountdown": {
     "title": "Delivery within 2 days",
-    "titleOneDay": "Delivery within 1 day",
+    "titleOneDay": "Next day delivery",
     "titleTwoDays": "Delivery within 2 days",
     "badge": "Fast dispatch",
     "orderWithin": "Order within",
