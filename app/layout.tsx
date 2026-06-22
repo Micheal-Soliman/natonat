@@ -39,6 +39,9 @@ const metaPixelId =
   process.env.NEXT_PUBLIC_META_PIXEL_ID ||
   process.env.META_PIXEL_ID ||
   "2086939301892626";
+const tiktokPixelId =
+  process.env.NEXT_PUBLIC_TIKTOK_PIXEL_ID ||
+  "D8SH7VRC77U9LDPEEDM0";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
@@ -176,7 +179,7 @@ export default function RootLayout({
           `}
         </Script>
 
-        <Script id="tiktok-pixel" strategy="afterInteractive">
+        <Script id="tiktok-pixel" strategy="beforeInteractive">
           {`
             if (!window.location.pathname.startsWith('/studio')) {
               !function (w, d, t) {
@@ -206,7 +209,7 @@ export default function RootLayout({
                   e.parentNode.insertBefore(n,e)
                 };
 
-                ttq.load('D8KAHABC77U29JSH68JG');
+                ttq.load('${tiktokPixelId}');
                 ttq.page();
               }(window, document, 'ttq');
             }
