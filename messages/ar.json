@@ -40,6 +40,8 @@
   },
   "deliveryCountdown": {
     "title": "توصيل خلال يومين",
+    "titleOneDay": "توصيل خلال يوم",
+    "titleTwoDays": "توصيل خلال يومين",
     "badge": "تجهيز سريع",
     "orderWithin": "اطلب خلال",
     "hours": "ساعة",

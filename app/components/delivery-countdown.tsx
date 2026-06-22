@@ -12,17 +12,96 @@ type DeliveryCountdownProps = {
 };
 
 const CUTOFF_HOUR = 17;
+const CAIRO_TIME_ZONE = "Africa/Cairo";
 
-function getNextCutoff() {
+type DeliveryState = {
+  remainingMs: number;
+  deliveryDays: 1 | 2;
+};
+
+function getTimeZoneParts(date: Date, timeZone: string) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date);
+
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((part) => part.type === type)?.value || 0);
+
+  return {
+    year: value("year"),
+    month: value("month"),
+    day: value("day"),
+    hour: value("hour"),
+    minute: value("minute"),
+    second: value("second"),
+  };
+}
+
+function getTimeZoneOffsetMs(timeZone: string, date: Date) {
+  const parts = getTimeZoneParts(date, timeZone);
+  const zonedAsUtc = Date.UTC(
+    parts.year,
+    parts.month - 1,
+    parts.day,
+    parts.hour,
+    parts.minute,
+    parts.second,
+  );
+
+  return zonedAsUtc - date.getTime();
+}
+
+function zonedTimeToUtcMs(
+  timeZone: string,
+  year: number,
+  month: number,
+  day: number,
+  hour: number,
+) {
+  const utcGuess = Date.UTC(year, month - 1, day, hour, 0, 0, 0);
+  const firstOffset = getTimeZoneOffsetMs(timeZone, new Date(utcGuess));
+  const firstUtc = utcGuess - firstOffset;
+  const finalOffset = getTimeZoneOffsetMs(timeZone, new Date(firstUtc));
+
+  return utcGuess - finalOffset;
+}
+
+function addCalendarDays(year: number, month: number, day: number, days: number) {
+  const next = new Date(Date.UTC(year, month - 1, day + days, 12, 0, 0));
+
+  return {
+    year: next.getUTCFullYear(),
+    month: next.getUTCMonth() + 1,
+    day: next.getUTCDate(),
+  };
+}
+
+function getDeliveryState(): DeliveryState {
   const now = new Date();
-  const cutoff = new Date(now);
-  cutoff.setHours(CUTOFF_HOUR, 0, 0, 0);
+  const cairoNow = getTimeZoneParts(now, CAIRO_TIME_ZONE);
+  const isBeforeCutoff = cairoNow.hour < CUTOFF_HOUR;
+  const targetDate = isBeforeCutoff
+    ? cairoNow
+    : addCalendarDays(cairoNow.year, cairoNow.month, cairoNow.day, 1);
+  const cutoffUtcMs = zonedTimeToUtcMs(
+    CAIRO_TIME_ZONE,
+    targetDate.year,
+    targetDate.month,
+    targetDate.day,
+    CUTOFF_HOUR,
+  );
 
-  if (now >= cutoff) {
-    cutoff.setDate(cutoff.getDate() + 1);
-  }
-
-  return cutoff;
+  return {
+    remainingMs: cutoffUtcMs - now.getTime(),
+    deliveryDays: isBeforeCutoff ? 1 : 2,
+  };
 }
 
 function getCountdownParts(ms: number) {
@@ -40,28 +119,29 @@ function getCountdownParts(ms: number) {
 
 export function DeliveryCountdown({ variant = "light", className = "" }: DeliveryCountdownProps) {
   const t = useTranslations("deliveryCountdown");
-  const [remainingMs, setRemainingMs] = useState<number | null>(null);
+  const [deliveryState, setDeliveryState] = useState<DeliveryState | null>(null);
 
   useEffect(() => {
-    const updateRemaining = () => {
-      setRemainingMs(getNextCutoff().getTime() - Date.now());
+    const updateDeliveryState = () => {
+      setDeliveryState(getDeliveryState());
     };
 
-    updateRemaining();
-    const timer = window.setInterval(updateRemaining, 1000);
+    updateDeliveryState();
+    const timer = window.setInterval(updateDeliveryState, 1000);
 
     return () => window.clearInterval(timer);
   }, []);
 
   const countdownParts = useMemo(
-    () => getCountdownParts(remainingMs ?? 0),
-    [remainingMs]
+    () => getCountdownParts(deliveryState?.remainingMs ?? 0),
+    [deliveryState?.remainingMs]
   );
+  const title = deliveryState?.deliveryDays === 1 ? t("titleOneDay") : t("titleTwoDays");
 
   const isDark = variant === "dark" || variant === "darkCompact";
   const isCompact = variant === "compact" || variant === "darkCompact";
   const isSticky = variant === "sticky";
-  const compactTime = remainingMs === null
+  const compactTime = deliveryState === null
     ? "--:--:--"
     : `${countdownParts.hours}:${countdownParts.minutes}:${countdownParts.seconds}`;
 
@@ -77,7 +157,7 @@ export function DeliveryCountdown({ variant = "light", className = "" }: Deliver
           <Truck className="h-4 w-4" strokeWidth={1.9} />
         </span>
         <span className="min-w-0 truncate text-xs font-black leading-tight">
-          {t("title")}
+          {title}
         </span>
         <span className="shrink-0 rounded-full bg-[#0F1A26] px-2.5 py-1 font-mono text-xs font-black text-[#EEBC3F]">
           {compactTime}
@@ -103,7 +183,7 @@ export function DeliveryCountdown({ variant = "light", className = "" }: Deliver
             <Truck className="h-5 w-5" strokeWidth={2} />
           </span>
           <div className="min-w-0">
-            <p className="truncate text-base font-black leading-tight tracking-tight">{t("title")}</p>
+            <p className="truncate text-base font-black leading-tight tracking-tight">{title}</p>
             <span className="mt-1 inline-flex rounded-full bg-[#EEBC3F] px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wide text-[#0F1A26]">
               {t("badge")}
             </span>
@@ -142,7 +222,7 @@ export function DeliveryCountdown({ variant = "light", className = "" }: Deliver
               {t("badge")}
             </div>
             <p className="max-w-xl text-[1.7rem] font-black leading-[1.05] tracking-tight text-white sm:text-3xl">
-              {t("title")}
+              {title}
             </p>
             <div className="mt-4 flex items-center gap-3 sm:mt-5">
               <span className="h-px w-1/2 bg-gradient-to-r from-[#EEBC3F] to-[#EEBC3F]/20" />
@@ -170,7 +250,7 @@ export function DeliveryCountdown({ variant = "light", className = "" }: Deliver
                   className="rounded-2xl border border-[#EEBC3F]/25 bg-black/25 px-2 py-3 text-center shadow-inner sm:p-3"
                 >
                   <div className="font-mono text-[1.55rem] font-black tabular-nums leading-none text-[#EEBC3F] sm:text-3xl">
-                    {remainingMs === null ? "--" : block.value}
+                    {deliveryState === null ? "--" : block.value}
                   </div>
                   <div className="mt-1 text-[10px] font-black uppercase tracking-wide text-white/45">
                     {block.label}
@@ -221,7 +301,7 @@ export function DeliveryCountdown({ variant = "light", className = "" }: Deliver
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <p className={["font-black leading-tight", isCompact ? "text-sm" : "text-base sm:text-lg", titleClass].join(" ")}>
-              {t("title")}
+              {title}
             </p>
             <span className="rounded-full bg-[#EEBC3F] px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-[#0F1A26]">
               {t("badge")}
@@ -238,7 +318,7 @@ export function DeliveryCountdown({ variant = "light", className = "" }: Deliver
             {timeBlocks.map((block, index) => (
               <div key={block.label} className="flex items-center gap-1">
                 <div className={["rounded-xl border text-center font-mono font-black", isDark ? "border-white/10 bg-[#0F1A26] text-[#EEBC3F]" : "border-[#0F1A26]/10 bg-[#0F1A26] text-[#EEBC3F]", isCompact ? "min-w-9 px-1.5 py-1 text-xs" : "min-w-11 px-2 py-1.5 text-sm"].join(" ")}>
-                  {remainingMs === null ? "--" : block.value}
+                  {deliveryState === null ? "--" : block.value}
                 </div>
                 {index < timeBlocks.length - 1 && (
                   <span className={["font-black", mutedClass].join(" ")}>:</span>
