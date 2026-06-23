@@ -5,12 +5,12 @@ export const structure: StructureResolver = (S) =>
     .title("natOnat CMS")
     .items([
       S.listItem()
-        .title("Flash sale modal")
+        .title("Flash sale")
         .child(
           S.document()
             .schemaType("flashSaleSettings")
             .documentId("flashSaleSettings")
-            .title("Flash sale modal"),
+            .title("Flash sale"),
         ),
       S.listItem()
         .title("Size guide")

@@ -48,6 +48,21 @@
     "minutes": "دقيقة",
     "seconds": "ثانية"
   },
+  "flashSaleSection": {
+    "eyebrow": "عرض فلاش لفترة محدودة",
+    "title": "اختيار محدد بسعر خاص",
+    "size": "المقاس",
+    "color": "اللون",
+    "fixedVariant": "العرض على الاختيار ده فقط",
+    "endsIn": "ينتهي العرض خلال",
+    "days": "يوم",
+    "hours": "ساعة",
+    "minutes": "دقيقة",
+    "seconds": "ثانية",
+    "add": "أضف العرض للسلة",
+    "buy": "اشتري العرض الآن",
+    "unavailable": "غير متاح"
+  },
   "benefits": {
     "sectionLabel": "المميزات",
     "title": "ليه ناتونات؟",

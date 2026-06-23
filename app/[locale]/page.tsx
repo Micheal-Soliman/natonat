@@ -11,6 +11,7 @@ import { ArticlesSection } from "@/app/sections/articles-section";
 import { Footer } from "@/app/sections/footer";
 import { Loading } from "@/app/components/loading";
 import { FlashSaleModal } from "@/app/components/flash-sale-modal";
+import { FlashSaleSection } from "@/app/sections/flash-sale-section";
 import { createPageMetadata } from "@/lib/seo";
 import { getSiteSettings } from "@/lib/sanity-site-settings";
 
@@ -82,6 +83,7 @@ function HomeContent({
       <main>
         <Hero />
         <BenefitsStrip />
+        <FlashSaleSection settings={flashSale} />
         <FeaturedCollections />
         <BestSellers />
         <TravelSets />

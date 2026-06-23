@@ -47,6 +47,21 @@
     "minutes": "Min",
     "seconds": "Sec"
   },
+  "flashSaleSection": {
+    "eyebrow": "Limited flash sale",
+    "title": "One variant. One special price.",
+    "size": "Size",
+    "color": "Color",
+    "fixedVariant": "Offer applies to this option only",
+    "endsIn": "Offer ends in",
+    "days": "Days",
+    "hours": "Hours",
+    "minutes": "Min",
+    "seconds": "Sec",
+    "add": "Add offer to cart",
+    "buy": "Buy offer now",
+    "unavailable": "Unavailable"
+  },
   "benefits": {
     "sectionLabel": "Features",
     "title": "Why",

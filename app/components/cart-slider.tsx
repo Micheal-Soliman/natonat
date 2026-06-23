@@ -197,7 +197,7 @@ export function CartSlider() {
                           </div>
                         )}
 
-                        {!item.isBundle && (sizeOptions.length > 1 || colorOptions.length > 1) && (
+                        {!item.isBundle && !item.lockedVariant && (sizeOptions.length > 1 || colorOptions.length > 1) && (
                           <div className="mt-2 grid grid-cols-1 gap-2">
                             {sizeOptions.length > 1 && (
                               <label className="block">
@@ -244,6 +244,12 @@ export function CartSlider() {
                               </label>
                             )}
                           </div>
+                        )}
+
+                        {item.lockedVariant && item.promotionLabel && (
+                          <span className="mt-2 inline-flex rounded-full bg-[#EEBC3F]/20 px-2.5 py-1 text-[10px] font-bold text-[#8A6200]">
+                            {item.promotionLabel}
+                          </span>
                         )}
 
                         {item.isBundle && (

@@ -12,6 +12,12 @@ export type FlashSaleSettings = {
   endsAt: string;
   ctaLabel: string;
   secondaryLabel: string;
+  sectionEnabled: boolean;
+  selectedSize?: string;
+  selectedColor?: string;
+  salePrice?: number;
+  addToCartLabel?: string;
+  buyNowLabel?: string;
   imageUrl?: string;
   product?: {
     legacyId?: number;
@@ -21,6 +27,23 @@ export type FlashSaleSettings = {
     originalPrice?: number;
     type?: string;
     imageUrl?: string;
+    size?: string | null;
+    sizePrices?: {
+      s?: { price?: number; originalPrice?: number };
+      m?: { price?: number; originalPrice?: number };
+      l?: { price?: number; originalPrice?: number };
+      xl?: { price?: number; originalPrice?: number };
+    };
+    stockStatus?: "in_stock" | "low_stock" | "out_of_stock";
+    stockQuantity?: number;
+    sizeStock?: {
+      s?: { status?: "in_stock" | "low_stock" | "out_of_stock"; quantity?: number };
+      m?: { status?: "in_stock" | "low_stock" | "out_of_stock"; quantity?: number };
+      l?: { status?: "in_stock" | "low_stock" | "out_of_stock"; quantity?: number };
+      xl?: { status?: "in_stock" | "low_stock" | "out_of_stock"; quantity?: number };
+    };
+    color?: string;
+    colors?: Array<{ id?: string; name?: string; imageUrl?: string }>;
   };
 };
 
@@ -78,6 +101,7 @@ const fallbackSizeGuide: SizeGuideSettings = {
 
 const fallbackFlashSale: FlashSaleSettings = {
   enabled: false,
+  sectionEnabled: false,
   eyebrow: "Limited time",
   title: "Flash Sale",
   description: "Save on selected natOnat travel essentials before the offer ends.",
@@ -113,6 +137,7 @@ function mergeFlashSale(flashSale?: Partial<FlashSaleSettings>): FlashSaleSettin
     ...fallbackFlashSale,
     ...flashSale,
     enabled: Boolean(flashSale?.enabled),
+    sectionEnabled: Boolean(flashSale?.sectionEnabled),
     ctaLabel: flashSale?.ctaLabel || fallbackFlashSale.ctaLabel,
     secondaryLabel: flashSale?.secondaryLabel || fallbackFlashSale.secondaryLabel,
   };

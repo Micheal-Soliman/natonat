@@ -108,6 +108,12 @@ export const siteSettingsQuery = groq`
         endsAt,
         ctaLabel,
         secondaryLabel,
+        sectionEnabled,
+        selectedSize,
+        selectedColor,
+        salePrice,
+        addToCartLabel,
+        buyNowLabel,
         "imageUrl": image.asset->url,
         product->{
           legacyId,
@@ -116,6 +122,17 @@ export const siteSettingsQuery = groq`
           price,
           originalPrice,
           type,
+          size,
+          sizePrices,
+          stockStatus,
+          stockQuantity,
+          sizeStock,
+          color,
+          colors[]{
+            id,
+            name,
+            "imageUrl": coalesce(image.asset->url, imageUrl)
+          },
           "imageUrl": coalesce(mainImage.asset->url, imageUrl)
         }
       },
@@ -151,6 +168,12 @@ export const siteSettingsQuery = groq`
       endsAt,
       ctaLabel,
       secondaryLabel,
+      sectionEnabled,
+      selectedSize,
+      selectedColor,
+      salePrice,
+      addToCartLabel,
+      buyNowLabel,
       "imageUrl": image.asset->url,
       product->{
         legacyId,
@@ -159,6 +182,17 @@ export const siteSettingsQuery = groq`
         price,
         originalPrice,
         type,
+        size,
+        sizePrices,
+        stockStatus,
+        stockQuantity,
+        sizeStock,
+        color,
+        colors[]{
+          id,
+          name,
+          "imageUrl": coalesce(image.asset->url, imageUrl)
+        },
         "imageUrl": coalesce(mainImage.asset->url, imageUrl)
       }
     },

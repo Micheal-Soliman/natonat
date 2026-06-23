@@ -244,6 +244,10 @@ function CartContent() {
                                   {labels.editBundle}
                                 </Link>
                               </div>
+                            ) : item.lockedVariant ? (
+                              <div className="mt-4 inline-flex rounded-full bg-[#EEBC3F]/20 px-3 py-1.5 text-xs font-bold text-[#8A6200]">
+                                {item.promotionLabel || "Flash Sale"}
+                              </div>
                             ) : (
                               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                                 {sizeOptions.length > 1 && (

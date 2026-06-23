@@ -32,6 +32,9 @@ export interface CartItem {
   isBundle?: boolean;
   bundleSelections?: BundleSelection[];
   bundleKey?: string;
+  priceOverride?: boolean;
+  lockedVariant?: boolean;
+  promotionLabel?: string;
 }
 
 interface CartContextType {
@@ -127,7 +130,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         bundleKey:
           newItem.isBundle
             ? newItem.bundleKey || JSON.stringify(newItem.bundleSelections || [])
-            : undefined,
+            : newItem.bundleKey,
       };
 
       const existingItem = currentItems.find((item) => {
@@ -139,7 +142,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
         }
 
         // Regular items: match by size/color
-        return item.size === normalizedNewItem.size && item.color === normalizedNewItem.color;
+        return item.size === normalizedNewItem.size &&
+          item.color === normalizedNewItem.color &&
+          item.bundleKey === normalizedNewItem.bundleKey;
       });
 
       if (existingItem) {
@@ -150,7 +155,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
               ? item.bundleKey === normalizedNewItem.bundleKey
                 ? { ...item, quantity: item.quantity + (normalizedNewItem.quantity || 1) }
                 : item
-              : item.size === normalizedNewItem.size && item.color === normalizedNewItem.color
+              : item.size === normalizedNewItem.size &&
+                  item.color === normalizedNewItem.color &&
+                  item.bundleKey === normalizedNewItem.bundleKey
                 ? { ...item, quantity: item.quantity + (normalizedNewItem.quantity || 1) }
                 : item
         );
@@ -171,7 +178,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           ? true
           : item.isBundle
             ? item.bundleKey !== bundleKey
-            : !(item.size === size && item.color === color)
+            : !(item.size === size && item.color === color && item.bundleKey === bundleKey)
       )
     );
   }, []);
@@ -181,7 +188,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const targetItem = currentItems.find(
         (item) =>
           item.id === id &&
-          (item.isBundle ? item.bundleKey === bundleKey : item.size === size && item.color === color)
+          (item.isBundle
+            ? item.bundleKey === bundleKey
+            : item.size === size && item.color === color && item.bundleKey === bundleKey)
       );
       
       // If decreasing and quantity would become 0, remove the item
@@ -192,12 +201,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
               ? true
               : item.isBundle
                 ? item.bundleKey !== bundleKey
-                : !(item.size === size && item.color === color)
+                : !(item.size === size && item.color === color && item.bundleKey === bundleKey)
         );
       }
       
       return currentItems.map((item) => 
-        item.id === id && (item.isBundle ? item.bundleKey === bundleKey : item.size === size && item.color === color)
+        item.id === id &&
+        (item.isBundle
+          ? item.bundleKey === bundleKey
+          : item.size === size && item.color === color && item.bundleKey === bundleKey)
           ? { ...item, quantity: item.quantity + delta }
           : item
       );
@@ -214,7 +226,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
         item.id === id &&
         (item.isBundle
           ? item.bundleKey === current.bundleKey
-          : item.size === current.size && item.color === current.color)
+          : item.size === current.size &&
+            item.color === current.color &&
+            item.bundleKey === current.bundleKey)
           ? { ...item, ...updates }
           : item
       )
@@ -271,9 +285,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
           name: product.name,
           slug: product.slug,
           type: product.type,
-          image: colorVariant?.image || product.image,
-          price: item.isBundle ? item.price : sizePrice?.price ?? product.price,
-          originalPrice: item.isBundle
+          image: item.lockedVariant ? item.image : colorVariant?.image || product.image,
+          price: item.isBundle || item.priceOverride ? item.price : sizePrice?.price ?? product.price,
+          originalPrice: item.isBundle || item.priceOverride
             ? item.originalPrice
             : sizePrice?.originalPrice ?? product.originalPrice,
           bundleSelections,
