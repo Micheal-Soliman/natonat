@@ -327,16 +327,3 @@ export async function sendCustomerConfirmationEmail(orderData: OrderEmailData) {
     return { success: false, error };
   }
 }
-
-export async function sendSmtpTestEmail() {
-  const infoEmail = 'info@natonat.com';
-  const info = await transporter.sendMail({
-    from: getEmailFrom(),
-    to: infoEmail,
-    replyTo: infoEmail,
-    subject: 'natOnat SMTP test',
-    text: 'Titan SMTP is connected successfully to the natOnat website.',
-  });
-
-  return { success: true, messageId: info.messageId };
-}
