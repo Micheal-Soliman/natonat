@@ -43,6 +43,14 @@ export type FlashSaleSettings = {
   product?: FlashSaleProduct;
 };
 
+export type FlashSaleOffer = {
+  _key?: string;
+  selectedSize?: string;
+  selectedColor?: string;
+  imageUrl?: string;
+  product?: FlashSaleProduct;
+};
+
 export type FlashSaleSectionSettings = {
   _updatedAt?: string;
   sectionEnabled: boolean;
@@ -58,6 +66,7 @@ export type FlashSaleSectionSettings = {
   buyNowLabel?: string;
   imageUrl?: string;
   product?: FlashSaleProduct;
+  offers: FlashSaleOffer[];
 };
 
 export type SizeGuideItem = {
@@ -137,6 +146,7 @@ const fallbackFlashSaleSection: FlashSaleSectionSettings = {
   endsAt: "",
   addToCartLabel: "Add offer to cart",
   buyNowLabel: "Buy offer now",
+  offers: [],
 };
 
 function mergeSizeGuide(sizeGuide?: Partial<SizeGuideSettings>): SizeGuideSettings {
@@ -172,6 +182,17 @@ function mergeFlashSale(flashSale?: Partial<FlashSaleSettings>): FlashSaleSettin
 function mergeFlashSaleSection(
   flashSaleSection?: Partial<FlashSaleSectionSettings>,
 ): FlashSaleSectionSettings {
+  const legacyOffer = flashSaleSection?.product
+    ? [{
+        _key: "legacy-offer",
+        product: flashSaleSection.product,
+        selectedSize: flashSaleSection.selectedSize,
+        selectedColor: flashSaleSection.selectedColor,
+        imageUrl: flashSaleSection.imageUrl,
+      }]
+    : [];
+  const validOffers = flashSaleSection?.offers?.filter((offer) => offer.product) || [];
+
   return {
     ...fallbackFlashSaleSection,
     ...flashSaleSection,
@@ -179,6 +200,7 @@ function mergeFlashSaleSection(
     addToCartLabel:
       flashSaleSection?.addToCartLabel || fallbackFlashSaleSection.addToCartLabel,
     buyNowLabel: flashSaleSection?.buyNowLabel || fallbackFlashSaleSection.buyNowLabel,
+    offers: validOffers.length ? validOffers : legacyOffer,
   };
 }
 

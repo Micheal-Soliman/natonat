@@ -60,7 +60,9 @@
     "seconds": "Sec",
     "add": "Add offer to cart",
     "buy": "Buy offer now",
-    "unavailable": "Unavailable"
+    "unavailable": "Unavailable",
+    "previous": "Previous offer",
+    "next": "Next offer"
   },
   "benefits": {
     "sectionLabel": "Features",

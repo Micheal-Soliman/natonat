@@ -61,7 +61,9 @@
     "seconds": "ثانية",
     "add": "أضف العرض للسلة",
     "buy": "اشتري العرض الآن",
-    "unavailable": "غير متاح"
+    "unavailable": "غير متاح",
+    "previous": "العرض السابق",
+    "next": "العرض التالي"
   },
   "benefits": {
     "sectionLabel": "المميزات",

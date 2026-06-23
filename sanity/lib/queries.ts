@@ -243,6 +243,32 @@ export const siteSettingsQuery = groq`
       discountLabel,
       endsAt,
       "imageUrl": image.asset->url,
+      offers[]{
+        _key,
+        selectedSize,
+        selectedColor,
+        "imageUrl": image.asset->url,
+        product->{
+          legacyId,
+          name,
+          "slug": slug.current,
+          price,
+          originalPrice,
+          type,
+          size,
+          sizePrices,
+          stockStatus,
+          stockQuantity,
+          sizeStock,
+          color,
+          colors[]{
+            id,
+            name,
+            "imageUrl": coalesce(image.asset->url, imageUrl)
+          },
+          "imageUrl": coalesce(mainImage.asset->url, imageUrl)
+        }
+      },
       product->{
         legacyId,
         name,

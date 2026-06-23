@@ -1,4 +1,4 @@
-import { defineField, defineType } from "sanity";
+import { defineArrayMember, defineField, defineType } from "sanity";
 
 import { ProductColorDropdownInput } from "@/sanity/components/product-color-dropdown-input";
 import { ProductSizeDropdownInput } from "@/sanity/components/product-size-dropdown-input";
@@ -26,43 +26,77 @@ export const flashSaleSectionSettings = defineType({
     defineField({ name: "discountLabel", title: "Countdown label", type: "string" }),
     defineField({ name: "endsAt", title: "Countdown end time", type: "datetime" }),
     defineField({
-      name: "product",
-      title: "Sale product",
-      type: "reference",
-      to: [{ type: "product" }],
+      name: "offers",
+      title: "Flash sale products",
+      type: "array",
+      description: "Add products and lock a different size/color for each offer.",
+      of: [
+        defineArrayMember({
+          type: "object",
+          name: "flashSaleOffer",
+          title: "Flash sale product",
+          fields: [
+            defineField({
+              name: "product",
+              title: "Product",
+              type: "reference",
+              to: [{ type: "product" }],
+              validation: (Rule) => Rule.required(),
+            }),
+            defineField({
+              name: "selectedSize",
+              title: "Only this size",
+              type: "string",
+              description: "Optional. The offer will add this size only.",
+              components: { input: ProductSizeDropdownInput },
+              validation: (Rule) =>
+                Rule.custom((value, context) => {
+                  const parent = context.parent as { selectedColor?: string } | undefined;
+                  return !value && !parent?.selectedColor
+                    ? "Choose at least one fixed size or fixed color"
+                    : true;
+                }),
+            }),
+            defineField({
+              name: "selectedColor",
+              title: "Only this color",
+              type: "string",
+              description: "Optional. The offer will add this product color only.",
+              components: { input: ProductColorDropdownInput },
+            }),
+            defineField({
+              name: "image",
+              title: "Custom product image",
+              type: "image",
+              options: { hotspot: true },
+            }),
+          ],
+          preview: {
+            select: {
+              title: "product.name",
+              size: "selectedSize",
+              color: "selectedColor",
+              media: "product.mainImage",
+            },
+            prepare: ({ title, size, color, media }) => ({
+              title: title || "Select product",
+              subtitle: [size ? String(size).toUpperCase() : "", color || ""]
+                .filter(Boolean)
+                .join(" · "),
+              media,
+            }),
+          },
+        }),
+      ],
       validation: (Rule) =>
-        Rule.custom((value, context) =>
-          context.document?.enabled && !value ? "Select a product for the section" : true,
-        ),
-    }),
-    defineField({
-      name: "selectedSize",
-      title: "Only this size",
-      type: "string",
-      description: "Optional. The offer will add this size only.",
-      components: { input: ProductSizeDropdownInput },
-      validation: (Rule) =>
-        Rule.custom((value, context) =>
-          context.document?.enabled && !value && !context.document?.selectedColor
-            ? "Choose at least one fixed size or fixed color"
+        Rule.max(12).custom((offers, context) =>
+          context.document?.enabled && (!Array.isArray(offers) || offers.length === 0)
+            ? "Add at least one flash sale product"
             : true,
         ),
     }),
-    defineField({
-      name: "selectedColor",
-      title: "Only this color",
-      type: "string",
-      description: "Optional. The offer will add this product color only.",
-      components: { input: ProductColorDropdownInput },
-    }),
     defineField({ name: "addToCartLabel", title: "Add to cart label", type: "string" }),
     defineField({ name: "buyNowLabel", title: "Buy now label", type: "string" }),
-    defineField({
-      name: "image",
-      title: "Custom section image",
-      type: "image",
-      options: { hotspot: true },
-    }),
   ],
   preview: {
     prepare: () => ({

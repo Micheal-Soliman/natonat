@@ -15,9 +15,11 @@ type ProductSizes = {
   sizePrices?: Record<string, unknown>;
 };
 
-export function ProductSizeDropdownInput({ value, onChange }: StringInputProps) {
+export function ProductSizeDropdownInput({ value, onChange, path }: StringInputProps) {
   const client = useClient({ apiVersion: "2026-06-04" });
-  const productReference = useFormValue(["product"]) as { _ref?: string } | undefined;
+  const productReference = useFormValue([...path.slice(0, -1), "product"]) as
+    | { _ref?: string }
+    | undefined;
   const [sizes, setSizes] = useState<string[]>([]);
 
   useEffect(() => {
