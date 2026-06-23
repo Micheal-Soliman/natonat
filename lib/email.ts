@@ -3,10 +3,22 @@ import nodemailer from 'nodemailer';
 const smtpPort = Number(process.env.SMTP_PORT || 587);
 const smtpUser = process.env.SMTP_USER || process.env.EMAIL_USER;
 const smtpPass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
-const emailFrom = process.env.EMAIL_FROM || smtpUser;
+const useGmail = process.env.EMAIL_PROVIDER === 'gmail' || !process.env.SMTP_HOST;
+const senderAddress = useGmail
+  ? process.env.EMAIL_USER
+  : process.env.EMAIL_FROM || smtpUser;
+const senderName = process.env.EMAIL_FROM_NAME || (useGmail ? 'info@natonat.com' : 'natOnat');
+const emailReplyTo = process.env.EMAIL_REPLY_TO || process.env.EMAIL_FROM || 'info@natonat.com';
 
-const transporter = process.env.SMTP_HOST
+const transporter = useGmail
   ? nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    })
+  : nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: smtpPort,
       secure: process.env.SMTP_SECURE === 'true' || smtpPort === 465,
@@ -14,17 +26,10 @@ const transporter = process.env.SMTP_HOST
         user: smtpUser,
         pass: smtpPass,
       },
-    })
-  : nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
     });
 
 function getEmailFrom() {
-  return `"natOnat" <${emailFrom}>`;
+  return `"${senderName}" <${senderAddress}>`;
 }
 
 type OrderEmailItem = {
@@ -204,7 +209,7 @@ export async function sendOrderEmail(orderData: OrderEmailData) {
 
   const mailOptions = {
     from: getEmailFrom(),
-    replyTo: orderData.customer?.email || emailFrom,
+    replyTo: orderData.customer?.email || emailReplyTo,
     to: adminEmail,
     subject: `New Order: ${orderData.order_ref || 'N/A'}`,
     html: `
@@ -269,7 +274,7 @@ export async function sendCustomerConfirmationEmail(orderData: OrderEmailData) {
 
   const mailOptions = {
     from: getEmailFrom(),
-    replyTo: emailFrom,
+    replyTo: emailReplyTo,
     to: customerEmail,
     subject: `Order Confirmation - ${orderData.order_ref || 'N/A'}`,
     html: `
