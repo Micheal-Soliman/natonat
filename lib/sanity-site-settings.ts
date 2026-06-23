@@ -54,7 +54,6 @@ export type FlashSaleSectionSettings = {
   endsAt: string;
   selectedSize?: string;
   selectedColor?: string;
-  salePrice?: number;
   addToCartLabel?: string;
   buyNowLabel?: string;
   imageUrl?: string;

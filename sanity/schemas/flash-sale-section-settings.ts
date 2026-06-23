@@ -55,18 +55,6 @@ export const flashSaleSectionSettings = defineType({
       description: "Optional. The offer will add this product color only.",
       components: { input: ProductColorDropdownInput },
     }),
-    defineField({
-      name: "salePrice",
-      title: "Flash sale price",
-      type: "number",
-      description: "Final price for the selected size/color variant.",
-      validation: (Rule) =>
-        Rule.min(0).custom((value, context) =>
-          context.document?.enabled && typeof value !== "number"
-            ? "Enter the flash sale price"
-            : true,
-        ),
-    }),
     defineField({ name: "addToCartLabel", title: "Add to cart label", type: "string" }),
     defineField({ name: "buyNowLabel", title: "Buy now label", type: "string" }),
     defineField({

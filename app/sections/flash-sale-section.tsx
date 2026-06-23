@@ -55,7 +55,7 @@ export function FlashSaleSection({ settings }: { settings: FlashSaleSectionSetti
   const selectedColorName = colorVariant?.name || settings.selectedColor || product?.color;
   const basePrice = sizePrice?.price ?? product?.price ?? 0;
   const baseOriginalPrice = sizePrice?.originalPrice ?? product?.originalPrice ?? basePrice;
-  const salePrice = typeof settings.salePrice === "number" ? settings.salePrice : basePrice;
+  const salePrice = basePrice;
   const imageUrl = settings.imageUrl || colorVariant?.imageUrl || product?.imageUrl || "/logo-after.png";
   const sizeStock = sizeKey ? product?.sizeStock?.[sizeKey] : undefined;
   const isUnavailable =
@@ -134,8 +134,8 @@ export function FlashSaleSection({ settings }: { settings: FlashSaleSectionSetti
     router.push("/checkout");
   };
 
-  const discountPercent = basePrice > salePrice
-    ? Math.round((1 - salePrice / basePrice) * 100)
+  const discountPercent = baseOriginalPrice > salePrice
+    ? Math.round((1 - salePrice / baseOriginalPrice) * 100)
     : 0;
   const countdownBlocks = [
     { label: t("days"), value: remaining.days },
@@ -203,8 +203,8 @@ export function FlashSaleSection({ settings }: { settings: FlashSaleSectionSetti
 
           <div className="mt-5 flex flex-wrap items-baseline gap-3">
             <span className="text-4xl font-black text-[#EEBC3F]">EGP {salePrice}</span>
-            {basePrice > salePrice && (
-              <span className="text-lg font-bold text-white/35 line-through">EGP {basePrice}</span>
+            {baseOriginalPrice > salePrice && (
+              <span className="text-lg font-bold text-white/35 line-through">EGP {baseOriginalPrice}</span>
             )}
           </div>
 
