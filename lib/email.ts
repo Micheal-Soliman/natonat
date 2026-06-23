@@ -1,12 +1,31 @@
 import nodemailer from 'nodemailer';
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+const smtpPort = Number(process.env.SMTP_PORT || 587);
+const smtpUser = process.env.SMTP_USER || process.env.EMAIL_USER;
+const smtpPass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
+const emailFrom = process.env.EMAIL_FROM || smtpUser;
+
+const transporter = process.env.SMTP_HOST
+  ? nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: smtpPort,
+      secure: process.env.SMTP_SECURE === 'true' || smtpPort === 465,
+      auth: {
+        user: smtpUser,
+        pass: smtpPass,
+      },
+    })
+  : nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+function getEmailFrom() {
+  return `"natOnat" <${emailFrom}>`;
+}
 
 type OrderEmailItem = {
   line_id?: string;
@@ -179,12 +198,13 @@ function renderTotalsHtml(orderData: OrderEmailData) {
 }
 
 export async function sendOrderEmail(orderData: OrderEmailData) {
-  const adminEmail = 'natonateg@gmail.com';
+  const adminEmail = process.env.ORDER_NOTIFICATION_EMAIL || 'natonateg@gmail.com';
   const itemsHtml = (orderData.items || []).map(renderItemHtml).join('');
   const totalsHtml = renderTotalsHtml(orderData);
 
   const mailOptions = {
-    from: process.env.EMAIL_USER,
+    from: getEmailFrom(),
+    replyTo: orderData.customer?.email || emailFrom,
     to: adminEmail,
     subject: `New Order: ${orderData.order_ref || 'N/A'}`,
     html: `
@@ -248,7 +268,8 @@ export async function sendCustomerConfirmationEmail(orderData: OrderEmailData) {
   const totalsHtml = renderTotalsHtml(orderData);
 
   const mailOptions = {
-    from: process.env.EMAIL_USER,
+    from: getEmailFrom(),
+    replyTo: emailFrom,
     to: customerEmail,
     subject: `Order Confirmation - ${orderData.order_ref || 'N/A'}`,
     html: `
