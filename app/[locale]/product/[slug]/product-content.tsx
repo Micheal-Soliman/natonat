@@ -1160,6 +1160,13 @@ export default function ProductPageContent({
 
     const selected = new Map<number, Product>();
 
+    // CMS selections always come first and keep the editor-defined order.
+    (product.relatedProductIds || [])
+      .map((productId) => productById.get(productId))
+      .filter((item): item is Product => Boolean(item && item.id !== product.id))
+      .slice(0, RELATED_LIMIT)
+      .forEach((item) => selected.set(item.id, item));
+
     const addProducts = (
       predicate: (item: Product) => boolean,
       count: number

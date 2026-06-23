@@ -209,6 +209,21 @@ export const product = defineType({
       of: [defineArrayMember({ type: "string" })],
     }),
     defineField({
+      name: "relatedProducts",
+      title: "Related products",
+      type: "array",
+      group: "content",
+      description:
+        "Choose the products to show first in the Related Products section. The site fills any empty slots automatically.",
+      of: [
+        defineArrayMember({
+          type: "reference",
+          to: [{ type: "product" }],
+        }),
+      ],
+      validation: (Rule) => Rule.unique().max(4),
+    }),
+    defineField({
       name: "size",
       title: "Default size",
       type: "string",

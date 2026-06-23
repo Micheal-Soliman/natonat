@@ -17,6 +17,7 @@ export interface Product {
   color?: string;
   description?: string;
   features?: string[];
+  relatedProductIds?: number[];
   isBundle?: boolean;
   bundleItems?: {
     productId?: number;
