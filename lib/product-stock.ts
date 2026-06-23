@@ -32,6 +32,15 @@ export function isProductSizeOutOfStock(product: Product, size?: string | null) 
   return getProductSizeStockStatus(product, size) === "out_of_stock";
 }
 
+export function getAvailableStockQuantity(product: Product, size?: string | null) {
+  const sizeKey = size?.toLowerCase() as keyof NonNullable<Product["sizeStock"]> | undefined;
+  const sizeQuantity = sizeKey ? product.sizeStock?.[sizeKey]?.quantity : undefined;
+
+  if (typeof sizeQuantity === "number") return Math.max(0, sizeQuantity);
+  if (typeof product.stockQuantity === "number") return Math.max(0, product.stockQuantity);
+  return undefined;
+}
+
 type StockLabels = {
   inStock: string;
   lowStock: string;

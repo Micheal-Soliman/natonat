@@ -3,7 +3,11 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, ReactNode } from "react";
 
 import { useCatalogProducts } from "@/app/lib/catalog-context";
-import { isProductOutOfStock, isProductSizeOutOfStock } from "@/lib/product-stock";
+import {
+  getAvailableStockQuantity,
+  isProductOutOfStock,
+  isProductSizeOutOfStock,
+} from "@/lib/product-stock";
 
 export interface BundleSelection {
   productId: number;
@@ -106,6 +110,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
     [products]
   );
 
+  const getCartItemMaxQuantity = useCallback((item: Omit<CartItem, "quantity"> & { quantity?: number } | CartItem) => {
+    if (item.isBundle && item.bundleSelections?.length) {
+      const limits = item.bundleSelections.flatMap((selection) => {
+        const product = products.find((candidate) => candidate.id === selection.productId);
+        if (!product) return [];
+        const available = getAvailableStockQuantity(product, selection.size);
+        return typeof available === "number"
+          ? [Math.floor(available / Math.max(1, selection.quantity || 1))]
+          : [];
+      });
+      return limits.length ? Math.min(...limits) : undefined;
+    }
+
+    const product = products.find((candidate) => candidate.id === item.id);
+    return product ? getAvailableStockQuantity(product, item.size) : undefined;
+  }, [products]);
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -123,6 +144,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (isCartItemUnavailable(newItem)) return;
 
     const qty = newItem.quantity || 1;
+    const maxQuantity = getCartItemMaxQuantity(newItem);
+    if (typeof maxQuantity === "number" && maxQuantity <= 0) return;
 
     setItems((currentItems) => {
       const normalizedNewItem: Omit<CartItem, "quantity"> & { quantity?: number } = {
@@ -153,23 +176,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
             ? item
             : normalizedNewItem.isBundle && item.isBundle
               ? item.bundleKey === normalizedNewItem.bundleKey
-                ? { ...item, quantity: item.quantity + (normalizedNewItem.quantity || 1) }
+                ? { ...item, quantity: Math.min(item.quantity + (normalizedNewItem.quantity || 1), maxQuantity ?? Number.POSITIVE_INFINITY) }
                 : item
               : item.size === normalizedNewItem.size &&
                   item.color === normalizedNewItem.color &&
                   item.bundleKey === normalizedNewItem.bundleKey
-                ? { ...item, quantity: item.quantity + (normalizedNewItem.quantity || 1) }
+                ? { ...item, quantity: Math.min(item.quantity + (normalizedNewItem.quantity || 1), maxQuantity ?? Number.POSITIVE_INFINITY) }
                 : item
         );
       }
 
-      return [...currentItems, { ...normalizedNewItem, quantity: qty }];
+      return [...currentItems, { ...normalizedNewItem, quantity: Math.min(qty, maxQuantity ?? Number.POSITIVE_INFINITY) }];
     });
 
     if (options?.openCart !== false) {
       setIsOpen(true);
     }
-  }, [isCartItemUnavailable]);
+  }, [getCartItemMaxQuantity, isCartItemUnavailable]);
 
   const removeFromCart = useCallback((id: number, size?: string, color?: string, bundleKey?: string) => {
     setItems((currentItems) => 
@@ -210,11 +233,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
         (item.isBundle
           ? item.bundleKey === bundleKey
           : item.size === size && item.color === color && item.bundleKey === bundleKey)
-          ? { ...item, quantity: item.quantity + delta }
+          ? {
+              ...item,
+              quantity: delta > 0
+                ? Math.min(
+                    item.quantity + delta,
+                    getCartItemMaxQuantity(item) ?? Number.POSITIVE_INFINITY,
+                  )
+                : item.quantity + delta,
+            }
           : item
       );
     });
-  }, []);
+  }, [getCartItemMaxQuantity]);
 
   const updateCartItem = useCallback((
     id: number,

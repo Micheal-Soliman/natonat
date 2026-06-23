@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { sendOrderEmail, sendCustomerConfirmationEmail } from "@/lib/email";
 import { getCatalogProducts } from "@/lib/sanity-products";
+import { adjustInventoryForConfirmedOrder } from "@/lib/sanity-inventory";
 import type { Product } from "@/lib/products";
 
 type OrderLogBody = Record<string, unknown>;
@@ -16,6 +17,12 @@ type StoredOrder = OrderLogBody & {
   history?: OrderHistoryEntry[];
   aramex?: {
     trackingNumber?: string;
+  };
+  inventory?: {
+    status?: string;
+    adjustedProducts?: number;
+    reason?: string;
+    updatedAt?: string;
   };
 };
 
@@ -85,6 +92,18 @@ function shouldSendOrderEmail(order: StoredOrder) {
   }
 
   return false;
+}
+
+function shouldAdjustInventory(order: StoredOrder) {
+  const status = getOrderStatusValue(order.status);
+  const paymentStatus = getOrderStatusValue(order.payment_status);
+  const paymentMethod = getOrderStatusValue(order.payment_method);
+  const isConfirmed = status === "confirmed" || status === "shipped";
+  const isPaid = paymentStatus === "paid";
+  const isCashOnDelivery =
+    paymentMethod === "cod" || paymentStatus === "cash on delivery";
+
+  return isConfirmed && (isPaid || isCashOnDelivery);
 }
 
 type OrderItem = {
@@ -452,6 +471,39 @@ export async function POST(req: Request) {
       },
       { status: 502 }
     );
+  }
+
+  if (orderRef) {
+    let storedOrder = body as StoredOrder;
+    if (shouldAdjustInventory(storedOrder) && Array.isArray(storedOrder.items)) {
+      try {
+        const inventoryResult = await adjustInventoryForConfirmedOrder(
+          orderRef,
+          storedOrder.items as OrderItem[],
+        );
+        storedOrder = {
+          ...storedOrder,
+          inventory: {
+            ...inventoryResult,
+            updatedAt: new Date().toISOString(),
+          },
+        };
+      } catch (error) {
+        console.error("Failed to adjust Sanity inventory", {
+          order_ref: orderRef,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        storedOrder = {
+          ...storedOrder,
+          inventory: {
+            status: "failed",
+            reason: error instanceof Error ? error.message : "Inventory update failed",
+            updatedAt: new Date().toISOString(),
+          },
+        };
+      }
+      orderStore.set(orderRef, storedOrder);
+    }
   }
 
   return NextResponse.json({ ok: true, data: sheetsResponse, order_ref: orderRef });

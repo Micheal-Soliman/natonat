@@ -209,7 +209,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     const settings = await sanityClient.fetch<SiteSettingsQueryResult | null>(
       siteSettingsQuery,
       {},
-      { next: { revalidate: 60 } },
+      { next: { revalidate: 60, tags: ["site-settings", "products"] } },
     );
 
     return {

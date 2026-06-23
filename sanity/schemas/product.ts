@@ -48,10 +48,17 @@ const stockFields = [
   }),
   defineField({
     name: "quantity",
-    title: "Quantity",
+    title: "Remaining quantity",
     type: "number",
-    description: "Optional. If this is 0, this size is treated as out of stock.",
-    validation: (Rule) => Rule.min(0).integer(),
+    description: "Required for low stock. Confirmed orders subtract from this number automatically.",
+    hidden: ({ parent }) => parent?.status !== "low_stock",
+    validation: (Rule) =>
+      Rule.min(0).integer().custom((value, context) => {
+        const parent = context.parent as { status?: string } | undefined;
+        if (parent?.status !== "low_stock") return true;
+        if (typeof value !== "number") return "Enter the remaining quantity";
+        return value > 0 ? true : "Use Out of stock when the remaining quantity is 0";
+      }),
   }),
 ];
 
@@ -173,11 +180,18 @@ export const product = defineType({
     }),
     defineField({
       name: "stockQuantity",
-      title: "Stock quantity",
+      title: "Remaining quantity",
       type: "number",
       group: "inventory",
-      description: "Optional internal quantity. Leave empty if you only want to use the stock status.",
-      validation: (Rule) => Rule.min(0).integer(),
+      description: "Required for low stock. Confirmed orders subtract from this number automatically.",
+      hidden: ({ parent }) => parent?.stockStatus !== "low_stock",
+      validation: (Rule) =>
+        Rule.min(0).integer().custom((value, context) => {
+          const parent = context.parent as { stockStatus?: string } | undefined;
+          if (parent?.stockStatus !== "low_stock") return true;
+          if (typeof value !== "number") return "Enter the remaining quantity";
+          return value > 0 ? true : "Use Out of stock when the remaining quantity is 0";
+        }),
     }),
     defineField({
       name: "sizeStock",

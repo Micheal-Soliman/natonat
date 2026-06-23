@@ -69,7 +69,7 @@ export async function getCatalogProducts(): Promise<Product[]> {
     const sanityProducts = await sanityClient.fetch<SanityProduct[]>(
       activeProductsQuery,
       {},
-      { next: { revalidate: 60 } },
+      { next: { revalidate: 60, tags: ["products"] } },
     );
     const normalized = normalizeProducts(sanityProducts);
     return normalized.length > 0 ? normalized : fallbackProducts;
@@ -84,7 +84,7 @@ export async function getCatalogProductBySlug(slug: string): Promise<Product | u
     const sanityProduct = await sanityClient.fetch<SanityProduct | null>(
       productBySlugQuery,
       { slug },
-      { next: { revalidate: 60 } },
+      { next: { revalidate: 60, tags: ["products"] } },
     );
     const normalized = sanityProduct ? normalizeProduct(sanityProduct) : null;
     return normalized || fallbackProducts.find((product) => product.slug === slug);
