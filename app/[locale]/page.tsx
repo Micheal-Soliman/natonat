@@ -54,7 +54,11 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
 
   return (
     <Suspense fallback={<Loading />}>
-      <HomeContent locale={locale} flashSale={settings.flashSale} />
+      <HomeContent
+        locale={locale}
+        flashSale={settings.flashSale}
+        flashSaleSection={settings.flashSaleSection}
+      />
     </Suspense>
   );
 }
@@ -72,9 +76,11 @@ function SectionPlaceholder() {
 function HomeContent({
   locale,
   flashSale,
+  flashSaleSection,
 }: {
   locale: string;
   flashSale: Awaited<ReturnType<typeof getSiteSettings>>["flashSale"];
+  flashSaleSection: Awaited<ReturnType<typeof getSiteSettings>>["flashSaleSection"];
 }) {
   return (
     <>
@@ -83,7 +89,7 @@ function HomeContent({
       <main>
         <Hero />
         <BenefitsStrip />
-        <FlashSaleSection settings={flashSale} />
+        <FlashSaleSection settings={flashSaleSection} />
         <FeaturedCollections />
         <BestSellers />
         <TravelSets />

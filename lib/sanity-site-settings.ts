@@ -1,25 +1,7 @@
 import { sanityClient } from "@/sanity/lib/client";
 import { siteSettingsQuery } from "@/sanity/lib/queries";
 
-export type FlashSaleSettings = {
-  _updatedAt?: string;
-  enabled: boolean;
-  eyebrow: string;
-  title: string;
-  description: string;
-  badge: string;
-  discountLabel: string;
-  endsAt: string;
-  ctaLabel: string;
-  secondaryLabel: string;
-  sectionEnabled: boolean;
-  selectedSize?: string;
-  selectedColor?: string;
-  salePrice?: number;
-  addToCartLabel?: string;
-  buyNowLabel?: string;
-  imageUrl?: string;
-  product?: {
+export type FlashSaleProduct = {
     legacyId?: number;
     name?: string;
     slug?: string;
@@ -44,7 +26,39 @@ export type FlashSaleSettings = {
     };
     color?: string;
     colors?: Array<{ id?: string; name?: string; imageUrl?: string }>;
-  };
+};
+
+export type FlashSaleSettings = {
+  _updatedAt?: string;
+  enabled: boolean;
+  eyebrow: string;
+  title: string;
+  description: string;
+  badge: string;
+  discountLabel: string;
+  endsAt: string;
+  ctaLabel: string;
+  secondaryLabel: string;
+  imageUrl?: string;
+  product?: FlashSaleProduct;
+};
+
+export type FlashSaleSectionSettings = {
+  _updatedAt?: string;
+  sectionEnabled: boolean;
+  eyebrow: string;
+  title: string;
+  description: string;
+  badge: string;
+  discountLabel: string;
+  endsAt: string;
+  selectedSize?: string;
+  selectedColor?: string;
+  salePrice?: number;
+  addToCartLabel?: string;
+  buyNowLabel?: string;
+  imageUrl?: string;
+  product?: FlashSaleProduct;
 };
 
 export type SizeGuideItem = {
@@ -72,12 +86,15 @@ export type SizeGuideSettings = {
 
 export type SiteSettings = {
   flashSale: FlashSaleSettings;
+  flashSaleSection: FlashSaleSectionSettings;
   sizeGuide: SizeGuideSettings;
 };
 
 type SiteSettingsQueryResult = {
   legacy?: Partial<SiteSettings> | null;
   flashSale?: Partial<FlashSaleSettings> | null;
+  flashSaleSection?: Partial<FlashSaleSectionSettings> | null;
+  legacyFlashSaleSection?: Partial<FlashSaleSectionSettings> | null;
   sizeGuide?: Partial<SizeGuideSettings> | null;
 };
 
@@ -101,7 +118,6 @@ const fallbackSizeGuide: SizeGuideSettings = {
 
 const fallbackFlashSale: FlashSaleSettings = {
   enabled: false,
-  sectionEnabled: false,
   eyebrow: "Limited time",
   title: "Flash Sale",
   description: "Save on selected natOnat travel essentials before the offer ends.",
@@ -110,6 +126,18 @@ const fallbackFlashSale: FlashSaleSettings = {
   endsAt: "",
   ctaLabel: "Shop offer",
   secondaryLabel: "Not now",
+};
+
+const fallbackFlashSaleSection: FlashSaleSectionSettings = {
+  sectionEnabled: false,
+  eyebrow: "Limited time",
+  title: "Flash Sale",
+  description: "One selected option at a special price for a limited time.",
+  badge: "Sale",
+  discountLabel: "Offer ends in",
+  endsAt: "",
+  addToCartLabel: "Add offer to cart",
+  buyNowLabel: "Buy offer now",
 };
 
 function mergeSizeGuide(sizeGuide?: Partial<SizeGuideSettings>): SizeGuideSettings {
@@ -137,9 +165,21 @@ function mergeFlashSale(flashSale?: Partial<FlashSaleSettings>): FlashSaleSettin
     ...fallbackFlashSale,
     ...flashSale,
     enabled: Boolean(flashSale?.enabled),
-    sectionEnabled: Boolean(flashSale?.sectionEnabled),
     ctaLabel: flashSale?.ctaLabel || fallbackFlashSale.ctaLabel,
     secondaryLabel: flashSale?.secondaryLabel || fallbackFlashSale.secondaryLabel,
+  };
+}
+
+function mergeFlashSaleSection(
+  flashSaleSection?: Partial<FlashSaleSectionSettings>,
+): FlashSaleSectionSettings {
+  return {
+    ...fallbackFlashSaleSection,
+    ...flashSaleSection,
+    sectionEnabled: Boolean(flashSaleSection?.sectionEnabled),
+    addToCartLabel:
+      flashSaleSection?.addToCartLabel || fallbackFlashSaleSection.addToCartLabel,
+    buyNowLabel: flashSaleSection?.buyNowLabel || fallbackFlashSaleSection.buyNowLabel,
   };
 }
 
@@ -153,12 +193,16 @@ export async function getSiteSettings(): Promise<SiteSettings> {
 
     return {
       flashSale: mergeFlashSale(settings?.flashSale || settings?.legacy?.flashSale),
+      flashSaleSection: mergeFlashSaleSection(
+        settings?.flashSaleSection || settings?.legacyFlashSaleSection || undefined,
+      ),
       sizeGuide: mergeSizeGuide(settings?.sizeGuide || settings?.legacy?.sizeGuide),
     };
   } catch (error) {
     console.error("Falling back to local site settings after Sanity fetch failed", error);
     return {
       flashSale: fallbackFlashSale,
+      flashSaleSection: fallbackFlashSaleSection,
       sizeGuide: fallbackSizeGuide,
     };
   }

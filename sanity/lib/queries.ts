@@ -196,6 +196,78 @@ export const siteSettingsQuery = groq`
         "imageUrl": coalesce(mainImage.asset->url, imageUrl)
       }
     },
+    "legacyFlashSaleSection": *[_type == "flashSaleSettings"][0] {
+      _updatedAt,
+      sectionEnabled,
+      selectedSize,
+      selectedColor,
+      salePrice,
+      addToCartLabel,
+      buyNowLabel,
+      eyebrow,
+      title,
+      description,
+      badge,
+      discountLabel,
+      endsAt,
+      "imageUrl": image.asset->url,
+      product->{
+        legacyId,
+        name,
+        "slug": slug.current,
+        price,
+        originalPrice,
+        type,
+        size,
+        sizePrices,
+        stockStatus,
+        stockQuantity,
+        sizeStock,
+        color,
+        colors[]{
+          id,
+          name,
+          "imageUrl": coalesce(image.asset->url, imageUrl)
+        },
+        "imageUrl": coalesce(mainImage.asset->url, imageUrl)
+      }
+    },
+    "flashSaleSection": *[_type == "flashSaleSectionSettings"][0] {
+      _updatedAt,
+      "sectionEnabled": enabled,
+      selectedSize,
+      selectedColor,
+      salePrice,
+      addToCartLabel,
+      buyNowLabel,
+      eyebrow,
+      title,
+      description,
+      badge,
+      discountLabel,
+      endsAt,
+      "imageUrl": image.asset->url,
+      product->{
+        legacyId,
+        name,
+        "slug": slug.current,
+        price,
+        originalPrice,
+        type,
+        size,
+        sizePrices,
+        stockStatus,
+        stockQuantity,
+        sizeStock,
+        color,
+        colors[]{
+          id,
+          name,
+          "imageUrl": coalesce(image.asset->url, imageUrl)
+        },
+        "imageUrl": coalesce(mainImage.asset->url, imageUrl)
+      }
+    },
     "sizeGuide": *[_type == "sizeGuideSettings"][0] {
       label,
       title,

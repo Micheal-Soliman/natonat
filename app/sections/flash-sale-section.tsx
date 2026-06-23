@@ -9,7 +9,7 @@ import { useCart } from "@/app/lib/cart-context";
 import { useToast } from "@/app/components/toast-provider";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "@/i18n/routing";
-import type { FlashSaleSettings } from "@/lib/sanity-site-settings";
+import type { FlashSaleSectionSettings } from "@/lib/sanity-site-settings";
 import { trackMetaPixelEvent } from "@/lib/meta-pixel";
 
 type FlashSaleSizeKey = "s" | "m" | "l" | "xl";
@@ -30,7 +30,7 @@ function formatNumber(value: number) {
   return String(value).padStart(2, "0");
 }
 
-export function FlashSaleSection({ settings }: { settings: FlashSaleSettings }) {
+export function FlashSaleSection({ settings }: { settings: FlashSaleSectionSettings }) {
   const t = useTranslations("flashSaleSection");
   const toastT = useTranslations("commerceToast");
   const router = useRouter();
