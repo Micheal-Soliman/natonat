@@ -459,7 +459,7 @@ export function BestSellers() {
                             <div className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-white/45">
                               {t('size')}
                             </div>
-                            <div className="grid grid-cols-4 gap-1.5">
+                            <div className="grid grid-cols-2 gap-1.5">
                               {sizeOptions.map((size) => {
                                 const isSelected = selection.size === size.id;
                                 const isSizeUnavailable = isProductSizeOutOfStock(product, size.id);
@@ -472,7 +472,7 @@ export function BestSellers() {
                                     aria-pressed={isSelected}
                                     disabled={isSizeUnavailable}
                                     onClick={() => updateQuickSelection(product.id, { size: size.id })}
-                                    className={`min-h-12 rounded-xl border px-1.5 py-1.5 text-center transition-all disabled:cursor-not-allowed disabled:opacity-45 ${
+                                    className={`min-w-0 min-h-12 rounded-xl border px-2 py-1.5 text-center transition-all disabled:cursor-not-allowed disabled:opacity-45 ${
                                       isSelected
                                         ? "border-[#EEBC3F] bg-[#EEBC3F] text-[#0F1A26] shadow-sm"
                                         : "border-white/10 bg-white/10 text-white/70 hover:border-[#EEBC3F]/60 hover:text-white"
