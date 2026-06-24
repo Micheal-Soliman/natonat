@@ -117,7 +117,7 @@ export function FlashSaleSection({ settings }: { settings: FlashSaleSectionSetti
 
   const handleAdd = () => {
     if (isUnavailable) return;
-    addToCart(cartItem, { openCart: false });
+    if (!addToCart(cartItem, { openCart: false })) return;
     trackAdd();
     showToast({
       title: toastT("addedToCart"),

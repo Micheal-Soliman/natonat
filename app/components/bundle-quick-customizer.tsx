@@ -195,7 +195,7 @@ export function BundleQuickCustomizer({
 
   const handleAdd = () => {
     if (hasUnavailableSelection) return;
-    addToCart(cartItem, { openCart: false });
+    if (!addToCart(cartItem, { openCart: false })) return;
     showToast({
       title: toastT("bundleAddedToCart"),
       description: product.name,

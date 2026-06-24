@@ -348,7 +348,7 @@ function ShopContent() {
   const handleQuickAdd = (product: Product) => {
     const selection = getQuickSelection(product);
     if (isProductOutOfStock(product) || isProductSizeOutOfStock(product, selection.size)) return;
-    addToCart(getQuickCartItem(product), { openCart: false });
+    if (!addToCart(getQuickCartItem(product), { openCart: false })) return;
     showToast({
       title: toastT("addedToCart"),
       description: product.name,

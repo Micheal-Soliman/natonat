@@ -959,7 +959,10 @@
   "stock": {
     "inStock": "In stock",
     "lowStock": "Low stock",
-    "outOfStock": "Out of stock"
+    "outOfStock": "Out of stock",
+    "limitTitle": "Only {count} left",
+    "limitDescription": "You can't add {requested} of {product}. Only {count} available.",
+    "unavailableDescription": "{product} is currently out of stock."
   },
   "bundleCustomizer": {
     "unavailable": "Unavailable",

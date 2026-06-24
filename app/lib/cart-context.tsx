@@ -1,8 +1,10 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, ReactNode } from "react";
+import { useTranslations } from "next-intl";
 
 import { useCatalogProducts } from "@/app/lib/catalog-context";
+import { useToast } from "@/app/components/toast-provider";
 import {
   getAvailableStockQuantity,
   isProductOutOfStock,
@@ -46,7 +48,11 @@ interface CartContextType {
   addToCart: (
     item: Omit<CartItem, "quantity"> & { quantity?: number },
     options?: { openCart?: boolean }
-  ) => void;
+  ) => boolean;
+  validateQuantity: (
+    item: Omit<CartItem, "quantity"> & { quantity?: number } | CartItem,
+    requestedQuantity: number
+  ) => boolean;
   removeFromCart: (id: number, size?: string, color?: string, bundleKey?: string) => void;
   updateQuantity: (id: number, delta: number, size?: string, color?: string, bundleKey?: string) => void;
   updateCartItem: (
@@ -71,6 +77,8 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const products = useCatalogProducts();
+  const stockT = useTranslations("stock");
+  const { showToast } = useToast();
   const [items, setItems] = useState<CartItem[]>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -133,6 +141,33 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return limits.length ? Math.min(...limits) : undefined;
   }, [products]);
 
+  const validateQuantity = useCallback((
+    item: Omit<CartItem, "quantity"> & { quantity?: number } | CartItem,
+    requestedQuantity: number,
+  ) => {
+    const maxQuantity = getCartItemMaxQuantity(item);
+    const unavailable = isCartItemUnavailable(item);
+
+    if (!unavailable && (typeof maxQuantity !== "number" || requestedQuantity <= maxQuantity)) {
+      return true;
+    }
+
+    const availableQuantity = Math.max(0, maxQuantity ?? 0);
+    showToast({
+      title: availableQuantity > 0
+        ? stockT("limitTitle", { count: availableQuantity })
+        : stockT("outOfStock"),
+      description: availableQuantity > 0
+        ? stockT("limitDescription", {
+            product: item.name,
+            requested: requestedQuantity,
+            count: availableQuantity,
+          })
+        : stockT("unavailableDescription", { product: item.name }),
+    });
+    return false;
+  }, [getCartItemMaxQuantity, isCartItemUnavailable, showToast, stockT]);
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -147,34 +182,31 @@ export function CartProvider({ children }: { children: ReactNode }) {
     newItem: Omit<CartItem, "quantity"> & { quantity?: number },
     options?: { openCart?: boolean }
   ) => {
-    if (isCartItemUnavailable(newItem)) return;
-
     const qty = newItem.quantity || 1;
-    const maxQuantity = getCartItemMaxQuantity(newItem);
-    if (typeof maxQuantity === "number" && maxQuantity <= 0) return;
+    const normalizedNewItem: Omit<CartItem, "quantity"> & { quantity?: number } = {
+      ...newItem,
+      bundleKey:
+        newItem.isBundle
+          ? newItem.bundleKey || JSON.stringify(newItem.bundleSelections || [])
+          : newItem.bundleKey,
+    };
+    const existingItem = items.find((item) => {
+      if (item.id !== normalizedNewItem.id) return false;
+
+      if (normalizedNewItem.isBundle && item.isBundle) {
+        return item.bundleKey === normalizedNewItem.bundleKey;
+      }
+
+      return item.size === normalizedNewItem.size &&
+        item.color === normalizedNewItem.color &&
+        item.bundleKey === normalizedNewItem.bundleKey;
+    });
+    const requestedQuantity = (existingItem?.quantity || 0) + qty;
+
+    if (!validateQuantity(normalizedNewItem, requestedQuantity)) return false;
 
     setItems((currentItems) => {
-      const normalizedNewItem: Omit<CartItem, "quantity"> & { quantity?: number } = {
-        ...newItem,
-        bundleKey:
-          newItem.isBundle
-            ? newItem.bundleKey || JSON.stringify(newItem.bundleSelections || [])
-            : newItem.bundleKey,
-      };
-
-      const existingItem = currentItems.find((item) => {
-        if (item.id !== normalizedNewItem.id) return false;
-
-        // Bundles: match by bundleSelections
-        if (normalizedNewItem.isBundle && item.isBundle) {
-          return item.bundleKey === normalizedNewItem.bundleKey;
-        }
-
-        // Regular items: match by size/color
-        return item.size === normalizedNewItem.size &&
-          item.color === normalizedNewItem.color &&
-          item.bundleKey === normalizedNewItem.bundleKey;
-      });
+      const maxQuantity = getCartItemMaxQuantity(normalizedNewItem);
 
       if (existingItem) {
         return currentItems.map((item) =>
@@ -198,7 +230,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (options?.openCart !== false) {
       setIsOpen(true);
     }
-  }, [getCartItemMaxQuantity, isCartItemUnavailable]);
+    return true;
+  }, [getCartItemMaxQuantity, items, validateQuantity]);
 
   const removeFromCart = useCallback((id: number, size?: string, color?: string, bundleKey?: string) => {
     setItems((currentItems) => 
@@ -213,17 +246,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const updateQuantity = useCallback((id: number, delta: number, size?: string, color?: string, bundleKey?: string) => {
+    const targetItem = items.find(
+      (item) =>
+        item.id === id &&
+        (item.isBundle
+          ? item.bundleKey === bundleKey
+          : item.size === size && item.color === color && item.bundleKey === bundleKey)
+    );
+
+    if (!targetItem) return;
+    if (delta > 0 && !validateQuantity(targetItem, targetItem.quantity + delta)) return;
+
     setItems((currentItems) => {
-      const targetItem = currentItems.find(
-        (item) =>
-          item.id === id &&
-          (item.isBundle
-            ? item.bundleKey === bundleKey
-            : item.size === size && item.color === color && item.bundleKey === bundleKey)
-      );
-      
       // If decreasing and quantity would become 0, remove the item
-      if (delta < 0 && targetItem && targetItem.quantity <= 1) {
+      if (delta < 0 && targetItem.quantity <= 1) {
         return currentItems.filter(
           (item) =>
             item.id !== id
@@ -251,7 +287,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           : item
       );
     });
-  }, [getCartItemMaxQuantity]);
+  }, [getCartItemMaxQuantity, items, validateQuantity]);
 
   const updateCartItem = useCallback((
     id: number,
@@ -377,6 +413,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       value={{
         items: catalogItems,
         addToCart,
+        validateQuantity,
         removeFromCart,
         updateQuantity,
         updateCartItem,

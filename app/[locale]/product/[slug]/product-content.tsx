@@ -46,7 +46,7 @@ interface ProductDetailedDescriptionProps {
     size?: string;
     color?: string;
     quantity: number;
-  }) => void;
+  }) => boolean;
 }
 
 interface ProductDetailedDescriptionIntroProps {
@@ -536,7 +536,7 @@ function ProductDetailedDescriptionFull({ product, selectedSize, quantity, t, ad
         <p className="text-[#0F1A26]/70 text-sm mb-3">{tp(`${product.slug}.cta.content`)}</p>
         <Button
           onClick={() => {
-            addToCart({
+            const wasAdded = addToCart({
               id: Number(product.id),
               name: product.name,
               slug: product.slug,
@@ -548,6 +548,7 @@ function ProductDetailedDescriptionFull({ product, selectedSize, quantity, t, ad
               color: product.color,
               quantity: quantity,
             });
+            if (!wasAdded) return;
             trackMetaPixelEvent("AddToCart", {
               content_ids: [String(product.id)],
               contents: [{
@@ -596,7 +597,7 @@ export default function ProductPageContent({
   const stockT = useTranslations('stock');
   const locale = useLocale();
   const { showToast } = useToast();
-  const { addToCart, setBuyNowItem } = useCart();
+  const { addToCart, setBuyNowItem, validateQuantity } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const router = useRouter();
   const [selectedSize, setSelectedSize] = useState(() => getInitialSelectedSize(product));
@@ -808,7 +809,7 @@ export default function ProductPageContent({
 
   const handleStickyAddToCart = useCallback(() => {
     if (isUnavailable) return;
-    addToCart(buildCartItem(), { openCart: false });
+    if (!addToCart(buildCartItem(), { openCart: false })) return;
     trackAddToCart();
     showToast({
       title: toastT("addedToCart"),
@@ -1898,7 +1899,12 @@ export default function ProductPageContent({
                     </button>
                     <span className="flex-1 sm:flex-none sm:w-12 text-center font-bold text-[#0F1A26] text-lg sm:text-xl">{quantity}</span>
                     <button
-                      onClick={() => setQuantity(quantity + 1)}
+                      onClick={() => {
+                        const requestedQuantity = quantity + 1;
+                        if (validateQuantity(buildCartItem(), requestedQuantity)) {
+                          setQuantity(requestedQuantity);
+                        }
+                      }}
                       className="flex-1 sm:flex-none sm:w-12 h-14 sm:h-16 flex items-center justify-center text-[#0F1A26]/60 hover:bg-[#EEBC3F]/10 hover:text-[#EEBC3F] transition-all text-lg sm:text-xl font-bold"
                     >
                       +

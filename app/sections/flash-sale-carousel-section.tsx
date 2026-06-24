@@ -152,7 +152,7 @@ export function FlashSaleSection({ settings }: { settings: FlashSaleSectionSetti
 
   const handleAdd = (resolved: ResolvedOffer, index: number) => {
     if (resolved.isUnavailable) return;
-    addToCart(makeCartItem(resolved, settings, index), { openCart: false });
+    if (!addToCart(makeCartItem(resolved, settings, index), { openCart: false })) return;
     trackAdd(resolved);
     const details = [resolved.size, resolved.color].filter(Boolean).join(" - ");
     showToast({
