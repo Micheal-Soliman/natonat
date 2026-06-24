@@ -8,7 +8,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, CreditCard, Truck, Check, MapPin, Phone, Mail, Newspaper, Store, Package, Search, ChevronDown, ShoppingBag } from "lucide-react";
+import { ArrowLeft, CreditCard, Truck, Check, MapPin, Phone, Store, Package, Search, ChevronDown, ShoppingBag, ShieldCheck } from "lucide-react";
 import { useCart, type CartItem } from "@/app/lib/cart-context";
 import { trackMetaPixelEvent } from "@/lib/meta-pixel";
 import { useCatalogProducts } from "@/app/lib/catalog-context";
@@ -33,6 +33,52 @@ const popularCityNames = [
   "Ismailia",
   "Port Said",
 ];
+
+const egyptGovernorates = [
+  { value: "Cairo", ar: "القاهرة", en: "Cairo" },
+  { value: "Giza", ar: "الجيزة", en: "Giza" },
+  { value: "Alexandria", ar: "الإسكندرية", en: "Alexandria" },
+  { value: "Dakahlia", ar: "الدقهلية", en: "Dakahlia" },
+  { value: "Red Sea", ar: "البحر الأحمر", en: "Red Sea" },
+  { value: "Beheira", ar: "البحيرة", en: "Beheira" },
+  { value: "Fayoum", ar: "الفيوم", en: "Fayoum" },
+  { value: "Gharbia", ar: "الغربية", en: "Gharbia" },
+  { value: "Ismailia", ar: "الإسماعيلية", en: "Ismailia" },
+  { value: "Menofia", ar: "المنوفية", en: "Menofia" },
+  { value: "Minya", ar: "المنيا", en: "Minya" },
+  { value: "Qaliubiya", ar: "القليوبية", en: "Qaliubiya" },
+  { value: "New Valley", ar: "الوادي الجديد", en: "New Valley" },
+  { value: "Suez", ar: "السويس", en: "Suez" },
+  { value: "Aswan", ar: "أسوان", en: "Aswan" },
+  { value: "Assiut", ar: "أسيوط", en: "Assiut" },
+  { value: "Beni Suef", ar: "بني سويف", en: "Beni Suef" },
+  { value: "Port Said", ar: "بورسعيد", en: "Port Said" },
+  { value: "Damietta", ar: "دمياط", en: "Damietta" },
+  { value: "Sharkia", ar: "الشرقية", en: "Sharkia" },
+  { value: "South Sinai", ar: "جنوب سيناء", en: "South Sinai" },
+  { value: "Kafr El Sheikh", ar: "كفر الشيخ", en: "Kafr El Sheikh" },
+  { value: "Matrouh", ar: "مطروح", en: "Matrouh" },
+  { value: "Luxor", ar: "الأقصر", en: "Luxor" },
+  { value: "Qena", ar: "قنا", en: "Qena" },
+  { value: "North Sinai", ar: "شمال سيناء", en: "North Sinai" },
+  { value: "Sohag", ar: "سوهاج", en: "Sohag" },
+];
+
+const arabicCityNames: Record<string, string> = {
+  Cairo: "القاهرة",
+  "New Cairo": "القاهرة الجديدة / التجمع",
+  "Nasr City": "مدينة نصر",
+  Maadi: "المعادي",
+  Giza: "الجيزة",
+  "Sheikh Zayed City": "الشيخ زايد",
+  "October City": "6 أكتوبر",
+  Alexandria: "الإسكندرية",
+  Mansoura: "المنصورة",
+  Tanta: "طنطا",
+  Zagazig: "الزقازيق",
+  Ismailia: "الإسماعيلية",
+  "Port Said": "بورسعيد",
+};
 
 const ARAMEX_CITIES_CACHE_KEY = "natonat-aramex-cities-eg";
 const ARAMEX_CITIES_CACHE_TTL = 24 * 60 * 60 * 1000;
@@ -400,12 +446,10 @@ function CheckoutContent() {
   const [formData, setFormData] = useState({
     email: "",
     firstName: "",
-    lastName: "",
     address: "",
+    governorate: "",
     city: "",
-    postCode: "",
     phone: "",
-    newsletter: false,
   });
   const [aramexCities, setAramexCities] = useState<string[]>([]);
   const [loadingCities, setLoadingCities] = useState(false);
@@ -511,8 +555,8 @@ function CheckoutContent() {
     }
   };
 
-  const [paymentMethod, setPaymentMethod] = useState("");
-  const [deliveryMethod, setDeliveryMethod] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("cod");
+  const [deliveryMethod, setDeliveryMethod] = useState("delivery");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess] = useState(false);
   const [orderId] = useState<string>("");
@@ -551,20 +595,19 @@ function CheckoutContent() {
       /^01[0125]\d{8}$/.test(phoneDigits) ||
       /^201[0125]\d{8}$/.test(phoneDigits);
 
-    if (!emailValue) nextErrors.email = requiredMessage;
-    else if (!isValidEmail) nextErrors.email = invalidEmailMessage;
+    if (emailValue && !isValidEmail) nextErrors.email = invalidEmailMessage;
 
     if (!deliveryMethod) nextErrors.deliveryMethod = requiredMessage;
 
     if (deliveryMethod) {
       if (!formData.firstName.trim()) nextErrors.firstName = requiredMessage;
-      if (!formData.lastName.trim()) nextErrors.lastName = requiredMessage;
       if (!formData.phone.trim()) nextErrors.phone = requiredMessage;
       else if (!isValidEgyptPhone) nextErrors.phone = invalidPhoneMessage;
     }
 
     if (deliveryMethod === "delivery") {
       if (!formData.address.trim()) nextErrors.address = requiredMessage;
+      if (!formData.governorate) nextErrors.governorate = requiredMessage;
       if (!formData.city || !aramexCities.includes(formData.city)) {
         nextErrors.city = invalidCityMessage;
       }
@@ -669,7 +712,7 @@ function CheckoutContent() {
             billing_data: {
               apartment: "NA",
               first_name: formData.firstName || "Customer",
-              last_name: formData.lastName || "NA",
+              last_name: "NA",
               street: formData.address || "NA",
               building: "NA",
               phone_number: formData.phone,
@@ -706,7 +749,7 @@ function CheckoutContent() {
         const shippingRule = getShippingRule({
           deliveryMethod,
           subtotal: checkoutSubtotal,
-          city: formData.city,
+          city: formData.governorate,
         });
 
         const orderLogRes = await fetch("/api/orders/log", {
@@ -727,10 +770,10 @@ function CheckoutContent() {
               email: formData.email,
               phone: formData.phone,
               first_name: formData.firstName,
-              last_name: formData.lastName,
+              last_name: "",
               city: formData.city,
+              governorate: formData.governorate,
               address: formData.address,
-              postCode: formData.postCode,
             },
             items: checkoutItems.map((item) => serializeOrderItem(item, products)),
             paymob: {
@@ -781,12 +824,12 @@ function CheckoutContent() {
           orderRef,
           customer: {
             first_name: formData.firstName,
-            last_name: formData.lastName,
+            last_name: "",
             phone: formData.phone,
             email: formData.email,
             address: formData.address,
+            governorate: formData.governorate,
             city: formData.city,
-            postCode: formData.postCode,
           },
           items: checkoutItems.map((item) => ({
             name: item.name,
@@ -831,7 +874,7 @@ function CheckoutContent() {
     const shippingRuleCOD = getShippingRule({
       deliveryMethod,
       subtotal: checkoutSubtotal,
-      city: formData.city,
+      city: formData.governorate,
     });
 
     try {
@@ -856,10 +899,10 @@ function CheckoutContent() {
             email: formData.email,
             phone: formData.phone,
             first_name: formData.firstName,
-            last_name: formData.lastName,
+            last_name: "",
             city: formData.city,
+            governorate: formData.governorate,
             address: formData.address,
-            postCode: formData.postCode,
           },
 
           items: checkoutItems.map((item) => serializeOrderItem(item, products)),
@@ -907,11 +950,11 @@ function CheckoutContent() {
     if (deliveryMethod === "pickup") return 0;
     if (checkoutSubtotal > 1000) return 0;
 
-    return isDiscountShippingCity(formData.city) ? 75 : 100;
+    return isDiscountShippingCity(formData.governorate) ? 75 : 100;
   }, [
     deliveryMethod,
     checkoutSubtotal,
-    formData.city
+    formData.governorate
   ]);
   const total = useMemo(
     () => checkoutSubtotal + shipping,
@@ -963,33 +1006,6 @@ function CheckoutContent() {
     fieldErrors[field] ? (
       <p className="mt-1.5 text-xs font-semibold text-red-600">{fieldErrors[field]}</p>
     ) : null;
-
-  const checkoutStepLabels = t.raw("steps") as string[];
-  const contactStepDone = Boolean(formData.email.trim());
-  const deliveryStepDone =
-    Boolean(deliveryMethod) &&
-    Boolean(formData.firstName.trim() && formData.lastName.trim() && formData.phone.trim()) &&
-    (deliveryMethod === "pickup" || Boolean(formData.city && formData.address.trim()));
-  const paymentStepDone = Boolean(paymentMethod);
-  const reviewStepDone = contactStepDone && deliveryStepDone && paymentStepDone && hasCheckoutItems;
-  const checkoutStepStatus = [
-    contactStepDone,
-    deliveryStepDone,
-    paymentStepDone,
-    reviewStepDone,
-  ];
-  const visibleCheckoutStepLabels = checkoutStepLabels;
-  const checkoutStepAnchors = [
-    "#checkout-details",
-    "#checkout-shipping",
-    "#checkout-payment",
-    "#checkout-review",
-  ];
-  const firstIncompleteCheckoutStep = checkoutStepStatus.findIndex((isDone) => !isDone);
-  const currentCheckoutStepIndex =
-    firstIncompleteCheckoutStep === -1
-      ? visibleCheckoutStepLabels.length - 1
-      : firstIncompleteCheckoutStep;
 
   if (isSuccess) {
     return (
@@ -1104,7 +1120,7 @@ function CheckoutContent() {
   return (
     <>
       <Navigation />
-      <main className="min-h-screen bg-[#F1EBE3] pb-28 lg:pb-0">
+      <main className="min-h-screen bg-[#F1EBE3] pb-28">
         {/* Header - Clean */}
         <div className="bg-[#0F1A26] pt-28 pb-16 md:pt-40 md:pb-24">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -1126,127 +1142,12 @@ function CheckoutContent() {
             {t('backToCart')}
           </Link>
 
-          <div className="mb-8 rounded-2xl border border-[#0F1A26]/5 bg-white p-4 shadow-sm shadow-[#0F1A26]/5 sm:p-5">
-            <div className="mb-4 flex items-center justify-between gap-4">
-              <div className="min-w-0">
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#EEBC3F]">
-                  {currentCheckoutStepIndex + 1}/{visibleCheckoutStepLabels.length}
-                </p>
-                <h2 className="mt-1 truncate text-lg font-black text-[#0F1A26] sm:text-xl">
-                  {visibleCheckoutStepLabels[currentCheckoutStepIndex]}
-                </h2>
-              </div>
-              <div className="hidden rounded-full bg-[#F1EBE3] px-4 py-2 text-xs font-bold text-[#0F1A26]/60 sm:block">
-                {checkoutStepStatus.filter(Boolean).length}/{visibleCheckoutStepLabels.length}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {visibleCheckoutStepLabels.map((label, index) => {
-                const isDone = checkoutStepStatus[index];
-                const isCurrent =
-                  !isDone &&
-                  checkoutStepStatus.slice(0, index).every(Boolean);
-                const isActive = isDone || isCurrent || index === currentCheckoutStepIndex;
-
-                return (
-                  <a
-                    key={label}
-                    href={checkoutStepAnchors[index]}
-                    aria-current={index === currentCheckoutStepIndex ? "step" : undefined}
-                    className={`min-w-0 rounded-2xl border p-3 transition-all ${
-                      isCurrent
-                        ? "border-[#EEBC3F] bg-[#EEBC3F]/10 shadow-sm"
-                        : isDone
-                          ? "border-[#0F1A26]/10 bg-[#F8F6F3]"
-                          : "border-[#0F1A26]/10 bg-white"
-                    }`}
-                  >
-                    <div className="mb-2 h-1.5 rounded-full bg-[#0F1A26]/10">
-                      <div
-                        className={`h-full rounded-full transition-all ${
-                          isActive ? "w-full bg-[#EEBC3F]" : "w-0 bg-[#EEBC3F]"
-                        }`}
-                      />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
-                          isDone
-                            ? "bg-[#0F1A26] text-white"
-                            : isCurrent
-                              ? "bg-[#EEBC3F] text-[#0F1A26]"
-                              : "bg-[#0F1A26]/5 text-[#0F1A26]/35"
-                        }`}
-                      >
-                        {isDone ? <Check className="h-3.5 w-3.5" /> : index + 1}
-                      </span>
-                      <span
-                        className={`min-w-0 truncate text-xs font-bold sm:text-[13px] ${
-                          isDone || isCurrent ? "text-[#0F1A26]" : "text-[#0F1A26]/35"
-                        }`}
-                      >
-                        {label}
-                      </span>
-                    </div>
-                  </a>
-                );
-              })}
-            </div>
-          </div>
-
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Checkout Form */}
             <div className="flex-1">
-              <form id="checkout-form" onSubmit={handleSubmit} className="space-y-6" noValidate>
-                {/* Contact */}
-                <div id="checkout-details" className="scroll-mt-28 bg-white rounded-2xl p-6 border border-[#0F1A26]/5">
-                  <h2 className="text-lg font-semibold text-[#0F1A26] mb-4 flex items-center gap-2">
-                    <Mail className="w-5 h-5 text-[#EEBC3F]" />
-                    {t("form.contact.title")}
-                  </h2>
-
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-sm text-[#0F1A26]/60 mb-1 block">
-                        {t("form.contact.email")}
-                      </label>
-                      <input
-                        type="email"
-                        required
-                        value={formData.email}
-                        onChange={(e) => {
-                          setFormData({ ...formData, email: e.target.value });
-                          setFieldErrors((current) => ({ ...current, email: "" }));
-                        }}
-                        className={getInputClass("email", inputClass)}
-                        placeholder="your@email.com"
-                      />
-                      {renderFieldError("email")}
-                    </div>
-
-                    {/* Newsletter Subscribe */}
-                    <label className="flex items-center gap-3 p-4 rounded-xl border-2 border-[#EEBC3F]/20 cursor-pointer transition-all hover:bg-[#EEBC3F]/5 hover:border-[#EEBC3F]/40">
-                      <input
-                        type="checkbox"
-                        checked={formData.newsletter}
-                        onChange={(e) =>
-                          setFormData({ ...formData, newsletter: e.target.checked })
-                        }
-                        className="w-5 h-5 accent-[#EEBC3F] rounded [color-scheme:light]"
-                      />
-                      <div className="flex items-center gap-2">
-                        <Newspaper className="w-4 h-4 text-[#EEBC3F]" />
-                        <span className="text-sm font-medium text-[#0F1A26]">
-                          {t("form.contact.newsletter")}
-                        </span>
-                      </div>
-                    </label>
-                  </div>
-                </div>
-
+              <form id="checkout-form" onSubmit={handleSubmit} className="flex flex-col gap-6" noValidate>
                 {/* Delivery Method */}
-                <div className="bg-white rounded-2xl p-6 border border-[#0F1A26]/5">
+                <div className="order-2 bg-white rounded-2xl p-6 border border-[#0F1A26]/5">
                   <h2 className="text-lg font-semibold text-[#0F1A26] mb-4 flex items-center gap-2">
                     <Package className="w-5 h-5 text-[#EEBC3F]" />
                     {t("form.delivery.title")}
@@ -1320,10 +1221,10 @@ function CheckoutContent() {
                         </div>
 
                         <div className="space-y-3">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 gap-3">
                             <div>
                               <label className="text-sm text-[#0F1A26]/60 mb-1 block">
-                                {t("form.shipping.firstName")}
+                                {t("form.shipping.fullName")}
                               </label>
                               <input
                                 type="text"
@@ -1334,27 +1235,9 @@ function CheckoutContent() {
                                   setFieldErrors((current) => ({ ...current, firstName: "" }));
                                 }}
                                 className={getInputClass("firstName", inputSmallClass)}
-                                placeholder={t("form.shipping.firstNamePlaceholder")}
+                                placeholder={t("form.shipping.fullNamePlaceholder")}
                               />
                               {renderFieldError("firstName")}
-                            </div>
-
-                            <div>
-                              <label className="text-sm text-[#0F1A26]/60 mb-1 block">
-                                {t("form.shipping.lastName")}
-                              </label>
-                              <input
-                                type="text"
-                                required
-                                value={formData.lastName}
-                                onChange={(e) => {
-                                  setFormData({ ...formData, lastName: e.target.value });
-                                  setFieldErrors((current) => ({ ...current, lastName: "" }));
-                                }}
-                                className={getInputClass("lastName", inputSmallClass)}
-                                placeholder={t("form.shipping.lastNamePlaceholder")}
-                              />
-                              {renderFieldError("lastName")}
                             </div>
                           </div>
 
@@ -1413,7 +1296,7 @@ function CheckoutContent() {
 
                 {/* Shipping - only show when delivery is selected */}
                 {deliveryMethod === "delivery" && (
-                  <div id="checkout-shipping" className="scroll-mt-28 bg-white rounded-2xl p-6 border border-[#0F1A26]/5">
+                  <div id="checkout-shipping" className="order-1 scroll-mt-28 bg-white rounded-2xl p-6 border border-[#0F1A26]/5 shadow-sm">
                     <h2 className="text-lg font-semibold text-[#0F1A26] mb-4 flex items-center gap-2">
                       <Truck className="w-5 h-5 text-[#EEBC3F]" />
                       {t("form.shipping.title")}
@@ -1424,9 +1307,9 @@ function CheckoutContent() {
                     </p>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
+                      <div className="order-1 sm:col-span-2">
                         <label className="text-sm text-[#0F1A26]/60 mb-1 block">
-                          {t("form.shipping.firstName")}
+                          {t("form.shipping.fullName")}
                         </label>
                         <input
                           type="text"
@@ -1437,30 +1320,12 @@ function CheckoutContent() {
                             setFieldErrors((current) => ({ ...current, firstName: "" }));
                           }}
                           className={getInputClass("firstName", inputClass)}
-                          placeholder={t("form.shipping.firstNamePlaceholder")}
+                          placeholder={t("form.shipping.fullNamePlaceholder")}
                         />
                         {renderFieldError("firstName")}
                       </div>
 
-                      <div>
-                        <label className="text-sm text-[#0F1A26]/60 mb-1 block">
-                          {t("form.shipping.lastName")}
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          value={formData.lastName}
-                          onChange={(e) => {
-                            setFormData({ ...formData, lastName: e.target.value });
-                            setFieldErrors((current) => ({ ...current, lastName: "" }));
-                          }}
-                          className={getInputClass("lastName", inputClass)}
-                          placeholder={t("form.shipping.lastNamePlaceholder")}
-                        />
-                        {renderFieldError("lastName")}
-                      </div>
-
-                      <div className="sm:col-span-2">
+                      <div className="order-5 sm:col-span-2">
                         <label className="text-sm text-[#0F1A26]/60 mb-1 block">
                           {t("form.shipping.address")}
                         </label>
@@ -1517,7 +1382,7 @@ function CheckoutContent() {
                         {renderFieldError("address")}
                       </div>
 
-                      <div>
+                      <div className="order-4">
                         <label className="text-sm text-[#0F1A26]/60 mb-1 block">
                           {t("form.shipping.city")}
                         </label>
@@ -1596,7 +1461,7 @@ function CheckoutContent() {
                                         : "text-[#0F1A26]/75"
                                     }`}
                                   >
-                                    <span>{city}</span>
+                                    <span>{locale === "ar" ? arabicCityNames[city] || city : city}</span>
                                     {formData.city === city && (
                                       <Check className="h-4 w-4 shrink-0 text-[#EEBC3F]" />
                                     )}
@@ -1618,25 +1483,34 @@ function CheckoutContent() {
                         {renderFieldError("city")}
                       </div>
 
-                      <div>
+                      <div className="order-3">
                         <label className="text-sm text-[#0F1A26]/60 mb-1 block">
-                          {t("form.shipping.postCode")}
+                          {t("form.shipping.governorate")}
                         </label>
                         <div className="relative">
                           <MapPin className="w-4 h-4 text-[#0F1A26]/40 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
-                          <input
-                            type="text"
-                            value={formData.postCode}
-                            onChange={(e) =>
-                              setFormData({ ...formData, postCode: e.target.value })
-                            }
-                            className={inputIconClass}
-                            placeholder={t("form.shipping.postCodePlaceholder")}
-                          />
+                          <select
+                            required
+                            value={formData.governorate}
+                            onChange={(e) => {
+                              setFormData({ ...formData, governorate: e.target.value });
+                              setFieldErrors((current) => ({ ...current, governorate: "" }));
+                            }}
+                            className={`${getInputClass("governorate", inputIconClass)} appearance-none pr-11`}
+                          >
+                            <option value="">{t("form.shipping.governoratePlaceholder")}</option>
+                            {egyptGovernorates.map((governorate) => (
+                              <option key={governorate.value} value={governorate.value}>
+                                {locale === "ar" ? governorate.ar : governorate.en}
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronDown className="w-4 h-4 text-[#0F1A26]/40 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
                         </div>
+                        {renderFieldError("governorate")}
                       </div>
 
-                      <div>
+                      <div className="order-2">
                         <label className="text-sm text-[#0F1A26]/60 mb-1 block">
                           {t("form.shipping.phone")}
                         </label>
@@ -1656,21 +1530,38 @@ function CheckoutContent() {
                         </div>
                         {renderFieldError("phone")}
                       </div>
+
+                      <div className="order-6 sm:col-span-2">
+                        <label className="text-sm text-[#0F1A26]/60 mb-1 block">
+                          {t("form.contact.emailOptional")}
+                        </label>
+                        <input
+                          type="email"
+                          value={formData.email}
+                          onChange={(e) => {
+                            setFormData({ ...formData, email: e.target.value });
+                            setFieldErrors((current) => ({ ...current, email: "" }));
+                          }}
+                          className={getInputClass("email", inputClass)}
+                          placeholder="your@email.com"
+                        />
+                        {renderFieldError("email")}
+                      </div>
                     </div>
                   </div>
                 )}
 
                 {/* Payment */}
-                <div id="checkout-payment" className="scroll-mt-28 bg-white rounded-2xl p-6 border border-[#0F1A26]/10 shadow-sm">
+                <div id="checkout-payment" className="order-3 scroll-mt-28 bg-white rounded-2xl p-6 border border-[#0F1A26]/10 shadow-sm">
                   <h2 className="text-lg font-bold text-[#0F1A26] mb-4 flex items-center gap-2">
                     <CreditCard className="w-5 h-5 text-[#EEBC3F]" />
                     {t("form.payment.title")}
                   </h2>
 
 
-                  <div className="space-y-3">
+                  <div className="flex flex-col gap-3">
                     <label
-                      className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === "card"
+                      className={`order-3 flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === "card"
                         ? "border-[#EEBC3F] bg-[#EEBC3F]/10"
                         : "border-[#0F1A26]/20 hover:border-[#0F1A26]/30"
                         }`}
@@ -1706,7 +1597,7 @@ function CheckoutContent() {
                     </label>
 
                     <label
-                      className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === "cod"
+                      className={`order-1 flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === "cod"
                         ? "border-[#EEBC3F] bg-[#EEBC3F]/10"
                         : "border-[#0F1A26]/20 hover:border-[#0F1A26]/30"
                         }`}
@@ -1733,7 +1624,7 @@ function CheckoutContent() {
                     </label>
 
                     <label
-                      className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === "instapay"
+                      className={`order-2 flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === "instapay"
                         ? "border-[#EEBC3F] bg-[#EEBC3F]/10"
                         : "border-[#0F1A26]/20 hover:border-[#0F1A26]/30"
                         }`}
@@ -1769,7 +1660,7 @@ function CheckoutContent() {
 
                     {/* InstaPay Account Details Dropdown */}
                     {paymentMethod === "instapay" && (
-                      <div className="mx-4 md:ml-7 p-3 md:p-4 bg-[#EEBC3F]/10 rounded-xl border border-[#EEBC3F]/30 animate-in slide-in-from-top-2 duration-200">
+                      <div className="order-2 mx-4 md:ml-7 p-3 md:p-4 bg-[#EEBC3F]/10 rounded-xl border border-[#EEBC3F]/30 animate-in slide-in-from-top-2 duration-200">
                         <div className="flex items-center gap-2 mb-3">
                           <div className="w-8 h-8 rounded-full bg-[#EEBC3F] flex items-center justify-center">
                             <span className="text-white text-sm font-bold">i</span>
@@ -1811,10 +1702,15 @@ function CheckoutContent() {
                   </div>
                 </div>
 
+                <div className="order-4 flex items-start gap-3 rounded-2xl border border-green-700/15 bg-green-50 px-4 py-3 text-sm font-semibold leading-6 text-green-900">
+                  <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-green-700" />
+                  <p>{t("form.reassurance")}</p>
+                </div>
+
                 <Button
                   type="submit"
                   disabled={isSubmitting || !hasCheckoutItems}
-                  className="w-full bg-[#EEBC3F] text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white rounded-full h-14 font-bold text-base transition-all duration-300 disabled:opacity-50"
+                  className="hidden"
                 >
                   {isSubmitting
                     ? t("form.processing")
@@ -1961,65 +1857,60 @@ function CheckoutContent() {
       </main>
 
       {checkoutItems.length > 0 && (
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-[#0F1A26]/10 bg-white/95 px-4 py-3 shadow-[0_-8px_28px_rgba(15,26,38,0.14)] backdrop-blur-xl">
-          <div className="mb-2 flex items-start justify-between gap-3">
-            <div className="min-w-0 text-xs font-semibold text-[#0F1A26]/60">
-              <p className="truncate">
-                {t("summary.itemCount", { count: checkoutItemCount })}
-                {" · "}
-                {!deliveryMethod
-                  ? t("form.delivery.title")
-                  : deliveryMethod === "delivery" && !formData.city
-                  ? t("summary.selectCityForShipping")
-                  : shipping === 0
-                    ? t("summary.freeShipping")
-                    : `${t("summary.shippingLabel")} EGP ${shipping}`}
-              </p>
-              {paymentDiscount > 0 && (
-                <p className="mt-0.5 text-green-600">
-                  {t("summary.paymentDiscount", { amount: paymentDiscount })}
+        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 pb-3 ps-3 pe-[5.25rem] sm:px-6 sm:pb-5">
+          <div className="pointer-events-auto mx-auto flex max-w-5xl flex-col gap-3 rounded-[22px] border border-white/10 bg-[#0F1A26]/95 p-3 shadow-[0_18px_60px_rgba(15,26,38,0.34)] backdrop-blur-xl sm:flex-row sm:items-center sm:gap-5 sm:p-3.5">
+            <div className="hidden min-w-0 flex-1 items-center justify-between gap-4 px-1 sm:flex sm:justify-start sm:px-2">
+              <div className="min-w-0">
+                <p className="truncate text-xs font-bold text-white/55">
+                  {t("summary.itemCount", { count: checkoutItemCount })}
+                  {" • "}
+                  {!deliveryMethod
+                    ? t("form.delivery.title")
+                    : deliveryMethod === "delivery" && !formData.city
+                      ? t("summary.selectCityForShipping")
+                      : shipping === 0
+                        ? t("summary.freeShipping")
+                        : `${t("summary.shippingLabel")} EGP ${shipping}`}
                 </p>
+                {paymentDiscount > 0 && (
+                  <p className="mt-1 truncate text-[11px] font-bold text-emerald-400">
+                    {t("summary.paymentDiscount", { amount: paymentDiscount })}
+                  </p>
+                )}
+              </div>
+
+              <div className="shrink-0 border-s border-white/10 ps-4">
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/40">
+                  {t("summary.total")}
+                </p>
+                <p className="text-lg font-black leading-tight text-white">
+                  EGP {deliveryMethod === "delivery" && !formData.city ? checkoutSubtotal : finalTotal}
+                </p>
+              </div>
+            </div>
+
+            <p className="hidden max-w-xs text-xs font-semibold leading-5 text-white/60 lg:block">
+              {t("form.reassurance")}
+            </p>
+
+            <Button
+              type="submit"
+              form="checkout-form"
+              disabled={isSubmitting || !hasCheckoutItems}
+              className="h-12 w-full shrink-0 rounded-2xl bg-[#E31820] px-5 text-sm font-black text-white shadow-lg shadow-black/20 hover:bg-[#C61219] disabled:opacity-50 sm:w-auto sm:min-w-56 sm:px-8"
+            >
+              {isSubmitting ? (
+                t("form.processing")
+              ) : (
+                <>
+                  <span>{t("form.orderNow")}</span>
+                  <span className="ms-2 sm:hidden">
+                    • EGP {deliveryMethod === "delivery" && !formData.city ? checkoutSubtotal : finalTotal}
+                  </span>
+                </>
               )}
-            </div>
-            <div className="shrink-0 text-right">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[#0F1A26]/40">
-                {t("summary.total")}
-              </p>
-              <p className="text-base font-black text-[#0F1A26]">
-                EGP {deliveryMethod === "delivery" && !formData.city ? checkoutSubtotal : finalTotal}
-              </p>
-            </div>
+            </Button>
           </div>
-          <div className="hidden">
-            <span>
-              {!deliveryMethod
-                ? t("form.delivery.title")
-                : deliveryMethod === "delivery" && !formData.city
-                ? t("summary.selectCityForShipping")
-                : shipping === 0
-                  ? t("summary.freeShipping")
-                  : `${t("summary.shippingLabel")} EGP ${shipping}`}
-            </span>
-            <span className="text-base font-black text-[#0F1A26]">
-              EGP {deliveryMethod === "delivery" && !formData.city ? checkoutSubtotal : finalTotal}
-            </span>
-          </div>
-          <Button
-            type="submit"
-            form="checkout-form"
-            disabled={isSubmitting || !hasCheckoutItems}
-            className="h-12 w-full rounded-full bg-[#EEBC3F] text-sm font-black text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white disabled:opacity-50"
-          >
-            {isSubmitting
-              ? t("form.processing")
-              : mounted
-                ? !deliveryMethod
-                  ? `${t("form.completeOrder", { total: checkoutSubtotal.toString() })} (${t("form.delivery.title")})`
-                  : deliveryMethod === "delivery" && !formData.city
-                    ? `${t("form.completeOrder", { total: checkoutSubtotal.toString() })} (${t("form.selectCity")})`
-                    : t("form.completeOrder", { total: finalTotal.toString() })
-                : t("form.completeOrder", { total: "--" })}
-          </Button>
         </div>
       )}
       <Footer />

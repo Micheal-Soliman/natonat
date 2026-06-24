@@ -801,6 +801,7 @@ export function buildShipmentFromOrder(
     phone: string;
     email: string;
     address: string;
+    governorate?: string;
     city: string;
     postCode?: string;
   },
@@ -858,7 +859,7 @@ export function buildShipmentFromOrder(
       Line2: "",
       Line3: "",
       City: detectedCity,
-      StateOrProvinceCode: resolveGovernorateForCity(detectedCity),
+      StateOrProvinceCode: customer.governorate || resolveGovernorateForCity(detectedCity),
       PostCode: customer.postCode || "",
       CountryCode: "EG",
       Longitude: 0,

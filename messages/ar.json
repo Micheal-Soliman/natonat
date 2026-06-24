@@ -656,17 +656,22 @@
     },
     "success": {
       "title": "تم تأكيد طلبك!",
-      "subtitle": "شكراً لطلبك. سيتم إرسال بريد إلكتروني للتأكيد قريباً.",
+      "subtitle": "شكرًا لطلبك. هنتواصل معاك لتأكيد الطلب والمقاس.",
       "orderNumber": "رقم الطلب",
       "continueShopping": "مواصلة التسوق"
     },
     "form": {
       "contact": {
+        "emailOptional": "البريد الإلكتروني (اختياري)",
         "title": "معلومات التواصل",
         "email": "البريد الإلكتروني",
         "newsletter": "اشترك للحصول على العروض الحصرية والتحديثات"
       },
       "shipping": {
+        "fullName": "الاسم",
+        "fullNamePlaceholder": "اكتب اسمك بالكامل",
+        "governorate": "المحافظة",
+        "governoratePlaceholder": "اختر المحافظة",
         "title": "عنوان الشحن",
         "egyptOnly": "🚚 توصيل لجميع محافظات مصر فقط",
         "firstName": "الاسم الأول",
@@ -727,18 +732,18 @@
       "payment": {
         "title": "طريقة الدفع",
         "cod": {
-          "title": "الدفع عند الاستلام",
-          "subtitle": "ادفع نقدًا عند استلام طلبك"
+          "title": "Cash on Delivery — ادفع عند الاستلام",
+          "subtitle": "ادفع لما تستلم طلبك"
         },
         "card": {
-          "title": "Visa / Mastercard",
+          "title": "Card",
           "subtitle": "ادفع بأمان باستخدام بطاقتك",
           "selectBank": "اختر البنك",
           "eligibleBanks": "البنوك المدعومة",
           "eligibleBanksNote": "الدفع بالبطاقة متاح لهذه البنوك فقط"
         },
         "instapay": {
-          "title": "InstaPay or Wallets",
+          "title": "InstaPay / Wallets",
           "subtitle": "ادفع عبر تحويل InstaPay or Wallets",
           "transferDetails": "تفاصيل التحويل",
           "accountName": "اسم الحساب",
@@ -747,6 +752,8 @@
         }
       },
       "processing": "جاري المعالجة...",
+      "orderNow": "اطلب الآن",
+      "reassurance": "هنكلمك نأكد مقاس الشنطة بعد عمل الأوردر، ولو المقاس مش مناسب بنبدلهولك.",
       "completeOrder": "إتمام الطلب - {total} جنيه",
       "shippingAtCheckout": "+ الشحن عند الدفع",
       "selectCity": "اختر المدينة لحساب الإجمالي"

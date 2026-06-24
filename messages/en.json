@@ -753,17 +753,22 @@
     },
     "success": {
       "title": "Order Confirmed!",
-      "subtitle": "Thank you for your order. We'll send you a confirmation email shortly.",
+      "subtitle": "Thank you for your order. We'll contact you to confirm the order and size.",
       "orderNumber": "Order Number",
       "continueShopping": "Continue Shopping"
     },
     "form": {
       "contact": {
+        "emailOptional": "Email (optional)",
         "title": "Contact Information",
         "email": "Email",
         "newsletter": "Subscribe to our newsletter for exclusive offers & updates"
       },
       "shipping": {
+        "fullName": "Full name",
+        "fullNamePlaceholder": "Enter your full name",
+        "governorate": "Governorate",
+        "governoratePlaceholder": "Select governorate",
         "title": "Shipping Address",
         "egyptOnly": "🚚 Delivery to all Egyptian governorates only",
         "firstName": "First Name",
@@ -824,18 +829,18 @@
       "payment": {
         "title": "Payment Method",
         "cod": {
-          "title": "Cash on Delivery",
+          "title": "Cash on Delivery — Pay on delivery",
           "subtitle": "Pay when you receive your order"
         },
         "card": {
-          "title": "Credit/Debit Card",
+          "title": "Card",
           "subtitle": "Pay securely with your card",
           "selectBank": "Select your bank",
           "eligibleBanks": "Eligible Banks",
           "eligibleBanksNote": "Card payment available for these banks only"
         },
         "instapay": {
-          "title": "InstaPay or Wallets",
+          "title": "InstaPay / Wallets",
           "subtitle": "Pay via InstaPay or Wallets transfer",
           "transferDetails": "Transfer Details",
           "accountName": "Account Name",
@@ -844,6 +849,8 @@
         }
       },
       "processing": "Processing...",
+      "orderNow": "Order Now",
+      "reassurance": "We'll call to confirm your luggage size after you order, and exchange it if the size isn't right.",
       "completeOrder": "Complete Order - EGP {total}",
       "shippingAtCheckout": "+ shipping at checkout",
       "selectCity": "select city for total"
