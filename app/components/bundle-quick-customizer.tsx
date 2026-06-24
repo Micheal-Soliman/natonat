@@ -325,7 +325,7 @@ export function BundleQuickCustomizer({
           )}
 
           {activeSizeOptions.length > 1 && (
-            <div className="mt-2 grid grid-cols-4 gap-1.5">
+            <div className="mt-2 grid grid-cols-2 gap-1.5 lg:grid-cols-4">
               {activeSizeOptions.map((size) => {
                 const isSelected = activeSelection.size === size.id;
                 const isSizeUnavailable = activeSelectedProduct
@@ -339,7 +339,7 @@ export function BundleQuickCustomizer({
                     aria-pressed={isSelected}
                     disabled={isSizeUnavailable}
                     onClick={() => updateSelection(activeIndex, { size: size.id })}
-                    className={`min-h-11 rounded-lg border px-1.5 py-1.5 text-center transition-all disabled:cursor-not-allowed disabled:opacity-45 ${
+                    className={`min-w-0 min-h-11 rounded-lg border px-2 py-1.5 text-center transition-all lg:px-1 disabled:cursor-not-allowed disabled:opacity-45 ${
                       isSelected
                         ? "border-[#EEBC3F] bg-[#EEBC3F] text-[#0F1A26]"
                         : isDark

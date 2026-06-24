@@ -459,7 +459,7 @@ export function BestSellers() {
                             <div className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-white/45">
                               {t('size')}
                             </div>
-                            <div className="grid grid-cols-2 gap-1.5">
+                            <div className="grid grid-cols-2 gap-1.5 lg:grid-cols-4">
                               {sizeOptions.map((size) => {
                                 const isSelected = selection.size === size.id;
                                 const isSizeUnavailable = isProductSizeOutOfStock(product, size.id);
