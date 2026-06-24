@@ -20,15 +20,20 @@ export function SwipeableProductImage({
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const images = useMemo(
-    () => product.images || [product.image],
-    [product.images, product.image]
-  );
+  const images = useMemo(() => {
+    const validImages = [product.image, ...(product.images || [])]
+      .map((image) => image?.trim())
+      .filter((image): image is string => Boolean(image));
+
+    return [...new Set(validImages)];
+  }, [product.images, product.image]);
 
   const hasMultipleImages = images.length > 1;
+  const primaryImage = images[0] || product.image;
 
   // Keep the preview image lightweight.
-  const hoverImage = images[1] || product.image;
+  const hoverImage = images.find((image) => image !== primaryImage);
+  const hasHoverImage = Boolean(hoverImage);
 
   const handleSlideChange = useCallback((newIndex: number) => {
     setCurrentIndex(newIndex);
@@ -118,9 +123,13 @@ export function SwipeableProductImage({
       </div>
 
       {/* DESKTOP DEFAULT */}
-      <div className="hidden md:block absolute inset-0 z-10 group-hover:opacity-0 transition-opacity duration-500">
+      <div
+        className={`hidden md:block absolute inset-0 z-10 transition-opacity duration-500 ${
+          hasHoverImage ? "group-hover:opacity-0" : "opacity-100"
+        }`}
+      >
         <Image
-          src={product.image}
+          src={primaryImage}
           alt={product.name}
           fill
           sizes="(max-width: 1024px) 33vw, 25vw"
@@ -131,7 +140,7 @@ export function SwipeableProductImage({
       </div>
 
       {/* DESKTOP HOVER */}
-      {hoverImage && hoverImage !== product.image && (
+      {hoverImage && (
         <div className="hidden md:block absolute inset-0 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
           <Image
             src={hoverImage}
