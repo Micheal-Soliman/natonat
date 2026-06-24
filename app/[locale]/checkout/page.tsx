@@ -581,6 +581,28 @@ function CheckoutContent() {
     setFieldErrors({});
     setIsSubmitting(true);
 
+    try {
+      const stockResponse = await fetch("/api/orders/validate-stock", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: checkoutItems.map((item) => serializeOrderItem(item, products)),
+        }),
+        cache: "no-store",
+      });
+
+      if (!stockResponse.ok) {
+        setIsSubmitting(false);
+        setSubmitError(t("validation.stockChanged"));
+        return;
+      }
+    } catch (error) {
+      console.error("Checkout stock validation failed", error);
+      setIsSubmitting(false);
+      setSubmitError(t("validation.stockChanged"));
+      return;
+    }
+
     const orderRef = generateOrderRef();
     try {
       window.sessionStorage.setItem(

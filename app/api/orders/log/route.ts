@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { sendOrderEmail, sendCustomerConfirmationEmail } from "@/lib/email";
 import { getCatalogProducts } from "@/lib/sanity-products";
-import { adjustInventoryForConfirmedOrder } from "@/lib/sanity-inventory";
+import {
+  adjustInventoryForConfirmedOrder,
+  validateOrderInventory,
+} from "@/lib/sanity-inventory";
 import type { Product } from "@/lib/products";
 
 type OrderLogBody = Record<string, unknown>;
@@ -344,6 +347,21 @@ export async function POST(req: Request) {
     body = (await req.json()) as OrderLogBody;
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  if (Array.isArray(body.items) && body.items.length > 0) {
+    try {
+      const stockValidation = await validateOrderInventory(body.items as OrderItem[]);
+      if (!stockValidation.valid) {
+        return NextResponse.json(
+          { error: "Requested quantity exceeds available stock", issues: stockValidation.issues },
+          { status: 409 },
+        );
+      }
+    } catch (error) {
+      console.error("Could not validate order inventory", error);
+      return NextResponse.json({ error: "Stock validation unavailable" }, { status: 503 });
+    }
   }
 
   const isInitialCardCheckout =

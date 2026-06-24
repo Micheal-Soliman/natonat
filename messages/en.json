@@ -735,7 +735,8 @@
       "invalidEmail": "Enter a valid email address",
       "invalidPhone": "Enter a valid Egyptian mobile number",
       "invalidCity": "Choose a city from the list",
-      "reviewFields": "Please review the highlighted fields before placing the order."
+      "reviewFields": "Please review the highlighted fields before placing the order.",
+      "stockChanged": "Some quantities are no longer available. Refresh your cart and try again."
     },
     "steps": ["Details", "Delivery", "Payment", "Review"],
     "hints": {

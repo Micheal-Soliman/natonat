@@ -4,13 +4,13 @@ import { revalidateTag } from "next/cache";
 
 import { apiVersion, dataset, projectId } from "@/sanity/env";
 
-type InventoryOrderSelection = {
+export type InventoryOrderSelection = {
   productId?: number;
   size?: string;
   quantity?: number;
 };
 
-type InventoryOrderItem = {
+export type InventoryOrderItem = {
   id?: number;
   size?: string;
   quantity?: number;
@@ -22,6 +22,7 @@ type InventoryProduct = {
   _id: string;
   _rev: string;
   legacyId: number;
+  name?: string;
   stockStatus?: "in_stock" | "low_stock" | "out_of_stock";
   stockQuantity?: number;
   sizeStock?: Partial<
@@ -62,6 +63,14 @@ function flattenInventoryLines(items: InventoryOrderItem[]) {
   for (const item of items) {
     const itemQuantity = positiveQuantity(item.quantity);
 
+    if (typeof item.id === "number") {
+      lines.push({
+        productId: item.id,
+        size: normalizeSize(item.size),
+        quantity: itemQuantity,
+      });
+    }
+
     if (item.isBundle && item.bundleSelections?.length) {
       for (const selection of item.bundleSelections) {
         if (typeof selection.productId !== "number") continue;
@@ -71,15 +80,6 @@ function flattenInventoryLines(items: InventoryOrderItem[]) {
           quantity: itemQuantity * positiveQuantity(selection.quantity),
         });
       }
-      continue;
-    }
-
-    if (typeof item.id === "number") {
-      lines.push({
-        productId: item.id,
-        size: normalizeSize(item.size),
-        quantity: itemQuantity,
-      });
     }
   }
 
@@ -98,6 +98,56 @@ function isDuplicateMutationError(error: unknown) {
   const statusCode = (error as { statusCode?: number }).statusCode;
   const message = (error as { message?: string }).message || "";
   return statusCode === 409 || /already exists|document.*exists|conflict/i.test(message);
+}
+
+export type InventoryValidationIssue = {
+  productId: number;
+  productName?: string;
+  size?: string;
+  requested: number;
+  available: number;
+};
+
+export async function validateOrderInventory(items: InventoryOrderItem[]) {
+  const lines = flattenInventoryLines(items);
+  if (!lines.length) return { valid: true, issues: [] as InventoryValidationIssue[] };
+
+  const client = createClient({ projectId, dataset, apiVersion, useCdn: false });
+  const productIds = [...new Set(lines.map((line) => line.productId))];
+  const products = await client.fetch<InventoryProduct[]>(
+    `*[_type == "product" && legacyId in $productIds]{_id, _rev, legacyId, name, stockStatus, stockQuantity, sizeStock}`,
+    { productIds },
+  );
+  const productByLegacyId = new Map(products.map((product) => [product.legacyId, product]));
+  const issues: InventoryValidationIssue[] = [];
+
+  for (const line of lines) {
+    const product = productByLegacyId.get(line.productId);
+    if (!product) continue;
+
+    const sizeInventory = line.size ? product.sizeStock?.[line.size] : undefined;
+    const status = sizeInventory?.status || product.stockStatus || "in_stock";
+    const trackedQuantity = typeof sizeInventory?.quantity === "number"
+      ? sizeInventory.quantity
+      : product.stockQuantity;
+    const available = status === "out_of_stock"
+      ? 0
+      : typeof trackedQuantity === "number"
+        ? Math.max(0, trackedQuantity)
+        : Number.POSITIVE_INFINITY;
+
+    if (line.quantity > available) {
+      issues.push({
+        productId: line.productId,
+        productName: product.name,
+        size: line.size,
+        requested: line.quantity,
+        available,
+      });
+    }
+  }
+
+  return { valid: issues.length === 0, issues };
 }
 
 export async function adjustInventoryForConfirmedOrder(

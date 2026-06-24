@@ -111,8 +111,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 
   const getCartItemMaxQuantity = useCallback((item: Omit<CartItem, "quantity"> & { quantity?: number } | CartItem) => {
+    const limits: number[] = [];
+    const parentProduct = products.find((candidate) => candidate.id === item.id);
+    if (parentProduct) {
+      const parentAvailable = getAvailableStockQuantity(parentProduct, item.size);
+      if (typeof parentAvailable === "number") limits.push(parentAvailable);
+    }
+
     if (item.isBundle && item.bundleSelections?.length) {
-      const limits = item.bundleSelections.flatMap((selection) => {
+      const componentLimits = item.bundleSelections.flatMap((selection) => {
         const product = products.find((candidate) => candidate.id === selection.productId);
         if (!product) return [];
         const available = getAvailableStockQuantity(product, selection.size);
@@ -120,11 +127,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
           ? [Math.floor(available / Math.max(1, selection.quantity || 1))]
           : [];
       });
-      return limits.length ? Math.min(...limits) : undefined;
+      limits.push(...componentLimits);
     }
 
-    const product = products.find((candidate) => candidate.id === item.id);
-    return product ? getAvailableStockQuantity(product, item.size) : undefined;
+    return limits.length ? Math.min(...limits) : undefined;
   }, [products]);
 
   useEffect(() => {
@@ -273,9 +279,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [buyNowItem, setBuyNowItemState] = useState<CartItem | null>(null);
   const setBuyNowItem = useCallback(
     (item: CartItem | null) => {
-      setBuyNowItemState(isCartItemUnavailable(item) ? null : item);
+      if (!item || isCartItemUnavailable(item)) {
+        setBuyNowItemState(null);
+        return;
+      }
+
+      const maxQuantity = getCartItemMaxQuantity(item);
+      if (typeof maxQuantity === "number" && maxQuantity <= 0) {
+        setBuyNowItemState(null);
+        return;
+      }
+
+      setBuyNowItemState({
+        ...item,
+        quantity: Math.min(item.quantity || 1, maxQuantity ?? Number.POSITIVE_INFINITY),
+      });
     },
-    [isCartItemUnavailable]
+    [getCartItemMaxQuantity, isCartItemUnavailable]
   );
 
   const catalogItems = useMemo(
@@ -310,6 +330,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
               selectionSizePrice?.originalPrice ?? selectedProduct.originalPrice,
           };
         });
+        const maxQuantity = getCartItemMaxQuantity({ ...item, bundleSelections });
 
         return {
           ...item,
@@ -322,9 +343,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
             ? item.originalPrice
             : sizePrice?.originalPrice ?? product.originalPrice,
           bundleSelections,
+          quantity: Math.min(item.quantity, maxQuantity ?? Number.POSITIVE_INFINITY),
         };
       }),
-    [items, products]
+    [getCartItemMaxQuantity, items, products]
   );
 
   // Simple total calculation - bundle prices are already calculated by bundle-pricing system
