@@ -565,12 +565,35 @@ function CheckoutContent() {
   const [aramexError, setAramexError] = useState<string>("");
   const [submitError, setSubmitError] = useState<string>("");
   const [mounted, setMounted] = useState(false);
+  const bottomOrderCtaRef = useRef<HTMLDivElement | null>(null);
+  const [isBottomOrderCtaVisible, setIsBottomOrderCtaVisible] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
   const hasCheckoutItems = checkoutItems.length > 0;
+  const showCheckoutActions = mounted && hasCheckoutItems;
+
+  useEffect(() => {
+    if (!showCheckoutActions) return;
+
+    const target = bottomOrderCtaRef.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsBottomOrderCtaVisible(entry.isIntersecting),
+      {
+        root: null,
+        rootMargin: "0px 0px -120px 0px",
+        threshold: 0.2,
+      }
+    );
+
+    observer.observe(target);
+
+    return () => observer.disconnect();
+  }, [showCheckoutActions]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1707,25 +1730,31 @@ function CheckoutContent() {
                   <p>{t("form.reassurance")}</p>
                 </div>
 
-                <Button
-                  type="submit"
-                  disabled={isSubmitting || !hasCheckoutItems}
-                  className="hidden"
-                >
-                  {isSubmitting
-                    ? t("form.processing")
-                    : mounted
-                      ? !deliveryMethod
-                        ? `${t("form.completeOrder", {
-                          total: checkoutSubtotal.toString(),
-                        })} (${t("form.delivery.title")})`
-                        : deliveryMethod === "delivery" && !formData.city
-                        ? `${t("form.completeOrder", {
-                          total: checkoutSubtotal.toString(),
-                        })} (${t("form.selectCity")})`
-                        : t("form.completeOrder", { total: finalTotal.toString() })
-                      : t("form.completeOrder", { total: "--" })}
-                </Button>
+                {showCheckoutActions && (
+                  <div ref={bottomOrderCtaRef} className="order-5 rounded-[1.75rem] border border-[#0F1A26]/10 bg-white p-3 shadow-[0_18px_45px_rgba(15,26,38,0.10)]">
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="group h-14 w-full rounded-[1.25rem] bg-[#E31820] text-base font-black uppercase tracking-[0.08em] text-white shadow-lg shadow-[#E31820]/20 transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#0F1A26] disabled:translate-y-0 disabled:opacity-50"
+                    >
+                      <span className="flex items-center justify-center gap-2">
+                        <ShoppingBag className="h-5 w-5" />
+                        {isSubmitting ? t("form.processing") : t("form.orderNow")}
+                      </span>
+                    </Button>
+                    <p className="mt-2 text-center text-xs font-bold text-[#0F1A26]/55">
+                      {!deliveryMethod
+                          ? `${t("form.completeOrder", {
+                            total: checkoutSubtotal.toString(),
+                          })} (${t("form.delivery.title")})`
+                          : deliveryMethod === "delivery" && !formData.city
+                            ? `${t("form.completeOrder", {
+                              total: checkoutSubtotal.toString(),
+                            })} (${t("form.selectCity")})`
+                            : t("form.completeOrder", { total: finalTotal.toString() })}
+                    </p>
+                  </div>
+                )}
 
                 {submitError ? (
                   <p className="text-sm text-red-600 mt-3">{submitError}</p>
@@ -1856,8 +1885,13 @@ function CheckoutContent() {
         </div>
       </main>
 
-      {checkoutItems.length > 0 && (
-        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 pb-3 ps-3 pe-[5.25rem] sm:px-6 sm:pb-5">
+      {showCheckoutActions && (
+        <div
+          className={`pointer-events-none fixed inset-x-0 bottom-0 z-50 pb-3 ps-3 pe-[5.25rem] transition-all duration-300 sm:px-6 sm:pb-5 ${
+            isBottomOrderCtaVisible ? "translate-y-full opacity-0" : "translate-y-0 opacity-100"
+          }`}
+          aria-hidden={isBottomOrderCtaVisible}
+        >
           <div className="pointer-events-auto mx-auto flex max-w-5xl flex-col gap-3 rounded-[22px] border border-white/10 bg-[#0F1A26]/95 p-3 shadow-[0_18px_60px_rgba(15,26,38,0.34)] backdrop-blur-xl sm:flex-row sm:items-center sm:gap-5 sm:p-3.5">
             <div className="hidden min-w-0 flex-1 items-center justify-between gap-4 px-1 sm:flex sm:justify-start sm:px-2">
               <div className="min-w-0">
