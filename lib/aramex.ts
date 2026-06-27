@@ -242,6 +242,11 @@ export async function createShipment(
   shipmentData: Omit<AramexShipmentRequest, "ClientInfo">
 ): Promise<CreateShipmentResult> {
   const credentials = getAramexCredentials();
+  const codAmount = shipmentData.Details.CashOnDeliveryAmount?.Value || 0;
+  const paymentType =
+    codAmount > 0 && shipmentData.Details.PaymentType === "C"
+      ? "P"
+      : shipmentData.Details.PaymentType || "P";
 
   const payload = {
     ClientInfo: credentials,
@@ -352,21 +357,21 @@ export async function createShipment(
           NumberOfPieces: shipmentData.Details.NumberOfPieces || 1,
           ProductGroup: "DOM",
           ProductType: shipmentData.Details.ProductType || "COM",
-          PaymentType: shipmentData.Details.PaymentType || "P",
+          PaymentType: paymentType,
           PaymentOptions: "",
           CustomsValueAmount: {
             Value: shipmentData.Details.CustomsValueAmount?.Value || 0,
             CurrencyCode: "EGP",
           },
           CashOnDeliveryAmount: {
-            Value: shipmentData.Details.CashOnDeliveryAmount?.Value || 0.0,
+            Value: codAmount,
             CurrencyCode: "EGP",
           },
           InsuranceAmount: null,
           CashAdditionalAmount: null,
           CashAdditionalAmountDescription: "",
           CollectAmount: null,
-          Services: "",
+          Services: shipmentData.Details.Services || "",
           Items: (shipmentData.Details.Items?.length
             ? shipmentData.Details.Items
             : [{
@@ -868,7 +873,7 @@ export function buildShipmentFromOrder(
       NumberOfPieces: numberOfPieces,
       ProductGroup: "DOM",
       ProductType: cod ? "CDS" : "COM",
-      PaymentType: cod ? "C" : "P",
+      PaymentType: "P",
       PaymentOptions: null,
       Services: "",
       CustomsValueAmount: {
