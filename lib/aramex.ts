@@ -300,7 +300,7 @@ export async function createShipment(
         Consignee: {
           Reference1: shipmentData.Consignee.Reference1 || "",
           Reference2: "",
-          AccountNumber: "",
+          AccountNumber: shipmentData.Consignee.AccountNumber || credentials.AccountNumber,
           PartyAddress: {
             Line1: shipmentData.Consignee.PartyAddress.Line1,
             Line2: "",
@@ -692,77 +692,12 @@ export async function fetchCities(countryCode: string, nameStartsWith?: string):
   }
 }
 
-// Map lowercase city keys to Aramex-accepted city names.
-// IMPORTANT (EG): Aramex Egypt does NOT accept governorate names like "Cairo" / "Giza".
-// FetchCities(EG) returns districts/areas (e.g. Abdeen, Abasya, Abo Rawash). We map
-// common inputs to a valid district to avoid ERR52.
-// Smart mapping: detect district from address text for better Aramex validation
-const ADDRESS_TO_CITY_MAP: Record<string, string> = {
-  "dokki": "Dokki",
-  "mohandiseen": "Mohandiseen",
-  "nasr city": "Nasr City",
-  "maadi": "Maadi",
-  "new cairo": "New Cairo",
-  "5th settlement": "New Cairo",
-  "6th october": "October City",
-  "sheikh zayed": "Sheikh Zayed City",
-  "helwan": "Helwan",
-  "zamalek": "Zamalek",
-  "down town": "Down Town",
-  "fisal": "Fisal",
-  "ain shams": "Ain Shams",
-  "abbasiya": "Abasya",
-  "abasya": "Abasya",
-  "heliopolis": "Heliopolis",
-  "gesr suez": "Gesr El Suez",
-  "sheraton": "Sheraton",
-};
-
-const CITY_TO_GOVERNORATE_MAP: Record<string, string> = {
-  // Cairo governorate
-  "cairo": "Cairo",
-  "new cairo": "Cairo",
-  "nasr city": "Cairo",
-  "maadi": "Cairo",
-  "heliopolis": "Cairo",
-  "zamalek": "Cairo",
-  "down town": "Cairo",
-  "ain shams": "Cairo",
-  "abasya": "Cairo",
-  "el rehab": "Cairo",
-  // Giza governorate
-  "giza": "Giza",
-  "dokki": "Giza",
-  "mohandiseen": "Giza",
-  "agouza": "Giza",
-  "imbaba": "Giza",
-  "sheikh zayed city": "Giza",
-  "october city": "Giza",
-};
+export function mapCityName(cityKey: string): string {
+  return cityKey.trim();
+}
 
 function resolveGovernorateForCity(city: string): string {
-  const key = (city || "").trim().toLowerCase();
-  return CITY_TO_GOVERNORATE_MAP[key] || city;
-}
-
-function extractCityFromAddress(address: string, selectedCity: string): string {
-  const addressLower = address.toLowerCase();
-
-  // Check if address contains a known district
-  for (const [key, city] of Object.entries(ADDRESS_TO_CITY_MAP)) {
-    if (addressLower.includes(key)) {
-      return city;
-    }
-  }
-
-  // Return selected city if no match found
-  return selectedCity;
-}
-
-export function mapCityName(cityKey: string): string {
-  // Now that we fetch cities directly from Aramex Location API in the frontend,
-  // we can use the selected city name directly without mapping.
-  return cityKey;
+  return city.trim();
 }
 
 function getRequiredEnv(name: string): string {
@@ -862,8 +797,8 @@ export function buildShipmentFromOrder(
     },
   };
 
-  // Extract specific district from address for better Aramex validation
-  const detectedCity = extractCityFromAddress(customer.address, customer.city);
+  const consigneeCity = mapCityName(customer.city);
+  const consigneeState = mapCityName(customer.governorate || consigneeCity);
 
   const consignee: AramexParty = {
     Reference1: orderRef,
@@ -871,8 +806,8 @@ export function buildShipmentFromOrder(
       Line1: customer.address,
       Line2: "",
       Line3: "",
-      City: detectedCity,
-      StateOrProvinceCode: customer.governorate || resolveGovernorateForCity(detectedCity),
+      City: consigneeCity,
+      StateOrProvinceCode: consigneeState,
       PostCode: customer.postCode || "",
       CountryCode: "EG",
       Longitude: 0,

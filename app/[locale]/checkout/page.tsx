@@ -80,7 +80,9 @@ const arabicCityNames: Record<string, string> = {
   "Port Said": "بورسعيد",
 };
 
-const ARAMEX_CITIES_CACHE_KEY = "natonat-aramex-cities-eg";
+void arabicCityNames;
+
+const ARAMEX_CITIES_CACHE_KEY = "natonat-aramex-cities-eg-v2";
 const ARAMEX_CITIES_CACHE_TTL = 24 * 60 * 60 * 1000;
 
 const citySearchAliases: Record<string, string[]> = {
@@ -99,11 +101,58 @@ const citySearchAliases: Record<string, string[]> = {
   "port said": ["port said", "portsaid", "بورسعيد"],
 };
 
+const arabicCitySearchAliases: Record<string, string[]> = {
+  cairo: ["\u0627\u0644\u0642\u0627\u0647\u0631\u0629", "\u0642\u0627\u0647\u0631\u0629"],
+  "new cairo": ["\u0627\u0644\u0642\u0627\u0647\u0631\u0629 \u0627\u0644\u062c\u062f\u064a\u062f\u0629", "\u0627\u0644\u062a\u062c\u0645\u0639", "\u0627\u0644\u062a\u062c\u0645\u0639 \u0627\u0644\u062e\u0627\u0645\u0633"],
+  "nasr city": ["\u0645\u062f\u064a\u0646\u0629 \u0646\u0635\u0631", "\u0646\u0635\u0631"],
+  heliopolis: ["\u0645\u0635\u0631 \u0627\u0644\u062c\u062f\u064a\u062f\u0629", "\u0647\u064a\u0644\u064a\u0648\u0628\u0648\u0644\u064a\u0633"],
+  maadi: ["\u0627\u0644\u0645\u0639\u0627\u062f\u064a", "\u0645\u0639\u0627\u062f\u064a"],
+  zamalek: ["\u0627\u0644\u0632\u0645\u0627\u0644\u0643", "\u0632\u0645\u0627\u0644\u0643"],
+  giza: ["\u0627\u0644\u062c\u064a\u0632\u0629", "\u062c\u064a\u0632\u0629"],
+  dokki: ["\u0627\u0644\u062f\u0642\u064a", "\u062f\u0642\u064a"],
+  mohandiseen: ["\u0627\u0644\u0645\u0647\u0646\u062f\u0633\u064a\u0646", "\u0645\u0647\u0646\u062f\u0633\u064a\u0646"],
+  "sheikh zayed city": ["\u0627\u0644\u0634\u064a\u062e \u0632\u0627\u064a\u062f", "\u0632\u0627\u064a\u062f"],
+  "october city": ["\u0627\u0643\u062a\u0648\u0628\u0631", "\u0623\u0643\u062a\u0648\u0628\u0631", "6 \u0627\u0643\u062a\u0648\u0628\u0631", "6 \u0623\u0643\u062a\u0648\u0628\u0631"],
+  alexandria: ["\u0627\u0644\u0627\u0633\u0643\u0646\u062f\u0631\u064a\u0629", "\u0627\u0644\u0625\u0633\u0643\u0646\u062f\u0631\u064a\u0629", "\u0627\u0633\u0643\u0646\u062f\u0631\u064a\u0629"],
+  mansoura: ["\u0627\u0644\u0645\u0646\u0635\u0648\u0631\u0629", "\u0645\u0646\u0635\u0648\u0631\u0629"],
+  tanta: ["\u0637\u0646\u0637\u0627"],
+  zagazig: ["\u0627\u0644\u0632\u0642\u0627\u0632\u064a\u0642", "\u0632\u0642\u0627\u0632\u064a\u0642"],
+  zakazik: ["\u0627\u0644\u0632\u0642\u0627\u0632\u064a\u0642", "\u0632\u0642\u0627\u0632\u064a\u0642"],
+  ismailia: ["\u0627\u0644\u0627\u0633\u0645\u0627\u0639\u064a\u0644\u064a\u0629", "\u0627\u0644\u0625\u0633\u0645\u0627\u0639\u064a\u0644\u064a\u0629", "\u0627\u0633\u0645\u0627\u0639\u064a\u0644\u064a\u0629"],
+  "port said": ["\u0628\u0648\u0631\u0633\u0639\u064a\u062f", "\u0628\u0648\u0631 \u0633\u0639\u064a\u062f"],
+  suez: ["\u0627\u0644\u0633\u0648\u064a\u0633", "\u0633\u0648\u064a\u0633"],
+  fayoum: ["\u0627\u0644\u0641\u064a\u0648\u0645", "\u0641\u064a\u0648\u0645"],
+  assiut: ["\u0627\u0633\u064a\u0648\u0637", "\u0623\u0633\u064a\u0648\u0637"],
+  aswan: ["\u0627\u0633\u0648\u0627\u0646", "\u0623\u0633\u0648\u0627\u0646"],
+  qena: ["\u0642\u0646\u0627"],
+  luxour: ["\u0627\u0644\u0627\u0642\u0635\u0631", "\u0627\u0644\u0623\u0642\u0635\u0631", "\u0627\u0642\u0635\u0631"],
+  hurghada: ["\u0627\u0644\u063a\u0631\u062f\u0642\u0629", "\u063a\u0631\u062f\u0642\u0629"],
+  "sharm el sheikh": ["\u0634\u0631\u0645 \u0627\u0644\u0634\u064a\u062e", "\u0634\u0631\u0645"],
+  damanhour: ["\u062f\u0645\u0646\u0647\u0648\u0631"],
+  damietta: ["\u062f\u0645\u064a\u0627\u0637"],
+  dumiatta: ["\u062f\u0645\u064a\u0627\u0637"],
+  "bani swif": ["\u0628\u0646\u064a \u0633\u0648\u064a\u0641", "\u0628\u0646\u0649 \u0633\u0648\u064a\u0641"],
+  "menia city": ["\u0627\u0644\u0645\u0646\u064a\u0627", "\u0645\u0646\u064a\u0627"],
+  "sohag city": ["\u0633\u0648\u0647\u0627\u062c"],
+  "new sohag city": ["\u0633\u0648\u0647\u0627\u062c \u0627\u0644\u062c\u062f\u064a\u062f\u0629", "\u0633\u0648\u0647\u0627\u062c"],
+  "markaz tama": ["\u0637\u0645\u0627", "\u0645\u0631\u0643\u0632 \u0637\u0645\u0627"],
+  "markaz tahta": ["\u0637\u0647\u0637\u0627", "\u0645\u0631\u0643\u0632 \u0637\u0647\u0637\u0627"],
+  "markaz girga": ["\u062c\u0631\u062c\u0627", "\u0645\u0631\u0643\u0632 \u062c\u0631\u062c\u0627"],
+  "markaz akhmim": ["\u0627\u062e\u0645\u064a\u0645", "\u0623\u062e\u0645\u064a\u0645"],
+  "markaz al maraghah": ["\u0627\u0644\u0645\u0631\u0627\u063a\u0629", "\u0645\u0631\u0627\u063a\u0629"],
+  "markaz al belina": ["\u0627\u0644\u0628\u0644\u064a\u0646\u0627", "\u0628\u0644\u064a\u0646\u0627"],
+};
+
 function normalizeCitySearch(value: string) {
   return value
     .trim()
     .toLocaleLowerCase()
     .normalize("NFKD")
+    .replace(/[إأآا]/g, "ا")
+    .replace(/ى/g, "ي")
+    .replace(/ة/g, "ه")
+    .replace(/ؤ/g, "و")
+    .replace(/ئ/g, "ي")
     .replace(/[\u064B-\u065F\u0670]/g, "")
     .replace(/[إأآا]/g, "ا")
     .replace(/ى/g, "ي")
@@ -115,13 +164,22 @@ function normalizeCitySearch(value: string) {
 
 function getCitySearchTerms(city: string) {
   const cityKey = normalizeCitySearch(city);
-  const aliasTerms = Object.entries(citySearchAliases).flatMap(([key, aliases]) =>
+  const aliasTerms = Object.entries({ ...citySearchAliases, ...arabicCitySearchAliases }).flatMap(([key, aliases]) =>
     cityKey === normalizeCitySearch(key) || aliases.some((alias) => cityKey.includes(normalizeCitySearch(alias)))
       ? aliases
       : []
   );
 
   return [city, ...aliasTerms].map(normalizeCitySearch);
+}
+
+function findExactAramexCity(cities: string[], value: string) {
+  const normalizedValue = normalizeCitySearch(value);
+  if (!normalizedValue) return "";
+
+  return cities.find((city) =>
+    getCitySearchTerms(city).some((term) => term === normalizedValue)
+  ) || "";
 }
 
 function isDiscountShippingCity(city: string) {
@@ -508,7 +566,7 @@ function CheckoutContent() {
       return [
         ...uniquePopularCities,
         ...aramexCities.filter((city) => !uniquePopularCities.includes(city)),
-      ].slice(0, 60);
+      ];
     }
 
     return aramexCities
@@ -523,9 +581,13 @@ function CheckoutContent() {
         if (aStartsWith !== bStartsWith) return aStartsWith ? -1 : 1;
         if (aPopular !== bPopular) return aPopular ? -1 : 1;
         return a.localeCompare(b);
-      })
-      .slice(0, 60);
+      });
   }, [aramexCities, citySearch]);
+
+  const selectedAramexCity = useMemo(
+    () => findExactAramexCity(aramexCities, formData.city),
+    [aramexCities, formData.city]
+  );
 
   const selectCity = (city: string) => {
     setFormData((current) => ({ ...current, city }));
@@ -537,10 +599,7 @@ function CheckoutContent() {
   const validateCitySearch = () => {
     if (deliveryMethod !== "delivery" || loadingCities) return;
 
-    const normalizedValue = normalizeCitySearch(citySearch);
-    const exactCity = aramexCities.find((city) =>
-      getCitySearchTerms(city).some((term) => term === normalizedValue)
-    );
+    const exactCity = findExactAramexCity(aramexCities, citySearch);
 
     if (exactCity) {
       selectCity(exactCity);
@@ -554,6 +613,15 @@ function CheckoutContent() {
       }));
     }
   };
+
+  useEffect(() => {
+    if (!formData.city || aramexCities.length === 0) return;
+    const exactCity = findExactAramexCity(aramexCities, formData.city);
+    if (exactCity) return;
+
+    setFormData((current) => ({ ...current, city: "" }));
+    setCitySearch("");
+  }, [aramexCities, formData.city]);
 
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [deliveryMethod, setDeliveryMethod] = useState("delivery");
@@ -631,7 +699,7 @@ function CheckoutContent() {
     if (deliveryMethod === "delivery") {
       if (!formData.address.trim()) nextErrors.address = requiredMessage;
       if (!formData.governorate) nextErrors.governorate = requiredMessage;
-      if (!formData.city || !aramexCities.includes(formData.city)) {
+      if (!selectedAramexCity) {
         nextErrors.city = invalidCityMessage;
       }
     }
@@ -1448,10 +1516,7 @@ function CheckoutContent() {
                             }}
                             onChange={(e) => {
                               const value = e.target.value;
-                              const normalizedValue = normalizeCitySearch(value);
-                              const exactCity = aramexCities.find(
-                                (city) => getCitySearchTerms(city).some((term) => term === normalizedValue)
-                              );
+                              const exactCity = findExactAramexCity(aramexCities, value);
 
                               setCitySearch(value);
                               setFormData((current) => ({
@@ -1503,7 +1568,7 @@ function CheckoutContent() {
                                         : "text-[#0F1A26]/75"
                                     }`}
                                   >
-                                    <span>{locale === "ar" ? arabicCityNames[city] || city : city}</span>
+                                    <span>{city}</span>
                                     {formData.city === city && (
                                       <Check className="h-4 w-4 shrink-0 text-[#EEBC3F]" />
                                     )}
@@ -1535,8 +1600,9 @@ function CheckoutContent() {
                             required
                             value={formData.governorate}
                             onChange={(e) => {
-                              setFormData({ ...formData, governorate: e.target.value });
-                              setFieldErrors((current) => ({ ...current, governorate: "" }));
+                              setFormData({ ...formData, governorate: e.target.value, city: "" });
+                              setCitySearch("");
+                              setFieldErrors((current) => ({ ...current, governorate: "", city: "" }));
                             }}
                             className={`${getInputClass("governorate", inputIconClass)} appearance-none pr-11`}
                           >
