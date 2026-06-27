@@ -300,7 +300,7 @@ export async function createShipment(
         Consignee: {
           Reference1: shipmentData.Consignee.Reference1 || "",
           Reference2: "",
-          AccountNumber: shipmentData.Consignee.AccountNumber || credentials.AccountNumber,
+          AccountNumber: "",
           PartyAddress: {
             Line1: shipmentData.Consignee.PartyAddress.Line1,
             Line2: "",
@@ -833,7 +833,7 @@ export function buildShipmentFromOrder(
       EmailAddress: customer.email || "",
       Type: "",
     },
-    AccountNumber: shipperConfig.accountNumber,
+    AccountNumber: "",
   };
 
   const itemsDescription = items.map((i) => `${i.name} x${i.quantity}`).join(", ");
