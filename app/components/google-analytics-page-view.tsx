@@ -10,7 +10,10 @@ declare global {
   }
 }
 
-const measurementId = "G-MBR1BZMFVE";
+const measurementId =
+  process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID ||
+  process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ||
+  "G-MBR1BZMFVE";
 
 export function GoogleAnalyticsPageView() {
   const pathname = usePathname();
@@ -28,8 +31,6 @@ export function GoogleAnalyticsPageView() {
 
     if (isFirstRender.current) {
       isFirstRender.current = false;
-      window.gtag("js", new Date());
-      window.gtag("config", measurementId);
       return;
     }
 

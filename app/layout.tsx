@@ -42,6 +42,11 @@ const metaPixelId =
 const tiktokPixelId =
   process.env.NEXT_PUBLIC_TIKTOK_PIXEL_ID ||
   "D8SH7VRC77U9LDPEEDM0";
+const googleAnalyticsId =
+  process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID ||
+  process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ||
+  process.env.GOOGLE_ANALYTICS_ID ||
+  "G-MBR1BZMFVE";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
@@ -157,9 +162,20 @@ export default function RootLayout({
           }}
         />
         <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-MBR1BZMFVE"
+          src={`https://www.googletagmanager.com/gtag/js?id=${googleAnalyticsId}`}
           strategy="afterInteractive"
         />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            if (!window.location.pathname.startsWith('/studio')) {
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              window.gtag = window.gtag || gtag;
+              gtag('js', new Date());
+              gtag('config', '${googleAnalyticsId}');
+            }
+          `}
+        </Script>
 
         <Script id="meta-pixel" strategy="afterInteractive">
           {`
