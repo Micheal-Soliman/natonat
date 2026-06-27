@@ -15,7 +15,8 @@ type PaymobTransaction = {
     extra?: {
       order_ref?: string;
       merchant_order_id?: string;
-    };
+      order_snapshot?: unknown;
+    } & Record<string, unknown>;
   };
   success?: boolean;
   pending?: boolean;
@@ -60,9 +61,14 @@ type LoggedOrder = {
   aramex?: {
     trackingNumber?: string;
   };
+  amount_egp?: number;
+  amount_cents?: number;
+  shipping_egp?: number;
+  locale?: string;
   items?: Array<{
     name: string;
     quantity: number;
+    [key: string]: unknown;
   }>;
 };
 
@@ -137,6 +143,16 @@ function getPaymobOrderRef(transaction: PaymobTransaction) {
     transaction.merchant_order_id,
     transaction.order?.merchant_order_id
   );
+}
+
+function getPaymobOrderSnapshot(transaction: PaymobTransaction): LoggedOrder | null {
+  const snapshot = transaction.payment_key_claims?.extra?.order_snapshot;
+  if (!snapshot || typeof snapshot !== "object") return null;
+
+  const order = snapshot as LoggedOrder;
+  if (!order.delivery_method || !order.customer || !Array.isArray(order.items)) return null;
+
+  return order;
 }
 
 async function fetchLoggedOrder(appOrigin: string, orderRef: string) {
@@ -231,6 +247,7 @@ export async function POST(req: Request) {
   const loggedOrderBeforePaymentUpdate = paymentDetails.special_reference
     ? await fetchLoggedOrder(appOrigin, paymentDetails.special_reference)
     : null;
+  const paymobOrderSnapshot = getPaymobOrderSnapshot(transaction);
 
   if (paymentDetails.special_reference) {
     try {
@@ -261,7 +278,8 @@ export async function POST(req: Request) {
     try {
       const orderData =
         loggedOrderBeforePaymentUpdate ||
-        (await fetchLoggedOrder(appOrigin, paymentDetails.special_reference));
+        (await fetchLoggedOrder(appOrigin, paymentDetails.special_reference)) ||
+        paymobOrderSnapshot;
         
       if (orderData) {
         // --- PREVENT DUPLICATES ---

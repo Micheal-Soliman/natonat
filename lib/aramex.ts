@@ -270,8 +270,8 @@ export async function createShipment(
             Line2: "",
             Line3: "",
             City: shipmentData.Shipper.PartyAddress.City,
-            StateOrProvinceCode: "",
-            PostCode: "00000",
+            StateOrProvinceCode: shipmentData.Shipper.PartyAddress.StateOrProvinceCode || "",
+            PostCode: shipmentData.Shipper.PartyAddress.PostCode || "00000",
             CountryCode: "EG",
             Longitude: 0.0,
             Latitude: 0.0,
@@ -306,8 +306,8 @@ export async function createShipment(
             Line2: "",
             Line3: "",
             City: shipmentData.Consignee.PartyAddress.City,
-            StateOrProvinceCode: "",
-            PostCode: "00000",
+            StateOrProvinceCode: shipmentData.Consignee.PartyAddress.StateOrProvinceCode || "",
+            PostCode: shipmentData.Consignee.PartyAddress.PostCode || "00000",
             CountryCode: "EG",
             Longitude: 0.0,
             Latitude: 0.0,
@@ -351,11 +351,11 @@ export async function createShipment(
           GoodsOriginCountry: "EG",
           NumberOfPieces: shipmentData.Details.NumberOfPieces || 1,
           ProductGroup: "DOM",
-          ProductType: "CDS",
-          PaymentType: "P",
+          ProductType: shipmentData.Details.ProductType || "COM",
+          PaymentType: shipmentData.Details.PaymentType || "P",
           PaymentOptions: "",
           CustomsValueAmount: {
-            Value: 0,
+            Value: shipmentData.Details.CustomsValueAmount?.Value || 0,
             CurrencyCode: "EGP",
           },
           CashOnDeliveryAmount: {
@@ -367,22 +367,35 @@ export async function createShipment(
           CashAdditionalAmountDescription: "",
           CollectAmount: null,
           Services: "",
-          Items: [
-            {
+          Items: (shipmentData.Details.Items?.length
+            ? shipmentData.Details.Items
+            : [{
+                PackageType: "Box",
+                Quantity: shipmentData.Details.NumberOfPieces || 1,
+                Weight: {
+                  Unit: "KG",
+                  Value: shipmentData.Details.ActualWeight.Value || 1.0,
+                },
+                ChargeableWeight: {
+                  Unit: "KG",
+                  Value: shipmentData.Details.ActualWeight.Value || 1.0,
+                },
+                Comments: shipmentData.Details.DescriptionOfGoods || "Order items",
+                Reference: null,
+              }]).map((item) => ({
               PackageType: "Box",
-              Quantity: shipmentData.Details.Items?.[0]?.Quantity || 1,
+              Quantity: item.Quantity || 1,
               Weight: {
                 Unit: "KG",
-                Value: shipmentData.Details.Items?.[0]?.Weight?.Value || 1.0,
+                Value: item.Weight?.Value || 1.0,
               },
               ChargeableWeight: {
                 Unit: "KG",
-                Value: shipmentData.Details.Items?.[0]?.ChargeableWeight?.Value || 1.0,
+                Value: item.ChargeableWeight?.Value || 1.0,
               },
-              Comments: shipmentData.Details.Items?.[0]?.Comments || "",
+              Comments: item.Comments || "",
               Reference: "",
-            },
-          ],
+            })),
         },
         Attachments: null,
         ForeignHAWB: "",

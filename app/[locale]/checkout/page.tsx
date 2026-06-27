@@ -721,6 +721,24 @@ function CheckoutContent() {
         const amountCents = Math.round((checkoutSubtotal + shipping - paymentDiscount) * 100);
         const itemsSum = intentionItems.reduce((sum, it) => sum + it.amount, 0);
         const shouldSendPaymobItems = paymentDiscount <= 0;
+        const serializedCheckoutItems = checkoutItems.map((item) => serializeOrderItem(item, products));
+        const orderSnapshot = {
+          locale,
+          delivery_method: deliveryMethod,
+          amount_egp: finalTotal,
+          amount_cents: amountCents,
+          shipping_egp: shipping,
+          customer: {
+            email: formData.email,
+            phone: formData.phone,
+            first_name: formData.firstName,
+            last_name: "",
+            city: formData.city,
+            governorate: formData.governorate,
+            address: formData.address,
+          },
+          items: serializedCheckoutItems,
+        };
         if (shouldSendPaymobItems && itemsSum !== amountCents) {
           throw new Error("Invalid amount: items sum does not match total");
         }
@@ -752,6 +770,7 @@ function CheckoutContent() {
               customer_email: formData.email,
               customer_phone: formData.phone,
               total_egp: finalTotal,
+              order_snapshot: orderSnapshot,
               payment_discount: paymentDiscount > 0 ? paymentDiscount : null,
               payment_discount_percent: paymentDiscount > 0 ? 2 : null,
             },
@@ -798,7 +817,7 @@ function CheckoutContent() {
               governorate: formData.governorate,
               address: formData.address,
             },
-            items: checkoutItems.map((item) => serializeOrderItem(item, products)),
+            items: serializedCheckoutItems,
             paymob: {
               client_secret: clientSecret,
               intention_order_id: data?.intention_order_id,
