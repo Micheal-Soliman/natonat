@@ -1,35 +1,5 @@
 import { NextResponse } from "next/server";
-import { createShipment, buildShipmentFromOrder, validateAddress } from "@/lib/aramex";
-
-type AramexAddressCandidate = {
-  City?: string;
-  StateOrProvinceCode?: string;
-  PostCode?: string;
-};
-
-type AramexValidationResult = {
-  Address?: AramexAddressCandidate;
-  ValidatedAddress?: AramexAddressCandidate;
-  SuggestedAddress?: AramexAddressCandidate;
-  SuggestedAddresses?: AramexAddressCandidate[];
-  Addresses?: AramexAddressCandidate[];
-};
-
-function tryExtractNormalizedAddress(validateResult: AramexValidationResult) {
-  // Aramex responses may vary by account/version; keep this defensive.
-  const candidates = [
-    validateResult?.Address,
-    validateResult?.ValidatedAddress,
-    validateResult?.SuggestedAddress,
-    validateResult?.SuggestedAddresses?.[0],
-    validateResult?.Addresses?.[0],
-  ].filter(Boolean);
-
-  for (const c of candidates) {
-    if (c?.City || c?.StateOrProvinceCode || c?.PostCode) return c;
-  }
-  return null;
-}
+import { createShipment, buildShipmentFromOrder } from "@/lib/aramex";
 
 export async function POST(req: Request) {
   try {
@@ -53,31 +23,6 @@ export async function POST(req: Request) {
 
     // Build shipment data (with COD params)
     const shipmentData = buildShipmentFromOrder(orderRef, customer, items, totalValue, cod, codAmount);
-
-    // Best-effort: validate & normalize addresses via Aramex Location API
-    try {
-      const shipperValidation = await validateAddress(shipmentData.Shipper.PartyAddress);
-      const consigneeValidation = await validateAddress(shipmentData.Consignee.PartyAddress);
-
-      const normalizedShipper = tryExtractNormalizedAddress(shipperValidation as AramexValidationResult);
-      const normalizedConsignee = tryExtractNormalizedAddress(consigneeValidation as AramexValidationResult);
-
-      if (normalizedShipper) {
-        shipmentData.Shipper.PartyAddress = {
-          ...shipmentData.Shipper.PartyAddress,
-          ...normalizedShipper,
-        };
-      }
-
-      if (normalizedConsignee) {
-        shipmentData.Consignee.PartyAddress = {
-          ...shipmentData.Consignee.PartyAddress,
-          ...normalizedConsignee,
-        };
-      }
-    } catch {
-      // Ignore validation failures and continue with original payload
-    }
 
     // Create shipment with Aramex
     const result = await createShipment(shipmentData);

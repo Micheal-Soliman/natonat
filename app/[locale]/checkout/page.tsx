@@ -971,10 +971,14 @@ function CheckoutContent() {
         } else {
           setAramexStatus("failed");
           setAramexError(shipmentData.details || shipmentData.error || "Unknown error");
+          throw new Error(shipmentData.details || shipmentData.error || "Aramex shipment failed");
         }
       } catch (err) {
         setAramexStatus("failed");
         setAramexError(err instanceof Error ? err.message : "Network error");
+        setIsSubmitting(false);
+        setSubmitError(err instanceof Error ? err.message : "Aramex shipment failed");
+        return;
       }
     } else {
       setAramexStatus("skipped");
