@@ -773,7 +773,7 @@
       "itemCount": "{count, plural, =0 {0 قطعة} =1 {قطعة واحدة} =2 {قطعتين} few {# قطع} many {# قطعة} other {# قطعة}}",
       "shippingLabel": "الشحن",
       "freeShipping": "الشحن مجاني",
-      "paymentMethodDiscount": "خصم الدفع الإلكتروني (2%)",
+      "paymentMethodDiscount": "خصم الدفع الإلكتروني",
       "paymentDiscount": "خصم الدفع الإلكتروني {amount} جنيه",
       "buyNowMode": "🛒 شراء فوري",
       "cartMode": "🛍️ من السلة"

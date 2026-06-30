@@ -870,7 +870,7 @@
       "itemCount": "{count, plural, =1 {# item} other {# items}}",
       "shippingLabel": "Shipping",
       "freeShipping": "Free shipping",
-      "paymentMethodDiscount": "Payment Method Discount (2%)",
+      "paymentMethodDiscount": "Payment Method Discount",
       "paymentDiscount": "Payment discount EGP {amount}",
       "buyNowMode": "🛒 Buy Now - Quick Purchase",
       "cartMode": "🛍️ From Cart"

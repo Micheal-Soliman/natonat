@@ -163,7 +163,7 @@ function renderTotalsHtml(orderData: OrderEmailData) {
   const subtotal = orderData.extras?.subtotal_egp ?? (amount - (orderData.shipping_egp || 0));
   const shipping = orderData.shipping_egp || 0;
   const paymentDiscount = orderData.extras?.payment_discount || 0;
-  const paymentDiscountPercent = orderData.extras?.payment_discount_percent || 2;
+  const paymentDiscountPercent = orderData.extras?.payment_discount_percent || 5;
   const total = amount;
 
   const discountRow = paymentDiscount > 0

@@ -14,7 +14,10 @@ export async function POST(req: Request) {
       codAmount = 0,
     } = body;
 
-    if (!orderRef || !customer || !items || !totalValue) {
+    const numericTotalValue = Number(totalValue);
+    const numericCodAmount = Number(codAmount);
+
+    if (!orderRef || !customer || !Array.isArray(items) || !Number.isFinite(numericTotalValue)) {
       return NextResponse.json(
         { error: "Missing required fields: orderRef, customer, items, totalValue" },
         { status: 400 }
@@ -22,7 +25,14 @@ export async function POST(req: Request) {
     }
 
     // Build shipment data (with COD params)
-    const shipmentData = buildShipmentFromOrder(orderRef, customer, items, totalValue, cod, codAmount);
+    const shipmentData = buildShipmentFromOrder(
+      orderRef,
+      customer,
+      items,
+      numericTotalValue,
+      cod,
+      Number.isFinite(numericCodAmount) ? numericCodAmount : 0
+    );
 
     // Create shipment with Aramex
     const result = await createShipment(shipmentData);

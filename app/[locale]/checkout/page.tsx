@@ -84,6 +84,14 @@ void arabicCityNames;
 
 const ARAMEX_CITIES_CACHE_KEY = "natonat-aramex-cities-eg-v2";
 const ARAMEX_CITIES_CACHE_TTL = 24 * 60 * 60 * 1000;
+const CARD_PAYMENT_DISCOUNT_PERCENT = 5;
+const INSTAPAY_PAYMENT_DISCOUNT_PERCENT = 2;
+
+function getPaymentDiscountPercent(paymentMethod: string) {
+  if (paymentMethod === "card") return CARD_PAYMENT_DISCOUNT_PERCENT;
+  if (paymentMethod === "instapay") return INSTAPAY_PAYMENT_DISCOUNT_PERCENT;
+  return 0;
+}
 
 const citySearchAliases: Record<string, string[]> = {
   cairo: ["cairo", "القاهرة", "قاهره", "القاهره", "el qahera", "alqahira"],
@@ -785,7 +793,8 @@ function CheckoutContent() {
           });
         }
 
-        const paymentDiscount = Math.round((checkoutSubtotal + shipping) * 0.02);
+        const paymentDiscountPercent = getPaymentDiscountPercent(paymentMethod);
+        const paymentDiscount = Math.round((checkoutSubtotal + shipping) * (paymentDiscountPercent / 100));
         const amountCents = Math.round((checkoutSubtotal + shipping - paymentDiscount) * 100);
         const itemsSum = intentionItems.reduce((sum, it) => sum + it.amount, 0);
         const shouldSendPaymobItems = paymentDiscount <= 0;
@@ -840,7 +849,7 @@ function CheckoutContent() {
               total_egp: finalTotal,
               order_snapshot: orderSnapshot,
               payment_discount: paymentDiscount > 0 ? paymentDiscount : null,
-              payment_discount_percent: paymentDiscount > 0 ? 2 : null,
+              payment_discount_percent: paymentDiscount > 0 ? paymentDiscountPercent : null,
             },
             special_reference: orderRef,
           }),
@@ -1027,7 +1036,7 @@ function CheckoutContent() {
             subtotal_egp: checkoutSubtotal,
             free_shipping_threshold: 1000,
             payment_discount: paymentDiscount > 0 ? paymentDiscount : null,
-            payment_discount_percent: paymentDiscount > 0 ? 2 : null,
+            payment_discount_percent: paymentDiscount > 0 ? getPaymentDiscountPercent(paymentMethod) : null,
           },
 
           created_at: new Date().toISOString(),
@@ -1075,12 +1084,14 @@ function CheckoutContent() {
     [checkoutSubtotal, shipping]
   );
 
-  // 2% discount for non-COD payment methods
+  // Discount for non-COD payment methods
   const paymentDiscount = useMemo(
-    () =>
-      paymentMethod && paymentMethod !== "cod"
-        ? Math.round((checkoutSubtotal + shipping) * 0.02)
-        : 0,
+    () => {
+      const discountPercent = getPaymentDiscountPercent(paymentMethod);
+      return discountPercent > 0
+        ? Math.round((checkoutSubtotal + shipping) * (discountPercent / 100))
+        : 0;
+    },
     [paymentMethod, checkoutSubtotal, shipping]
   );
 
@@ -1699,7 +1710,7 @@ function CheckoutContent() {
                             <p className="text-sm text-[#0F1A26]/70 mt-1">
                               {t("form.payment.card.subtitle")}
                             </p>
-                            <p className="text-sm text-green-600 font-bold mt-1">2% OFF</p>
+                            <p className="text-sm text-green-600 font-bold mt-1">{CARD_PAYMENT_DISCOUNT_PERCENT}% OFF</p>
                           </div>
 
                           <CardPaymentLogoImages />
@@ -1762,7 +1773,7 @@ function CheckoutContent() {
                             <p className="text-sm text-[#0F1A26]/70 mt-1">
                               {t("form.payment.instapay.subtitle")}
                             </p>
-                            <p className="text-sm text-green-600 font-bold mt-1">2% OFF</p>
+                            <p className="text-sm text-green-600 font-bold mt-1">{INSTAPAY_PAYMENT_DISCOUNT_PERCENT}% OFF</p>
                           </div>
 
                           <InstaPayLogoImages />

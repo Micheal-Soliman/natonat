@@ -66,8 +66,9 @@ type LoggedOrder = {
   shipping_egp?: number;
   locale?: string;
   items?: Array<{
-    name: string;
-    quantity: number;
+    name?: string;
+    productName?: string;
+    quantity?: number;
     [key: string]: unknown;
   }>;
 };
@@ -153,6 +154,27 @@ function getPaymobOrderSnapshot(transaction: PaymobTransaction): LoggedOrder | n
   if (!order.delivery_method || !order.customer || !Array.isArray(order.items)) return null;
 
   return order;
+}
+
+function getOrderAmountEgp(orderData: LoggedOrder | null, paymentAmountCents: number) {
+  if (typeof orderData?.amount_egp === "number" && orderData.amount_egp > 0) {
+    return orderData.amount_egp;
+  }
+
+  if (typeof orderData?.amount_cents === "number" && orderData.amount_cents > 0) {
+    return orderData.amount_cents / 100;
+  }
+
+  return paymentAmountCents > 0 ? paymentAmountCents / 100 : 0;
+}
+
+function getAramexItems(orderData: LoggedOrder) {
+  return (orderData.items || [])
+    .map((item) => ({
+      name: item.name || item.productName || "Order item",
+      quantity: typeof item.quantity === "number" && item.quantity > 0 ? item.quantity : 1,
+    }))
+    .filter((item) => item.name.trim().length > 0);
 }
 
 async function fetchLoggedOrder(appOrigin: string, orderRef: string) {
@@ -288,6 +310,9 @@ export async function POST(req: Request) {
           if (process.env.NODE_ENV !== "production") {
             console.log(`[Webhook] Proceeding with Aramex shipment for order: ${paymentDetails.special_reference}`);
           }
+
+          const shipmentItems = getAramexItems(orderData);
+          const shipmentTotalValue = getOrderAmountEgp(orderData, paymentDetails.amount_cents);
           
           const shipmentRes = await fetch(`${appOrigin}/api/aramex/shipment`, {
             method: "POST",
@@ -295,12 +320,10 @@ export async function POST(req: Request) {
             body: JSON.stringify({
               orderRef: paymentDetails.special_reference,
               customer: orderData.customer,
-              items: orderData.items?.map((item: { name: string; quantity: number }) => ({
-                name: item.name,
-                quantity: item.quantity,
-              })) || [],
-              totalValue: (paymentDetails.amount_cents || 0) / 100,
+              items: shipmentItems,
+              totalValue: shipmentTotalValue,
               cod: false,
+              codAmount: 0,
             }),
           });
 
@@ -330,7 +353,16 @@ export async function POST(req: Request) {
               }),
             });
           } else {
-            console.error("[Webhook] Failed to create Aramex shipment:", shipmentData.error);
+            const aramexError =
+              shipmentData.details ||
+              shipmentData.error ||
+              "Aramex shipment failed";
+            console.error("[Webhook] Failed to create Aramex shipment:", aramexError, {
+              status: shipmentRes.status,
+              order_ref: paymentDetails.special_reference,
+              totalValue: shipmentTotalValue,
+              item_count: shipmentItems.length,
+            });
             await fetch(`${appOrigin}/api/orders/log`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -340,7 +372,7 @@ export async function POST(req: Request) {
                 status: "confirmed",
                 payment_status: "Paid",
                 aramex: {
-                  error: shipmentData.error || shipmentData.details || "Aramex shipment failed",
+                  error: aramexError,
                 },
                 payment: paymentDetails,
                 updated_at: new Date().toISOString(),
