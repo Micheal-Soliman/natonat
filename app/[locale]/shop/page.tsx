@@ -648,6 +648,7 @@ function ShopContent() {
                   const selection = getQuickSelection(product);
                   const isBundle = isBundleProduct(product);
                   const isUnavailable = isProductOutOfStock(product) || isProductSizeOutOfStock(product, selection.size);
+                  const productTypeLabel = getProductCategories(product).includes("luggage-covers") ? "Bag Covers" : product.type;
 
                   return (
                     <div
@@ -669,7 +670,7 @@ function ShopContent() {
                       <div className="px-1">
                         <Link href={`/product/${product.slug}`} className="block">
                           <span className="text-[#EEBC3F] text-[9px] sm:text-[10px] font-semibold tracking-wider uppercase">
-                            {product.type}
+                            {productTypeLabel}
                           </span>
                           <h3 className="text-[#0F1A26] font-medium text-xs sm:text-sm mt-0.5 mb-0.5 sm:mt-1 sm:mb-1 group-hover:text-[#EEBC3F] transition-colors line-clamp-1">
                             {product.name}

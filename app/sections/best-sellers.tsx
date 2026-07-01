@@ -346,6 +346,7 @@ export function BestSellers() {
               const selection = getQuickSelection(product);
               const isBundle = isBundleProduct(product);
               const isUnavailable = isProductOutOfStock(product) || isProductSizeOutOfStock(product, selection.size);
+              const productTypeLabel = hasCategory(product, "luggage-covers") ? "Bag Covers" : product.type;
 
               return (
                 <div
@@ -421,7 +422,7 @@ export function BestSellers() {
                     <div>
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-[#EEBC3F]/80 text-[10px] font-semibold tracking-[0.15em] uppercase">
-                          {product.type}
+                          {productTypeLabel}
                         </span>
                       </div>
                       <h3 className="text-white font-medium text-sm sm:text-base tracking-tight group-hover:text-[#EEBC3F] transition-colors duration-300 line-clamp-1">
