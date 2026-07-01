@@ -1,7 +1,7 @@
 import { groq } from "next-sanity";
 
 export const activeProductsQuery = groq`
-  *[_type == "product" && isActive != false] | order(sortOrder asc, legacyId asc) {
+  *[_type == "product" && isActive != false] | order(select(sortOrder > 0 => sortOrder, 9999) asc, legacyId asc) {
     _id,
     legacyId,
     name,
@@ -48,7 +48,7 @@ export const activeProductsQuery = groq`
 `;
 
 export const productBySlugQuery = groq`
-  *[_type == "product" && slug.current == $slug][0] {
+  *[_type == "product" && isActive != false && slug.current == $slug][0] {
     _id,
     legacyId,
     name,

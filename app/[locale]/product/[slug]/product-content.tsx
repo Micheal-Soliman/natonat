@@ -1310,7 +1310,7 @@ export default function ProductPageContent({
             <div className="hidden md:flex flex-col items-center">
               <span className="text-xs text-[#0F1A26]/40 uppercase tracking-wider">{t('nav.browsing')}</span>
               <div className="flex items-center gap-2 mt-1">
-                <span className="text-[#EEBC3F] font-bold">{products.findIndex(p => p.id === product.id) + 1}</span>
+                <span className="text-[#EEBC3F] font-bold">{Math.max(1, products.findIndex(p => p.slug === product.slug) + 1)}</span>
                 <span className="text-[#0F1A26]/30">/</span>
                 <span className="text-[#0F1A26]/50">{products.length}</span>
               </div>

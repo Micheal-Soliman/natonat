@@ -1,4 +1,5 @@
 import { products as fallbackProducts, type Product } from "@/lib/products";
+import { normalizeImageList, normalizeImageUrl } from "@/lib/image-url";
 import { sanityClient } from "@/sanity/lib/client";
 import { activeProductsQuery, productBySlugQuery } from "@/sanity/lib/queries";
 
@@ -28,41 +29,13 @@ type SanityProduct = Omit<Product, "id" | "image" | "images" | "colors" | "bundl
 };
 
 function getGeneratedProductId(sanityId: string) {
+  const stableId = sanityId.replace(/^drafts\./, "");
   let hash = 0;
-  for (let index = 0; index < sanityId.length; index += 1) {
-    hash = (hash * 31 + sanityId.charCodeAt(index)) >>> 0;
+  for (let index = 0; index < stableId.length; index += 1) {
+    hash = (hash * 31 + stableId.charCodeAt(index)) >>> 0;
   }
 
   return 900000 + (hash % 900000);
-}
-
-function normalizeImageUrl(url?: string) {
-  const trimmed = url?.trim();
-  if (!trimmed) return "";
-
-  const driveMatch = trimmed.match(/drive\.google\.com\/file\/d\/([^/]+)/) ||
-    trimmed.match(/[?&]id=([^&]+)/);
-  if (driveMatch?.[1]) {
-    return `https://lh3.googleusercontent.com/d/${driveMatch[1]}`;
-  }
-
-  if (trimmed.includes("cdn.sanity.io/images/")) {
-    try {
-      const sanityUrl = new URL(trimmed);
-      if (!sanityUrl.searchParams.has("w")) sanityUrl.searchParams.set("w", "1600");
-      if (!sanityUrl.searchParams.has("auto")) sanityUrl.searchParams.set("auto", "format");
-      return sanityUrl.toString();
-    } catch {
-      const separator = trimmed.includes("?") ? "&" : "?";
-      return `${trimmed}${separator}w=1600&auto=format`;
-    }
-  }
-
-  return trimmed;
-}
-
-function normalizeImageList(urls?: string[]) {
-  return (urls || []).map(normalizeImageUrl).filter(Boolean);
 }
 
 function normalizeProduct(product: SanityProduct): Product | null {

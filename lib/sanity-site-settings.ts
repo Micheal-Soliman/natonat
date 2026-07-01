@@ -1,3 +1,4 @@
+import { normalizeImageUrl } from "@/lib/image-url";
 import { sanityClient } from "@/sanity/lib/client";
 import { siteSettingsQuery } from "@/sanity/lib/queries";
 
@@ -170,9 +171,22 @@ function mergeSizeGuide(sizeGuide?: Partial<SizeGuideSettings>): SizeGuideSettin
 }
 
 function mergeFlashSale(flashSale?: Partial<FlashSaleSettings>): FlashSaleSettings {
+  const product = flashSale?.product
+    ? {
+        ...flashSale.product,
+        imageUrl: normalizeImageUrl(flashSale.product.imageUrl),
+        colors: flashSale.product.colors?.map((color) => ({
+          ...color,
+          imageUrl: normalizeImageUrl(color.imageUrl),
+        })),
+      }
+    : undefined;
+
   return {
     ...fallbackFlashSale,
     ...flashSale,
+    imageUrl: normalizeImageUrl(flashSale?.imageUrl),
+    product,
     enabled: Boolean(flashSale?.enabled),
     ctaLabel: flashSale?.ctaLabel || fallbackFlashSale.ctaLabel,
     secondaryLabel: flashSale?.secondaryLabel || fallbackFlashSale.secondaryLabel,
@@ -192,15 +206,30 @@ function mergeFlashSaleSection(
       }]
     : [];
   const validOffers = flashSaleSection?.offers?.filter((offer) => offer.product) || [];
+  const offers = validOffers.length ? validOffers : legacyOffer;
 
   return {
     ...fallbackFlashSaleSection,
     ...flashSaleSection,
+    imageUrl: normalizeImageUrl(flashSaleSection?.imageUrl),
     sectionEnabled: Boolean(flashSaleSection?.sectionEnabled),
     addToCartLabel:
       flashSaleSection?.addToCartLabel || fallbackFlashSaleSection.addToCartLabel,
     buyNowLabel: flashSaleSection?.buyNowLabel || fallbackFlashSaleSection.buyNowLabel,
-    offers: validOffers.length ? validOffers : legacyOffer,
+    offers: offers.map((offer) => ({
+      ...offer,
+      imageUrl: normalizeImageUrl(offer.imageUrl),
+      product: offer.product
+        ? {
+            ...offer.product,
+            imageUrl: normalizeImageUrl(offer.product.imageUrl),
+            colors: offer.product.colors?.map((color) => ({
+              ...color,
+              imageUrl: normalizeImageUrl(color.imageUrl),
+            })),
+          }
+        : undefined,
+    })),
   };
 }
 

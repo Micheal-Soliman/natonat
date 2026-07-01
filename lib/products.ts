@@ -53,6 +53,7 @@ export interface Product {
   >;
   ratingValue?: number;
   reviewCount?: number;
+  sortOrder?: number;
   // Dynamic pricing for bundles
   dynamicPricing?: boolean;
   pricingRule?: string;

@@ -55,28 +55,6 @@ function ShopContent() {
   const ref = useRef<HTMLDivElement>(null);
   const categoryTabsRef = useRef<HTMLDivElement>(null);
 
-  // Load page from localStorage on mount
-  useEffect(() => {
-    try {
-      const savedPage = localStorage.getItem('shopCurrentPage');
-      const parsedPage = savedPage ? parseInt(savedPage, 10) : 1;
-      if (Number.isFinite(parsedPage) && parsedPage > 0) {
-        setCurrentPage(parsedPage);
-      }
-    } catch {
-      setCurrentPage(1);
-    }
-  }, []);
-
-  // Save page to localStorage when it changes
-  useEffect(() => {
-    try {
-      localStorage.setItem('shopCurrentPage', currentPage.toString());
-    } catch {
-      // Ignore storage quota/privacy errors.
-    }
-  }, [currentPage]);
-
   // Update activeCategory when URL changes
   useEffect(() => {
     setActiveCategory(categoryFromUrl);

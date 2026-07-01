@@ -123,7 +123,7 @@ export default async function ProductPage({ params }: { params: Promise<{ locale
   }
   
   // Get prev/next products for navigation
-  const currentProductIndex = products.findIndex((p) => p.id === product.id);
+  const currentProductIndex = products.findIndex((p) => p.slug === product.slug);
   const prevProduct = currentProductIndex > 0 ? products[currentProductIndex - 1] : null;
   const nextProduct = currentProductIndex < products.length - 1 ? products[currentProductIndex + 1] : null;
   const productUrl = `${siteUrl}/${locale}/product/${product.slug}`;
