@@ -87,8 +87,8 @@ export const product = defineType({
       title: "Legacy product ID",
       type: "number",
       group: "basic",
-      description: "Matches the current id in lib/products.ts.",
-      validation: (Rule) => Rule.required().integer().positive(),
+      description: "Optional. Use only when this product matches an old item in lib/products.ts.",
+      validation: (Rule) => Rule.integer().positive(),
     }),
     defineField({
       name: "name",
@@ -288,7 +288,7 @@ export const product = defineType({
             defineField({ name: "name", title: "Name", type: "string" }),
             defineField({
               name: "imageUrl",
-              title: "Current local image URL",
+              title: "External image URL",
               type: "string",
             }),
             defineField({
@@ -310,10 +310,10 @@ export const product = defineType({
     }),
     defineField({
       name: "imageUrl",
-      title: "Current main image URL",
+      title: "External main image URL",
       type: "string",
       group: "media",
-      description: "Keeps compatibility with existing public folder URLs.",
+      description: "Supports local URLs, Cloudinary image URLs, and Google Drive share links.",
     }),
     defineField({
       name: "mainImage",
@@ -324,7 +324,7 @@ export const product = defineType({
     }),
     defineField({
       name: "galleryUrls",
-      title: "Current gallery URLs",
+      title: "External gallery URLs",
       type: "array",
       group: "media",
       of: [defineArrayMember({ type: "string" })],

@@ -17,6 +17,7 @@ type SanityBundleItem = {
 };
 
 type SanityProduct = Omit<Product, "id" | "image" | "images" | "colors" | "bundleItems"> & {
+  _id?: string;
   legacyId?: number;
   imageUrl?: string;
   mainImageUrl?: string;
@@ -26,28 +27,68 @@ type SanityProduct = Omit<Product, "id" | "image" | "images" | "colors" | "bundl
   bundleItems?: SanityBundleItem[];
 };
 
+function getGeneratedProductId(sanityId: string) {
+  let hash = 0;
+  for (let index = 0; index < sanityId.length; index += 1) {
+    hash = (hash * 31 + sanityId.charCodeAt(index)) >>> 0;
+  }
+
+  return 900000 + (hash % 900000);
+}
+
+function normalizeImageUrl(url?: string) {
+  const trimmed = url?.trim();
+  if (!trimmed) return "";
+
+  const driveMatch = trimmed.match(/drive\.google\.com\/file\/d\/([^/]+)/) ||
+    trimmed.match(/[?&]id=([^&]+)/);
+  if (driveMatch?.[1]) {
+    return `https://lh3.googleusercontent.com/d/${driveMatch[1]}`;
+  }
+
+  if (trimmed.includes("cdn.sanity.io/images/")) {
+    try {
+      const sanityUrl = new URL(trimmed);
+      if (!sanityUrl.searchParams.has("w")) sanityUrl.searchParams.set("w", "1600");
+      if (!sanityUrl.searchParams.has("auto")) sanityUrl.searchParams.set("auto", "format");
+      return sanityUrl.toString();
+    } catch {
+      const separator = trimmed.includes("?") ? "&" : "?";
+      return `${trimmed}${separator}w=1600&auto=format`;
+    }
+  }
+
+  return trimmed;
+}
+
+function normalizeImageList(urls?: string[]) {
+  return (urls || []).map(normalizeImageUrl).filter(Boolean);
+}
+
 function normalizeProduct(product: SanityProduct): Product | null {
-  if (!product.legacyId || !product.slug || !product.name) {
+  if (!product._id || !product.slug || !product.name) {
     return null;
   }
 
+  const galleryImageUrls = normalizeImageList(product.galleryImageUrls);
+  const galleryUrls = normalizeImageList(product.galleryUrls);
+  const images = galleryImageUrls.length > 0 ? galleryImageUrls : galleryUrls;
+  const mainImage = normalizeImageUrl(product.mainImageUrl) || normalizeImageUrl(product.imageUrl) || images[0] || "/logo-after.png";
+
   return {
     ...product,
-    id: product.legacyId,
+    id: product.legacyId || getGeneratedProductId(product._id),
     category:
       Array.isArray(product.category) && product.category.length === 1
         ? product.category[0]
         : product.category,
-    image: product.mainImageUrl || product.imageUrl || "",
+    image: mainImage,
     stockStatus: product.stockStatus || "in_stock",
-    images:
-      product.galleryImageUrls?.filter(Boolean) ||
-      product.galleryUrls?.filter(Boolean) ||
-      undefined,
+    images: images.length > 0 ? images : undefined,
     colors: product.colors?.map((color) => ({
       id: color.id || color.name || "",
       name: color.name || color.id || "",
-      image: color.imageAssetUrl || color.imageUrl || "",
+      image: normalizeImageUrl(color.imageAssetUrl) || normalizeImageUrl(color.imageUrl) || mainImage,
     })),
     bundleItems: product.bundleItems?.map((item) => ({
       productId: item.referencedLegacyId,
