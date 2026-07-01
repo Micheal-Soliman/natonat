@@ -1382,8 +1382,15 @@ export default function ProductPageContent({
 
                 {/* Premium Tag */}
                 <div className="absolute top-3 left-3 sm:top-6 sm:left-6">
-                  <div className="bg-[#EEBC3F] rounded-full px-2 py-1 sm:px-4 sm:py-2 border border-[#EEBC3F] shadow-lg">
-                    <span className="text-[#0F1A26] text-[10px] sm:text-xs font-bold tracking-wider">{t('badge')}</span>
+                  <div className="flex flex-wrap gap-2">
+                    {isBagCover && (
+                      <div className="rounded-full border border-white/70 bg-white/95 px-3 py-1.5 shadow-lg shadow-[#0F1A26]/10 sm:px-4 sm:py-2">
+                        <span className="text-[#0F1A26] text-[10px] sm:text-xs font-black uppercase tracking-[0.16em]">Bag Covers</span>
+                      </div>
+                    )}
+                    <div className="bg-[#EEBC3F] rounded-full px-2 py-1 sm:px-4 sm:py-2 border border-[#EEBC3F] shadow-lg">
+                      <span className="text-[#0F1A26] text-[10px] sm:text-xs font-bold tracking-wider">{t('badge')}</span>
+                    </div>
                   </div>
                 </div>
 
@@ -1465,14 +1472,7 @@ export default function ProductPageContent({
                 {/* Category & Actions */}
                 <div className="flex items-start justify-between mb-4 sm:mb-6">
                   <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-[#EEBC3F] text-xs font-bold tracking-[0.3em] uppercase">{product.type}</span>
-                      {isBagCover && (
-                        <span className="inline-flex items-center rounded-full border border-[#EEBC3F]/45 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-[#0F1A26] shadow-sm">
-                          Bag Covers
-                        </span>
-                      )}
-                    </div>
+                    <span className="text-[#EEBC3F] text-xs font-bold tracking-[0.3em] uppercase">{product.type}</span>
                     <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#0F1A26] mt-1 sm:mt-2 tracking-tight">{product.name}</h1>
                   </div>
                   <div className="flex gap-2 sm:gap-3 ml-4">
