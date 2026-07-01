@@ -399,6 +399,12 @@ export function BestSellers() {
                           -{Math.round((1 - product.price / product.originalPrice) * 100)}%
                         </span>
                       )}
+
+                      {hasCategory(product, "luggage-covers") && (
+                        <span className="absolute bottom-2 left-2 z-10 rounded-full border border-white/70 bg-white/95 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[#0F1A26] shadow-lg shadow-black/10 sm:bottom-3 sm:left-3 sm:px-3">
+                          Bag Covers
+                        </span>
+                      )}
                     </div>
                     </Link>
                     <WishlistToggleButton

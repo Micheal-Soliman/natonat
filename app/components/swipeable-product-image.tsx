@@ -30,6 +30,8 @@ export function SwipeableProductImage({
 
   const hasMultipleImages = images.length > 1;
   const primaryImage = images[0] || product.image;
+  const productCategories = Array.isArray(product.category) ? product.category : [product.category];
+  const isBagCover = productCategories.includes("luggage-covers");
 
   // Keep the preview image lightweight.
   const hoverImage = images.find((image) => image !== primaryImage);
@@ -182,6 +184,12 @@ export function SwipeableProductImage({
             : product.tag === "Limited"
             ? t("limited")
             : product.tag}
+        </span>
+      )}
+
+      {isBagCover && (
+        <span className="absolute bottom-3 left-2 z-30 rounded-full border border-white/70 bg-white/95 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[#0F1A26] shadow-lg shadow-[#0F1A26]/10 sm:left-3 sm:px-3">
+          Bag Covers
         </span>
       )}
 

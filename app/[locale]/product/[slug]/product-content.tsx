@@ -639,7 +639,9 @@ export default function ProductPageContent({
   const [detailsExpanded, setDetailsExpanded] = useState(false); // Controls full expansion
   const [showInfo, setShowInfo] = useState(true); // Fully open by default
 
-  const isBundle = product.category === "bundles" && !!product.bundleItems?.length;
+  const productCategories = Array.isArray(product.category) ? product.category : [product.category];
+  const isBagCover = productCategories.includes("luggage-covers");
+  const isBundle = productCategories.includes("bundles") && !!product.bundleItems?.length;
   const getBundleProduct = useCallback(
     (productId: number) => products.find((p) => p.id === productId),
     [products]
@@ -1463,7 +1465,14 @@ export default function ProductPageContent({
                 {/* Category & Actions */}
                 <div className="flex items-start justify-between mb-4 sm:mb-6">
                   <div className="flex-1 min-w-0">
-                    <span className="text-[#EEBC3F] text-xs font-bold tracking-[0.3em] uppercase">{product.type}</span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-[#EEBC3F] text-xs font-bold tracking-[0.3em] uppercase">{product.type}</span>
+                      {isBagCover && (
+                        <span className="inline-flex items-center rounded-full border border-[#EEBC3F]/45 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-[#0F1A26] shadow-sm">
+                          Bag Covers
+                        </span>
+                      )}
+                    </div>
                     <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#0F1A26] mt-1 sm:mt-2 tracking-tight">{product.name}</h1>
                   </div>
                   <div className="flex gap-2 sm:gap-3 ml-4">
