@@ -135,7 +135,7 @@ export async function GET() {
         ActualWeight: { Value: 1, Unit: "Kg" },
         Dimensions: { Length: 30, Width: 20, Height: 10, Unit: "cm" },
         ProductGroup: "DOM",
-        ProductType: "COM",
+        ProductType: "ONP",
         PaymentType: "P",
         NumberOfPieces: 1,
       },

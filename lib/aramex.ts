@@ -356,7 +356,7 @@ export async function createShipment(
           GoodsOriginCountry: "EG",
           NumberOfPieces: shipmentData.Details.NumberOfPieces || 1,
           ProductGroup: "DOM",
-          ProductType: shipmentData.Details.ProductType || "COM",
+          ProductType: shipmentData.Details.ProductType || "ONP",
           PaymentType: paymentType,
           PaymentOptions: null,
           CustomsValueAmount: {
@@ -872,7 +872,7 @@ export function buildShipmentFromOrder(
       GoodsOriginCountry: "EG",
       NumberOfPieces: numberOfPieces,
       ProductGroup: "DOM",
-      ProductType: cod ? "CDS" : "COM",
+      ProductType: cod ? "CDS" : "ONP",
       PaymentType: "P",
       PaymentOptions: null,
       Services: "",

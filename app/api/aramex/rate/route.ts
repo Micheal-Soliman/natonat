@@ -77,7 +77,7 @@ export async function POST(req: Request) {
         },
         NumberOfPieces: numberOfPieces,
         ProductGroup: productGroup, // DOM or EXP
-        ProductType: productGroup === "DOM" ? "COM" : "PPX",
+        ProductType: productGroup === "DOM" ? "ONP" : "PPX",
         PaymentType: "P",
       },
     };
