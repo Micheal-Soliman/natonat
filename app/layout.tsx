@@ -6,6 +6,7 @@ import "./globals.css";
 import { GoogleAnalyticsPageView } from "./components/google-analytics-page-view";
 import { MetaPixelPageView } from "./components/meta-pixel-page-view";
 import { TikTokPixelPageView } from "./components/tiktok-pixel-page-view";
+import { YandexMetrikaPageView } from "./components/yandex-metrika-page-view";
 import { absoluteUrl, siteConfig } from "@/lib/seo";
 
 const montserrat = Montserrat({
@@ -47,6 +48,9 @@ const googleAnalyticsId =
   process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ||
   process.env.GOOGLE_ANALYTICS_ID ||
   "G-MBR1BZMFVE";
+const yandexMetrikaId =
+  process.env.NEXT_PUBLIC_YANDEX_METRIKA_ID ||
+  "110397858";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
@@ -232,6 +236,32 @@ export default function RootLayout({
           `}
         </Script>
 
+        <Script id="yandex-metrika" strategy="afterInteractive">
+          {`
+            if (!window.location.pathname.startsWith('/studio')) {
+              (function(m,e,t,r,i,k,a){
+                m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+                m[i].l=1*new Date();
+                for (var j = 0; j < document.scripts.length; j++) {
+                  if (document.scripts[j].src === r) { return; }
+                }
+                k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+              })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=${yandexMetrikaId}', 'ym');
+
+              ym(${yandexMetrikaId}, 'init', {
+                ssr: true,
+                webvisor: true,
+                clickmap: true,
+                ecommerce: "dataLayer",
+                referrer: document.referrer,
+                url: location.href,
+                accurateTrackBounce: true,
+                trackLinks: true
+              });
+            }
+          `}
+        </Script>
+
         <noscript>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -242,10 +272,21 @@ export default function RootLayout({
             alt=""
           />
         </noscript>
+        <noscript>
+          <div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={`https://mc.yandex.ru/watch/${yandexMetrikaId}`}
+              style={{ position: "absolute", left: "-9999px" }}
+              alt=""
+            />
+          </div>
+        </noscript>
 
         <GoogleAnalyticsPageView />
         <MetaPixelPageView />
         <TikTokPixelPageView />
+        <YandexMetrikaPageView />
         {children}
       </body>
     </html>

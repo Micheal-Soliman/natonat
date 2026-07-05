@@ -648,7 +648,7 @@ function ShopContent() {
                   const selection = getQuickSelection(product);
                   const isBundle = isBundleProduct(product);
                   const isUnavailable = isProductOutOfStock(product) || isProductSizeOutOfStock(product, selection.size);
-                  const productTypeLabel = getProductCategories(product).includes("luggage-covers") ? "Bag Covers" : product.type;
+                  const productTypeLabel = getProductCategories(product).includes("luggage-covers") ? "Cover Only" : product.type;
 
                   return (
                     <div

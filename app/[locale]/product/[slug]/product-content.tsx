@@ -1385,7 +1385,15 @@ export default function ProductPageContent({
                   <div className="flex flex-wrap gap-2">
                     {isBagCover && (
                       <div className="rounded-full border border-white/70 bg-white/95 px-3 py-1.5 shadow-lg shadow-[#0F1A26]/10 sm:px-4 sm:py-2">
-                        <span className="text-[#0F1A26] text-[10px] sm:text-xs font-black uppercase tracking-[0.16em]">Bag Covers</span>
+                        <span className="flex flex-col text-center text-[#0F1A26]">
+                          <span className="text-[10px] font-black leading-none sm:text-xs">غطاء فقط</span>
+                          <span className="mt-0.5 text-[8px] font-black leading-none sm:text-[10px]">
+                            الحقيبة غير مشمولة
+                          </span>
+                          <span className="mt-1 text-[8px] font-black uppercase leading-none tracking-[0.08em] sm:text-[10px]">
+                            Cover only suitcase not available
+                          </span>
+                        </span>
                       </div>
                     )}
                     <div className="bg-[#EEBC3F] rounded-full px-2 py-1 sm:px-4 sm:py-2 border border-[#EEBC3F] shadow-lg">

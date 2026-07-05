@@ -188,8 +188,10 @@ export function SwipeableProductImage({
       )}
 
       {isBagCover && (
-        <span className="absolute bottom-3 left-2 z-30 rounded-full border border-white/70 bg-white/95 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[#0F1A26] shadow-lg shadow-[#0F1A26]/10 sm:left-3 sm:px-3">
-          Bag Covers
+        <span className="absolute bottom-3 left-2 z-30 inline-flex flex-col rounded-xl border border-[#EEBC3F]/70 bg-[#EEBC3F] px-2.5 py-1.5 text-center text-[#0F1A26] shadow-lg shadow-[#0F1A26]/10 sm:left-3 sm:px-3">
+          <span className="text-[10px] font-black leading-none">غطاء فقط</span>
+          <span className="mt-0.5 text-[8px] font-black leading-none">الحقيبة غير مشمولة</span>
+          <span className="mt-1 text-[8px] font-black uppercase leading-none tracking-[0.08em]">Cover only suitcase not available</span>
         </span>
       )}
 
