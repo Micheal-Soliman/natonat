@@ -738,6 +738,19 @@
       "reviewFields": "Please review the highlighted fields before placing the order.",
       "stockChanged": "Some quantities are no longer available. Refresh your cart and try again."
     },
+    "discount": {
+      "title": "Discount code",
+      "placeholder": "Enter code",
+      "apply": "Apply",
+      "checking": "Checking...",
+      "remove": "Remove",
+      "hint": "Have a promo code? Apply it before ordering.",
+      "enterCode": "Enter a discount code",
+      "invalid": "This discount code is not valid.",
+      "applied": "Discount code applied.",
+      "unavailable": "Discount service is unavailable. Please try again.",
+      "reapply": "Please review the discount code and apply it again."
+    },
     "steps": ["Details", "Delivery", "Payment", "Review"],
     "hints": {
       "address": "Add area, street, building number, floor, and a nearby landmark for smoother delivery.",
@@ -872,6 +885,7 @@
       "freeShipping": "Free shipping",
       "paymentMethodDiscount": "Payment Method Discount",
       "paymentDiscount": "Payment discount EGP {amount}",
+      "discountCode": "Discount code {code}",
       "buyNowMode": "🛒 Buy Now - Quick Purchase",
       "cartMode": "🛍️ From Cart"
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect, useMemo, useRef, type ReactNode } from "react";
+import { Suspense, useState, useEffect, useMemo, useRef, useCallback, type ReactNode } from "react";
 import type { Product } from "@/lib/products";
 import Image from "next/image";
 import { Link, useRouter } from "@/i18n/routing";
@@ -8,7 +8,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, CreditCard, Truck, Check, MapPin, Phone, Store, Package, Search, ChevronDown, ShoppingBag, ShieldCheck } from "lucide-react";
+import { ArrowLeft, CreditCard, Truck, Check, MapPin, Phone, Store, Package, Search, ChevronDown, ShoppingBag, ShieldCheck, TicketPercent } from "lucide-react";
 import { useCart, type CartItem } from "@/app/lib/cart-context";
 import { trackMetaPixelEvent } from "@/lib/meta-pixel";
 import { useCatalogProducts } from "@/app/lib/catalog-context";
@@ -342,6 +342,7 @@ function serializeOrderItem(item: CartItem, products: Product[]) {
     quantity: item.quantity,
     size: item.size,
     color,
+    category: catalogProduct?.category,
     type: catalogProduct?.type || item.type || "Product",
     image: item.image,
     isBundle: item.isBundle,
@@ -354,6 +355,18 @@ type PaymentLogo = {
   alt: string;
   width: number;
   height: number;
+};
+
+type AppliedDiscountCode = {
+  code: string;
+  discountId?: string;
+  title?: string;
+  discountType?: "percentage" | "fixed" | "free_shipping";
+  value?: number | null;
+  discountAmount: number;
+  eligibleSubtotal?: number;
+  combineWithPaymentDiscount: boolean;
+  message: string;
 };
 
 function PaymentLogoBox({
@@ -482,7 +495,7 @@ function CheckoutContent() {
   const products = useCatalogProducts();
   const locale = useLocale();
   const router = useRouter();
-  const { items, subtotal, discount, originalSubtotal, appliedDiscounts, clearCart, buyNowItem, setBuyNowItem } = useCart();
+  const { items, subtotal, discount: cartDiscount, originalSubtotal, appliedDiscounts, clearCart, buyNowItem, setBuyNowItem } = useCart();
   const checkoutTracked = useRef(false);
 
   // Group duplicate items (same id + size + color) and sum quantities
@@ -508,6 +521,10 @@ function CheckoutContent() {
     ? (buyNowItem.price || 0) * (buyNowItem.quantity || 1)
     : subtotal;
   const checkoutItemCount = checkoutItems.reduce((sum, item) => sum + item.quantity, 0);
+  const serializedCheckoutItems = useMemo(
+    () => checkoutItems.map((item) => serializeOrderItem(item, products)),
+    [checkoutItems, products]
+  );
 
   const [formData, setFormData] = useState({
     email: "",
@@ -640,6 +657,10 @@ function CheckoutContent() {
   const [aramexStatus, setAramexStatus] = useState<"idle" | "pending" | "success" | "failed" | "skipped">("idle");
   const [aramexError, setAramexError] = useState<string>("");
   const [submitError, setSubmitError] = useState<string>("");
+  const [discountCodeInput, setDiscountCodeInput] = useState("");
+  const [appliedDiscountCode, setAppliedDiscountCode] = useState<AppliedDiscountCode | null>(null);
+  const [discountCodeStatus, setDiscountCodeStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [discountCodeMessage, setDiscountCodeMessage] = useState("");
   const [mounted, setMounted] = useState(false);
   const bottomOrderCtaRef = useRef<HTMLDivElement | null>(null);
   const [isBottomOrderCtaVisible, setIsBottomOrderCtaVisible] = useState(false);
@@ -728,7 +749,7 @@ function CheckoutContent() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: checkoutItems.map((item) => serializeOrderItem(item, products)),
+          items: serializedCheckoutItems,
         }),
         cache: "no-store",
       });
@@ -745,12 +766,44 @@ function CheckoutContent() {
       return;
     }
 
+    let confirmedAppliedDiscountCode = appliedDiscountCode;
+    if (appliedDiscountCode?.code) {
+      const validatedDiscount = await validateDiscountCode(appliedDiscountCode.code, { silent: true });
+
+      if (!validatedDiscount) {
+        setIsSubmitting(false);
+        setSubmitError(t("discount.reapply"));
+        return;
+      }
+
+      confirmedAppliedDiscountCode = validatedDiscount;
+    }
+
+    const confirmedCodeDiscountAmount = confirmedAppliedDiscountCode?.discountAmount || 0;
+    const confirmedPaymentDiscount = getPaymentDiscountAmount(confirmedAppliedDiscountCode);
+    const confirmedFinalTotal = Math.max(
+      0,
+      total - confirmedCodeDiscountAmount - confirmedPaymentDiscount
+    );
+    const confirmedDiscountPayload = confirmedAppliedDiscountCode
+      ? {
+          code: confirmedAppliedDiscountCode.code,
+          discount_id: confirmedAppliedDiscountCode.discountId,
+          title: confirmedAppliedDiscountCode.title,
+          type: confirmedAppliedDiscountCode.discountType,
+          value: confirmedAppliedDiscountCode.value,
+          amount_egp: confirmedAppliedDiscountCode.discountAmount,
+          eligible_subtotal_egp: confirmedAppliedDiscountCode.eligibleSubtotal,
+          combine_with_payment_discount: confirmedAppliedDiscountCode.combineWithPaymentDiscount,
+        }
+      : null;
+
     const orderRef = generateOrderRef();
     try {
       window.sessionStorage.setItem(
         `meta-purchase-payload-${orderRef}`,
         JSON.stringify({
-          value: finalTotal,
+          value: confirmedFinalTotal,
           currency: "EGP",
           content_ids: checkoutItems.map((item) => String(item.id)),
           contents: checkoutItems.map((item) => ({
@@ -794,17 +847,17 @@ function CheckoutContent() {
         }
 
         const paymentDiscountPercent = getPaymentDiscountPercent(paymentMethod);
-        const paymentDiscount = Math.round((checkoutSubtotal + shipping) * (paymentDiscountPercent / 100));
-        const amountCents = Math.round((checkoutSubtotal + shipping - paymentDiscount) * 100);
+        const amountCents = Math.round(confirmedFinalTotal * 100);
         const itemsSum = intentionItems.reduce((sum, it) => sum + it.amount, 0);
-        const shouldSendPaymobItems = paymentDiscount <= 0;
-        const serializedCheckoutItems = checkoutItems.map((item) => serializeOrderItem(item, products));
+        const shouldSendPaymobItems = confirmedPaymentDiscount <= 0 && confirmedCodeDiscountAmount <= 0;
         const orderSnapshot = {
           locale,
           delivery_method: deliveryMethod,
-          amount_egp: finalTotal,
+          amount_egp: confirmedFinalTotal,
           amount_cents: amountCents,
           shipping_egp: shipping,
+          discount: confirmedDiscountPayload,
+          payment_discount_egp: confirmedPaymentDiscount,
           customer: {
             email: formData.email,
             phone: formData.phone,
@@ -846,10 +899,13 @@ function CheckoutContent() {
               order_ref: orderRef,
               customer_email: formData.email,
               customer_phone: formData.phone,
-              total_egp: finalTotal,
+              total_egp: confirmedFinalTotal,
               order_snapshot: orderSnapshot,
-              payment_discount: paymentDiscount > 0 ? paymentDiscount : null,
-              payment_discount_percent: paymentDiscount > 0 ? paymentDiscountPercent : null,
+              discount_code: confirmedAppliedDiscountCode?.code || null,
+              discount_amount: confirmedCodeDiscountAmount > 0 ? confirmedCodeDiscountAmount : null,
+              discount: confirmedDiscountPayload,
+              payment_discount: confirmedPaymentDiscount > 0 ? confirmedPaymentDiscount : null,
+              payment_discount_percent: confirmedPaymentDiscount > 0 ? paymentDiscountPercent : null,
             },
             special_reference: orderRef,
           }),
@@ -881,9 +937,13 @@ function CheckoutContent() {
             payment_method: "paymob_card",
             status: "created",
             payment_status: "Pending",
-            amount_egp: finalTotal,
+            amount_egp: confirmedFinalTotal,
             amount_cents: amountCents,
             shipping_egp: shipping,
+            discount_egp: confirmedCodeDiscountAmount,
+            discount_code: confirmedAppliedDiscountCode?.code || null,
+            discount: confirmedDiscountPayload,
+            payment_discount_egp: confirmedPaymentDiscount,
             delivery_method: deliveryMethod,
             customer: {
               email: formData.email,
@@ -907,6 +967,9 @@ function CheckoutContent() {
               subtotal_egp: checkoutSubtotal,
               free_shipping_threshold: 1000,
               order_url: `${origin}/${locale}/orders/${orderRef}`,
+              discount: confirmedDiscountPayload,
+              payment_discount: confirmedPaymentDiscount > 0 ? confirmedPaymentDiscount : null,
+              payment_discount_percent: confirmedPaymentDiscount > 0 ? paymentDiscountPercent : null,
             },
             created_at: new Date().toISOString(),
           }),
@@ -954,9 +1017,9 @@ function CheckoutContent() {
             name: item.name,
             quantity: item.quantity,
           })),
-          totalValue: finalTotal,
+          totalValue: confirmedFinalTotal,
           cod: paymentMethod === "cod",
-          codAmount: paymentMethod === "cod" ? finalTotal : 0,
+          codAmount: paymentMethod === "cod" ? confirmedFinalTotal : 0,
         };
 
         const shipmentRes = await fetch("/api/aramex/shipment", {
@@ -1011,9 +1074,13 @@ function CheckoutContent() {
           payment_method: paymentMethod,
           status: "confirmed",
           payment_status: paymentMethod === "cod" ? "Cash on Delivery" : "Confirmed",
-          amount_egp: finalTotal,
-          amount_cents: Math.round(finalTotal * 100),
+          amount_egp: confirmedFinalTotal,
+          amount_cents: Math.round(confirmedFinalTotal * 100),
           shipping_egp: shipping,
+          discount_egp: confirmedCodeDiscountAmount,
+          discount_code: confirmedAppliedDiscountCode?.code || null,
+          discount: confirmedDiscountPayload,
+          payment_discount_egp: confirmedPaymentDiscount,
           delivery_method: deliveryMethod,
 
           aramex: aramexPayload,
@@ -1028,15 +1095,16 @@ function CheckoutContent() {
             address: formData.address,
           },
 
-          items: checkoutItems.map((item) => serializeOrderItem(item, products)),
+          items: serializedCheckoutItems,
 
           extras: {
             shipping_rule: shippingRuleCOD,
             city_key: formData.city,
             subtotal_egp: checkoutSubtotal,
             free_shipping_threshold: 1000,
-            payment_discount: paymentDiscount > 0 ? paymentDiscount : null,
-            payment_discount_percent: paymentDiscount > 0 ? getPaymentDiscountPercent(paymentMethod) : null,
+            discount: confirmedDiscountPayload,
+            payment_discount: confirmedPaymentDiscount > 0 ? confirmedPaymentDiscount : null,
+            payment_discount_percent: confirmedPaymentDiscount > 0 ? getPaymentDiscountPercent(paymentMethod) : null,
           },
 
           created_at: new Date().toISOString(),
@@ -1084,21 +1152,125 @@ function CheckoutContent() {
     [checkoutSubtotal, shipping]
   );
 
-  // Discount for non-COD payment methods
-  const paymentDiscount = useMemo(
-    () => {
+  const codeDiscountAmount = appliedDiscountCode?.discountAmount || 0;
+  const getPaymentDiscountAmount = useCallback(
+    (discountCode: AppliedDiscountCode | null = appliedDiscountCode) => {
+      if (discountCode && !discountCode.combineWithPaymentDiscount) return 0;
+
       const discountPercent = getPaymentDiscountPercent(paymentMethod);
+      const discountBase = Math.max(0, total - (discountCode?.discountAmount || 0));
+
       return discountPercent > 0
-        ? Math.round((checkoutSubtotal + shipping) * (discountPercent / 100))
+        ? Math.round(discountBase * (discountPercent / 100))
         : 0;
     },
-    [paymentMethod, checkoutSubtotal, shipping]
+    [appliedDiscountCode, paymentMethod, total]
+  );
+
+  // Discount for non-COD payment methods
+  const paymentDiscount = useMemo(
+    () => getPaymentDiscountAmount(appliedDiscountCode),
+    [appliedDiscountCode, getPaymentDiscountAmount]
   );
 
   const finalTotal = useMemo(
-    () => total - paymentDiscount,
-    [total, paymentDiscount]
+    () => Math.max(0, total - codeDiscountAmount - paymentDiscount),
+    [total, codeDiscountAmount, paymentDiscount]
   );
+
+  const validateDiscountCode = useCallback(
+    async (rawCode: string, options: { silent?: boolean } = {}) => {
+      const code = rawCode.trim();
+      if (!code) {
+        setDiscountCodeStatus("error");
+        setDiscountCodeMessage(t("discount.enterCode"));
+        return null;
+      }
+
+      if (!options.silent) {
+        setDiscountCodeStatus("loading");
+        setDiscountCodeMessage("");
+      }
+
+      try {
+        const res = await fetch("/api/discounts/validate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            code,
+            subtotal: checkoutSubtotal,
+            shipping,
+            paymentMethod,
+            items: serializedCheckoutItems,
+          }),
+          cache: "no-store",
+        });
+
+        const data = await res.json();
+
+        if (!res.ok || !data?.valid) {
+          setAppliedDiscountCode((current) =>
+            current?.code === code.toUpperCase() ? null : current
+          );
+          setDiscountCodeStatus("error");
+          setDiscountCodeMessage(data?.message || t("discount.invalid"));
+          return null;
+        }
+
+        const validatedDiscount: AppliedDiscountCode = {
+          code: data.code,
+          discountId: data.discountId,
+          title: data.title,
+          discountType: data.discountType,
+          value: data.value,
+          discountAmount: data.discountAmount,
+          eligibleSubtotal: data.eligibleSubtotal,
+          combineWithPaymentDiscount: data.combineWithPaymentDiscount === true,
+          message: data.message || t("discount.applied"),
+        };
+
+        setAppliedDiscountCode(validatedDiscount);
+        setDiscountCodeInput(validatedDiscount.code);
+        setDiscountCodeStatus("success");
+        setDiscountCodeMessage(validatedDiscount.message);
+        return validatedDiscount;
+      } catch (error) {
+        console.error("Discount code validation failed", error);
+        setDiscountCodeStatus("error");
+        setDiscountCodeMessage(t("discount.unavailable"));
+        return null;
+      }
+    },
+    [checkoutSubtotal, paymentMethod, serializedCheckoutItems, shipping, t]
+  );
+
+  useEffect(() => {
+    if (!appliedDiscountCode?.code) return;
+
+    const timeout = window.setTimeout(() => {
+      validateDiscountCode(appliedDiscountCode.code, { silent: true });
+    }, 250);
+
+    return () => window.clearTimeout(timeout);
+  }, [
+    appliedDiscountCode?.code,
+    checkoutSubtotal,
+    paymentMethod,
+    serializedCheckoutItems,
+    shipping,
+    validateDiscountCode,
+  ]);
+
+  const handleApplyDiscountCode = () => {
+    void validateDiscountCode(discountCodeInput);
+  };
+
+  const handleRemoveDiscountCode = () => {
+    setAppliedDiscountCode(null);
+    setDiscountCodeInput("");
+    setDiscountCodeStatus("idle");
+    setDiscountCodeMessage("");
+  };
 
   useEffect(() => {
     if (checkoutTracked.current || !hasCheckoutItems) return;
@@ -1927,13 +2099,15 @@ function CheckoutContent() {
                 <div className="bg-white rounded-2xl p-6 border border-[#0F1A26]/5 space-y-4">
                   <div className="flex justify-between text-sm">
                     <span className="text-[#0F1A26]/60">{t('summary.subtotal')}</span>
-                    <span className="text-[#0F1A26] font-medium">EGP {mounted ? originalSubtotal : "--"}</span>
+                    <span className="text-[#0F1A26] font-medium">
+                      EGP {mounted ? (buyNowItem ? checkoutSubtotal : originalSubtotal) : "--"}
+                    </span>
                   </div>
-                  {mounted && discount > 0 && (
+                  {mounted && cartDiscount > 0 && (
                     <div className="space-y-1">
                       <div className="flex justify-between text-sm text-green-600">
                         <span>{t('summary.discount') || 'Discount'}</span>
-                        <span className="font-medium">-EGP {discount}</span>
+                        <span className="font-medium">-EGP {cartDiscount}</span>
                       </div>
                       <div className="flex flex-col gap-0.5">
                         {appliedDiscounts.map((desc, i) => (
@@ -1944,6 +2118,67 @@ function CheckoutContent() {
                       </div>
                     </div>
                   )}
+
+                  <div className="rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] p-3">
+                    <div className="mb-2 flex items-center gap-2 text-sm font-black text-[#0F1A26]">
+                      <TicketPercent className="h-4 w-4 text-[#EEBC3F]" />
+                      {t("discount.title")}
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={discountCodeInput}
+                        onChange={(e) => {
+                          setDiscountCodeInput(e.target.value.toUpperCase());
+                          if (discountCodeStatus !== "idle") {
+                            setDiscountCodeStatus("idle");
+                            setDiscountCodeMessage("");
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleApplyDiscountCode();
+                          }
+                        }}
+                        className="min-w-0 flex-1 rounded-xl border border-[#0F1A26]/10 bg-white px-3 py-2 text-sm font-bold uppercase tracking-[0.08em] text-[#0F1A26] outline-none placeholder:normal-case placeholder:tracking-normal focus:border-[#EEBC3F]"
+                        placeholder={t("discount.placeholder")}
+                        disabled={discountCodeStatus === "loading"}
+                      />
+                      {appliedDiscountCode ? (
+                        <button
+                          type="button"
+                          onClick={handleRemoveDiscountCode}
+                          className="rounded-xl border border-[#0F1A26]/10 bg-white px-3 py-2 text-xs font-black text-[#0F1A26] transition hover:bg-[#0F1A26] hover:text-white"
+                        >
+                          {t("discount.remove")}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleApplyDiscountCode}
+                          disabled={discountCodeStatus === "loading" || !discountCodeInput.trim()}
+                          className="rounded-xl bg-[#0F1A26] px-4 py-2 text-xs font-black text-white transition hover:bg-[#EEBC3F] hover:text-[#0F1A26] disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {discountCodeStatus === "loading" ? t("discount.checking") : t("discount.apply")}
+                        </button>
+                      )}
+                    </div>
+                    {discountCodeMessage ? (
+                      <p
+                        className={`mt-2 text-xs font-bold ${
+                          discountCodeStatus === "success" ? "text-green-600" : "text-red-600"
+                        }`}
+                      >
+                        {discountCodeMessage}
+                      </p>
+                    ) : (
+                      <p className="mt-2 text-xs font-semibold text-[#0F1A26]/45">
+                        {t("discount.hint")}
+                      </p>
+                    )}
+                  </div>
+
                   <div className="flex justify-between text-sm">
                     <span className="text-[#0F1A26]/60">{t('summary.shipping')}</span>
                     <span className="text-[#0F1A26] font-medium">
@@ -1966,12 +2201,18 @@ function CheckoutContent() {
                       <span className="font-medium">-EGP {paymentDiscount}</span>
                     </div>
                   )}
+                  {codeDiscountAmount > 0 && appliedDiscountCode && (
+                    <div className="flex justify-between text-sm text-green-600">
+                      <span>{t("summary.discountCode", { code: appliedDiscountCode.code })}</span>
+                      <span className="font-medium">-EGP {codeDiscountAmount}</span>
+                    </div>
+                  )}
                   <div className="border-t border-[#0F1A26]/10 pt-2 mt-2">
                     <div className="flex justify-between">
                       <span className="text-[#0F1A26] font-semibold">{t('summary.total')}</span>
                       <span className="text-[#0F1A26] font-bold text-lg">
                         EGP {mounted
-                          ? (deliveryMethod === "delivery" && !formData.city ? subtotal : finalTotal)
+                          ? (deliveryMethod === "delivery" && !formData.city ? checkoutSubtotal : finalTotal)
                           : "--"
                         }
                       </span>
@@ -2009,6 +2250,11 @@ function CheckoutContent() {
                 {paymentDiscount > 0 && (
                   <p className="mt-1 truncate text-[11px] font-bold text-emerald-400">
                     {t("summary.paymentDiscount", { amount: paymentDiscount })}
+                  </p>
+                )}
+                {codeDiscountAmount > 0 && appliedDiscountCode && (
+                  <p className="mt-1 truncate text-[11px] font-bold text-emerald-400">
+                    {t("summary.discountCode", { code: appliedDiscountCode.code })}: -EGP {codeDiscountAmount}
                   </p>
                 )}
               </div>

@@ -312,3 +312,25 @@ export const siteSettingsQuery = groq`
     }
   }
 `;
+
+export const discountCodeByCodeQuery = groq`
+  *[_type == "discountCode" && defined(code)] {
+    _id,
+    title,
+    code,
+    isActive,
+    discountType,
+    value,
+    maxDiscountEgp,
+    minimumSubtotalEgp,
+    startsAt,
+    endsAt,
+    allowedPaymentMethods,
+    combineWithPaymentDiscount,
+    appliesTo,
+    "productLegacyIds": products[]->legacyId,
+    "productSlugs": products[]->slug.current,
+    categories,
+    customerMessage
+  }
+`;
