@@ -1177,6 +1177,28 @@ function CheckoutContent() {
     () => Math.max(0, total - codeDiscountAmount - paymentDiscount),
     [total, codeDiscountAmount, paymentDiscount]
   );
+  const totalBeforeShipping = useMemo(() => {
+    const paymentDiscountPercent = getPaymentDiscountPercent(paymentMethod);
+    const canApplyPaymentDiscount =
+      !appliedDiscountCode || appliedDiscountCode.combineWithPaymentDiscount;
+    const discountBase = Math.max(0, checkoutSubtotal - codeDiscountAmount);
+    const paymentDiscountBeforeShipping =
+      canApplyPaymentDiscount && paymentDiscountPercent > 0
+        ? Math.round(discountBase * (paymentDiscountPercent / 100))
+        : 0;
+
+    return Math.max(0, checkoutSubtotal - codeDiscountAmount - paymentDiscountBeforeShipping);
+  }, [appliedDiscountCode, checkoutSubtotal, codeDiscountAmount, paymentMethod]);
+  const displayedTotal = deliveryMethod === "delivery" && !formData.city
+    ? totalBeforeShipping
+    : finalTotal;
+  const hasAppliedDiscountCode = Boolean(appliedDiscountCode && codeDiscountAmount > 0);
+  const displayedDiscountAmount = hasAppliedDiscountCode
+    ? cartDiscount + codeDiscountAmount + paymentDiscount
+    : cartDiscount;
+  const displayedDiscountLabel = hasAppliedDiscountCode && appliedDiscountCode
+    ? `${t("summary.discount")} (${appliedDiscountCode.code})`
+    : t("summary.discount");
 
   const validateDiscountCode = useCallback(
     async (rawCode: string, options: { silent?: boolean } = {}) => {
@@ -2021,9 +2043,9 @@ function CheckoutContent() {
                           })} (${t("form.delivery.title")})`
                           : deliveryMethod === "delivery" && !formData.city
                             ? `${t("form.completeOrder", {
-                              total: checkoutSubtotal.toString(),
+                              total: displayedTotal.toString(),
                             })} (${t("form.selectCity")})`
-                            : t("form.completeOrder", { total: finalTotal.toString() })}
+                            : t("form.completeOrder", { total: displayedTotal.toString() })}
                     </p>
                   </div>
                 )}
@@ -2103,19 +2125,21 @@ function CheckoutContent() {
                       EGP {mounted ? (buyNowItem ? checkoutSubtotal : originalSubtotal) : "--"}
                     </span>
                   </div>
-                  {mounted && cartDiscount > 0 && (
+                  {mounted && displayedDiscountAmount > 0 && (
                     <div className="space-y-1">
                       <div className="flex justify-between text-sm text-green-600">
-                        <span>{t('summary.discount') || 'Discount'}</span>
-                        <span className="font-medium">-EGP {cartDiscount}</span>
+                        <span>{displayedDiscountLabel}</span>
+                        <span className="font-medium">-EGP {displayedDiscountAmount}</span>
                       </div>
-                      <div className="flex flex-col gap-0.5">
+                      {!hasAppliedDiscountCode && (
+                        <div className="flex flex-col gap-0.5">
                         {appliedDiscounts.map((desc, i) => (
                           <span key={i} className="text-[10px] text-green-600/70 italic text-right block">
                             • {desc}
                           </span>
                         ))}
-                      </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -2195,16 +2219,10 @@ function CheckoutContent() {
                       )}
                     </span>
                   </div>
-                  {paymentDiscount > 0 && (
+                  {!hasAppliedDiscountCode && paymentDiscount > 0 && (
                     <div className="flex justify-between text-sm text-green-600">
                       <span>{t("summary.paymentMethodDiscount")}</span>
                       <span className="font-medium">-EGP {paymentDiscount}</span>
-                    </div>
-                  )}
-                  {codeDiscountAmount > 0 && appliedDiscountCode && (
-                    <div className="flex justify-between text-sm text-green-600">
-                      <span>{t("summary.discountCode", { code: appliedDiscountCode.code })}</span>
-                      <span className="font-medium">-EGP {codeDiscountAmount}</span>
                     </div>
                   )}
                   <div className="border-t border-[#0F1A26]/10 pt-2 mt-2">
@@ -2212,7 +2230,7 @@ function CheckoutContent() {
                       <span className="text-[#0F1A26] font-semibold">{t('summary.total')}</span>
                       <span className="text-[#0F1A26] font-bold text-lg">
                         EGP {mounted
-                          ? (deliveryMethod === "delivery" && !formData.city ? checkoutSubtotal : finalTotal)
+                          ? displayedTotal
                           : "--"
                         }
                       </span>
@@ -2247,16 +2265,15 @@ function CheckoutContent() {
                         ? t("summary.freeShipping")
                         : `${t("summary.shippingLabel")} EGP ${shipping}`}
                 </p>
-                {paymentDiscount > 0 && (
+                {hasAppliedDiscountCode && displayedDiscountAmount > 0 ? (
+                  <p className="mt-1 truncate text-[11px] font-bold text-emerald-400">
+                    {displayedDiscountLabel}: -EGP {displayedDiscountAmount}
+                  </p>
+                ) : paymentDiscount > 0 ? (
                   <p className="mt-1 truncate text-[11px] font-bold text-emerald-400">
                     {t("summary.paymentDiscount", { amount: paymentDiscount })}
                   </p>
-                )}
-                {codeDiscountAmount > 0 && appliedDiscountCode && (
-                  <p className="mt-1 truncate text-[11px] font-bold text-emerald-400">
-                    {t("summary.discountCode", { code: appliedDiscountCode.code })}: -EGP {codeDiscountAmount}
-                  </p>
-                )}
+                ) : null}
               </div>
 
               <div className="shrink-0 border-s border-white/10 ps-4">
@@ -2264,7 +2281,7 @@ function CheckoutContent() {
                   {t("summary.total")}
                 </p>
                 <p className="text-lg font-black leading-tight text-white">
-                  EGP {deliveryMethod === "delivery" && !formData.city ? checkoutSubtotal : finalTotal}
+                  EGP {displayedTotal}
                 </p>
               </div>
             </div>
@@ -2285,7 +2302,7 @@ function CheckoutContent() {
                 <>
                   <span>{t("form.orderNow")}</span>
                   <span className="ms-2 sm:hidden">
-                    • EGP {deliveryMethod === "delivery" && !formData.city ? checkoutSubtotal : finalTotal}
+                    • EGP {displayedTotal}
                   </span>
                 </>
               )}
