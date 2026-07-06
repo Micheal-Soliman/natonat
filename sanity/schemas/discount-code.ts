@@ -126,6 +126,36 @@ export const discountCode = defineType({
       type: "string",
       description: "Optional message shown after applying the code.",
     }),
+    defineField({
+      name: "showInAnnouncement",
+      title: "Show in website announcement marquee",
+      type: "boolean",
+      initialValue: false,
+      description: "Turn this on only for codes you want customers to see publicly.",
+    }),
+    defineField({
+      name: "announcementText",
+      title: "Announcement text",
+      type: "string",
+      description: "Example: Egypt offer: use EGY26 for 26% off",
+      hidden: ({ parent }) => parent?.showInAnnouncement !== true,
+    }),
+    defineField({
+      name: "announcementLink",
+      title: "Announcement link",
+      type: "string",
+      initialValue: "/shop",
+      description: "Internal path like /shop or /checkout.",
+      hidden: ({ parent }) => parent?.showInAnnouncement !== true,
+    }),
+    defineField({
+      name: "announcementPriority",
+      title: "Announcement priority",
+      type: "number",
+      initialValue: 100,
+      description: "Lower numbers appear first when multiple codes are shown.",
+      hidden: ({ parent }) => parent?.showInAnnouncement !== true,
+    }),
   ],
   preview: {
     select: {

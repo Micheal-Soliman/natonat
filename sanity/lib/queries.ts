@@ -309,6 +309,21 @@ export const siteSettingsQuery = groq`
         note
       },
       note
+    },
+    "discountAnnouncements": *[
+      _type == "discountCode" &&
+      isActive != false &&
+      showInAnnouncement == true &&
+      (!defined(startsAt) || startsAt <= now()) &&
+      (!defined(endsAt) || endsAt >= now())
+    ] | order(coalesce(announcementPriority, 100) asc, _updatedAt desc) [0...5] {
+      _id,
+      code,
+      discountType,
+      value,
+      announcementText,
+      announcementLink,
+      announcementPriority
     }
   }
 `;

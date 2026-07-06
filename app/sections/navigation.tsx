@@ -23,10 +23,12 @@ import {
   LocaleSwitcherMobile,
 } from "@/app/components/locale-switcher";
 import { useCatalogProducts } from "@/app/lib/catalog-context";
+import { useSiteSettings } from "@/app/lib/site-settings-context";
 
 export function Navigation() {
   const t = useTranslations("navigation");
   const products = useCatalogProducts();
+  const { discountAnnouncements } = useSiteSettings();
   const locale = useLocale();
   const { totalItems, openCart } = useCart();
   const { totalItems: wishlistTotal } = useWishlist();
@@ -165,12 +167,43 @@ export function Navigation() {
     { href: "/faqs", label: t("faqs") },
     { href: "/contact", label: t("contact") },
   ];
+  const announcementItems = useMemo(
+    () =>
+      discountAnnouncements.flatMap((announcement) => [
+        announcement,
+        announcement,
+        announcement,
+        announcement,
+      ]),
+    [discountAnnouncements],
+  );
+  const hasDiscountAnnouncement = discountAnnouncements.length > 0;
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-[80] transition-all duration-700 ease-out ${scrolled ? "py-3" : "py-6"
+      className={`fixed top-0 left-0 right-0 z-[80] transition-all duration-700 ease-out ${
+        hasDiscountAnnouncement ? "py-2" : scrolled ? "py-3" : "py-6"
         }`}
     >
+      {hasDiscountAnnouncement && (
+        <div className="mx-4 mb-2 overflow-hidden rounded-full border border-[#EEBC3F]/25 bg-[#0a0f14]/95 py-2 text-[#EEBC3F] shadow-lg shadow-black/10 backdrop-blur-xl sm:mx-6 lg:mx-8">
+          <div className="animate-marquee whitespace-nowrap">
+            {announcementItems.map((announcement, index) => (
+              <Link
+                key={`${announcement._id || announcement.code}-${index}`}
+                href={announcement.href}
+                className="inline-flex items-center gap-3 px-8 text-[11px] font-black uppercase tracking-[0.18em] transition hover:text-white"
+              >
+                <span>{announcement.text}</span>
+                <span className="rounded-full border border-[#EEBC3F]/40 px-2 py-0.5 text-[10px]">
+                  {announcement.code}
+                </span>
+                <span className="text-white/25">|</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
       <nav
         className={`mx-4 sm:mx-6 lg:mx-8 transition-all duration-700 ease-out ${scrolled
           ? "bg-[#0a0f14]/95 backdrop-blur-xl rounded-full shadow-2xl shadow-black/20 border border-white/10"
@@ -178,7 +211,8 @@ export function Navigation() {
           }`}
       >
         <div
-          className={`flex items-center justify-between transition-all duration-700 ${scrolled ? "h-14 px-6" : "h-16 px-8"
+          className={`flex items-center justify-between transition-all duration-700 ${
+            hasDiscountAnnouncement || scrolled ? "h-14 px-6" : "h-16 px-8"
             }`}
         >
           {/* Logo */}

@@ -93,10 +93,18 @@ export type SizeGuideSettings = {
   note: string;
 };
 
+export type DiscountAnnouncement = {
+  _id?: string;
+  code: string;
+  text: string;
+  href: string;
+};
+
 export type SiteSettings = {
   flashSale: FlashSaleSettings;
   flashSaleSection: FlashSaleSectionSettings;
   sizeGuide: SizeGuideSettings;
+  discountAnnouncements: DiscountAnnouncement[];
 };
 
 type SiteSettingsQueryResult = {
@@ -105,6 +113,14 @@ type SiteSettingsQueryResult = {
   flashSaleSection?: Partial<FlashSaleSectionSettings> | null;
   legacyFlashSaleSection?: Partial<FlashSaleSectionSettings> | null;
   sizeGuide?: Partial<SizeGuideSettings> | null;
+  discountAnnouncements?: Array<{
+    _id?: string;
+    code?: string;
+    discountType?: "percentage" | "fixed" | "free_shipping";
+    value?: number;
+    announcementText?: string;
+    announcementLink?: string;
+  }> | null;
 };
 
 const fallbackSizeGuide: SizeGuideSettings = {
@@ -233,6 +249,33 @@ function mergeFlashSaleSection(
   };
 }
 
+function getDiscountAnnouncementFallbackText(announcement: NonNullable<SiteSettingsQueryResult["discountAnnouncements"]>[number]) {
+  const code = announcement.code || "";
+
+  if (announcement.discountType === "free_shipping") {
+    return `Use code ${code} for free shipping`;
+  }
+
+  if (announcement.discountType === "fixed") {
+    return `Use code ${code} for EGP ${announcement.value || 0} off`;
+  }
+
+  return `Use code ${code} for ${announcement.value || 0}% off`;
+}
+
+function mergeDiscountAnnouncements(
+  announcements?: SiteSettingsQueryResult["discountAnnouncements"],
+): DiscountAnnouncement[] {
+  return (announcements || [])
+    .filter((announcement) => announcement.code)
+    .map((announcement) => ({
+      _id: announcement._id,
+      code: announcement.code || "",
+      text: announcement.announcementText?.trim() || getDiscountAnnouncementFallbackText(announcement),
+      href: announcement.announcementLink?.trim() || "/shop",
+    }));
+}
+
 export async function getSiteSettings(): Promise<SiteSettings> {
   try {
     const settings = await sanityClient.fetch<SiteSettingsQueryResult | null>(
@@ -247,6 +290,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
         settings?.flashSaleSection || settings?.legacyFlashSaleSection || undefined,
       ),
       sizeGuide: mergeSizeGuide(settings?.sizeGuide || settings?.legacy?.sizeGuide),
+      discountAnnouncements: mergeDiscountAnnouncements(settings?.discountAnnouncements),
     };
   } catch (error) {
     console.error("Falling back to local site settings after Sanity fetch failed", error);
@@ -254,6 +298,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
       flashSale: fallbackFlashSale,
       flashSaleSection: fallbackFlashSaleSection,
       sizeGuide: fallbackSizeGuide,
+      discountAnnouncements: [],
     };
   }
 }
