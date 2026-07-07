@@ -617,6 +617,24 @@
       "tap": "Tap to enlarge",
       "openReview": "Open customer review"
     },
+    "customerReviews": {
+      "eyebrow": "Product Reviews",
+      "title": "Customer reviews",
+      "subtitle": "Read approved reviews or leave your own. New reviews appear after admin approval.",
+      "leaveButton": "Leave your review",
+      "nameLabel": "Your name",
+      "namePlaceholder": "Write your name",
+      "ratingLabel": "Rating",
+      "reviewLabel": "Your review",
+      "reviewPlaceholder": "Tell us what you think about this product",
+      "submit": "Submit review",
+      "submitting": "Submitting...",
+      "moderationNote": "Your review will be visible after admin approval.",
+      "pendingMessage": "Thanks. Your review was sent and is waiting for admin approval.",
+      "validation": "Please write your name and a review of at least 10 characters.",
+      "error": "Could not submit your review. Please try again.",
+      "empty": "No approved reviews yet. Be the first to leave one."
+    },
     "nav": {
       "previous": "Previous",
       "next": "Next",

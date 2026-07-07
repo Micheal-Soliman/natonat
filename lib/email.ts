@@ -306,3 +306,51 @@ export async function sendCustomerConfirmationEmail(orderData: OrderEmailData) {
     return { success: false, error };
   }
 }
+
+type ReviewNotificationData = {
+  customerName: string;
+  rating: number;
+  review: string;
+  productName: string;
+  productSlug: string;
+  reviewId?: string;
+};
+
+export async function sendReviewNotificationEmail(reviewData: ReviewNotificationData) {
+  const adminEmail = "natonateg@gmail.com";
+  const studioUrl = "https://www.natonat.com/studio";
+
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: adminEmail,
+    subject: `New review pending approval: ${reviewData.productName}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 10px;">
+        <h2 style="color: #0F1A26; text-align: center;">New Product Review Pending Approval</h2>
+        <p><strong>Customer:</strong> ${escapeHtml(reviewData.customerName)}</p>
+        <p><strong>Product:</strong> ${escapeHtml(reviewData.productName)}</p>
+        <p><strong>Product slug:</strong> ${escapeHtml(reviewData.productSlug)}</p>
+        <p><strong>Rating:</strong> ${reviewData.rating}/5</p>
+        ${reviewData.reviewId ? `<p><strong>Review ID:</strong> ${escapeHtml(reviewData.reviewId)}</p>` : ""}
+        <div style="margin: 18px 0; padding: 14px; background: #F8F6F3; border-left: 4px solid #EEBC3F; border-radius: 8px;">
+          ${escapeHtml(reviewData.review).replace(/\n/g, "<br />")}
+        </div>
+        <p style="font-size: 14px; color: #555;">
+          Open Sanity Studio, go to <strong>Product reviews</strong>, and change status to <strong>Approved</strong> to publish it on the product page.
+        </p>
+        <p>
+          <a href="${studioUrl}" style="display:inline-block;background:#EEBC3F;color:#0F1A26;text-decoration:none;font-weight:bold;padding:10px 14px;border-radius:999px;">Open CMS</a>
+        </p>
+      </div>
+    `,
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log("Review notification email sent: %s", info.messageId);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error("Error sending review notification email:", error);
+    return { success: false, error };
+  }
+}

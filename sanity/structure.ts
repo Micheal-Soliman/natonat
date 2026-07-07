@@ -42,4 +42,11 @@ export const structure: StructureResolver = (S) =>
             .title("Discount codes")
             .defaultOrdering([{ field: "_updatedAt", direction: "desc" }]),
         ),
+      S.documentTypeListItem("productReview")
+        .title("Product reviews")
+        .child(
+          S.documentTypeList("productReview")
+            .title("Product reviews")
+            .defaultOrdering([{ field: "submittedAt", direction: "desc" }]),
+        ),
     ]);

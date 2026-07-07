@@ -3,7 +3,7 @@
 import { useCart } from "@/app/lib/cart-context";
 import { useWishlist } from "@/app/lib/wishlist-context";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import type { PointerEvent as ReactPointerEvent } from "react";
+import type { FormEvent, PointerEvent as ReactPointerEvent } from "react";
 import Image from "next/image";
 import { Link } from "@/i18n/routing";
 import { useRouter } from "@/i18n/routing";
@@ -259,6 +259,242 @@ function ProductComparisonTable({ t }: { t: (key: string) => string }) {
             </tbody>
           </table>
         </div>
+      </div>
+    </section>
+  );
+}
+
+type ApprovedProductReview = {
+  _id: string;
+  customerName: string;
+  rating: number;
+  review: string;
+  submittedAt?: string;
+};
+
+function ProductCustomerReviews({
+  product,
+  locale,
+  t,
+}: {
+  product: Product;
+  locale: string;
+  t: (key: string) => string;
+}) {
+  const [reviews, setReviews] = useState<ApprovedProductReview[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [customerName, setCustomerName] = useState("");
+  const [rating, setRating] = useState(5);
+  const [review, setReview] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  useEffect(() => {
+    async function loadReviews() {
+      try {
+        const response = await fetch(`/api/product-reviews?slug=${encodeURIComponent(product.slug)}`, {
+          cache: "no-store",
+        });
+        const data = await response.json();
+        setReviews(Array.isArray(data.reviews) ? data.reviews : []);
+      } catch (error) {
+        console.error("Failed to load product text reviews:", error);
+        setReviews([]);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadReviews();
+  }, [product.slug]);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSubmitError("");
+    setSubmitSuccess(false);
+
+    if (customerName.trim().length < 2 || review.trim().length < 10) {
+      setSubmitError(t("customerReviews.validation"));
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const response = await fetch("/api/product-reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productSlug: product.slug,
+          customerName,
+          rating,
+          review,
+        }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || t("customerReviews.error"));
+      }
+
+      setCustomerName("");
+      setRating(5);
+      setReview("");
+      setIsFormOpen(false);
+      setSubmitSuccess(true);
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : t("customerReviews.error"));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <section className="mt-12 rounded-[2rem] border border-[#0F1A26]/8 bg-white p-5 shadow-[0_24px_70px_rgba(15,26,38,0.08)] sm:p-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <span className="text-xs font-black uppercase tracking-[0.24em] text-[#EEBC3F]">
+            {t("customerReviews.eyebrow")}
+          </span>
+          <h2 className="mt-2 text-2xl font-black tracking-tight text-[#0F1A26] sm:text-4xl">
+            {t("customerReviews.title")}
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm font-semibold text-[#0F1A26]/55">
+            {t("customerReviews.subtitle")}
+          </p>
+        </div>
+        <Button
+          type="button"
+          onClick={() => {
+            setIsFormOpen((current) => !current);
+            setSubmitError("");
+            setSubmitSuccess(false);
+          }}
+          className="h-12 rounded-full bg-[#EEBC3F] px-6 font-black text-[#0F1A26] hover:bg-[#d4a535]"
+        >
+          {t("customerReviews.leaveButton")}
+        </Button>
+      </div>
+
+      {submitSuccess && (
+        <div className="mt-5 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-bold text-green-800">
+          {t("customerReviews.pendingMessage")}
+        </div>
+      )}
+
+      {isFormOpen && (
+        <form onSubmit={handleSubmit} className="mt-6 rounded-3xl border border-[#0F1A26]/8 bg-[#F8F6F3] p-4 sm:p-5">
+          <input type="text" name="website" className="hidden" tabIndex={-1} autoComplete="off" />
+          <div className="grid gap-4 sm:grid-cols-[1fr_auto]">
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-black uppercase tracking-[0.16em] text-[#0F1A26]/45">
+                {t("customerReviews.nameLabel")}
+              </span>
+              <input
+                value={customerName}
+                onChange={(event) => setCustomerName(event.target.value)}
+                maxLength={80}
+                className="h-12 w-full rounded-2xl border border-[#0F1A26]/10 bg-white px-4 text-sm font-bold text-[#0F1A26] outline-none transition focus:border-[#EEBC3F]"
+                placeholder={t("customerReviews.namePlaceholder")}
+              />
+            </label>
+
+            <div>
+              <span className="mb-1.5 block text-xs font-black uppercase tracking-[0.16em] text-[#0F1A26]/45">
+                {t("customerReviews.ratingLabel")}
+              </span>
+              <div className="flex h-12 items-center gap-1 rounded-2xl border border-[#0F1A26]/10 bg-white px-3">
+                {[1, 2, 3, 4, 5].map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setRating(value)}
+                    className="p-1"
+                    aria-label={`${value} stars`}
+                  >
+                    <Star
+                      className={`h-5 w-5 ${value <= rating ? "fill-[#EEBC3F] text-[#EEBC3F]" : "text-[#0F1A26]/20"}`}
+                      strokeWidth={1.8}
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <label className="mt-4 block">
+            <span className="mb-1.5 block text-xs font-black uppercase tracking-[0.16em] text-[#0F1A26]/45">
+              {t("customerReviews.reviewLabel")}
+            </span>
+            <textarea
+              value={review}
+              onChange={(event) => setReview(event.target.value)}
+              maxLength={1000}
+              rows={4}
+              className="w-full rounded-2xl border border-[#0F1A26]/10 bg-white px-4 py-3 text-sm font-semibold leading-relaxed text-[#0F1A26] outline-none transition focus:border-[#EEBC3F]"
+              placeholder={t("customerReviews.reviewPlaceholder")}
+            />
+          </label>
+
+          {submitError && (
+            <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+              {submitError}
+            </div>
+          )}
+
+          <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs font-semibold text-[#0F1A26]/45">
+              {t("customerReviews.moderationNote")}
+            </p>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="h-12 rounded-full bg-[#0F1A26] px-7 font-black text-white hover:bg-[#EEBC3F] hover:text-[#0F1A26] disabled:opacity-50"
+            >
+              {isSubmitting ? t("customerReviews.submitting") : t("customerReviews.submit")}
+            </Button>
+          </div>
+        </form>
+      )}
+
+      <div className="mt-7">
+        {isLoading ? (
+          <div className="grid gap-4 md:grid-cols-3">
+            {[0, 1, 2].map((item) => (
+              <div key={item} className="h-36 rounded-3xl bg-[#F1EBE3] animate-pulse" />
+            ))}
+          </div>
+        ) : reviews.length > 0 ? (
+          <div className="grid gap-4 md:grid-cols-3">
+            {reviews.map((item) => (
+              <article key={item._id} className="rounded-3xl border border-[#0F1A26]/8 bg-[#F8F6F3] p-5">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <strong className="text-sm font-black text-[#0F1A26]">{item.customerName}</strong>
+                  <span className="flex items-center gap-0.5">
+                    {[1, 2, 3, 4, 5].map((value) => (
+                      <Star
+                        key={value}
+                        className={`h-3.5 w-3.5 ${value <= item.rating ? "fill-[#EEBC3F] text-[#EEBC3F]" : "text-[#0F1A26]/15"}`}
+                        strokeWidth={1.5}
+                      />
+                    ))}
+                  </span>
+                </div>
+                <p className="text-sm font-semibold leading-relaxed text-[#0F1A26]/65">{item.review}</p>
+                {item.submittedAt && (
+                  <time className="mt-4 block text-xs font-bold text-[#0F1A26]/35">
+                    {new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(new Date(item.submittedAt))}
+                  </time>
+                )}
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-3xl border border-dashed border-[#0F1A26]/12 bg-[#F8F6F3] px-5 py-8 text-center">
+            <p className="text-sm font-bold text-[#0F1A26]/55">{t("customerReviews.empty")}</p>
+          </div>
+        )}
       </div>
     </section>
   );
@@ -2117,6 +2353,7 @@ export default function ProductPageContent({
           </div>
 
           <ProductComparisonTable t={t} />
+          <ProductCustomerReviews product={product} locale={locale} t={t} />
           <ProductReviewsLoop t={t} />
 
           {/* Related Products */}
