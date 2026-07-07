@@ -127,21 +127,30 @@ function ProductVideoSection({
           </h3>
 
           {videos && videos.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
+            <div className="-mx-2 flex snap-x gap-4 overflow-x-auto px-2 pb-3 no-scrollbar sm:-mx-3 sm:px-3 lg:gap-6">
               {videos.map((video, index) => (
                 <div
                   key={`${video.src}-${index}`}
-                  className="rounded-2xl overflow-hidden bg-[#F1EBE3] border border-[#0F1A26]/5 shadow-sm"
+                  className="w-[78vw] max-w-[320px] shrink-0 snap-start overflow-hidden rounded-2xl border border-[#0F1A26]/5 bg-[#F1EBE3] shadow-sm sm:w-[320px] lg:w-[360px] lg:max-w-[360px]"
                 >
                   <div className="relative w-full aspect-[9/16] rounded-2xl overflow-hidden bg-[#F1EBE3]">
+                    <Image
+                      src={video.poster}
+                      alt={video.label || title}
+                      fill
+                      sizes="(max-width: 640px) 78vw, 360px"
+                      className="object-contain p-3"
+                      loading="lazy"
+                      quality={45}
+                    />
                     <video
                       autoPlay
                       muted
                       loop
                       playsInline
                       controls
-                      preload="none"
-                      className={videoClassName}
+                      preload="metadata"
+                      className={`${videoClassName} relative z-10 bg-transparent`}
                       poster={video.poster}
                     >
                       <source src={video.src} type="video/mp4" />
@@ -161,14 +170,25 @@ function ProductVideoSection({
             </div>
           ) : (
             <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-[#F1EBE3]">
+              {poster && (
+                <Image
+                  src={poster}
+                  alt={title}
+                  fill
+                  sizes="(max-width: 768px) 92vw, 1100px"
+                  className="object-contain p-3"
+                  loading="lazy"
+                  quality={50}
+                />
+              )}
               <video
                 autoPlay
                 muted
                 loop
                 playsInline
                 controls
-                preload="none"
-                className={videoClassName}
+                preload="metadata"
+                className={`${videoClassName} relative z-10 bg-transparent`}
                 poster={poster}
               >
                 {src && <source src={src} type="video/mp4" />}
@@ -1086,9 +1106,7 @@ export default function ProductPageContent({
   }, [product.colors, product.images, product.image, selectedColor]);
 
   const [activeImage, setActiveImage] = useState(0);
-  const [isVisible, setIsVisible] = useState(false);
   const [showShareToast, setShowShareToast] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
   const touchStartXRef = useRef<number | null>(null);
   const bundleOptionsDragRef = useRef<{
     element: HTMLDivElement;
@@ -1482,23 +1500,6 @@ export default function ProductPageContent({
   }, [selectedColor]);
 
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
-
   return (
     <>
       <Navigation />
@@ -1511,10 +1512,10 @@ export default function ProductPageContent({
         </div>
       )}
 
-      <main className="min-h-screen bg-[#F1EBE3] overflow-x-hidden pb-32 lg:pb-0" ref={ref}>
+      <main className="min-h-screen bg-[#F1EBE3] overflow-x-hidden pb-32 lg:pb-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12">
           {/* Product Navigation - Top */}
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center justify-between mb-8 pt-5 md:pt-0">
             {/* Left side - Previous or Back to Shop */}
             {prevProduct ? (
               <Link
@@ -1616,23 +1617,28 @@ export default function ProductPageContent({
                   />
                 </div>
 
-                {/* Premium Tag */}
-                <div className="absolute top-3 left-3 sm:top-6 sm:left-6">
-                  <div className="flex flex-wrap gap-2">
+                {/* Product Badges */}
+                <div className="absolute left-3 right-3 top-3 sm:left-6 sm:right-auto sm:top-6">
+                  <div className="flex max-w-[min(330px,calc(100vw-2rem))] flex-col items-start gap-2">
                     {isBagCover && (
-                      <div className="rounded-full border border-white/70 bg-white/95 px-3 py-1.5 shadow-lg shadow-[#0F1A26]/10 sm:px-4 sm:py-2">
-                        <span className="flex flex-col text-center text-[#0F1A26]">
-                          <span className="text-[10px] font-black leading-none sm:text-xs">غطاء فقط</span>
-                          <span className="mt-0.5 text-[8px] font-black leading-none sm:text-[10px]">
-                            الحقيبة غير مشمولة
+                      <div className="flex items-start gap-2 rounded-2xl border border-white/80 bg-white/95 px-3 py-2 text-[#0F1A26] shadow-xl shadow-[#0F1A26]/10 backdrop-blur-sm sm:px-4 sm:py-3">
+                        <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#EEBC3F] text-[#0F1A26]">
+                          <Shield className="h-4 w-4" strokeWidth={2.5} />
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block text-xs font-black leading-tight sm:text-sm">
+                            {t("coverOnlyNotice.title")}
                           </span>
-                          <span className="mt-1 text-[8px] font-black uppercase leading-none tracking-[0.08em] sm:text-[10px]">
-                            Cover only suitcase not available
+                          <span className="mt-0.5 block text-[10px] font-bold leading-tight text-[#0F1A26]/65 sm:text-xs">
+                            {t("coverOnlyNotice.subtitle")}
+                          </span>
+                          <span className="mt-1 block text-[9px] font-black uppercase leading-tight tracking-[0.08em] text-[#0F1A26]/45 sm:text-[10px]">
+                            {t("coverOnlyNotice.english")}
                           </span>
                         </span>
                       </div>
                     )}
-                    <div className="bg-[#EEBC3F] rounded-full px-2 py-1 sm:px-4 sm:py-2 border border-[#EEBC3F] shadow-lg">
+                    <div className="rounded-full border border-[#EEBC3F] bg-[#EEBC3F] px-2 py-1 shadow-lg sm:px-4 sm:py-2">
                       <span className="text-[#0F1A26] text-[10px] sm:text-xs font-bold tracking-wider">{t('badge')}</span>
                     </div>
                   </div>
@@ -2236,7 +2242,7 @@ export default function ProductPageContent({
                   label: t('videoSection.luggageLabels.protection'),
                 },
                 {
-                  poster: "/octopus photo/Green/1.png",
+                  poster: "/octopus photo/Green/021A9832.jpg",
                   src: "/octopus photo/Wear.mp4",
                   label: t('videoSection.luggageLabels.easyWear'),
                 },
@@ -2298,7 +2304,7 @@ export default function ProductPageContent({
               <div className="mt-4 animate-in slide-in-from-top-2 duration-300">
                 <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
                   {/* Section 3: Why You'll Love It (We Love) */}
-                  <div className={`transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+                  <div className="transition-all duration-700">
                     <div className="bg-white rounded-3xl p-6 md:p-8 border border-[#0F1A26]/5 shadow-lg h-full">
                       <h3 className="text-base font-bold text-[#0F1A26] mb-5 tracking-[0.1em] uppercase flex items-center gap-3">
                         <Check className="w-5 h-5 text-[#EEBC3F]" />
@@ -2318,7 +2324,7 @@ export default function ProductPageContent({
                   </div>
 
                   {/* Section 4: FAQs */}
-                  <div className={`transition-all duration-700 delay-100 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+                  <div className="transition-all duration-700 delay-100">
                     <div className="h-full">
                       <FAQSection
                         title={t('faq.title')}
@@ -2358,7 +2364,7 @@ export default function ProductPageContent({
 
           {/* Related Products */}
           <div className="mt-12 pt-12 lg:mt-24 lg:pt-20 border-t border-[#0F1A26]/10">
-            <div className={`flex items-center justify-between mb-10 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+            <div className="flex items-center justify-between mb-10 transition-all duration-700">
               <div>
                 <span className="text-[#EEBC3F] text-xs font-bold tracking-[0.3em] uppercase">{t('related.subtitle')}</span>
                 <h2 className="text-3xl md:text-4xl font-bold text-[#0F1A26] mt-2 tracking-tight">{t('related.title')}</h2>
@@ -2372,7 +2378,7 @@ export default function ProductPageContent({
               {relatedProducts.map((relatedProduct, index) => (
                 <div
                   key={relatedProduct.id}
-                  className={`group transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+                  className="group transition-all duration-500"
                   style={{ transitionDelay: `${index * 100 + 200}ms` }}
                 >
                   <div className="relative">

@@ -541,6 +541,11 @@
       "title": "اكتشف المزيد",
       "viewAll": "عرض المجموعة الكاملة"
     },
+    "coverOnlyNotice": {
+      "title": "غطاء فقط",
+      "subtitle": "الحقيبة غير مشمولة",
+      "english": "Cover only suitcase not available"
+    },
     "navigation": {
       "previous": "السابق",
       "next": "التالي",

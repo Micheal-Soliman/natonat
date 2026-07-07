@@ -346,7 +346,7 @@ export function BestSellers() {
               const selection = getQuickSelection(product);
               const isBundle = isBundleProduct(product);
               const isUnavailable = isProductOutOfStock(product) || isProductSizeOutOfStock(product, selection.size);
-              const productTypeLabel = hasCategory(product, "luggage-covers") ? "Cover Only" : product.type;
+              const productTypeLabel = product.type;
 
               return (
                 <div
@@ -400,13 +400,6 @@ export function BestSellers() {
                         </span>
                       )}
 
-                      {hasCategory(product, "luggage-covers") && (
-                        <span className="absolute bottom-2 left-2 z-10 inline-flex flex-col rounded-xl border border-[#EEBC3F]/70 bg-[#EEBC3F] px-2.5 py-1.5 text-center text-[#0F1A26] shadow-lg shadow-black/10 sm:bottom-3 sm:left-3 sm:px-3">
-                          <span className="text-[10px] font-black leading-none">غطاء فقط</span>
-                          <span className="mt-0.5 text-[8px] font-black leading-none">الحقيبة غير مشمولة</span>
-                          <span className="mt-1 text-[8px] font-black uppercase leading-none tracking-[0.08em]">Cover only suitcase not available</span>
-                        </span>
-                      )}
                     </div>
                     </Link>
                     <WishlistToggleButton

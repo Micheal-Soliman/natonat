@@ -610,6 +610,11 @@
       "title": "You May Also Like",
       "viewAll": "View All"
     },
+    "coverOnlyNotice": {
+      "title": "Cover only",
+      "subtitle": "Suitcase is not included",
+      "english": "Cover only suitcase not available"
+    },
     "reviewsLoop": {
       "eyebrow": "Real Reviews",
       "title": "Customers are already traveling with natOnat",
