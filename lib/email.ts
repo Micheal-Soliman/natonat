@@ -354,3 +354,58 @@ export async function sendReviewNotificationEmail(reviewData: ReviewNotification
     return { success: false, error };
   }
 }
+
+type ReferralRewardEmailData = {
+  to?: string;
+  referrerName?: string;
+  referralCode?: string;
+  rewardCode: string;
+  rewardValueEgp: number;
+  orderRef?: string;
+};
+
+export async function sendReferralRewardEmail(rewardData: ReferralRewardEmailData) {
+  if (!rewardData.to) {
+    return { success: false, error: "Missing recipient email" };
+  }
+
+  const customerName = rewardData.referrerName || "natOnat customer";
+  const shopUrl = "https://www.natonat.com/shop";
+
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: rewardData.to,
+    subject: `Your natOnat referral reward is ready`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 14px;">
+        <h2 style="color: #0F1A26; text-align: center;">Your referral reward is ready</h2>
+        <p style="font-size: 16px;">Hi ${escapeHtml(customerName)},</p>
+        <p style="font-size: 16px; line-height: 1.6;">
+          Someone used your referral code${rewardData.referralCode ? ` <strong>${escapeHtml(rewardData.referralCode)}</strong>` : ""} and completed an order.
+          Here is your reward code for your next natOnat order.
+        </p>
+        <div style="margin: 22px 0; padding: 18px; background: #F8F6F3; border: 1px solid #EEBC3F; border-radius: 14px; text-align: center;">
+          <p style="margin: 0 0 8px; color: #0F1A26; font-size: 13px; font-weight: bold;">Your reward code</p>
+          <p style="margin: 0; color: #0F1A26; font-size: 28px; font-weight: 900; letter-spacing: 2px;">${escapeHtml(rewardData.rewardCode)}</p>
+          <p style="margin: 10px 0 0; color: #27ae60; font-size: 16px; font-weight: bold;">Save EGP ${rewardData.rewardValueEgp}</p>
+        </div>
+        ${rewardData.orderRef ? `<p style="font-size: 13px; color: #777;">Referral order: ${escapeHtml(rewardData.orderRef)}</p>` : ""}
+        <p style="text-align: center;">
+          <a href="${shopUrl}" style="display:inline-block;background:#EEBC3F;color:#0F1A26;text-decoration:none;font-weight:bold;padding:12px 18px;border-radius:999px;">Shop now</a>
+        </p>
+        <p style="margin-top: 24px; font-size: 12px; color: #777; text-align: center;">
+          This reward is generated automatically after a successful referral order.
+        </p>
+      </div>
+    `,
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log("Referral reward email sent: %s", info.messageId);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error("Error sending referral reward email:", error);
+    return { success: false, error };
+  }
+}

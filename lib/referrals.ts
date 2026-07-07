@@ -1,4 +1,5 @@
 import { createClient } from "next-sanity";
+import { sendReferralRewardEmail } from "@/lib/email";
 import { apiVersion, dataset, projectId } from "@/sanity/env";
 import { sanityClient } from "@/sanity/lib/client";
 import {
@@ -253,7 +254,20 @@ export async function markReferralConversionForOrder(order: ReferralOrder) {
   }
 
   const record = referralRecordId
-    ? ({ _id: referralRecordId, code: referralCode } as ReferralRecord)
+    ? await sanityClient.fetch<ReferralRecord | null>(
+        `*[_type == "referralRecord" && _id == $id][0]{
+          _id,
+          code,
+          isActive,
+          referrerName,
+          referrerPhone,
+          referrerEmail,
+          sourceOrderRef,
+          uses
+        }`,
+        { id: referralRecordId },
+        { cache: "no-store" },
+      )
     : await getReferralRecordByCode(referralCode);
   if (!record?._id) return null;
 
@@ -323,6 +337,19 @@ export async function markReferralConversionForOrder(order: ReferralOrder) {
       },
     ])
     .commit();
+
+  if (record.referrerEmail) {
+    sendReferralRewardEmail({
+      to: record.referrerEmail,
+      referrerName: record.referrerName,
+      referralCode: record.code,
+      rewardCode,
+      rewardValueEgp: rewardValue,
+      orderRef,
+    }).catch((error) => {
+      console.error("[Referral] Failed to send reward email", error);
+    });
+  }
 
   return {
     referral_code: record.code,
