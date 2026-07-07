@@ -762,17 +762,17 @@
       "stockChanged": "Some quantities are no longer available. Refresh your cart and try again."
     },
     "discount": {
-      "title": "Discount code",
+      "title": "Discount or referral code",
       "placeholder": "Enter code",
       "apply": "Apply",
       "checking": "Checking...",
       "remove": "Remove",
-      "hint": "Have a promo code? Apply it before ordering.",
-      "enterCode": "Enter a discount code",
-      "invalid": "This discount code is not valid.",
-      "applied": "Discount code applied.",
+      "hint": "Have a promo or referral code? Apply it before ordering.",
+      "enterCode": "Enter a discount or referral code",
+      "invalid": "This code is not valid.",
+      "applied": "Code applied.",
       "unavailable": "Discount service is unavailable. Please try again.",
-      "reapply": "Please review the discount code and apply it again."
+      "reapply": "Please review the code and apply it again."
     },
     "steps": ["Details", "Delivery", "Payment", "Review"],
     "hints": {

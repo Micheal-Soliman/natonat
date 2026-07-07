@@ -5,6 +5,10 @@ import {
   adjustInventoryForConfirmedOrder,
   validateOrderInventory,
 } from "@/lib/sanity-inventory";
+import {
+  ensureReferralRecordForOrder,
+  markReferralConversionForOrder,
+} from "@/lib/referrals";
 import type { Product } from "@/lib/products";
 
 type OrderLogBody = Record<string, unknown>;
@@ -521,6 +525,31 @@ export async function POST(req: Request) {
         };
       }
       orderStore.set(orderRef, storedOrder);
+    }
+
+    if (shouldAdjustInventory(storedOrder)) {
+      try {
+        const customerReferral = await ensureReferralRecordForOrder(storedOrder);
+        const referralReward = await markReferralConversionForOrder(storedOrder);
+        storedOrder = {
+          ...storedOrder,
+          referral: {
+            ...(typeof storedOrder.referral === "object" && storedOrder.referral ? storedOrder.referral : {}),
+            customer_code:
+              customerReferral && "code" in customerReferral
+                ? (customerReferral as { code?: string }).code
+                : undefined,
+            reward: referralReward || undefined,
+            updatedAt: new Date().toISOString(),
+          },
+        };
+        orderStore.set(orderRef, storedOrder);
+      } catch (error) {
+        console.error("Failed to update referral records", {
+          order_ref: orderRef,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
     }
   }
 

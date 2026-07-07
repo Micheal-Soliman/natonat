@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { sanityClient } from "@/sanity/lib/client";
 import { discountCodeByCodeQuery } from "@/sanity/lib/queries";
+import { validateReferralDiscount } from "@/lib/referrals";
 
 type DiscountType = "percentage" | "fixed" | "free_shipping";
 
@@ -128,6 +129,8 @@ export async function POST(req: Request) {
 
   const code = normalizeCode(body.code || "");
   if (!code) return jsonInvalid("Enter a discount code");
+  const subtotal = Math.max(0, getNumber(body.subtotal));
+  const shipping = Math.max(0, getNumber(body.shipping));
 
   let discounts: DiscountCodeDocument[] = [];
 
@@ -147,7 +150,18 @@ export async function POST(req: Request) {
 
   const discount = discounts.find((item) => normalizeCode(item.code || "") === code) || null;
 
-  if (!discount?.code) return jsonInvalid("Discount code was not found");
+  if (!discount?.code) {
+    const referralDiscount = await validateReferralDiscount({ code, subtotal });
+    if (referralDiscount?.valid) {
+      return NextResponse.json(referralDiscount);
+    }
+
+    if (referralDiscount && !referralDiscount.valid) {
+      return jsonInvalid(referralDiscount.message || "Referral code is not valid");
+    }
+
+    return jsonInvalid("Discount code was not found");
+  }
   if (discount.isActive === false) return jsonInvalid("Discount code is not active");
 
   const now = Date.now();
@@ -167,8 +181,6 @@ export async function POST(req: Request) {
     return jsonInvalid("Discount code is not available for this payment method");
   }
 
-  const subtotal = Math.max(0, getNumber(body.subtotal));
-  const shipping = Math.max(0, getNumber(body.shipping));
   const minimumSubtotal = Math.max(0, getNumber(discount.minimumSubtotalEgp));
 
   if (minimumSubtotal > 0 && subtotal < minimumSubtotal) {

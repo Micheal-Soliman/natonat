@@ -3,6 +3,7 @@
 import { Suspense, useState, useEffect, useMemo, useRef, useCallback, type ReactNode } from "react";
 import type { Product } from "@/lib/products";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 import { Link, useRouter } from "@/i18n/routing";
 import { useTranslations, useLocale } from 'next-intl';
 import { Navigation } from "@/app/sections/navigation";
@@ -367,6 +368,9 @@ type AppliedDiscountCode = {
   eligibleSubtotal?: number;
   combineWithPaymentDiscount: boolean;
   message: string;
+  isReferral?: boolean;
+  referralRecordId?: string;
+  referrerName?: string;
 };
 
 function PaymentLogoBox({
@@ -495,8 +499,10 @@ function CheckoutContent() {
   const products = useCatalogProducts();
   const locale = useLocale();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { items, subtotal, discount: cartDiscount, originalSubtotal, appliedDiscounts, clearCart, buyNowItem, setBuyNowItem } = useCart();
   const checkoutTracked = useRef(false);
+  const autoAppliedReferralRef = useRef("");
 
   // Group duplicate items (same id + size + color) and sum quantities
   const checkoutItems = useMemo(() => {
@@ -795,6 +801,9 @@ function CheckoutContent() {
           amount_egp: confirmedAppliedDiscountCode.discountAmount,
           eligible_subtotal_egp: confirmedAppliedDiscountCode.eligibleSubtotal,
           combine_with_payment_discount: confirmedAppliedDiscountCode.combineWithPaymentDiscount,
+          is_referral: confirmedAppliedDiscountCode.isReferral === true,
+          referral_record_id: confirmedAppliedDiscountCode.referralRecordId,
+          referrer_name: confirmedAppliedDiscountCode.referrerName,
         }
       : null;
 
@@ -1249,6 +1258,9 @@ function CheckoutContent() {
           eligibleSubtotal: data.eligibleSubtotal,
           combineWithPaymentDiscount: data.combineWithPaymentDiscount === true,
           message: data.message || t("discount.applied"),
+          isReferral: data.isReferral === true,
+          referralRecordId: data.referralRecordId,
+          referrerName: data.referrerName,
         };
 
         setAppliedDiscountCode(validatedDiscount);
@@ -1293,6 +1305,15 @@ function CheckoutContent() {
     setDiscountCodeStatus("idle");
     setDiscountCodeMessage("");
   };
+
+  useEffect(() => {
+    const refCode = (searchParams.get("ref") || searchParams.get("referral") || "").trim();
+    if (!refCode || autoAppliedReferralRef.current === refCode || appliedDiscountCode) return;
+
+    autoAppliedReferralRef.current = refCode;
+    setDiscountCodeInput(refCode.toUpperCase());
+    void validateDiscountCode(refCode);
+  }, [appliedDiscountCode, searchParams, validateDiscountCode]);
 
   useEffect(() => {
     if (checkoutTracked.current || !hasCheckoutItems) return;

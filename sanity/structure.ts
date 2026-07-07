@@ -42,6 +42,21 @@ export const structure: StructureResolver = (S) =>
             .title("Discount codes")
             .defaultOrdering([{ field: "_updatedAt", direction: "desc" }]),
         ),
+      S.listItem()
+        .title("Referral program")
+        .child(
+          S.document()
+            .schemaType("referralProgram")
+            .documentId("referralProgram")
+            .title("Referral program"),
+        ),
+      S.documentTypeListItem("referralRecord")
+        .title("Referral records")
+        .child(
+          S.documentTypeList("referralRecord")
+            .title("Referral records")
+            .defaultOrdering([{ field: "_updatedAt", direction: "desc" }]),
+        ),
       S.documentTypeListItem("productReview")
         .title("Product reviews")
         .child(

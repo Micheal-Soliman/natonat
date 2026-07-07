@@ -349,3 +349,49 @@ export const discountCodeByCodeQuery = groq`
     customerMessage
   }
 `;
+
+export const referralProgramQuery = groq`
+  *[_type == "referralProgram"][0] {
+    isEnabled,
+    friendDiscountPercent,
+    referrerRewardPercent,
+    minimumSubtotalEgp,
+    maxFriendDiscountEgp,
+    maxRewardDiscountEgp,
+    rewardExpiryDays,
+    combineFriendDiscountWithPaymentDiscount,
+    customerMessage
+  }
+`;
+
+export const referralRecordByCodeQuery = groq`
+  *[_type == "referralRecord" && defined(code)] {
+    _id,
+    code,
+    isActive,
+    referrerName,
+    referrerPhone,
+    referrerEmail,
+    sourceOrderRef,
+    uses
+  }
+`;
+
+export const referralRecordByCustomerQuery = groq`
+  *[
+    _type == "referralRecord" &&
+    (
+      (defined(referrerPhone) && referrerPhone == $phone) ||
+      (defined(referrerEmail) && referrerEmail == $email)
+    )
+  ][0] {
+    _id,
+    code,
+    isActive,
+    referrerName,
+    referrerPhone,
+    referrerEmail,
+    sourceOrderRef,
+    uses
+  }
+`;
