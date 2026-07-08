@@ -135,6 +135,16 @@ export const siteSettingsQuery = groq`
           "imageUrl": coalesce(mainImage.asset->url, imageUrl)
         }
       },
+      quantityDiscount {
+        enabled,
+        title,
+        description,
+        tiers[] {
+          minQuantity,
+          percent,
+          label
+        }
+      },
       sizeGuide {
         label,
         title,
@@ -305,6 +315,16 @@ export const siteSettingsQuery = groq`
       copiedLabel,
       declineLabel,
       targetPath
+    },
+    "quantityDiscount": *[_type == "quantityDiscountSettings"][0] {
+      enabled,
+      title,
+      description,
+      tiers[] {
+        minQuantity,
+        percent,
+        label
+      }
     },
     "sizeGuide": *[_type == "sizeGuideSettings"][0] {
       label,

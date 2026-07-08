@@ -127,19 +127,7 @@ export default function WishlistPage() {
   const handleQuickAdd = (product: Product) => {
     const selection = getQuickSelection(product);
     if (isProductOutOfStock(product) || isProductSizeOutOfStock(product, selection.size)) return;
-    if (!addToCart(getQuickCartItem(product), { openCart: false })) return;
-    showToast({
-      title: copy.added,
-      description: product.name,
-      action: {
-        label: copy.checkout,
-        onClick: () => router.push("/checkout"),
-      },
-      cancel: {
-        label: copy.keepShopping,
-        onClick: () => {},
-      },
-    });
+    addToCart(getQuickCartItem(product), { openCart: true });
   };
 
   const handleQuickBuy = (product: Product) => {

@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useMemo } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
+import { QuantityDiscountRibbon } from "@/app/components/quantity-discount-ribbon";
 import type { Product } from "@/lib/products";
 
 interface SwipeableProductImageProps {
@@ -13,7 +14,6 @@ export function SwipeableProductImage({
   product,
 }: SwipeableProductImageProps) {
   const t = useTranslations("bestSellers");
-
   const [currentIndex, setCurrentIndex] = useState(0);
   const [startX, setStartX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -153,49 +153,7 @@ export function SwipeableProductImage({
         </div>
       )}
 
-      {/* TAG */}
-      {product.tag && (
-        <span
-          className={`absolute top-2 left-2 sm:top-3 sm:left-3 text-[10px] font-semibold tracking-wider uppercase px-2 py-1 rounded-full z-30 ${
-            product.tag === "Best Seller"
-              ? "bg-[#EEBC3F] text-[#0F1A26]"
-              : product.tag === "New"
-              ? "bg-[#0F1A26] text-white"
-              : product.tag === "RFID"
-              ? "bg-[#4B1F1F] text-[#F1EBE3]"
-              : "bg-white/90 text-[#0F1A26]"
-          }`}
-        >
-          {product.tag === "Best Seller"
-            ? t("bestSeller")
-            : product.tag === "Best Value"
-            ? t("bestValue")
-            : product.tag === "Popular"
-            ? t("popular")
-            : product.tag === "Bundle"
-            ? t("bundle")
-            : product.tag === "Essential"
-            ? t("essential")
-            : product.tag === "New"
-            ? t("new")
-            : product.tag === "Limited"
-            ? t("limited")
-            : product.tag}
-        </span>
-      )}
-
-      {/* DISCOUNT */}
-      {!product.dynamicPricing &&
-        product.originalPrice > 0 &&
-        product.price > 0 && (
-          <span className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-[#EEBC3F] text-[#1e3a5f] text-xs sm:text-sm font-bold px-2 py-1 sm:px-3 sm:py-1.5 rounded-full z-30 shadow-lg">
-            -
-            {Math.round(
-              (1 - product.price / product.originalPrice) * 100
-            )}
-            %
-          </span>
-        )}
+      <QuantityDiscountRibbon compact seed={product.id} className="absolute left-2 top-2 z-30 sm:left-3 sm:top-3" />
 
       {/* MOBILE DOTS */}
       {hasMultipleImages && (

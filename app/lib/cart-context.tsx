@@ -4,7 +4,12 @@ import React, { createContext, useContext, useState, useCallback, useEffect, use
 import { useTranslations } from "next-intl";
 
 import { useCatalogProducts } from "@/app/lib/catalog-context";
+import { useQuantityDiscountSettings } from "@/app/lib/site-settings-context";
 import { useToast } from "@/app/components/toast-provider";
+import {
+  applyQuantityDiscount,
+  getQuantityDiscountPercent,
+} from "@/lib/quantity-discount";
 import {
   getAvailableStockQuantity,
   isProductOutOfStock,
@@ -30,7 +35,9 @@ export interface CartItem {
   slug: string;
   type: string;
   price: number;
+  basePrice?: number;
   originalPrice?: number;
+  quantityDiscountPercent?: number;
   quantity: number;
   image: string;
   size?: string;
@@ -77,6 +84,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const products = useCatalogProducts();
+  const quantityDiscountSettings = useQuantityDiscountSettings();
   const stockT = useTranslations("stock");
   const { showToast } = useToast();
   const [items, setItems] = useState<CartItem[]>(() => {
@@ -185,6 +193,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const qty = newItem.quantity || 1;
     const normalizedNewItem: Omit<CartItem, "quantity"> & { quantity?: number } = {
       ...newItem,
+      basePrice: newItem.basePrice ?? newItem.price,
       bundleKey:
         newItem.isBundle
           ? newItem.bundleKey || JSON.stringify(newItem.bundleSelections || [])
@@ -326,19 +335,32 @@ export function CartProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      const quantity = Math.min(item.quantity || 1, maxQuantity ?? Number.POSITIVE_INFINITY);
+      const basePrice = item.basePrice ?? item.price;
+      const discountPercent = getQuantityDiscountPercent(quantity, quantityDiscountSettings);
+
       setBuyNowItemState({
         ...item,
-        quantity: Math.min(item.quantity || 1, maxQuantity ?? Number.POSITIVE_INFINITY),
+        basePrice,
+        price: applyQuantityDiscount(basePrice, discountPercent),
+        originalPrice: Math.max(item.originalPrice ?? basePrice, basePrice),
+        quantityDiscountPercent: discountPercent,
+        quantity,
       });
     },
-    [getCartItemMaxQuantity, isCartItemUnavailable]
+    [getCartItemMaxQuantity, isCartItemUnavailable, quantityDiscountSettings]
   );
 
   const catalogItems = useMemo(
-    () =>
-      items.map((item) => {
+    () => {
+      const refreshedItems = items.map((item) => {
         const product = products.find((candidate) => candidate.id === item.id);
-        if (!product) return item;
+        if (!product) {
+          return {
+            ...item,
+            basePrice: item.basePrice ?? item.price,
+          };
+        }
 
         const sizeKey = item.size?.toLowerCase() as keyof NonNullable<typeof product.sizePrices>;
         const sizePrice = sizeKey && product.sizePrices?.[sizeKey];
@@ -367,6 +389,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
           };
         });
         const maxQuantity = getCartItemMaxQuantity({ ...item, bundleSelections });
+        const basePrice = item.isBundle || item.priceOverride
+          ? item.basePrice ?? item.price
+          : sizePrice?.price ?? product.price;
+        const originalPrice = item.isBundle || item.priceOverride
+          ? item.originalPrice
+          : sizePrice?.originalPrice ?? product.originalPrice;
 
         return {
           ...item,
@@ -374,15 +402,31 @@ export function CartProvider({ children }: { children: ReactNode }) {
           slug: product.slug,
           type: product.type,
           image: item.lockedVariant ? item.image : colorVariant?.image || product.image,
-          price: item.isBundle || item.priceOverride ? item.price : sizePrice?.price ?? product.price,
-          originalPrice: item.isBundle || item.priceOverride
-            ? item.originalPrice
-            : sizePrice?.originalPrice ?? product.originalPrice,
+          basePrice,
+          price: basePrice,
+          originalPrice,
           bundleSelections,
           quantity: Math.min(item.quantity, maxQuantity ?? Number.POSITIVE_INFINITY),
         };
-      }),
-    [getCartItemMaxQuantity, items, products]
+      });
+
+      const totalQuantity = refreshedItems.reduce((sum, item) => sum + item.quantity, 0);
+      const discountPercent = getQuantityDiscountPercent(totalQuantity, quantityDiscountSettings);
+
+      return refreshedItems.map((item) => {
+        const basePrice = item.basePrice ?? item.price;
+        const discountedPrice = applyQuantityDiscount(basePrice, discountPercent);
+        const originalPrice = Math.max(item.originalPrice ?? basePrice, basePrice);
+
+        return {
+          ...item,
+          price: discountedPrice,
+          originalPrice,
+          quantityDiscountPercent: discountPercent,
+        };
+      });
+    },
+    [getCartItemMaxQuantity, items, products, quantityDiscountSettings]
   );
 
   // Simple total calculation - bundle prices are already calculated by bundle-pricing system
@@ -400,10 +444,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
     });
 
+    const discountPercent = getQuantityDiscountPercent(
+      cartItems.reduce((sum, item) => sum + item.quantity, 0),
+      quantityDiscountSettings,
+    );
+    if (discountPercent > 0) {
+      appliedDiscounts.push(`${quantityDiscountSettings.title} (${discountPercent}%)`);
+    }
+
     const discount = originalSubtotal - subtotal;
 
     return { subtotal, discount, originalSubtotal, appliedDiscounts };
-  }, []);
+  }, [quantityDiscountSettings]);
 
   const totalItems = catalogItems.reduce((sum, item) => sum + item.quantity, 0);
   const { subtotal, discount, originalSubtotal, appliedDiscounts } = calculateTotals(catalogItems);

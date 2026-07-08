@@ -35,6 +35,10 @@ export function useSizeGuide() {
   return useSiteSettings().sizeGuide;
 }
 
+export function useQuantityDiscountSettings() {
+  return useSiteSettings().quantityDiscount;
+}
+
 export function useSizeGuideSizes() {
   const sizeGuide = useSizeGuide();
 

@@ -1,4 +1,9 @@
 import { normalizeImageUrl } from "@/lib/image-url";
+import {
+  fallbackQuantityDiscount,
+  normalizeQuantityDiscountSettings,
+  type QuantityDiscountSettings,
+} from "@/lib/quantity-discount";
 import { sanityClient } from "@/sanity/lib/client";
 import { siteSettingsQuery } from "@/sanity/lib/queries";
 
@@ -121,6 +126,7 @@ export type SiteSettings = {
   flashSale: FlashSaleSettings;
   flashSaleSection: FlashSaleSectionSettings;
   conversionRescue: ConversionRescueSettings;
+  quantityDiscount: QuantityDiscountSettings;
   sizeGuide: SizeGuideSettings;
   discountAnnouncements: DiscountAnnouncement[];
 };
@@ -130,6 +136,7 @@ type SiteSettingsQueryResult = {
   flashSale?: Partial<FlashSaleSettings> | null;
   flashSaleSection?: Partial<FlashSaleSectionSettings> | null;
   conversionRescue?: Partial<ConversionRescueSettings> | null;
+  quantityDiscount?: Partial<QuantityDiscountSettings> | null;
   legacyFlashSaleSection?: Partial<FlashSaleSectionSettings> | null;
   sizeGuide?: Partial<SizeGuideSettings> | null;
   discountAnnouncements?: Array<{
@@ -348,6 +355,9 @@ export async function getSiteSettings(): Promise<SiteSettings> {
         settings?.flashSaleSection || settings?.legacyFlashSaleSection || undefined,
       ),
       conversionRescue: mergeConversionRescue(settings?.conversionRescue),
+      quantityDiscount: normalizeQuantityDiscountSettings(
+        settings?.quantityDiscount || settings?.legacy?.quantityDiscount,
+      ),
       sizeGuide: mergeSizeGuide(settings?.sizeGuide || settings?.legacy?.sizeGuide),
       discountAnnouncements: mergeDiscountAnnouncements(settings?.discountAnnouncements),
     };
@@ -357,6 +367,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
       flashSale: fallbackFlashSale,
       flashSaleSection: fallbackFlashSaleSection,
       conversionRescue: fallbackConversionRescue,
+      quantityDiscount: fallbackQuantityDiscount,
       sizeGuide: fallbackSizeGuide,
       discountAnnouncements: [],
     };

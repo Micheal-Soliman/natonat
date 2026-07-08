@@ -6,7 +6,6 @@ import { ChevronLeft, ChevronRight, Clock3, ShoppingBag, Sparkles, Zap } from "l
 import { useTranslations } from "next-intl";
 
 import { useCart, type CartItem } from "@/app/lib/cart-context";
-import { useToast } from "@/app/components/toast-provider";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "@/i18n/routing";
 import type { FlashSaleOffer, FlashSaleProduct, FlashSaleSectionSettings } from "@/lib/sanity-site-settings";
@@ -90,10 +89,8 @@ function makeCartItem(resolved: ResolvedOffer, settings: FlashSaleSectionSetting
 
 export function FlashSaleSection({ settings }: { settings: FlashSaleSectionSettings }) {
   const t = useTranslations("flashSaleSection");
-  const toastT = useTranslations("commerceToast");
   const router = useRouter();
   const { addToCart, setBuyNowItem } = useCart();
-  const { showToast } = useToast();
   const carouselRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [remaining, setRemaining] = useState(() => getRemainingTime(settings.endsAt));
@@ -152,15 +149,8 @@ export function FlashSaleSection({ settings }: { settings: FlashSaleSectionSetti
 
   const handleAdd = (resolved: ResolvedOffer, index: number) => {
     if (resolved.isUnavailable) return;
-    if (!addToCart(makeCartItem(resolved, settings, index), { openCart: false })) return;
+    if (!addToCart(makeCartItem(resolved, settings, index), { openCart: true })) return;
     trackAdd(resolved);
-    const details = [resolved.size, resolved.color].filter(Boolean).join(" - ");
-    showToast({
-      title: toastT("addedToCart"),
-      description: `${resolved.product.name || settings.title}${details ? ` - ${details}` : ""}`,
-      action: { label: toastT("checkout"), onClick: () => router.push("/checkout") },
-      cancel: { label: toastT("keepShopping"), onClick: () => {} },
-    });
   };
 
   const handleBuy = (resolved: ResolvedOffer, index: number) => {

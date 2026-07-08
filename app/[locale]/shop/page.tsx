@@ -13,7 +13,6 @@ import { Loading } from "@/app/components/loading";
 import { SwipeableProductImage } from "@/app/components/swipeable-product-image";
 import { BundleQuickCustomizer } from "@/app/components/bundle-quick-customizer";
 import { WishlistToggleButton } from "@/app/components/wishlist-toggle-button";
-import { useToast } from "@/app/components/toast-provider";
 import { useCatalogProducts } from "@/app/lib/catalog-context";
 import { useSizeGuideSizes } from "@/app/lib/site-settings-context";
 import { useCart } from "@/app/lib/cart-context";
@@ -21,13 +20,11 @@ import { getStockLabel, isProductOutOfStock, isProductSizeOutOfStock } from "@/l
 
 function ShopContent() {
   const t = useTranslations('shop');
-  const toastT = useTranslations('commerceToast');
   const stockT = useTranslations('stock');
   const router = useRouter();
   const products = useCatalogProducts();
   const sizes = useSizeGuideSizes();
   const { addToCart, setBuyNowItem } = useCart();
-  const { showToast } = useToast();
   const searchParams = useSearchParams();
   const rawCategoryFromUrl = searchParams.get("category") || "all";
   const categoryFromUrl = rawCategoryFromUrl === "bundles" ? "all" : rawCategoryFromUrl;
@@ -323,19 +320,7 @@ function ShopContent() {
   const handleQuickAdd = (product: Product) => {
     const selection = getQuickSelection(product);
     if (isProductOutOfStock(product) || isProductSizeOutOfStock(product, selection.size)) return;
-    if (!addToCart(getQuickCartItem(product), { openCart: false })) return;
-    showToast({
-      title: toastT("addedToCart"),
-      description: product.name,
-      action: {
-        label: toastT("checkout"),
-        onClick: () => router.push("/checkout"),
-      },
-      cancel: {
-        label: toastT("keepShopping"),
-        onClick: () => {},
-      },
-    });
+    addToCart(getQuickCartItem(product), { openCart: true });
   };
 
   const handleQuickBuy = (product: Product) => {

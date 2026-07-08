@@ -6,7 +6,6 @@ import { Clock3, ShoppingBag, Sparkles, Zap } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { useCart } from "@/app/lib/cart-context";
-import { useToast } from "@/app/components/toast-provider";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "@/i18n/routing";
 import type { FlashSaleSectionSettings } from "@/lib/sanity-site-settings";
@@ -32,10 +31,8 @@ function formatNumber(value: number) {
 
 export function FlashSaleSection({ settings }: { settings: FlashSaleSectionSettings }) {
   const t = useTranslations("flashSaleSection");
-  const toastT = useTranslations("commerceToast");
   const router = useRouter();
   const { addToCart, setBuyNowItem } = useCart();
-  const { showToast } = useToast();
   const [remaining, setRemaining] = useState(() => getRemainingTime(settings.endsAt));
 
   useEffect(() => {
@@ -117,14 +114,8 @@ export function FlashSaleSection({ settings }: { settings: FlashSaleSectionSetti
 
   const handleAdd = () => {
     if (isUnavailable) return;
-    if (!addToCart(cartItem, { openCart: false })) return;
+    if (!addToCart(cartItem, { openCart: true })) return;
     trackAdd();
-    showToast({
-      title: toastT("addedToCart"),
-      description: `${product.name}${settings.selectedSize ? ` · ${settings.selectedSize.toUpperCase()}` : ""}${selectedColorName ? ` · ${selectedColorName}` : ""}`,
-      action: { label: toastT("checkout"), onClick: () => router.push("/checkout") },
-      cancel: { label: toastT("keepShopping"), onClick: () => {} },
-    });
   };
 
   const handleBuy = () => {

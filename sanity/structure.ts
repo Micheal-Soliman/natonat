@@ -29,6 +29,14 @@ export const structure: StructureResolver = (S) =>
             .title("Conversion rescue popup"),
         ),
       S.listItem()
+        .title("Quantity discount")
+        .child(
+          S.document()
+            .schemaType("quantityDiscountSettings")
+            .documentId("quantityDiscountSettings")
+            .title("Quantity discount"),
+        ),
+      S.listItem()
         .title("Size guide")
         .child(
           S.document()

@@ -16,18 +16,24 @@ import { FAQSection } from "@/app/components/faq-section";
 import { DeliveryCountdown } from "@/app/components/delivery-countdown";
 import { SwipeableProductImage } from "@/app/components/swipeable-product-image";
 import { WishlistToggleButton } from "@/app/components/wishlist-toggle-button";
+import { QuantityDiscountRibbon } from "@/app/components/quantity-discount-ribbon";
 import { SizeModal } from "@/app/components/size-modal";
 import {
   ReviewsLightbox,
   type ReviewImage,
 } from "@/app/components/reviews-lightbox";
-import { useToast } from "@/app/components/toast-provider";
-import { useSizeGuideSizes } from "@/app/lib/site-settings-context";
+import { useQuantityDiscountSettings, useSizeGuideSizes } from "@/app/lib/site-settings-context";
 import { type Product } from "@/lib/products";
 import { calculateBundlePrice, getPricingRuleKey } from "@/lib/bundle-pricing";
 import { trackMetaPixelEvent } from "@/lib/meta-pixel";
 import { getStockLabel, isProductOutOfStock, isProductSizeOutOfStock } from "@/lib/product-stock";
 import { getProductRating } from "@/lib/product-rating";
+import {
+  applyQuantityDiscount,
+  getNextQuantityDiscount,
+  getQuantityDiscountPercent,
+  type QuantityDiscountSettings,
+} from "@/lib/quantity-discount";
 
 // Separate component for detailed product description
 interface ProductDetailedDescriptionProps {
@@ -823,40 +829,31 @@ function getInitialSelectedSize(product: Product) {
 
 type ProductTabId = "details" | "features" | "faq";
 
-function getQuantityDiscountPercent(quantity: number) {
-  if (quantity >= 4) return 15;
-  if (quantity >= 3) return 10;
-  if (quantity >= 2) return 7;
-  return 0;
-}
-
-function getNextQuantityDiscount(quantity: number) {
-  if (quantity < 2) return { quantity: 2, percent: 7 };
-  if (quantity < 3) return { quantity: 3, percent: 10 };
-  if (quantity < 4) return { quantity: 4, percent: 15 };
-  return null;
-}
-
 function ProductQuantityUpsellTracker({
   quantity,
   baseUnitPrice,
   discountedUnitPrice,
+  settings,
   t,
 }: {
   quantity: number;
   baseUnitPrice: number;
   discountedUnitPrice: number;
+  settings: QuantityDiscountSettings;
   t: (key: string, values?: Record<string, number | string>) => string;
 }) {
-  const discountPercent = getQuantityDiscountPercent(quantity);
-  const nextDiscount = getNextQuantityDiscount(quantity);
-  const progress = Math.min(100, Math.max(0, ((quantity - 1) / 3) * 100));
+  const discountPercent = getQuantityDiscountPercent(quantity, settings);
+  const nextDiscount = getNextQuantityDiscount(quantity, settings);
+  const maxTierQuantity = settings.tiers.at(-1)?.minQuantity || 4;
+  const progress = Math.min(100, Math.max(0, ((quantity - 1) / Math.max(1, maxTierQuantity - 1)) * 100));
   const savingsPerItem = Math.max(0, baseUnitPrice - discountedUnitPrice);
   const tiers = [
     { quantity: 1, label: t("upsell.tiers.one"), percent: 0 },
-    { quantity: 2, label: t("upsell.tiers.two"), percent: 7 },
-    { quantity: 3, label: t("upsell.tiers.three"), percent: 10 },
-    { quantity: 4, label: t("upsell.tiers.four"), percent: 15 },
+    ...settings.tiers.map((tier) => ({
+      quantity: tier.minQuantity,
+      label: tier.label || t("upsell.tiers.dynamic", { count: tier.minQuantity }),
+      percent: tier.percent,
+    })),
   ];
 
   return (
@@ -870,7 +867,7 @@ function ProductQuantityUpsellTracker({
           <p className="mt-3 text-base font-black leading-snug text-[#0F1A26] sm:text-lg">
             {nextDiscount
               ? t("upsell.next", {
-                  count: Math.max(1, nextDiscount.quantity - quantity),
+                  count: Math.max(1, nextDiscount.minQuantity - quantity),
                   percent: nextDiscount.percent,
                 })
               : t("upsell.unlocked", { percent: discountPercent })}
@@ -933,11 +930,10 @@ export default function ProductPageContent({
   products,
 }: ProductPageContentProps) {
   const t = useTranslations('product');
-  const toastT = useTranslations('commerceToast');
   const stockT = useTranslations('stock');
   const locale = useLocale();
-  const { showToast } = useToast();
   const { addToCart, setBuyNowItem, validateQuantity } = useCart();
+  const quantityDiscountSettings = useQuantityDiscountSettings();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const router = useRouter();
   const [selectedSize, setSelectedSize] = useState(() => getInitialSelectedSize(product));
@@ -1041,12 +1037,13 @@ export default function ProductPageContent({
   }, [product, bundleSelections, products]);
 
   const currentPrice = product.dynamicPricing ? calculateDynamicBundlePrice() : getPriceBySize(selectedSize);
-  const quantityDiscountPercent = getQuantityDiscountPercent(quantity);
+  const quantityDiscountPercent = getQuantityDiscountPercent(quantity, quantityDiscountSettings);
   const discountedUnitPrice = Math.max(
     0,
-    Math.round(currentPrice.price * (1 - quantityDiscountPercent / 100)),
+    applyQuantityDiscount(currentPrice.price, quantityDiscountPercent),
   );
-  const cartUnitPrice = quantityDiscountPercent > 0 ? discountedUnitPrice : currentPrice.price;
+  const cartUnitPrice = currentPrice.price;
+  const previewUnitPrice = quantityDiscountPercent > 0 ? discountedUnitPrice : currentPrice.price;
   const cartOriginalPrice = Math.max(currentPrice.originalPrice || currentPrice.price, currentPrice.price);
   const selectedBundleHasOutOfStockItem = useMemo(() => {
     if (!isBundle || !product.bundleItems) return false;
@@ -1098,12 +1095,13 @@ export default function ProductPageContent({
     });
   }, [bundleSelections, getBundleProduct, isBundle, product.bundleItems]);
 
-  const buildCartItem = useCallback(() => ({
+  const buildCartItem = () => ({
     id: product.id,
     name: product.name,
     slug: product.slug,
     type: product.type,
     price: cartUnitPrice,
+    basePrice: currentPrice.price,
     originalPrice: cartOriginalPrice,
     image: product.colors && selectedColor
       ? product.colors.find(c => c.id === selectedColor)?.image || product.image
@@ -1113,58 +1111,30 @@ export default function ProductPageContent({
     quantity,
     isBundle,
     bundleSelections: buildCartBundleSelections(),
-  }), [
-    buildCartBundleSelections,
-    cartOriginalPrice,
-    cartUnitPrice,
-    isBundle,
-    product.colors,
-    product.id,
-    product.image,
-    product.name,
-    product.size,
-    product.slug,
-    product.type,
-    quantity,
-    selectedColor,
-    selectedProductColor,
-    selectedSize,
-  ]);
+  });
 
-  const trackAddToCart = useCallback(() => {
+  const trackAddToCart = () => {
     trackMetaPixelEvent("AddToCart", {
       content_ids: [String(product.id)],
       contents: [{
         id: String(product.id),
         quantity,
-        item_price: cartUnitPrice,
+        item_price: previewUnitPrice,
       }],
       content_name: product.name,
       content_type: "product",
-      value: cartUnitPrice * quantity,
+      value: previewUnitPrice * quantity,
       currency: "EGP",
     });
-  }, [cartUnitPrice, product.id, product.name, quantity]);
+  };
 
-  const handleStickyAddToCart = useCallback(() => {
+  const handleStickyAddToCart = () => {
     if (isUnavailable) return;
-    if (!addToCart(buildCartItem(), { openCart: false })) return;
+    if (!addToCart(buildCartItem(), { openCart: true })) return;
     trackAddToCart();
-    showToast({
-      title: toastT("addedToCart"),
-      description: product.name,
-      action: {
-        label: toastT("checkout"),
-        onClick: () => router.push("/checkout"),
-      },
-      cancel: {
-        label: toastT("keepShopping"),
-        onClick: () => {},
-      },
-    });
-  }, [addToCart, buildCartItem, isUnavailable, product.name, router, showToast, toastT, trackAddToCart]);
+  };
 
-  const handleStickyBuyNow = useCallback(() => {
+  const handleStickyBuyNow = () => {
     if (isUnavailable) return;
     if (!cartUnitPrice) {
       alert(t("price.unavailable"));
@@ -1173,7 +1143,7 @@ export default function ProductPageContent({
 
     setBuyNowItem(buildCartItem());
     router.push("/checkout");
-  }, [buildCartItem, cartUnitPrice, isUnavailable, router, setBuyNowItem, t]);
+  };
 
   // Filter images based on selected color - memoized to prevent infinite loops
   const colorImages = useMemo(() => {
@@ -1733,39 +1703,28 @@ export default function ProductPageContent({
                 </div>
 
                 {/* Product Badges */}
-                <div className="absolute left-3 right-3 top-3 sm:left-6 sm:right-auto sm:top-6">
-                  <div className="flex max-w-[min(330px,calc(100vw-2rem))] flex-col items-start gap-2">
-                    {isBagCover && (
-                      <div className="flex items-start gap-2 rounded-2xl border border-white/80 bg-white/95 px-3 py-2 text-[#0F1A26] shadow-xl shadow-[#0F1A26]/10 backdrop-blur-sm sm:px-4 sm:py-3">
-                        <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#EEBC3F] text-[#0F1A26]">
-                          <Shield className="h-4 w-4" strokeWidth={2.5} />
-                        </span>
-                        <span className="min-w-0">
-                          <span className="block text-xs font-black leading-tight sm:text-sm">
-                            {t("coverOnlyNotice.title")}
-                          </span>
-                          <span className="mt-0.5 block text-[10px] font-bold leading-tight text-[#0F1A26]/65 sm:text-xs">
-                            {t("coverOnlyNotice.subtitle")}
-                          </span>
-                          <span className="mt-1 block text-[9px] font-black uppercase leading-tight tracking-[0.08em] text-[#0F1A26]/45 sm:text-[10px]">
-                            {t("coverOnlyNotice.english")}
-                          </span>
-                        </span>
-                      </div>
-                    )}
-                    {product.type ? (
-                      <div className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-[#0F1A26]/90 px-3 py-1.5 text-white shadow-lg shadow-[#0F1A26]/15 backdrop-blur sm:px-4 sm:py-2">
-                        <span className="relative flex h-2.5 w-2.5">
-                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#EEBC3F] opacity-70" />
-                          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#EEBC3F]" />
-                        </span>
-                        <span className="text-[10px] font-black uppercase tracking-[0.16em] text-[#EEBC3F] sm:text-xs">
-                          {product.type}
-                        </span>
-                      </div>
-                    ) : null}
+                <QuantityDiscountRibbon
+                  seed={product.id}
+                  className="absolute left-3 top-3 z-30 max-w-[48%] sm:left-6 sm:top-6 sm:max-w-[280px]"
+                />
+                {isBagCover && (
+                  <div className="absolute right-3 top-3 z-20 flex max-w-[48%] items-start gap-2 rounded-2xl border border-white/80 bg-white/95 px-2.5 py-2 text-[#0F1A26] shadow-xl shadow-[#0F1A26]/10 backdrop-blur-sm sm:right-6 sm:top-6 sm:max-w-[330px] sm:px-4 sm:py-3">
+                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#EEBC3F] text-[#0F1A26]">
+                      <Shield className="h-4 w-4" strokeWidth={2.5} />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-xs font-black leading-tight sm:text-sm">
+                        {t("coverOnlyNotice.title")}
+                      </span>
+                      <span className="mt-0.5 block text-[10px] font-bold leading-tight text-[#0F1A26]/65 sm:text-xs">
+                        {t("coverOnlyNotice.subtitle")}
+                      </span>
+                      <span className="mt-1 block text-[8px] font-black uppercase leading-tight tracking-[0.08em] text-[#0F1A26]/45 sm:text-[10px]">
+                        {t("coverOnlyNotice.english")}
+                      </span>
+                    </span>
                   </div>
-                </div>
+                )}
 
                 {/* Previous/Next Arrows */}
                 <button
@@ -1840,7 +1799,8 @@ export default function ProductPageContent({
               <ProductQuantityUpsellTracker
                 quantity={quantity}
                 baseUnitPrice={currentPrice.price}
-                discountedUnitPrice={cartUnitPrice}
+                discountedUnitPrice={previewUnitPrice}
+                settings={quantityDiscountSettings}
                 t={t}
               />
             </div>
@@ -1912,16 +1872,8 @@ export default function ProductPageContent({
 
                 {/* Price - Premium */}
                 <div className="flex flex-wrap items-baseline gap-2 sm:gap-4 mb-6 sm:mb-8 p-3 sm:p-6 bg-gradient-to-r from-[#EEBC3F]/20 to-[#EEBC3F]/5 rounded-xl sm:rounded-2xl border-2 border-[#EEBC3F]/30">
-                  <span className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#0F1A26] tracking-tight">EGP {cartUnitPrice}</span>
+                  <span className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#0F1A26] tracking-tight">EGP {previewUnitPrice}</span>
                   <span className="text-lg sm:text-xl md:text-2xl text-[#0F1A26]/50 line-through font-medium">EGP {cartOriginalPrice}</span>
-                  {quantityDiscountPercent > 0 && (
-                    <span className="rounded-full bg-[#0F1A26] px-3 py-1 text-xs font-black text-[#EEBC3F] sm:px-4 sm:py-2 sm:text-sm">
-                      {t("upsell.percentOff", { percent: quantityDiscountPercent })}
-                    </span>
-                  )}
-                  <span className="bg-[#EEBC3F] text-[#0F1A26] text-xs sm:text-sm font-bold px-3 sm:px-4 py-1 sm:py-2 rounded-full shadow-lg">
-                    {t('price.save', { percent: Math.round((1 - cartUnitPrice / cartOriginalPrice) * 100) })}
-                  </span>
                   <span className={`text-xs sm:text-sm font-bold px-3 sm:px-4 py-1 sm:py-2 rounded-full ${
                     isUnavailable
                       ? "bg-red-100 text-red-700"
@@ -2500,8 +2452,8 @@ export default function ProductPageContent({
                 </div>
               </div>
               <div className="shrink-0 text-start">
-                <p className="text-xl font-black leading-none text-[#0F1A26]">EGP {cartUnitPrice}</p>
-                {cartOriginalPrice > cartUnitPrice && (
+                <p className="text-xl font-black leading-none text-[#0F1A26]">EGP {previewUnitPrice}</p>
+                {cartOriginalPrice > previewUnitPrice && (
                   <p className="mt-1 text-xs font-semibold leading-none text-[#0F1A26]/35 line-through">
                     EGP {cartOriginalPrice}
                   </p>
@@ -2540,8 +2492,8 @@ export default function ProductPageContent({
               <p className="truncate text-sm font-bold text-[#0F1A26]">{product.name}</p>
             </div>
             <div className="shrink-0 text-end">
-              <span className="text-base font-black text-[#0F1A26]">EGP {cartUnitPrice}</span>
-              {cartOriginalPrice > cartUnitPrice && (
+              <span className="text-base font-black text-[#0F1A26]">EGP {previewUnitPrice}</span>
+              {cartOriginalPrice > previewUnitPrice && (
                 <span className="ms-1 text-[11px] font-semibold text-[#0F1A26]/40 line-through">
                   EGP {cartOriginalPrice}
                 </span>

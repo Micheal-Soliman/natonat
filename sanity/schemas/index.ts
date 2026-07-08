@@ -3,6 +3,7 @@ import { siteSettings } from "./site-settings";
 import { flashSaleSettings } from "./flash-sale-settings";
 import { flashSaleSectionSettings } from "./flash-sale-section-settings";
 import { conversionRescueSettings } from "./conversion-rescue-settings";
+import { quantityDiscountSettings } from "./quantity-discount-settings";
 import { sizeGuideSettings } from "./size-guide-settings";
 import { discountCode } from "./discount-code";
 import { productReview } from "./product-review";
@@ -15,6 +16,7 @@ export const schemaTypes = [
   flashSaleSettings,
   flashSaleSectionSettings,
   conversionRescueSettings,
+  quantityDiscountSettings,
   sizeGuideSettings,
   discountCode,
   referralProgram,

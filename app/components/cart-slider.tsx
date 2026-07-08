@@ -5,17 +5,19 @@ import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
-import { Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
+import { Minus, Plus, ShoppingBag, Sparkles, Trash2, X } from "lucide-react";
 import { useCatalogProducts } from "@/app/lib/catalog-context";
-import { useSizeGuideSizes } from "@/app/lib/site-settings-context";
+import { useQuantityDiscountSettings, useSizeGuideSizes } from "@/app/lib/site-settings-context";
 import type { Product } from "@/lib/products";
 import { isProductSizeOutOfStock } from "@/lib/product-stock";
+import { getNextQuantityDiscount, getQuantityDiscountPercent } from "@/lib/quantity-discount";
 
 export function CartSlider() {
   const t = useTranslations("cart");
   const stockT = useTranslations("stock");
   const products = useCatalogProducts();
   const sizes = useSizeGuideSizes();
+  const quantityDiscountSettings = useQuantityDiscountSettings();
   const {
     items,
     removeFromCart,
@@ -35,6 +37,13 @@ export function CartSlider() {
   const freeShippingThreshold = 1000;
   const remainingForFreeShipping = Math.max(0, freeShippingThreshold - subtotal);
   const freeShippingProgress = Math.min(100, (subtotal / freeShippingThreshold) * 100);
+  const quantityDiscountPercent = getQuantityDiscountPercent(totalItems, quantityDiscountSettings);
+  const nextQuantityDiscount = getNextQuantityDiscount(totalItems, quantityDiscountSettings);
+  const maxTierQuantity = quantityDiscountSettings.tiers.at(-1)?.minQuantity || 4;
+  const quantityDiscountProgress = Math.min(
+    100,
+    Math.max(0, ((totalItems - 1) / Math.max(1, maxTierQuantity - 1)) * 100),
+  );
 
   const getSizeOptions = (product?: Product) => {
     if (!product?.sizePrices) return [];
@@ -306,6 +315,38 @@ export function CartSlider() {
         {/* Footer with Summary */}
         {items.length > 0 && (
           <div className="shrink-0 border-t border-[#0F1A26]/10 bg-[#F1EBE3] p-3 sm:p-4">
+            {quantityDiscountSettings.enabled && (
+              <div className="mb-2 overflow-hidden rounded-2xl border border-[#EEBC3F]/35 bg-white p-3 shadow-sm">
+                <div className="mb-2 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#0F1A26] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[#EEBC3F]">
+                      <Sparkles className="h-3 w-3" />
+                      {quantityDiscountSettings.title}
+                    </span>
+                    <p className="mt-2 text-xs font-bold leading-5 text-[#0F1A26]">
+                      {nextQuantityDiscount
+                        ? t("summary.quantityDiscountNext", {
+                            count: Math.max(1, nextQuantityDiscount.minQuantity - totalItems),
+                            percent: nextQuantityDiscount.percent,
+                          })
+                        : t("summary.quantityDiscountUnlocked", { percent: quantityDiscountPercent })}
+                    </p>
+                  </div>
+                  <div className="shrink-0 rounded-xl bg-[#FFF7DF] px-3 py-2 text-center ring-1 ring-[#EEBC3F]/35">
+                    <span className="block text-[10px] font-black uppercase text-[#0F1A26]/45">
+                      {t("summary.quantityDiscount")}
+                    </span>
+                    <span className="text-lg font-black text-[#0F1A26]">{quantityDiscountPercent}%</span>
+                  </div>
+                </div>
+                <div className="relative h-2 rounded-full bg-[#0F1A26]/10">
+                  <div
+                    className="h-full rounded-full bg-[#0F1A26] transition-all duration-500"
+                    style={{ width: `${quantityDiscountProgress}%` }}
+                  />
+                </div>
+              </div>
+            )}
             <div className="mb-2 rounded-2xl border border-[#0F1A26]/10 bg-white p-2.5">
               <div className="mb-1.5 flex items-center justify-between gap-3 text-[11px] font-semibold text-[#0F1A26] sm:text-xs">
                 <span>

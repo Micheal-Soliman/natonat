@@ -47,6 +47,9 @@
     "minutes": "Min",
     "seconds": "Sec"
   },
+  "quantityDiscount": {
+    "ribbon": "Buy {count} get {percent}% off"
+  },
   "flashSaleSection": {
     "eyebrow": "Limited flash sale",
     "title": "One variant. One special price.",
@@ -518,7 +521,8 @@
         "one": "1 item",
         "two": "2 items",
         "three": "3 items",
-        "four": "4+ items"
+        "four": "4+ items",
+        "dynamic": "{count}+ items"
       }
     },
     "tabs": {
@@ -758,7 +762,10 @@
       "shippingAtCheckout": "Shipping calculated at checkout",
       "discount": "Discount",
       "freeShippingProgress": "Add EGP {amount} more for free shipping",
-      "freeShippingUnlocked": "You unlocked free shipping"
+      "freeShippingUnlocked": "You unlocked free shipping",
+      "quantityDiscount": "Order discount",
+      "quantityDiscountNext": "Add {count} more item to unlock {percent}% off",
+      "quantityDiscountUnlocked": "You unlocked {percent}% off this order"
     },
     "savings": "You're saving EGP {amount}"
   },

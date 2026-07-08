@@ -7,7 +7,6 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/app/lib/cart-context";
-import { useToast } from "@/app/components/toast-provider";
 import { useSizeGuideSizes } from "@/app/lib/site-settings-context";
 import { calculateBundlePrice, getPricingRuleKey } from "@/lib/bundle-pricing";
 import type { Product } from "@/lib/products";
@@ -51,11 +50,9 @@ export function BundleQuickCustomizer({
   stopInteraction,
 }: BundleQuickCustomizerProps) {
   const t = useTranslations("shop.quickAdd");
-  const toastT = useTranslations("commerceToast");
   const bundleT = useTranslations("bundleCustomizer");
   const router = useRouter();
   const { addToCart, setBuyNowItem } = useCart();
-  const { showToast } = useToast();
   const sizes = useSizeGuideSizes();
   const isDark = variant === "dark";
 
@@ -195,19 +192,7 @@ export function BundleQuickCustomizer({
 
   const handleAdd = () => {
     if (hasUnavailableSelection) return;
-    if (!addToCart(cartItem, { openCart: false })) return;
-    showToast({
-      title: toastT("bundleAddedToCart"),
-      description: product.name,
-      action: {
-        label: toastT("checkout"),
-        onClick: () => router.push("/checkout"),
-      },
-      cancel: {
-        label: toastT("keepShopping"),
-        onClick: () => {},
-      },
-    });
+    addToCart(cartItem, { openCart: true });
   };
 
   const handleBuy = () => {

@@ -167,3 +167,51 @@ a, button {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+@keyframes ribbon-shine {
+  0%, 38% {
+    transform: translateX(-130%);
+  }
+  72%, 100% {
+    transform: translateX(160%);
+  }
+}
+
+@keyframes discount-tag-float {
+  0%, 100% {
+    transform: translateY(0) rotate(-2deg) scale(1);
+  }
+  50% {
+    transform: translateY(-3px) rotate(-1deg) scale(1.025);
+  }
+}
+
+@keyframes discount-flag-wave {
+  0%, 100% {
+    transform: translateY(0) rotate(-2deg) skewX(0deg);
+  }
+  25% {
+    transform: translateY(-2px) rotate(-1deg) skewX(-2deg);
+  }
+  50% {
+    transform: translateY(-3px) rotate(-2.5deg) skewX(2deg);
+  }
+  75% {
+    transform: translateY(-1px) rotate(-1.2deg) skewX(-1deg);
+  }
+}
+
+@keyframes discount-tier-rotate {
+  0%, 28% {
+    transform: translateY(0);
+  }
+  33%, 61% {
+    transform: translateY(-33.333%);
+  }
+  66%, 94% {
+    transform: translateY(-66.666%);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}

@@ -12,7 +12,7 @@ import { useCart } from "@/app/lib/cart-context";
 import { BundleQuickCustomizer } from "@/app/components/bundle-quick-customizer";
 import { DeliveryCountdown } from "@/app/components/delivery-countdown";
 import { WishlistToggleButton } from "@/app/components/wishlist-toggle-button";
-import { useToast } from "@/app/components/toast-provider";
+import { QuantityDiscountRibbon } from "@/app/components/quantity-discount-ribbon";
 import type { Product } from "@/lib/products";
 import { getStockLabel, isProductOutOfStock, isProductSizeOutOfStock } from "@/lib/product-stock";
 
@@ -40,13 +40,11 @@ const getDisplayProducts = (products: Product[]) => {
 export function BestSellers() {
   const t = useTranslations('bestSellers');
   const tq = useTranslations('shop');
-  const toastT = useTranslations('commerceToast');
   const stockT = useTranslations('stock');
   const router = useRouter();
   const products = useCatalogProducts();
   const sizes = useSizeGuideSizes();
   const { addToCart, setBuyNowItem } = useCart();
-  const { showToast } = useToast();
   const displayProducts = getDisplayProducts(products);
   const locale = useLocale();
   const isRTL = locale === 'ar';
@@ -264,19 +262,7 @@ export function BestSellers() {
   const handleQuickAdd = (product: Product) => {
     const selection = getQuickSelection(product);
     if (isProductOutOfStock(product) || isProductSizeOutOfStock(product, selection.size)) return;
-    if (!addToCart(getQuickCartItem(product), { openCart: false })) return;
-    showToast({
-      title: toastT("addedToCart"),
-      description: product.name,
-      action: {
-        label: toastT("checkout"),
-        onClick: () => router.push("/checkout"),
-      },
-      cancel: {
-        label: toastT("keepShopping"),
-        onClick: () => {},
-      },
-    });
+    addToCart(getQuickCartItem(product), { openCart: true });
   };
 
   const handleQuickBuy = (product: Product) => {
@@ -378,27 +364,7 @@ export function BestSellers() {
                         quality={55}
                       />
 
-                      {product.tag && (
-                        <span className={`absolute top-2 left-2 sm:top-3 sm:left-3 z-10 text-[9px] sm:text-[10px] font-semibold tracking-wider uppercase px-2 sm:px-3 py-1 sm:py-1.5 rounded-full ${product.tag === 'Best Seller' ? 'bg-[#EEBC3F] text-[#0F1A26]' :
-                          product.tag === 'New' ? 'bg-white text-[#0F1A26]' :
-                            product.tag === 'Limited' ? 'bg-[#4B1F1F] text-[#F1EBE3]' :
-                              'bg-[#EEBC3F]/20 text-[#EEBC3F] border border-[#EEBC3F]/30'
-                          }`}>
-                          {product.tag === 'Best Seller' ? t('bestSeller') :
-                            product.tag === 'Best Value' ? t('bestValue') :
-                              product.tag === 'Popular' ? t('popular') :
-                                product.tag === 'Bundle' ? t('bundle') :
-                                  product.tag === 'Essential' ? t('essential') :
-                                    product.tag === 'New' ? t('new') :
-                                      product.tag === 'Limited' ? t('limited') : product.tag}
-                        </span>
-                      )}
-
-                      {!product.dynamicPricing && product.originalPrice > product.price && (
-                        <span className="absolute top-2 right-2 sm:top-3 sm:right-3 z-10 rounded-full bg-[#EEBC3F] px-2 py-1 text-[10px] font-bold text-[#0F1A26] shadow-lg sm:px-3 sm:py-1.5">
-                          -{Math.round((1 - product.price / product.originalPrice) * 100)}%
-                        </span>
-                      )}
+                      <QuantityDiscountRibbon compact seed={product.id} className="absolute left-2 top-2 z-10 sm:left-3 sm:top-3" />
 
                     </div>
                     </Link>
