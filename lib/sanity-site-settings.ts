@@ -100,9 +100,27 @@ export type DiscountAnnouncement = {
   href: string;
 };
 
+export type ConversionRescueSettings = {
+  _updatedAt?: string;
+  enabled: boolean;
+  delaySeconds: number;
+  dismissDays: number;
+  discountCode: string;
+  discountLabel: string;
+  eyebrow: string;
+  title: string;
+  description: string;
+  ctaLabel: string;
+  copyLabel: string;
+  copiedLabel: string;
+  declineLabel: string;
+  targetPath: string;
+};
+
 export type SiteSettings = {
   flashSale: FlashSaleSettings;
   flashSaleSection: FlashSaleSectionSettings;
+  conversionRescue: ConversionRescueSettings;
   sizeGuide: SizeGuideSettings;
   discountAnnouncements: DiscountAnnouncement[];
 };
@@ -111,6 +129,7 @@ type SiteSettingsQueryResult = {
   legacy?: Partial<SiteSettings> | null;
   flashSale?: Partial<FlashSaleSettings> | null;
   flashSaleSection?: Partial<FlashSaleSectionSettings> | null;
+  conversionRescue?: Partial<ConversionRescueSettings> | null;
   legacyFlashSaleSection?: Partial<FlashSaleSectionSettings> | null;
   sizeGuide?: Partial<SizeGuideSettings> | null;
   discountAnnouncements?: Array<{
@@ -164,6 +183,22 @@ const fallbackFlashSaleSection: FlashSaleSectionSettings = {
   addToCartLabel: "Add offer to cart",
   buyNowLabel: "Buy offer now",
   offers: [],
+};
+
+const fallbackConversionRescue: ConversionRescueSettings = {
+  enabled: false,
+  delaySeconds: 30,
+  dismissDays: 7,
+  discountCode: "",
+  discountLabel: "",
+  eyebrow: "",
+  title: "",
+  description: "",
+  ctaLabel: "",
+  copyLabel: "",
+  copiedLabel: "",
+  declineLabel: "",
+  targetPath: "/shop",
 };
 
 function mergeSizeGuide(sizeGuide?: Partial<SizeGuideSettings>): SizeGuideSettings {
@@ -249,6 +284,29 @@ function mergeFlashSaleSection(
   };
 }
 
+function mergeConversionRescue(
+  conversionRescue?: Partial<ConversionRescueSettings> | null,
+): ConversionRescueSettings {
+  const delaySeconds = Math.max(
+    10,
+    Math.min(300, Number(conversionRescue?.delaySeconds) || fallbackConversionRescue.delaySeconds),
+  );
+  const dismissDays = Math.max(
+    1,
+    Math.min(60, Number(conversionRescue?.dismissDays) || fallbackConversionRescue.dismissDays),
+  );
+
+  return {
+    ...fallbackConversionRescue,
+    ...conversionRescue,
+    enabled: Boolean(conversionRescue?.enabled && conversionRescue.discountCode),
+    delaySeconds,
+    dismissDays,
+    discountCode: conversionRescue?.discountCode?.trim().toUpperCase() || "",
+    targetPath: conversionRescue?.targetPath?.trim() || fallbackConversionRescue.targetPath,
+  };
+}
+
 function getDiscountAnnouncementFallbackText(announcement: NonNullable<SiteSettingsQueryResult["discountAnnouncements"]>[number]) {
   const code = announcement.code || "";
 
@@ -289,6 +347,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
       flashSaleSection: mergeFlashSaleSection(
         settings?.flashSaleSection || settings?.legacyFlashSaleSection || undefined,
       ),
+      conversionRescue: mergeConversionRescue(settings?.conversionRescue),
       sizeGuide: mergeSizeGuide(settings?.sizeGuide || settings?.legacy?.sizeGuide),
       discountAnnouncements: mergeDiscountAnnouncements(settings?.discountAnnouncements),
     };
@@ -297,6 +356,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     return {
       flashSale: fallbackFlashSale,
       flashSaleSection: fallbackFlashSaleSection,
+      conversionRescue: fallbackConversionRescue,
       sizeGuide: fallbackSizeGuide,
       discountAnnouncements: [],
     };

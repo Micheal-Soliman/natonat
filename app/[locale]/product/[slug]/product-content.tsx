@@ -34,6 +34,8 @@ interface ProductDetailedDescriptionProps {
   product: Product;
   selectedSize: string;
   quantity: number;
+  unitPrice?: number;
+  unitOriginalPrice?: number;
   t: (key: string) => string;
   addToCart: (item: {
     id: number;
@@ -665,7 +667,15 @@ function ProductDetailedDescriptionTextOnly({ product }: { product: Product }) {
 }
 
 // Component for showing full content when expanded
-function ProductDetailedDescriptionFull({ product, selectedSize, quantity, t, addToCart }: ProductDetailedDescriptionProps) {
+function ProductDetailedDescriptionFull({
+  product,
+  selectedSize,
+  quantity,
+  unitPrice,
+  unitOriginalPrice,
+  t,
+  addToCart,
+}: ProductDetailedDescriptionProps) {
   const messages = useMessages();
   const tp = useTranslations('products');
   const productMessages = getProductDetailMessages(messages, product.slug);
@@ -797,8 +807,8 @@ function ProductDetailedDescriptionFull({ product, selectedSize, quantity, t, ad
               name: product.name,
               slug: product.slug,
               type: product.type,
-              price: product.price,
-              originalPrice: product.originalPrice,
+              price: unitPrice || product.price,
+              originalPrice: unitOriginalPrice || product.originalPrice,
               image: product.image,
               size: product.size ? selectedSize : undefined,
               color: product.color,
@@ -840,6 +850,111 @@ function getInitialSelectedSize(product: Product) {
 
   if (availableSizes.includes("m")) return "m";
   return availableSizes[0] || sizeOptions[0] || product.size?.toLowerCase() || "m";
+}
+
+type ProductTabId = "overview" | "details" | "features" | "faq";
+
+function getQuantityDiscountPercent(quantity: number) {
+  if (quantity >= 4) return 15;
+  if (quantity >= 3) return 10;
+  if (quantity >= 2) return 7;
+  return 0;
+}
+
+function getNextQuantityDiscount(quantity: number) {
+  if (quantity < 2) return { quantity: 2, percent: 7 };
+  if (quantity < 3) return { quantity: 3, percent: 10 };
+  if (quantity < 4) return { quantity: 4, percent: 15 };
+  return null;
+}
+
+function ProductQuantityUpsellTracker({
+  quantity,
+  baseUnitPrice,
+  discountedUnitPrice,
+  t,
+}: {
+  quantity: number;
+  baseUnitPrice: number;
+  discountedUnitPrice: number;
+  t: (key: string, values?: Record<string, number | string>) => string;
+}) {
+  const discountPercent = getQuantityDiscountPercent(quantity);
+  const nextDiscount = getNextQuantityDiscount(quantity);
+  const progress = Math.min(100, Math.max(0, ((quantity - 1) / 3) * 100));
+  const savingsPerItem = Math.max(0, baseUnitPrice - discountedUnitPrice);
+  const tiers = [
+    { quantity: 1, label: t("upsell.tiers.one"), percent: 0 },
+    { quantity: 2, label: t("upsell.tiers.two"), percent: 7 },
+    { quantity: 3, label: t("upsell.tiers.three"), percent: 10 },
+    { quantity: 4, label: t("upsell.tiers.four"), percent: 15 },
+  ];
+
+  return (
+    <div className="mb-4 sm:mb-6 overflow-hidden rounded-3xl border border-[#EEBC3F]/35 bg-white p-4 shadow-[0_18px_45px_rgba(15,26,38,0.08)] sm:p-5">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <span className="inline-flex items-center gap-2 rounded-full bg-[#0F1A26] px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] text-[#EEBC3F]">
+            <Sparkles className="h-3.5 w-3.5" />
+            {t("upsell.eyebrow")}
+          </span>
+          <p className="mt-3 text-base font-black leading-snug text-[#0F1A26] sm:text-lg">
+            {nextDiscount
+              ? t("upsell.next", {
+                  count: Math.max(1, nextDiscount.quantity - quantity),
+                  percent: nextDiscount.percent,
+                })
+              : t("upsell.unlocked", { percent: discountPercent })}
+          </p>
+        </div>
+        <div className="shrink-0 rounded-2xl bg-[#FFF7DF] px-3 py-2 text-center ring-1 ring-[#EEBC3F]/35">
+          <span className="block text-[10px] font-black uppercase tracking-[0.16em] text-[#0F1A26]/45">
+            {discountPercent > 0 ? t("upsell.current") : t("upsell.start")}
+          </span>
+          <span className="text-xl font-black text-[#0F1A26]">
+            {discountPercent > 0 ? `${discountPercent}%` : "0%"}
+          </span>
+        </div>
+      </div>
+
+      <div className="relative mb-3 h-3 rounded-full bg-[#0F1A26]/8">
+        <div
+          className="h-full rounded-full bg-[#0F1A26] transition-all duration-500"
+          style={{ width: `${progress}%` }}
+        />
+        <span className="absolute top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-[#0F1A26] text-xs font-black text-[#EEBC3F] shadow-lg shadow-[#0F1A26]/20"
+          style={{ insetInlineStart: `calc(${progress}% - 18px)` }}
+        >
+          {quantity}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-4 gap-2">
+        {tiers.map((tier) => {
+          const isActive = quantity >= tier.quantity;
+          return (
+            <div key={tier.quantity} className="text-center">
+              <span className={`block text-[11px] font-black ${isActive ? "text-[#0F1A26]" : "text-[#0F1A26]/35"}`}>
+                {tier.label}
+              </span>
+              <span className={`mt-0.5 block text-[10px] font-bold ${isActive ? "text-[#EEBC3F]" : "text-[#0F1A26]/30"}`}>
+                {tier.percent > 0 ? t("upsell.percentOff", { percent: tier.percent }) : t("upsell.noDiscount")}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      {discountPercent > 0 && (
+        <div className="mt-4 rounded-2xl bg-[#F8F2EA] px-3 py-2 text-center text-xs font-bold text-[#0F1A26]/70">
+          {t("upsell.priceAfter", {
+            price: discountedUnitPrice,
+            saved: savingsPerItem,
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function ProductPageContent({
@@ -892,8 +1007,7 @@ export default function ProductPageContent({
     });
   }, [product.id, product.name, product.price]);
   const [quantity, setQuantity] = useState(1);
-  const [detailsExpanded, setDetailsExpanded] = useState(false); // Controls full expansion
-  const [showInfo, setShowInfo] = useState(true); // Fully open by default
+  const [activeProductTab, setActiveProductTab] = useState<ProductTabId>("overview");
 
   const productCategories = Array.isArray(product.category) ? product.category : [product.category];
   const isBagCover = productCategories.includes("luggage-covers");
@@ -967,6 +1081,13 @@ export default function ProductPageContent({
   }, [product, bundleSelections, products]);
 
   const currentPrice = product.dynamicPricing ? calculateDynamicBundlePrice() : getPriceBySize(selectedSize);
+  const quantityDiscountPercent = getQuantityDiscountPercent(quantity);
+  const discountedUnitPrice = Math.max(
+    0,
+    Math.round(currentPrice.price * (1 - quantityDiscountPercent / 100)),
+  );
+  const cartUnitPrice = quantityDiscountPercent > 0 ? discountedUnitPrice : currentPrice.price;
+  const cartOriginalPrice = Math.max(currentPrice.originalPrice || currentPrice.price, currentPrice.price);
   const selectedBundleHasOutOfStockItem = useMemo(() => {
     if (!isBundle || !product.bundleItems) return false;
 
@@ -1022,8 +1143,8 @@ export default function ProductPageContent({
     name: product.name,
     slug: product.slug,
     type: product.type,
-    price: currentPrice.price,
-    originalPrice: currentPrice.originalPrice,
+    price: cartUnitPrice,
+    originalPrice: cartOriginalPrice,
     image: product.colors && selectedColor
       ? product.colors.find(c => c.id === selectedColor)?.image || product.image
       : product.image,
@@ -1034,8 +1155,8 @@ export default function ProductPageContent({
     bundleSelections: buildCartBundleSelections(),
   }), [
     buildCartBundleSelections,
-    currentPrice.originalPrice,
-    currentPrice.price,
+    cartOriginalPrice,
+    cartUnitPrice,
     isBundle,
     product.colors,
     product.id,
@@ -1056,14 +1177,14 @@ export default function ProductPageContent({
       contents: [{
         id: String(product.id),
         quantity,
-        item_price: currentPrice.price,
+        item_price: cartUnitPrice,
       }],
       content_name: product.name,
       content_type: "product",
-      value: currentPrice.price * quantity,
+      value: cartUnitPrice * quantity,
       currency: "EGP",
     });
-  }, [currentPrice.price, product.id, product.name, quantity]);
+  }, [cartUnitPrice, product.id, product.name, quantity]);
 
   const handleStickyAddToCart = useCallback(() => {
     if (isUnavailable) return;
@@ -1085,14 +1206,14 @@ export default function ProductPageContent({
 
   const handleStickyBuyNow = useCallback(() => {
     if (isUnavailable) return;
-    if (!currentPrice.price) {
+    if (!cartUnitPrice) {
       alert(t("price.unavailable"));
       return;
     }
 
     setBuyNowItem(buildCartItem());
     router.push("/checkout");
-  }, [buildCartItem, currentPrice.price, isUnavailable, router, setBuyNowItem, t]);
+  }, [buildCartItem, cartUnitPrice, isUnavailable, router, setBuyNowItem, t]);
 
   // Filter images based on selected color - memoized to prevent infinite loops
   const colorImages = useMemo(() => {
@@ -1499,6 +1620,41 @@ export default function ProductPageContent({
     return () => cancelAnimationFrame(frameId);
   }, [selectedColor]);
 
+  const productFaqs = useMemo(() => {
+    const categories = Array.isArray(product.category) ? product.category : [product.category];
+
+    if (categories.includes("luggage-covers")) {
+      return [
+        { questionKey: "questions.sizeCover.question", answerKey: "questions.sizeCover.answer" },
+        { questionKey: "questions.washCover.question", answerKey: "questions.washCover.answer" },
+        { questionKey: "questions.security.question", answerKey: "questions.security.answer" },
+        { questionKey: "questions.handles.question", answerKey: "questions.handles.answer" },
+      ];
+    }
+
+    if (categories.includes("passport-wallets")) {
+      return [
+        { questionKey: "questions.rfid.question", answerKey: "questions.rfid.answer" },
+        { questionKey: "questions.cards.question", answerKey: "questions.cards.answer" },
+        { questionKey: "questions.leather.question", answerKey: "questions.leather.answer" },
+        { questionKey: "questions.pocket.question", answerKey: "questions.pocket.answer" },
+      ];
+    }
+
+    return [
+      { questionKey: "questions.returnPolicy.question", answerKey: "questions.returnPolicy.answer" },
+      { questionKey: "questions.exchange.question", answerKey: "questions.exchange.answer" },
+      { questionKey: "questions.freeShip.question", answerKey: "questions.freeShip.answer" },
+    ];
+  }, [product.category]);
+
+  const productTabs: Array<{ id: ProductTabId; label: string }> = [
+    { id: "overview", label: t("tabs.overview") },
+    { id: "details", label: t("tabs.details") },
+    { id: "features", label: t("tabs.features") },
+    { id: "faq", label: t("tabs.faq") },
+  ];
+
 
   return (
     <>
@@ -1575,13 +1731,13 @@ export default function ProductPageContent({
           </div>
 
           {/* Section 1 & 2: Gallery + Info Grid */}
-          <div className="grid min-w-0 grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-start">
+          <div className="grid min-w-0 grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1.08fr)_minmax(380px,0.92fr)] lg:gap-12">
             {/* Section 1: Gallery */}
-            <div className="min-w-0 space-y-4 sm:space-y-6 w-full max-w-full overflow-hidden">
+            <div className="min-w-0 space-y-3 sm:space-y-4 w-full max-w-full overflow-hidden lg:sticky lg:top-24">
               {/* Main Image - Premium with Navigation Arrows + Swipe Support */}
               <div
-                className={`relative w-full bg-white/50 backdrop-blur-sm rounded-2xl sm:rounded-3xl flex items-center justify-center overflow-hidden border border-[#0F1A26]/10 shadow-2xl shadow-[#0F1A26]/10 touch-pan-y ${
-                  isBundle ? "h-[280px] sm:aspect-square sm:h-auto" : "aspect-square"
+                className={`relative w-full bg-white/55 backdrop-blur-sm rounded-2xl sm:rounded-[2rem] flex items-center justify-center overflow-hidden border border-white/80 shadow-[0_28px_80px_rgba(15,26,38,0.10)] touch-pan-y ${
+                  isBundle ? "h-[280px] sm:aspect-square sm:h-auto" : "aspect-[0.96/1] lg:aspect-[1.02/1]"
                 }`}
                 onTouchStart={(e) => {
                   const touch = e.touches[0];
@@ -1605,7 +1761,7 @@ export default function ProductPageContent({
               >
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(238,188,63,0.15),transparent_60%)]" />
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(255,255,255,0.05),transparent_50%)]" />
-                <div className="absolute inset-0 sm:p-4">
+                <div className="absolute inset-0 p-2 sm:p-4 lg:p-5">
                   <Image
                     src={colorImages[activeImage] || product.image}
                     alt={product.name}
@@ -1662,7 +1818,7 @@ export default function ProductPageContent({
               </div>
 
               {/* Thumbnails - Horizontal Scrollable with Index */}
-              <div className="space-y-2 sm:space-y-3 w-full max-w-full overflow-hidden">
+              <div className="space-y-2 sm:space-y-3 w-full max-w-full overflow-hidden rounded-[1.5rem] border border-white/70 bg-white/45 p-2 shadow-sm backdrop-blur">
                 {/* Thumbnails Row */}
                 <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 sm:pb-3 px-1 no-scrollbar max-w-full">
                   {(colorImages || [product.image]).map((img, idx) => (
@@ -1713,12 +1869,19 @@ export default function ProductPageContent({
                   </span>
                 </div>
               </div>
+
+              <ProductQuantityUpsellTracker
+                quantity={quantity}
+                baseUnitPrice={currentPrice.price}
+                discountedUnitPrice={cartUnitPrice}
+                t={t}
+              />
             </div>
 
             {/* Section 2: Product Info */}
-            <div className="lg:pl-8">
+            <div>
               {/* Buy Box - Price + Size + Add to Cart */}
-              <div className="space-y-4">
+              <div className="space-y-3 rounded-[2rem] border border-white/80 bg-white/45 p-3 shadow-[0_28px_80px_rgba(15,26,38,0.08)] backdrop-blur sm:p-4">
                 {/* Category & Actions */}
                 <div className="flex items-start justify-between mb-4 sm:mb-6">
                   <div className="flex-1 min-w-0">
@@ -1782,10 +1945,15 @@ export default function ProductPageContent({
 
                 {/* Price - Premium */}
                 <div className="flex flex-wrap items-baseline gap-2 sm:gap-4 mb-6 sm:mb-8 p-3 sm:p-6 bg-gradient-to-r from-[#EEBC3F]/20 to-[#EEBC3F]/5 rounded-xl sm:rounded-2xl border-2 border-[#EEBC3F]/30">
-                  <span className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#0F1A26] tracking-tight">EGP {currentPrice.price}</span>
-                  <span className="text-lg sm:text-xl md:text-2xl text-[#0F1A26]/50 line-through font-medium">EGP {currentPrice.originalPrice}</span>
+                  <span className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#0F1A26] tracking-tight">EGP {cartUnitPrice}</span>
+                  <span className="text-lg sm:text-xl md:text-2xl text-[#0F1A26]/50 line-through font-medium">EGP {cartOriginalPrice}</span>
+                  {quantityDiscountPercent > 0 && (
+                    <span className="rounded-full bg-[#0F1A26] px-3 py-1 text-xs font-black text-[#EEBC3F] sm:px-4 sm:py-2 sm:text-sm">
+                      {t("upsell.percentOff", { percent: quantityDiscountPercent })}
+                    </span>
+                  )}
                   <span className="bg-[#EEBC3F] text-[#0F1A26] text-xs sm:text-sm font-bold px-3 sm:px-4 py-1 sm:py-2 rounded-full shadow-lg">
-                    {t('price.save', { percent: Math.round((1 - currentPrice.price / currentPrice.originalPrice) * 100) })}
+                    {t('price.save', { percent: Math.round((1 - cartUnitPrice / cartOriginalPrice) * 100) })}
                   </span>
                   <span className={`text-xs sm:text-sm font-bold px-3 sm:px-4 py-1 sm:py-2 rounded-full ${
                     isUnavailable
@@ -2122,31 +2290,6 @@ export default function ProductPageContent({
                   </div>
                 )}
 
-                <div className="mb-4 sm:mb-6 rounded-2xl border border-[#0F1A26]/10 bg-white/70 p-3 sm:p-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {[
-                      { icon: Ruler, label: t("trust.measure") },
-                      { icon: Truck, label: t("trust.shipping") },
-                      { icon: RotateCcw, label: t("trust.returns") },
-                      { icon: CreditCard, label: t("trust.payment") },
-                    ].map((item) => (
-                      <div key={item.label} className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-[#0F1A26]/70">
-                        <item.icon className="w-4 h-4 text-[#EEBC3F] flex-shrink-0" strokeWidth={1.7} />
-                        <span>{item.label}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <a
-                    href={sizeHelpUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-[#25D366]/10 px-3 py-2 text-sm font-bold text-[#128C4A] transition-colors hover:bg-[#25D366]/15"
-                  >
-                    <MessageCircle className="w-4 h-4" strokeWidth={1.8} />
-                    {t("trust.whatsapp.cta")}
-                  </a>
-                </div>
-
                 {/* Quantity & Add to Cart - Premium */}
                 <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6 sm:mb-8">
                   <div className="flex items-center bg-white border-2 border-[#0F1A26]/10 rounded-2xl overflow-hidden hover:border-[#EEBC3F]/30 transition-colors w-full sm:w-auto">
@@ -2186,25 +2329,6 @@ export default function ProductPageContent({
                 </div>
               </div>{/* End Sticky Buy Box */}
 
-              {/* Benefits Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                {[
-                  { icon: Shield, title: t('benefits.protection.title'), desc: t('benefits.protection.desc') },
-                  { icon: Sparkles, title: t('benefits.washable.title'), desc: t('benefits.washable.desc') },
-                  { icon: Truck, title: t('benefits.shipping.title'), desc: t('benefits.shipping.desc') },
-                  { icon: RotateCcw, title: t('benefits.returns.title'), desc: t('benefits.returns.desc') },
-                ].map((benefit, index) => (
-                  <div key={index} className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-white rounded-xl sm:rounded-2xl border border-[#0F1A26]/5 hover:border-[#EEBC3F]/20 hover:shadow-lg transition-all duration-300 group">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-[#EEBC3F]/10 flex items-center justify-center group-hover:bg-[#EEBC3F] transition-colors flex-shrink-0">
-                      <benefit.icon className="w-5 h-5 sm:w-6 sm:h-6 text-[#EEBC3F] group-hover:text-white transition-colors" strokeWidth={1.5} />
-                    </div>
-                    <div className="min-w-0">
-                      <span className="block font-bold text-[#0F1A26] text-xs sm:text-sm">{benefit.title}</span>
-                      <span className="block text-[#0F1A26]/50 text-xs">{benefit.desc}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
           {/* Video Section - Full Width */}
@@ -2255,111 +2379,98 @@ export default function ProductPageContent({
             />
           )}
 
-          {/* Detailed Product Description - Partially open (intro only) */}
-          <div className="mt-6 lg:mt-8">
-            <button
-              onClick={() => setDetailsExpanded(!detailsExpanded)}
-              className="w-full flex items-center justify-between p-4 bg-white rounded-xl border border-[#0F1A26]/5 shadow-sm hover:shadow-md transition-all duration-300 group"
-            >
-              <span className="font-bold text-[#0F1A26] text-sm">{t('readMore.detailsTitle')}</span>
-              <div className={`w-8 h-8 rounded-full bg-[#EEBC3F]/10 flex items-center justify-center group-hover:bg-[#EEBC3F] transition-all ${detailsExpanded ? 'rotate-180' : ''}`}>
-                <ChevronDown className="w-5 h-5 text-[#EEBC3F] group-hover:text-white" />
+          <section className="mt-8 lg:mt-12">
+            <div className="rounded-[2rem] border border-[#0F1A26]/10 bg-white/80 p-2 shadow-[0_24px_70px_rgba(15,26,38,0.08)] backdrop-blur">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {productTabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveProductTab(tab.id)}
+                    className={`rounded-2xl px-3 py-3 text-sm font-black transition-all ${
+                      activeProductTab === tab.id
+                        ? "bg-[#0F1A26] text-white shadow-lg shadow-[#0F1A26]/15"
+                        : "bg-white text-[#0F1A26]/55 hover:bg-[#EEBC3F]/15 hover:text-[#0F1A26]"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
               </div>
-            </button>
-            {/* Show intro card with click button when collapsed */}
-            {!detailsExpanded && (
-              <div className="mt-4">
-                <ProductDetailedDescriptionIntro product={product} onExpand={() => setDetailsExpanded(true)} />
-              </div>
-            )}
-            {/* Show intro text (no button) + full content when expanded */}
-            {detailsExpanded && (
-              <div className="mt-4 space-y-4">
-                <ProductDetailedDescriptionTextOnly product={product} />
-                <div className="animate-in slide-in-from-top-2 duration-300">
-                  <ProductDetailedDescriptionFull
-                    product={product}
-                    selectedSize={selectedSize}
-                    quantity={quantity}
-                    t={t}
-                    addToCart={addToCart}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
 
-          {/* Sections 3 & 4: Why You'll Love It + FAQs - Fully open by default */}
-          <div className="mt-6 lg:mt-8">
-            <button
-              onClick={() => setShowInfo(!showInfo)}
-              className="w-full flex items-center justify-between p-4 bg-white rounded-xl border border-[#0F1A26]/5 shadow-sm hover:shadow-md transition-all duration-300 group"
-            >
-              <span className="font-bold text-[#0F1A26] text-sm">{t('readMore.infoTitle')}</span>
-              <div className={`w-8 h-8 rounded-full bg-[#EEBC3F]/10 flex items-center justify-center group-hover:bg-[#EEBC3F] transition-all ${showInfo ? 'rotate-180' : ''}`}>
-                <ChevronDown className="w-5 h-5 text-[#EEBC3F] group-hover:text-white" />
-              </div>
-            </button>
-            {showInfo && (
-              <div className="mt-4 animate-in slide-in-from-top-2 duration-300">
-                <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
-                  {/* Section 3: Why You'll Love It (We Love) */}
-                  <div className="transition-all duration-700">
-                    <div className="bg-white rounded-3xl p-6 md:p-8 border border-[#0F1A26]/5 shadow-lg h-full">
-                      <h3 className="text-base font-bold text-[#0F1A26] mb-5 tracking-[0.1em] uppercase flex items-center gap-3">
-                        <Check className="w-5 h-5 text-[#EEBC3F]" />
+              <div className="mt-3 rounded-[1.5rem] bg-[#F8F2EA] p-4 sm:p-6">
+                {activeProductTab === "overview" && (
+                  <ProductDetailedDescriptionIntro product={product} onExpand={() => setActiveProductTab("details")} />
+                )}
+
+                {activeProductTab === "details" && (
+                  <div className="space-y-4">
+                    <ProductDetailedDescriptionTextOnly product={product} />
+                    <ProductDetailedDescriptionFull
+                      product={product}
+                      selectedSize={selectedSize}
+                      quantity={quantity}
+                      unitPrice={cartUnitPrice}
+                      unitOriginalPrice={cartOriginalPrice}
+                      t={t}
+                      addToCart={addToCart}
+                    />
+                  </div>
+                )}
+
+                {activeProductTab === "features" && (
+                  <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      {[
+                        { icon: Shield, title: t('benefits.protection.title'), desc: t('benefits.protection.desc') },
+                        { icon: Sparkles, title: t('benefits.washable.title'), desc: t('benefits.washable.desc') },
+                        { icon: Truck, title: t('benefits.shipping.title'), desc: t('benefits.shipping.desc') },
+                        { icon: RotateCcw, title: t('benefits.returns.title'), desc: t('benefits.returns.desc') },
+                      ].map((benefit, index) => (
+                        <div key={index} className="flex items-center gap-4 rounded-3xl border border-[#0F1A26]/5 bg-white p-4 shadow-sm transition-all duration-300 hover:border-[#EEBC3F]/30 hover:shadow-lg">
+                          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#EEBC3F]/10">
+                            <benefit.icon className="h-6 w-6 text-[#EEBC3F]" strokeWidth={1.7} />
+                          </div>
+                          <div className="min-w-0">
+                            <span className="block text-base font-black text-[#0F1A26]">{benefit.title}</span>
+                            <span className="block text-sm font-medium text-[#0F1A26]/50">{benefit.desc}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="rounded-3xl border border-[#0F1A26]/5 bg-white p-6 shadow-lg md:p-8">
+                      <h3 className="mb-5 flex items-center gap-3 text-base font-bold uppercase tracking-[0.1em] text-[#0F1A26]">
+                        <Check className="h-5 w-5 text-[#EEBC3F]" />
                         {t('description.title')}
                       </h3>
                       <ul className="space-y-3">
                         {[t('description.1'), t('description.2'), t('description.3'), t('description.4')].map((item, index) => (
-                          <li key={index} className="flex items-center gap-3 text-[#0F1A26]/70 p-3 bg-[#F1EBE3] rounded-xl">
-                            <div className="w-8 h-8 rounded-lg bg-[#EEBC3F]/10 flex items-center justify-center flex-shrink-0">
-                              <Check className="w-4 h-4 text-[#EEBC3F]" strokeWidth={2} />
+                          <li key={index} className="flex items-center gap-3 rounded-xl bg-[#F1EBE3] p-3 text-[#0F1A26]/70">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#EEBC3F]/10">
+                              <Check className="h-4 w-4 text-[#EEBC3F]" strokeWidth={2} />
                             </div>
-                            <span className="font-medium text-sm">{item}</span>
+                            <span className="text-sm font-medium">{item}</span>
                           </li>
                         ))}
                       </ul>
                     </div>
                   </div>
+                )}
 
-                  {/* Section 4: FAQs */}
-                  <div className="transition-all duration-700 delay-100">
-                    <div className="h-full">
-                      <FAQSection
-                        title={t('faq.title')}
-                        translationNamespace="faqs"
-                        faqs={
-                          product.category === "luggage-covers" ? [
-                            { questionKey: "questions.sizeCover.question", answerKey: "questions.sizeCover.answer" },
-                            { questionKey: "questions.washCover.question", answerKey: "questions.washCover.answer" },
-                            { questionKey: "questions.security.question", answerKey: "questions.security.answer" },
-                            { questionKey: "questions.handles.question", answerKey: "questions.handles.answer" },
-                          ] : product.category === "passport-wallets" ? [
-                            { questionKey: "questions.rfid.question", answerKey: "questions.rfid.answer" },
-                            { questionKey: "questions.cards.question", answerKey: "questions.cards.answer" },
-                            { questionKey: "questions.leather.question", answerKey: "questions.leather.answer" },
-                            { questionKey: "questions.pocket.question", answerKey: "questions.pocket.answer" },
-                          ] : product.category === "packonat" ? [
-                            { questionKey: "questions.returnPolicy.question", answerKey: "questions.returnPolicy.answer" },
-                            { questionKey: "questions.exchange.question", answerKey: "questions.exchange.answer" },
-                            { questionKey: "questions.freeShip.question", answerKey: "questions.freeShip.answer" },
-                          ] : [
-                            { questionKey: "questions.returnPolicy.question", answerKey: "questions.returnPolicy.answer" },
-                            { questionKey: "questions.exchange.question", answerKey: "questions.exchange.answer" },
-                            { questionKey: "questions.freeShip.question", answerKey: "questions.freeShip.answer" },
-                          ]
-                        }
-                      />
-                    </div>
-                  </div>
-                </div>
+                {activeProductTab === "faq" && (
+                  <FAQSection
+                    title={t('faq.title')}
+                    translationNamespace="faqs"
+                    faqs={productFaqs}
+                  />
+                )}
               </div>
-            )}
-          </div>
+            </div>
+          </section>
 
-          <ProductComparisonTable t={t} />
           <ProductCustomerReviews product={product} locale={locale} t={t} />
+          <ProductComparisonTable t={t} />
           <ProductReviewsLoop t={t} />
 
           {/* Related Products */}
@@ -2426,10 +2537,10 @@ export default function ProductPageContent({
                 </div>
               </div>
               <div className="shrink-0 text-start">
-                <p className="text-xl font-black leading-none text-[#0F1A26]">EGP {currentPrice.price}</p>
-                {currentPrice.originalPrice > currentPrice.price && (
+                <p className="text-xl font-black leading-none text-[#0F1A26]">EGP {cartUnitPrice}</p>
+                {cartOriginalPrice > cartUnitPrice && (
                   <p className="mt-1 text-xs font-semibold leading-none text-[#0F1A26]/35 line-through">
-                    EGP {currentPrice.originalPrice}
+                    EGP {cartOriginalPrice}
                   </p>
                 )}
               </div>
@@ -2466,10 +2577,10 @@ export default function ProductPageContent({
               <p className="truncate text-sm font-bold text-[#0F1A26]">{product.name}</p>
             </div>
             <div className="shrink-0 text-end">
-              <span className="text-base font-black text-[#0F1A26]">EGP {currentPrice.price}</span>
-              {currentPrice.originalPrice > currentPrice.price && (
+              <span className="text-base font-black text-[#0F1A26]">EGP {cartUnitPrice}</span>
+              {cartOriginalPrice > cartUnitPrice && (
                 <span className="ms-1 text-[11px] font-semibold text-[#0F1A26]/40 line-through">
-                  EGP {currentPrice.originalPrice}
+                  EGP {cartOriginalPrice}
                 </span>
               )}
             </div>

@@ -29,7 +29,8 @@ function ShopContent() {
   const { addToCart, setBuyNowItem } = useCart();
   const { showToast } = useToast();
   const searchParams = useSearchParams();
-  const categoryFromUrl = searchParams.get("category") || "all";
+  const rawCategoryFromUrl = searchParams.get("category") || "all";
+  const categoryFromUrl = rawCategoryFromUrl === "bundles" ? "all" : rawCategoryFromUrl;
   const sizeFromUrl = searchParams.get("size");
   const sortFromUrl = searchParams.get("sort");
   const searchFromUrl = searchParams.get("search");
@@ -54,6 +55,7 @@ function ShopContent() {
   const PRODUCTS_PER_PAGE = 12;
   const ref = useRef<HTMLDivElement>(null);
   const categoryTabsRef = useRef<HTMLDivElement>(null);
+  const visibleCategories = categories.filter((category) => category.id !== "bundles");
 
   // Update activeCategory when URL changes
   useEffect(() => {
@@ -213,11 +215,6 @@ function ShopContent() {
           title: <>{t('header.packOnat.title').split(' ')[0]} <span className="text-[#EEBC3F]">{t('header.packOnat.title').split(' ').slice(1).join(' ')}</span></>,
           subtitle: t('header.packOnat.subtitle')
         };
-      case "bundles":
-        return {
-          title: <>{t('header.bundles.title').split(' ')[0]} <span className="text-[#EEBC3F]">{t('header.bundles.title').split(' ').slice(1).join(' ')}</span></>,
-          subtitle: t('header.bundles.subtitle')
-        };
       default:
         return {
           title: <>{t('header.default.title').split(' ')[0]} <span className="text-[#EEBC3F]">{t('header.default.title').split(' ').slice(1).join(' ')}</span></>,
@@ -352,8 +349,7 @@ function ShopContent() {
   const categoryCopyKey =
     activeCategory === "luggage-covers" ||
     activeCategory === "passport-wallets" ||
-    activeCategory === "packonat" ||
-    activeCategory === "bundles"
+    activeCategory === "packonat"
       ? activeCategory
       : "all";
 
@@ -379,7 +375,7 @@ function ShopContent() {
         <div ref={categoryTabsRef} className="bg-white border-b border-[#0F1A26]/5 sticky top-0 z-[60]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex snap-x overflow-x-auto gap-2 py-4 no-scrollbar">
-              {categories.map((cat) => (
+              {visibleCategories.map((cat) => (
                 <Link
                   key={cat.id}
                   href={cat.id === "all" ? "/shop" : `/shop?category=${cat.id}`}

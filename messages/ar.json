@@ -901,6 +901,28 @@
       "selected": "مختار"
     },
     "bundleItemsTitle": "محتويات الحزمة - خصص كل عنصر",
+    "upsell": {
+      "eyebrow": "زود أكتر ووفر أكتر",
+      "next": "زود {count} قطعة كمان وافتح خصم {percent}%",
+      "unlocked": "فتحت خصم {percent}% على الطلب ده",
+      "current": "خصمك",
+      "start": "ابدأ",
+      "percentOff": "خصم {percent}%",
+      "noDiscount": "السعر الأساسي",
+      "priceAfter": "السعر بقى {price} جنيه للقطعة. بتوفر {saved} جنيه على كل قطعة.",
+      "tiers": {
+        "one": "قطعة",
+        "two": "قطعتين",
+        "three": "3 قطع",
+        "four": "4+ قطع"
+      }
+    },
+    "tabs": {
+      "overview": "نظرة عامة",
+      "details": "التفاصيل",
+      "features": "المميزات",
+      "faq": "الأسئلة"
+    },
     "addToCart": "أضف إلى السلة",
     "buyNow": "اشتري الآن",
     "benefits": {

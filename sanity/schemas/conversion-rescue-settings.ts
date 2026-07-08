@@ -1,0 +1,97 @@
+import { defineField, defineType } from "sanity";
+
+export const conversionRescueSettings = defineType({
+  name: "conversionRescueSettings",
+  title: "Conversion rescue popup",
+  type: "document",
+  fields: [
+    defineField({
+      name: "enabled",
+      title: "Enable popup",
+      type: "boolean",
+      initialValue: false,
+    }),
+    defineField({
+      name: "delaySeconds",
+      title: "Show after seconds",
+      type: "number",
+      initialValue: 30,
+      validation: (Rule) => Rule.min(10).max(300),
+    }),
+    defineField({
+      name: "dismissDays",
+      title: "Hide after close for days",
+      type: "number",
+      initialValue: 7,
+      validation: (Rule) => Rule.min(1).max(60),
+    }),
+    defineField({
+      name: "discountCode",
+      title: "Discount code",
+      description: "Use an active code from Discount codes.",
+      type: "string",
+      validation: (Rule) => Rule.required(),
+    }),
+    defineField({
+      name: "discountLabel",
+      title: "Discount label",
+      description: "Example: 5% OFF or EGP 100 OFF.",
+      type: "string",
+      validation: (Rule) => Rule.required(),
+    }),
+    defineField({
+      name: "eyebrow",
+      title: "Small title",
+      type: "string",
+      initialValue: "استنى",
+      validation: (Rule) => Rule.required(),
+    }),
+    defineField({
+      name: "title",
+      title: "Main title",
+      type: "string",
+      initialValue: "خد خصم لو كملت الأوردر دلوقتي",
+      validation: (Rule) => Rule.required(),
+    }),
+    defineField({
+      name: "description",
+      title: "Description",
+      type: "text",
+      rows: 2,
+      initialValue: "استخدم الكود قبل الدفع، والخصم هيتطبق في checkout.",
+    }),
+    defineField({
+      name: "ctaLabel",
+      title: "Main button label",
+      type: "string",
+      initialValue: "كمل الأوردر بالخصم",
+      validation: (Rule) => Rule.required(),
+    }),
+    defineField({
+      name: "copyLabel",
+      title: "Copy button label",
+      type: "string",
+      initialValue: "انسخ الكود",
+    }),
+    defineField({
+      name: "copiedLabel",
+      title: "Copied label",
+      type: "string",
+      initialValue: "اتنسخ",
+    }),
+    defineField({
+      name: "declineLabel",
+      title: "Decline label",
+      type: "string",
+      initialValue: "لا أريد",
+    }),
+    defineField({
+      name: "targetPath",
+      title: "Button target path",
+      description: "Example: /shop or /ar/shop. Leave as /shop to keep current language automatically.",
+      type: "string",
+      initialValue: "/shop",
+      validation: (Rule) => Rule.required(),
+    }),
+  ],
+});

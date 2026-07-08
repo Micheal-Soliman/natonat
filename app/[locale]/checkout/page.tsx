@@ -502,7 +502,7 @@ function CheckoutContent() {
   const searchParams = useSearchParams();
   const { items, subtotal, discount: cartDiscount, originalSubtotal, appliedDiscounts, clearCart, buyNowItem, setBuyNowItem } = useCart();
   const checkoutTracked = useRef(false);
-  const autoAppliedReferralRef = useRef("");
+  const autoAppliedDiscountRef = useRef("");
 
   // Group duplicate items (same id + size + color) and sum quantities
   const checkoutItems = useMemo(() => {
@@ -1307,12 +1307,27 @@ function CheckoutContent() {
   };
 
   useEffect(() => {
-    const refCode = (searchParams.get("ref") || searchParams.get("referral") || "").trim();
-    if (!refCode || autoAppliedReferralRef.current === refCode || appliedDiscountCode) return;
+    let savedCode = "";
+    try {
+      savedCode = window.localStorage.getItem("natonat-saved-discount-code") || "";
+    } catch {
+      savedCode = "";
+    }
 
-    autoAppliedReferralRef.current = refCode;
-    setDiscountCodeInput(refCode.toUpperCase());
-    void validateDiscountCode(refCode);
+    const autoCode = (
+      searchParams.get("discount") ||
+      searchParams.get("code") ||
+      searchParams.get("coupon") ||
+      searchParams.get("ref") ||
+      searchParams.get("referral") ||
+      savedCode ||
+      ""
+    ).trim();
+    if (!autoCode || autoAppliedDiscountRef.current === autoCode || appliedDiscountCode) return;
+
+    autoAppliedDiscountRef.current = autoCode;
+    setDiscountCodeInput(autoCode.toUpperCase());
+    void validateDiscountCode(autoCode);
   }, [appliedDiscountCode, searchParams, validateDiscountCode]);
 
   useEffect(() => {

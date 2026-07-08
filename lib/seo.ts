@@ -4,7 +4,7 @@ export const siteConfig = {
   name: "natOnat",
   title: "natOnat | Pack Smart. Travel Easy.",
   description:
-    "Premium travel accessories in Egypt, including washable luggage covers, smart passport wallets, PackOnat organizers, and curated travel bundles.",
+    "Premium travel accessories in Egypt, including washable luggage covers, smart passport wallets, and PackOnat organizers.",
   url: normalizeSiteUrl(process.env.NEXT_PUBLIC_SITE_URL || "https://www.natonat.com"),
   defaultLocale: "en",
   locales: ["en", "ar"] as const,

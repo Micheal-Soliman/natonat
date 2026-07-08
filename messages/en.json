@@ -505,6 +505,28 @@
       "selected": "Selected"
     },
     "bundleItemsTitle": "Bundle Items - Customize Each",
+    "upsell": {
+      "eyebrow": "Bundle more, save more",
+      "next": "Add {count} more item to unlock {percent}% off",
+      "unlocked": "You unlocked {percent}% off this order",
+      "current": "Current",
+      "start": "Start",
+      "percentOff": "{percent}% OFF",
+      "noDiscount": "Base price",
+      "priceAfter": "Now EGP {price} per item. You save EGP {saved} on each item.",
+      "tiers": {
+        "one": "1 item",
+        "two": "2 items",
+        "three": "3 items",
+        "four": "4+ items"
+      }
+    },
+    "tabs": {
+      "overview": "Overview",
+      "details": "Details",
+      "features": "Features",
+      "faq": "FAQ"
+    },
     "quantity": "Quantity",
     "addToCart": "Add to Cart",
     "buyNow": "Buy Now",

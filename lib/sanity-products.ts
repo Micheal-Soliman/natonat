@@ -78,6 +78,15 @@ function normalizeProducts(products: SanityProduct[]): Product[] {
   return products.map(normalizeProduct).filter((product): product is Product => Boolean(product));
 }
 
+function isBundleProduct(product: Product) {
+  const categories = Array.isArray(product.category) ? product.category : [product.category];
+  return product.isBundle === true || categories.includes("bundles") || Boolean(product.bundleItems?.length);
+}
+
+function hidePublicBundles(products: Product[]) {
+  return products.filter((product) => !isBundleProduct(product));
+}
+
 export async function getCatalogProducts(): Promise<Product[]> {
   try {
     const sanityProducts = await sanityClient.fetch<SanityProduct[]>(
@@ -85,11 +94,11 @@ export async function getCatalogProducts(): Promise<Product[]> {
       {},
       { next: { revalidate: 60, tags: ["products"] } },
     );
-    const normalized = normalizeProducts(sanityProducts);
-    return normalized.length > 0 ? normalized : fallbackProducts;
+    const normalized = hidePublicBundles(normalizeProducts(sanityProducts));
+    return normalized.length > 0 ? normalized : hidePublicBundles(fallbackProducts);
   } catch (error) {
     console.error("Falling back to local products after Sanity fetch failed", error);
-    return fallbackProducts;
+    return hidePublicBundles(fallbackProducts);
   }
 }
 
@@ -101,9 +110,13 @@ export async function getCatalogProductBySlug(slug: string): Promise<Product | u
       { next: { revalidate: 60, tags: ["products"] } },
     );
     const normalized = sanityProduct ? normalizeProduct(sanityProduct) : null;
-    return normalized || fallbackProducts.find((product) => product.slug === slug);
+    if (normalized && !isBundleProduct(normalized)) return normalized;
+
+    const fallbackProduct = fallbackProducts.find((product) => product.slug === slug);
+    return fallbackProduct && !isBundleProduct(fallbackProduct) ? fallbackProduct : undefined;
   } catch (error) {
     console.error("Falling back to local product after Sanity fetch failed", error);
-    return fallbackProducts.find((product) => product.slug === slug);
+    const fallbackProduct = fallbackProducts.find((product) => product.slug === slug);
+    return fallbackProduct && !isBundleProduct(fallbackProduct) ? fallbackProduct : undefined;
   }
 }

@@ -7,6 +7,7 @@ import { GoogleAnalyticsPageView } from "./components/google-analytics-page-view
 import { MetaPixelPageView } from "./components/meta-pixel-page-view";
 import { TikTokPixelPageView } from "./components/tiktok-pixel-page-view";
 import { YandexMetrikaPageView } from "./components/yandex-metrika-page-view";
+import { DynamicConversionRescuePopup } from "./components/dynamic-conversion-rescue-popup";
 import { absoluteUrl, siteConfig } from "@/lib/seo";
 
 const montserrat = Montserrat({
@@ -287,6 +288,7 @@ export default function RootLayout({
         <MetaPixelPageView />
         <TikTokPixelPageView />
         <YandexMetrikaPageView />
+        <DynamicConversionRescuePopup />
         {children}
       </body>
     </html>

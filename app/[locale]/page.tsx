@@ -5,7 +5,6 @@ import { Navigation } from "@/app/sections/navigation";
 import Hero from "@/app/sections/hero";
 import { BenefitsStrip } from "@/app/sections/benefits-strip";
 import { FeaturedCollections } from "@/app/sections/featured-collections";
-import { TravelSets } from "@/app/sections/travel-sets";
 import { HowItWorks } from "@/app/sections/how-it-works";
 import { ArticlesSection } from "@/app/sections/articles-section";
 import { Footer } from "@/app/sections/footer";
@@ -43,8 +42,8 @@ export async function generateMetadata({
       ? "نات أونات | مستلزمات سفر في مصر"
       : "natOnat | Travel Accessories in Egypt",
     description: isArabic
-      ? "تسوق أغلفة شنط السفر، محافظ الباسبور، باك أونات، وباقات السفر من نات أونات داخل مصر."
-      : "Shop natOnat luggage covers, passport wallets, PackOnat organizers, and travel bundle offers in Egypt. Protect your luggage and travel smarter.",
+      ? "تسوق أغلفة شنط السفر، محافظ الباسبور، وباك أونات من نات أونات داخل مصر."
+      : "Shop natOnat luggage covers, passport wallets, and PackOnat organizers in Egypt. Protect your luggage and travel smarter.",
   });
 }
 
@@ -92,7 +91,6 @@ function HomeContent({
         <FlashSaleSection settings={flashSaleSection} />
         <FeaturedCollections />
         <BestSellers />
-        <TravelSets />
         <HowItWorks />
         <ArticlesSection locale={locale} />
         <SocialProof />
