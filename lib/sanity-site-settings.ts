@@ -14,6 +14,8 @@ export type FlashSaleProduct = {
     price?: number;
     originalPrice?: number;
     type?: string;
+    description?: string;
+    features?: string[];
     imageUrl?: string;
     size?: string | null;
     sizePrices?: {
@@ -105,6 +107,25 @@ export type DiscountAnnouncement = {
   href: string;
 };
 
+export type CheckoutUpsellSettings = {
+  _updatedAt?: string;
+  enabled: boolean;
+  selectedSize?: string;
+  selectedColor?: string;
+  badge: string;
+  title: string;
+  description: string;
+  hint: string;
+  discountPercent: number;
+  discountLabel: string;
+  ctaLabel: string;
+  declineLabel: string;
+  showForPaymentMethods: string[];
+  minimumSubtotalEgp: number;
+  imageUrl?: string;
+  product?: FlashSaleProduct;
+};
+
 export type ConversionRescueSettings = {
   _updatedAt?: string;
   enabled: boolean;
@@ -129,6 +150,7 @@ export type SiteSettings = {
   quantityDiscount: QuantityDiscountSettings;
   sizeGuide: SizeGuideSettings;
   discountAnnouncements: DiscountAnnouncement[];
+  checkoutUpsell: CheckoutUpsellSettings;
 };
 
 type SiteSettingsQueryResult = {
@@ -139,6 +161,7 @@ type SiteSettingsQueryResult = {
   quantityDiscount?: Partial<QuantityDiscountSettings> | null;
   legacyFlashSaleSection?: Partial<FlashSaleSectionSettings> | null;
   sizeGuide?: Partial<SizeGuideSettings> | null;
+  checkoutUpsell?: Partial<CheckoutUpsellSettings> | null;
   discountAnnouncements?: Array<{
     _id?: string;
     code?: string;
@@ -206,6 +229,20 @@ const fallbackConversionRescue: ConversionRescueSettings = {
   copiedLabel: "",
   declineLabel: "",
   targetPath: "/shop",
+};
+
+const fallbackCheckoutUpsell: CheckoutUpsellSettings = {
+  enabled: false,
+  badge: "\u0639\u0631\u0636 \u062e\u0627\u0635 \u0628\u0639\u062f \u0627\u0644\u0637\u0644\u0628",
+  title: "\u062a\u062d\u0628 \u062a\u0636\u064a\u0641 PackOnat \u0645\u0639 \u0627\u0644\u0623\u0648\u0631\u062f\u0631\u061f",
+  description: "\u0636\u064a\u0641 PackOnat \u062f\u0644\u0648\u0642\u062a\u064a \u0645\u0639 \u0627\u0644\u0623\u0648\u0631\u062f\u0631 \u0648\u0634\u0648\u0641 \u062a\u0641\u0627\u0635\u064a\u0644 \u0627\u0644\u0645\u0646\u062a\u062c \u0642\u0628\u0644 \u0645\u0627 \u0646\u0623\u0643\u062f \u0627\u0644\u0634\u062d\u0646\u0629.",
+  hint: "\u0644\u0648 \u0636\u0641\u062a\u0647 \u062f\u0644\u0648\u0642\u062a\u064a \u0647\u064a\u0628\u0642\u0649 \u0639\u0646\u062f\u0643 \u0645\u0646\u062a\u062c\u064a\u0646 \u0648\u062a\u0633\u062a\u0641\u064a\u062f \u0628\u062e\u0635\u0645 7% \u062d\u0633\u0628 \u0639\u0631\u0636 \u0627\u0644\u0640 CMS.",
+  discountPercent: 7,
+  discountLabel: "\u0644\u0648 \u0627\u0644\u0623\u0648\u0631\u062f\u0631 \u0628\u0642\u0649 \u0645\u0646\u062a\u062c\u064a\u0646",
+  ctaLabel: "\u0623\u0648\u0627\u0641\u0642\u060c \u0634\u0648\u0641 PackOnat",
+  declineLabel: "\u0644\u0627 \u0623\u0631\u064a\u062f\u060c \u0643\u0645\u0644 \u0627\u0644\u0637\u0644\u0628",
+  showForPaymentMethods: ["cod", "instapay"],
+  minimumSubtotalEgp: 0,
 };
 
 function mergeSizeGuide(sizeGuide?: Partial<SizeGuideSettings>): SizeGuideSettings {
@@ -341,6 +378,44 @@ function mergeDiscountAnnouncements(
     }));
 }
 
+function mergeCheckoutUpsell(
+  checkoutUpsell?: Partial<CheckoutUpsellSettings> | null,
+): CheckoutUpsellSettings {
+  const discountPercent = Math.max(
+    0,
+    Math.min(95, Number(checkoutUpsell?.discountPercent) || 0),
+  );
+  const minimumSubtotalEgp = Math.max(0, Number(checkoutUpsell?.minimumSubtotalEgp) || 0);
+  const product = checkoutUpsell?.product
+    ? {
+        ...checkoutUpsell.product,
+        imageUrl: normalizeImageUrl(checkoutUpsell.product.imageUrl),
+        colors: checkoutUpsell.product.colors?.map((color) => ({
+          ...color,
+          imageUrl: normalizeImageUrl(color.imageUrl),
+        })),
+      }
+    : undefined;
+
+  return {
+    ...fallbackCheckoutUpsell,
+    ...checkoutUpsell,
+    product,
+    imageUrl: normalizeImageUrl(checkoutUpsell?.imageUrl),
+    enabled: Boolean(checkoutUpsell?.enabled && product?.slug),
+    discountPercent,
+    minimumSubtotalEgp,
+    showForPaymentMethods: checkoutUpsell?.showForPaymentMethods?.filter(Boolean) || [],
+    badge: checkoutUpsell?.badge?.trim() || fallbackCheckoutUpsell.badge,
+    title: checkoutUpsell?.title?.trim() || fallbackCheckoutUpsell.title,
+    description: checkoutUpsell?.description?.trim() || fallbackCheckoutUpsell.description,
+    hint: checkoutUpsell?.hint?.trim() || fallbackCheckoutUpsell.hint,
+    discountLabel: checkoutUpsell?.discountLabel?.trim() || fallbackCheckoutUpsell.discountLabel,
+    ctaLabel: checkoutUpsell?.ctaLabel?.trim() || fallbackCheckoutUpsell.ctaLabel,
+    declineLabel: checkoutUpsell?.declineLabel?.trim() || fallbackCheckoutUpsell.declineLabel,
+  };
+}
+
 export async function getSiteSettings(): Promise<SiteSettings> {
   try {
     const settings = await sanityClient.fetch<SiteSettingsQueryResult | null>(
@@ -360,6 +435,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
       ),
       sizeGuide: mergeSizeGuide(settings?.sizeGuide || settings?.legacy?.sizeGuide),
       discountAnnouncements: mergeDiscountAnnouncements(settings?.discountAnnouncements),
+      checkoutUpsell: mergeCheckoutUpsell(settings?.checkoutUpsell),
     };
   } catch (error) {
     console.error("Falling back to local site settings after Sanity fetch failed", error);
@@ -370,6 +446,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
       quantityDiscount: fallbackQuantityDiscount,
       sizeGuide: fallbackSizeGuide,
       discountAnnouncements: [],
+      checkoutUpsell: fallbackCheckoutUpsell,
     };
   }
 }

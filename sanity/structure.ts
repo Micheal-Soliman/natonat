@@ -59,6 +59,14 @@ export const structure: StructureResolver = (S) =>
             .defaultOrdering([{ field: "_updatedAt", direction: "desc" }]),
         ),
       S.listItem()
+        .title("Checkout upsell popup")
+        .child(
+          S.document()
+            .schemaType("checkoutUpsellSettings")
+            .documentId("checkoutUpsellSettings")
+            .title("Checkout upsell popup"),
+        ),
+      S.listItem()
         .title("Referral program")
         .child(
           S.document()

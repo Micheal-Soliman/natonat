@@ -13,6 +13,7 @@ import { ArrowLeft, CreditCard, Truck, Check, MapPin, Phone, Store, Package, Sea
 import { useCart, type CartItem } from "@/app/lib/cart-context";
 import { trackMetaPixelEvent } from "@/lib/meta-pixel";
 import { useCatalogProducts } from "@/app/lib/catalog-context";
+import { useSiteSettings } from "@/app/lib/site-settings-context";
 
 
 function generateOrderRef() {
@@ -497,6 +498,7 @@ export default function CheckoutPage() {
 function CheckoutContent() {
   const t = useTranslations('checkout');
   const products = useCatalogProducts();
+  const { checkoutUpsell } = useSiteSettings();
   const locale = useLocale();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -1139,8 +1141,18 @@ function CheckoutContent() {
     clearCart();
     setBuyNowItem(null);
 
+    const successPath = `/order-confirmed?order_ref=${encodeURIComponent(orderRef)}&method=${encodeURIComponent(paymentMethod)}&success=true`;
+    const upsellPaymentMethods = checkoutUpsell.showForPaymentMethods || [];
+    const canShowCheckoutUpsell =
+      checkoutUpsell.enabled &&
+      Boolean(checkoutUpsell.product?.slug) &&
+      (upsellPaymentMethods.length === 0 || upsellPaymentMethods.includes(paymentMethod)) &&
+      confirmedFinalTotal >= checkoutUpsell.minimumSubtotalEgp;
+
     router.push(
-      `/order-confirmed?order_ref=${encodeURIComponent(orderRef)}&method=${encodeURIComponent(paymentMethod)}&success=true`
+      canShowCheckoutUpsell
+        ? `/order-upsell?order_ref=${encodeURIComponent(orderRef)}&method=${encodeURIComponent(paymentMethod)}&success=true&amount_egp=${encodeURIComponent(String(confirmedFinalTotal))}`
+        : successPath
     );
   };
 
