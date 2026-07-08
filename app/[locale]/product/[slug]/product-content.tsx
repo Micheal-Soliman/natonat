@@ -11,7 +11,7 @@ import { useLocale, useMessages, useTranslations } from 'next-intl';
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
-import { Shield, Sparkles, Ruler, Heart, Share2, Check, Star, Truck, RotateCcw, ArrowUpRight, Award, ArrowLeft, ChevronLeft, ChevronRight as ChevronRightIcon, ChevronDown, MessageCircle, CreditCard, BadgeCheck } from "lucide-react";
+import { Shield, Sparkles, Ruler, Heart, Share2, Check, Star, Truck, RotateCcw, ArrowUpRight, Award, ArrowLeft, ChevronLeft, ChevronRight as ChevronRightIcon, BadgeCheck } from "lucide-react";
 import { FAQSection } from "@/app/components/faq-section";
 import { DeliveryCountdown } from "@/app/components/delivery-countdown";
 import { SwipeableProductImage } from "@/app/components/swipeable-product-image";
@@ -49,11 +49,6 @@ interface ProductDetailedDescriptionProps {
     color?: string;
     quantity: number;
   }) => boolean;
-}
-
-interface ProductDetailedDescriptionIntroProps {
-  product: Product;
-  onExpand: () => void;
 }
 
 type ProductVideoItem = {
@@ -623,32 +618,6 @@ function ProductReviewsLoop({ t }: { t: (key: string) => string }) {
   );
 }
 
-// Component for showing just the intro (partially open)
-function ProductDetailedDescriptionIntro({ product, onExpand }: ProductDetailedDescriptionIntroProps) {
-  const messages = useMessages();
-  const t = useTranslations('product');
-  const productMessages = getProductDetailMessages(messages, product.slug);
-  const intro = getProductDetailString(productMessages, "intro");
-
-  if (!intro) return null;
-
-  return (
-    <button
-      onClick={onExpand}
-      className="w-full text-left p-5 bg-white rounded-xl border border-[#0F1A26]/5 shadow-md hover:shadow-lg hover:border-[#EEBC3F]/30 transition-all duration-300 cursor-pointer group"
-    >
-      <p className="text-[#0F1A26]/80 text-sm leading-relaxed">
-        {intro}
-      </p>
-      {/* Clickable indicator showing there's more content */}
-      <div className="flex items-center justify-center gap-2 mt-4 pt-3 border-t border-[#0F1A26]/10 text-[#EEBC3F] group-hover:text-[#0F1A26] transition-colors">
-        <span className="text-xs font-medium">{t('readMore.moreAvailable')}</span>
-        <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
-      </div>
-    </button>
-  );
-}
-
 // Component for showing intro text only (no button) when expanded
 function ProductDetailedDescriptionTextOnly({ product }: { product: Product }) {
   const messages = useMessages();
@@ -852,7 +821,7 @@ function getInitialSelectedSize(product: Product) {
   return availableSizes[0] || sizeOptions[0] || product.size?.toLowerCase() || "m";
 }
 
-type ProductTabId = "overview" | "details" | "features" | "faq";
+type ProductTabId = "details" | "features" | "faq";
 
 function getQuantityDiscountPercent(quantity: number) {
   if (quantity >= 4) return 15;
@@ -977,15 +946,6 @@ export default function ProductPageContent({
   const selectedProductColor =
     product.colors?.find((color) => color.id === selectedColor)?.name ||
     product.color;
-  const sizeHelpUrl = useMemo(() => {
-    const message = t("trust.whatsapp.message", {
-      product: product.name,
-      size: product.size ? selectedSize.toUpperCase() : t("trust.whatsapp.noSize"),
-      color: selectedProductColor || t("trust.whatsapp.noColor"),
-    });
-
-    return `https://wa.me/201070004227?text=${encodeURIComponent(message)}`;
-  }, [product.name, product.size, selectedProductColor, selectedSize, t]);
   const productRating = useMemo(() => getProductRating(product), [product]);
   const formattedReviewCount = useMemo(
     () => new Intl.NumberFormat(locale).format(productRating.reviewCount),
@@ -1007,7 +967,7 @@ export default function ProductPageContent({
     });
   }, [product.id, product.name, product.price]);
   const [quantity, setQuantity] = useState(1);
-  const [activeProductTab, setActiveProductTab] = useState<ProductTabId>("overview");
+  const [activeProductTab, setActiveProductTab] = useState<ProductTabId>("details");
 
   const productCategories = Array.isArray(product.category) ? product.category : [product.category];
   const isBagCover = productCategories.includes("luggage-covers");
@@ -1649,7 +1609,6 @@ export default function ProductPageContent({
   }, [product.category]);
 
   const productTabs: Array<{ id: ProductTabId; label: string }> = [
-    { id: "overview", label: t("tabs.overview") },
     { id: "details", label: t("tabs.details") },
     { id: "features", label: t("tabs.features") },
     { id: "faq", label: t("tabs.faq") },
@@ -1669,7 +1628,7 @@ export default function ProductPageContent({
       )}
 
       <main className="min-h-screen bg-[#F1EBE3] overflow-x-hidden pb-32 lg:pb-0">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-30 pb-12">
           {/* Product Navigation - Top */}
           <div className="flex items-center justify-between mb-8 pt-5 md:pt-0">
             {/* Left side - Previous or Back to Shop */}
@@ -1794,9 +1753,17 @@ export default function ProductPageContent({
                         </span>
                       </div>
                     )}
-                    <div className="rounded-full border border-[#EEBC3F] bg-[#EEBC3F] px-2 py-1 shadow-lg sm:px-4 sm:py-2">
-                      <span className="text-[#0F1A26] text-[10px] sm:text-xs font-bold tracking-wider">{t('badge')}</span>
-                    </div>
+                    {product.type ? (
+                      <div className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-[#0F1A26]/90 px-3 py-1.5 text-white shadow-lg shadow-[#0F1A26]/15 backdrop-blur sm:px-4 sm:py-2">
+                        <span className="relative flex h-2.5 w-2.5">
+                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#EEBC3F] opacity-70" />
+                          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#EEBC3F]" />
+                        </span>
+                        <span className="text-[10px] font-black uppercase tracking-[0.16em] text-[#EEBC3F] sm:text-xs">
+                          {product.type}
+                        </span>
+                      </div>
+                    ) : null}
                   </div>
                 </div>
 
@@ -2381,7 +2348,7 @@ export default function ProductPageContent({
 
           <section className="mt-8 lg:mt-12">
             <div className="rounded-[2rem] border border-[#0F1A26]/10 bg-white/80 p-2 shadow-[0_24px_70px_rgba(15,26,38,0.08)] backdrop-blur">
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <div className="grid grid-cols-3 gap-2">
                 {productTabs.map((tab) => (
                   <button
                     key={tab.id}
@@ -2399,10 +2366,6 @@ export default function ProductPageContent({
               </div>
 
               <div className="mt-3 rounded-[1.5rem] bg-[#F8F2EA] p-4 sm:p-6">
-                {activeProductTab === "overview" && (
-                  <ProductDetailedDescriptionIntro product={product} onExpand={() => setActiveProductTab("details")} />
-                )}
-
                 {activeProductTab === "details" && (
                   <div className="space-y-4">
                     <ProductDetailedDescriptionTextOnly product={product} />
