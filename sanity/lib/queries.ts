@@ -361,21 +361,17 @@ export const siteSettingsQuery = groq`
       announcementLink,
       announcementPriority
     },
-    "checkoutUpsell": *[_type == "checkoutUpsellSettings"][0] {
+    "checkoutPopup": *[_type == "checkoutPopupSettings"][0] {
       _updatedAt,
       enabled,
-      selectedSize,
-      selectedColor,
       badge,
       title,
       description,
-      hint,
       discountPercent,
-      discountLabel,
-      ctaLabel,
+      hint,
+      acceptLabel,
       declineLabel,
       showForPaymentMethods,
-      minimumSubtotalEgp,
       "imageUrl": image.asset->url,
       product->{
         legacyId,
