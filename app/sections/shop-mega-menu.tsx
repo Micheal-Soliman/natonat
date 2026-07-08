@@ -43,13 +43,6 @@ export function ShopMegaMenu({ scrolled }: ShopMegaMenuProps) {
       href: "/shop?category=packonat",
       image: "/packOnat/Black/1.png",
     },
-    {
-      id: "bundles",
-      name: t('travelSets'),
-      description: t('travelSetsDesc'),
-      href: "/shop?category=bundles",
-      image: "/bundles/All%20Set%20Bundel/1%20o.png",
-    },
   ];
 
   const isActive = (href: string) => {

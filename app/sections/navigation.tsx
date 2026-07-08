@@ -151,13 +151,6 @@ export function Navigation() {
       href: "/shop?category=packonat",
       image: "/packOnat/Black/1.png",
     },
-    {
-      id: "bundles",
-      name: t("travelSets"),
-      description: t("travelSetsDesc"),
-      href: "/shop?category=bundles",
-      image: "/bundles/Three%20Sizes%20Bundle/6o.png",
-    },
   ];
 
   const otherNavLinks = [

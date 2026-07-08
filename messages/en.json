@@ -16,8 +16,8 @@
     "passportWalletsDesc": "RFID-blocking organizers",
     "packOnat": "PackOnat",
     "packOnatDesc": "Smart packing organizers",
-    "travelSets": "Travel Set Bundles",
-    "travelSetsDesc": "Curated bundles",
+    "travelSets": "Travel Sets",
+    "travelSetsDesc": "Smart travel picks",
     "bestSellers": "Best Sellers",
     "sizeGuide": "Size Guide",
     "howItWorks": "Size Guide",
@@ -118,10 +118,10 @@
       "cta": "Shop PackOnat"
     },
     "bundles": {
-      "title": "Travel Bundles",
+      "title": "Travel Picks",
       "description": "Build a smarter travel set and save more",
       "badge": "Save More",
-      "cta": "Shop Bundles"
+      "cta": "Shop Products"
     },
     "explore": "Explore Collection"
   },
@@ -142,12 +142,12 @@
   },
   "bundles": {
     "sectionLabel": "Save More",
-    "title": "Travel Smarter with Bundles",
-    "subtitle": "Complete travel sets designed for every type of journey. Save up to 30% when you bundle.",
+    "title": "Travel Smarter with natOnat",
+    "subtitle": "Smart travel accessories designed for organization, protection, and everyday trips.",
     "save": "Save EGP {amount}",
     "discountPercent": "Get {percent}% Discount",
     "addToCart": "Add to Cart",
-    "viewAll": "View All Bundles",
+    "viewAll": "View All Products",
     "viewProduct": "View Product"
   },
   "howItWorks": {
@@ -305,8 +305,8 @@
       "3": {
         "name": "Mohamed R.",
         "location": "Riyadh, KSA",
-        "text": "Bought the family bundle for our trip to Europe. Saved money and everyone loved their matching covers. Highly recommended!",
-        "product": "Family Pack Bundle"
+        "text": "Ordered multiple covers for a family trip. The sizes were clear, delivery was fast, and every suitcase was easy to spot.",
+        "product": "Luggage Covers"
       },
       "4": {
         "name": "Layla H.",
@@ -329,7 +329,7 @@
         "luggageCovers": "Luggage Covers",
         "passportWallets": "Passport Wallets",
         "packOnat": "PackOnat",
-        "travelSets": "Travel Set Bundles",
+        "travelSets": "Travel Sets",
         "allProducts": "All Products"
       },
       "company": {
@@ -379,8 +379,8 @@
         "subtitle": "Smart packing folders for organized travel"
       },
       "bundles": {
-        "title": "Bundle Deals",
-        "subtitle": "Curated bundles at better prices. Save up to 30%."
+        "title": "Travel Picks",
+        "subtitle": "Smart picks for easier travel."
       }
     },
     "filters": {
@@ -426,7 +426,7 @@
     "categoryCopy": {
       "all": {
         "title": "Travel essentials built for everyday trips",
-        "description": "Browse luggage covers, passport wallets, PackOnat organizers and bundles with filters for size, color and travel style."
+        "description": "Browse luggage covers, passport wallets and PackOnat organizers with filters for size, color and travel style."
       },
       "luggage-covers": {
         "title": "Choose the right luggage cover by size and style",
@@ -611,7 +611,7 @@
         },
         "ecosystem": {
           "feature": "Product Ecosystem",
-          "natonat": "Cover, PackOnat, passport wallet, and travel bundles",
+          "natonat": "Cover, PackOnat, and passport wallet ecosystem",
           "competitors": "Single product with no ecosystem"
         },
         "guarantee": {

@@ -13,7 +13,7 @@ export async function generateMetadata({
     path: "reviews",
     title: "Customer Reviews",
     description:
-      "See real customer reviews and travel photos for natOnat luggage covers, passport wallets, PackOnat, and travel bundles.",
+      "See real customer reviews and travel photos for natOnat luggage covers, passport wallets, and PackOnat.",
   });
 }
 

@@ -13,7 +13,6 @@ export function Footer() {
     shop: [
       { label: t('links.shop.luggageCovers'), href: "/shop?category=luggage-covers" },
       { label: t('links.shop.passportWallets'), href: "/shop?category=passport-wallets" },
-      { label: t('links.shop.travelSets'), href: "/shop?category=travel-sets" },
       { label: t('links.shop.packOnat'), href: "/shop?category=packonat" },
       { label: t('links.shop.allProducts'), href: "/shop" },
     ],

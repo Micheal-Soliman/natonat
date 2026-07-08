@@ -30,7 +30,7 @@ export async function generateMetadata({
         ? "نات أونات | مستلزمات سفر ذكية في مصر"
         : "natOnat | Pack Smart. Travel Easy.",
       description: isArabic
-        ? "تسوق أغلفة شنط السفر ومحافظ الباسبور وباك أونات وباقات السفر من نات أونات داخل مصر."
+        ? "تسوق أغلفة شنط السفر ومحافظ الباسبور وباك أونات من نات أونات داخل مصر."
         : "Premium travel accessories - stretchy, washable luggage covers and smart passport wallets that protect your gear and make it stand out.",
     }),
     icons: {
