@@ -14,6 +14,8 @@ export type FlashSaleProduct = {
     price?: number;
     originalPrice?: number;
     type?: string;
+    description?: string;
+    features?: string[];
     imageUrl?: string;
     size?: string | null;
     sizePrices?: {
@@ -105,6 +107,21 @@ export type DiscountAnnouncement = {
   href: string;
 };
 
+export type CheckoutPopupSettings = {
+  _updatedAt?: string;
+  enabled: boolean;
+  badge: string;
+  title: string;
+  description: string;
+  discountPercent: number;
+  hint: string;
+  acceptLabel: string;
+  declineLabel: string;
+  showForPaymentMethods: string[];
+  imageUrl?: string;
+  product?: FlashSaleProduct;
+};
+
 export type ConversionRescueSettings = {
   _updatedAt?: string;
   enabled: boolean;
@@ -129,6 +146,7 @@ export type SiteSettings = {
   quantityDiscount: QuantityDiscountSettings;
   sizeGuide: SizeGuideSettings;
   discountAnnouncements: DiscountAnnouncement[];
+  checkoutPopup: CheckoutPopupSettings;
 };
 
 type SiteSettingsQueryResult = {
@@ -139,6 +157,7 @@ type SiteSettingsQueryResult = {
   quantityDiscount?: Partial<QuantityDiscountSettings> | null;
   legacyFlashSaleSection?: Partial<FlashSaleSectionSettings> | null;
   sizeGuide?: Partial<SizeGuideSettings> | null;
+  checkoutPopup?: Partial<CheckoutPopupSettings> | null;
   discountAnnouncements?: Array<{
     _id?: string;
     code?: string;
@@ -206,6 +225,18 @@ const fallbackConversionRescue: ConversionRescueSettings = {
   copiedLabel: "",
   declineLabel: "",
   targetPath: "/shop",
+};
+
+const fallbackCheckoutPopup: CheckoutPopupSettings = {
+  enabled: false,
+  badge: "PackOnat",
+  title: "\u062a\u062d\u0628 \u062a\u0636\u064a\u0641 PackOnat \u0645\u0639 \u0627\u0644\u0623\u0648\u0631\u062f\u0631\u061f",
+  description: "\u0645\u0646\u0638\u0645 \u0634\u0646\u0637\u0629 \u0633\u0641\u0631 \u0639\u0645\u0644\u064a \u064a\u062e\u0644\u064a \u0647\u062f\u0648\u0645\u0643 \u0645\u062a\u0631\u062a\u0628\u0629 \u0648\u0633\u0647\u0644\u0629 \u0627\u0644\u0648\u0635\u0648\u0644 \u062c\u0648\u0647 \u0627\u0644\u0634\u0646\u0637\u0629.",
+  discountPercent: 7,
+  hint: "\u0644\u0648 \u0636\u0641\u062a\u0647 \u062f\u0644\u0648\u0642\u062a\u064a \u0647\u064a\u0628\u0642\u0649 \u0639\u0646\u062f\u0643 \u0645\u0646\u062a\u062c\u064a\u0646 \u0648\u064a\u0638\u0647\u0631\u0644\u0643 \u062e\u0635\u0645 7%.",
+  acceptLabel: "\u0623\u0648\u0627\u0641\u0642",
+  declineLabel: "\u0644\u0627 \u0623\u0631\u064a\u062f",
+  showForPaymentMethods: ["cod", "instapay"],
 };
 
 function mergeSizeGuide(sizeGuide?: Partial<SizeGuideSettings>): SizeGuideSettings {
@@ -341,6 +372,40 @@ function mergeDiscountAnnouncements(
     }));
 }
 
+function mergeCheckoutPopup(
+  checkoutPopup?: Partial<CheckoutPopupSettings> | null,
+): CheckoutPopupSettings {
+  const product = checkoutPopup?.product
+    ? {
+        ...checkoutPopup.product,
+        imageUrl: normalizeImageUrl(checkoutPopup.product.imageUrl),
+        colors: checkoutPopup.product.colors?.map((color) => ({
+          ...color,
+          imageUrl: normalizeImageUrl(color.imageUrl),
+        })),
+      }
+    : undefined;
+
+  return {
+    ...fallbackCheckoutPopup,
+    ...checkoutPopup,
+    product,
+    imageUrl: normalizeImageUrl(checkoutPopup?.imageUrl),
+    enabled: Boolean(checkoutPopup?.enabled && product?.slug),
+    badge: checkoutPopup?.badge?.trim() || fallbackCheckoutPopup.badge,
+    title: checkoutPopup?.title?.trim() || fallbackCheckoutPopup.title,
+    description: checkoutPopup?.description?.trim() || fallbackCheckoutPopup.description,
+    discountPercent: Math.max(
+      0,
+      Math.min(95, Number(checkoutPopup?.discountPercent) || fallbackCheckoutPopup.discountPercent),
+    ),
+    hint: checkoutPopup?.hint?.trim() || fallbackCheckoutPopup.hint,
+    acceptLabel: checkoutPopup?.acceptLabel?.trim() || fallbackCheckoutPopup.acceptLabel,
+    declineLabel: checkoutPopup?.declineLabel?.trim() || fallbackCheckoutPopup.declineLabel,
+    showForPaymentMethods: checkoutPopup?.showForPaymentMethods?.filter(Boolean) || [],
+  };
+}
+
 export async function getSiteSettings(): Promise<SiteSettings> {
   try {
     const settings = await sanityClient.fetch<SiteSettingsQueryResult | null>(
@@ -360,6 +425,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
       ),
       sizeGuide: mergeSizeGuide(settings?.sizeGuide || settings?.legacy?.sizeGuide),
       discountAnnouncements: mergeDiscountAnnouncements(settings?.discountAnnouncements),
+      checkoutPopup: mergeCheckoutPopup(settings?.checkoutPopup),
     };
   } catch (error) {
     console.error("Falling back to local site settings after Sanity fetch failed", error);
@@ -370,6 +436,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
       quantityDiscount: fallbackQuantityDiscount,
       sizeGuide: fallbackSizeGuide,
       discountAnnouncements: [],
+      checkoutPopup: fallbackCheckoutPopup,
     };
   }
 }

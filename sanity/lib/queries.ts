@@ -360,6 +360,41 @@ export const siteSettingsQuery = groq`
       announcementText,
       announcementLink,
       announcementPriority
+    },
+    "checkoutPopup": *[_type == "checkoutPopupSettings"][0] {
+      _updatedAt,
+      enabled,
+      badge,
+      title,
+      description,
+      discountPercent,
+      hint,
+      acceptLabel,
+      declineLabel,
+      showForPaymentMethods,
+      "imageUrl": image.asset->url,
+      product->{
+        legacyId,
+        name,
+        "slug": slug.current,
+        price,
+        originalPrice,
+        type,
+        description,
+        features,
+        size,
+        sizePrices,
+        stockStatus,
+        stockQuantity,
+        sizeStock,
+        color,
+        colors[]{
+          id,
+          name,
+          "imageUrl": coalesce(image.asset->url, imageUrl)
+        },
+        "imageUrl": coalesce(mainImage.asset->url, imageUrl)
+      }
     }
   }
 `;

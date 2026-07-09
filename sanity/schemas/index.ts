@@ -6,6 +6,7 @@ import { conversionRescueSettings } from "./conversion-rescue-settings";
 import { quantityDiscountSettings } from "./quantity-discount-settings";
 import { sizeGuideSettings } from "./size-guide-settings";
 import { discountCode } from "./discount-code";
+import { checkoutPopupSettings } from "./checkout-popup-settings";
 import { productReview } from "./product-review";
 import { referralProgram } from "./referral-program";
 import { referralRecord } from "./referral-record";
@@ -19,6 +20,7 @@ export const schemaTypes = [
   quantityDiscountSettings,
   sizeGuideSettings,
   discountCode,
+  checkoutPopupSettings,
   referralProgram,
   referralRecord,
   productReview,
