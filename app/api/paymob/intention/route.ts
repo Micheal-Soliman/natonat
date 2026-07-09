@@ -32,6 +32,32 @@ type CreateIntentionBody = {
   expiration?: number;
 };
 
+const PAYMOB_EXTRAS_KEYS = [
+  "locale",
+  "delivery_method",
+  "order_ref",
+  "total_egp",
+  "discount_code",
+  "discount_amount",
+  "payment_discount",
+  "payment_discount_percent",
+] as const;
+
+function compactPaymobExtras(extras?: Record<string, unknown>) {
+  if (!extras) return undefined;
+
+  const compactExtras: Record<string, unknown> = {};
+
+  for (const key of PAYMOB_EXTRAS_KEYS) {
+    const value = extras[key];
+    if (value !== undefined && value !== null && value !== "") {
+      compactExtras[key] = value;
+    }
+  }
+
+  return Object.keys(compactExtras).length ? compactExtras : undefined;
+}
+
 export async function POST(req: Request) {
   const secretKey = process.env.PAYMOB_SECRET_KEY;
   const baseUrl = process.env.PAYMOB_BASE_URL || "https://accept.paymob.com";
@@ -133,7 +159,7 @@ export async function POST(req: Request) {
     payment_methods,
     items: body.items,
     billing_data: body.billing_data,
-    extras: body.extras,
+    extras: compactPaymobExtras(body.extras),
     special_reference: body.special_reference,
     notification_url,
     redirection_url,
