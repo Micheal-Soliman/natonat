@@ -198,17 +198,41 @@
       "subtitle": "Our patented sizing system needs just one measurement - height (without wheels).",
       "heightOnly": "height only, no wheels",
       "sizes": {
-        "s": { "label": "S", "range": "45-53 cm", "type": "Carry-on" },
-        "m": { "label": "M", "range": "55-63 cm", "type": "Medium" },
-        "l": { "label": "L", "range": "65-70 cm", "type": "Large" },
-        "xl": { "label": "XL", "range": "72-81 cm", "type": "Extra Large" }
+        "s": {
+          "label": "S",
+          "range": "45-53 cm",
+          "type": "Carry-on"
+        },
+        "m": {
+          "label": "M",
+          "range": "55-63 cm",
+          "type": "Medium"
+        },
+        "l": {
+          "label": "L",
+          "range": "65-70 cm",
+          "type": "Large"
+        },
+        "xl": {
+          "label": "XL",
+          "range": "72-81 cm",
+          "type": "Extra Large"
+        }
       }
     },
     "sizes": {
-      "s": { "type": "Carry-on" },
-      "m": { "type": "Medium" },
-      "l": { "type": "Large" },
-      "xl": { "type": "Extra Large" }
+      "s": {
+        "type": "Carry-on"
+      },
+      "m": {
+        "type": "Medium"
+      },
+      "l": {
+        "type": "Large"
+      },
+      "xl": {
+        "type": "Extra Large"
+      }
     },
     "seeDetails": "See Full Details",
     "calculator": {
@@ -569,11 +593,11 @@
       }
     },
     "description": {
-      "title": "Why You'll Love It",
       "1": "Protects from scratches, dirt & rough handling",
       "2": "Stretchy, washable spandex/polyester fabric",
       "3": "Easy access to top & side handles",
-      "4": "Wheels remain free for easy rolling"
+      "4": "Wheels remain free for easy rolling",
+      "title": "Why You'll Love It"
     },
     "comparison": {
       "eyebrow": "Quality is the difference",
@@ -709,10 +733,26 @@
       "note": "Measure height only, excluding wheels and handles",
       "heightOnly": "height only, no wheels",
       "sizes": {
-        "s": { "label": "S", "range": "18-21\" / 45-53cm", "type": "Carry-on" },
-        "m": { "label": "M", "range": "22-25\" / 55-63cm", "type": "Medium" },
-        "l": { "label": "L", "range": "26-28\" / 65-70cm", "type": "Large" },
-        "xl": { "label": "XL", "range": "29-32\" / 72-81cm", "type": "Extra Large" }
+        "s": {
+          "label": "S",
+          "range": "18-21\" / 45-53cm",
+          "type": "Carry-on"
+        },
+        "m": {
+          "label": "M",
+          "range": "22-25\" / 55-63cm",
+          "type": "Medium"
+        },
+        "l": {
+          "label": "L",
+          "range": "26-28\" / 65-70cm",
+          "type": "Large"
+        },
+        "xl": {
+          "label": "XL",
+          "range": "29-32\" / 72-81cm",
+          "type": "Extra Large"
+        }
       }
     },
     "sizeGuide": "Size Guide",
@@ -738,6 +778,10 @@
       "cta": "Continue Shopping",
       "continueShopping": "Continue Shopping"
     },
+    "upsell": {
+      "title": "Special offer for you",
+      "addToCart": "Add To Cart"
+    },
     "item": {
       "size": "Size",
       "color": "Color",
@@ -755,7 +799,7 @@
       "total": "Total",
       "checkout": "Proceed to Checkout",
       "proceedToCheckout": "Proceed to Checkout",
-      "proceedToCart": "Proceed to cart",
+      "proceedToCart": "Continue Shopping",
       "continueShopping": "Continue Shopping",
       "note": "Shipping and taxes calculated at checkout",
       "egyptOnly": "🚚 Egypt delivery only",
@@ -803,7 +847,12 @@
       "unavailable": "Discount service is unavailable. Please try again.",
       "reapply": "Please review the code and apply it again."
     },
-    "steps": ["Details", "Delivery", "Payment", "Review"],
+    "steps": [
+      "Details",
+      "Delivery",
+      "Payment",
+      "Review"
+    ],
     "hints": {
       "address": "Add area, street, building number, floor, and a nearby landmark for smoother delivery.",
       "city": "Type the first letters and choose from the list, or press Enter for the first result.",
@@ -940,6 +989,11 @@
       "discountCode": "Discount code {code}",
       "buyNowMode": "🛒 Buy Now - Quick Purchase",
       "cartMode": "🛍️ From Cart"
+    },
+    "upsell": {
+      "title": "Add PackOnat before you finish",
+      "subtitle": "Keep shirts folded and organized. Add it now with one tap.",
+      "addToCart": "Add PackOnat"
     }
   },
   "orderConfirmed": {
@@ -1174,19 +1228,43 @@
       "paragraph4": "Today, natOnat is evolving into a complete travel accessories ecosystem. But our mission remains: protect your gear and make every journey easier, safer, and more stylish."
     },
     "milestones": {
+      "2019": {
+        "title": "The Beginning",
+        "description": "natOnat launched on Amazon with a simple mission: protect luggage in style."
+      },
+      "2022": {
+        "title": "First 10K Customers",
+        "description": "Reached our first milestone of 10,000 happy travelers."
+      },
+      "2023": {
+        "title": "Brand Evolution",
+        "description": "Launched our D2C website and began building the natOnat brand identity."
+      },
+      "2025": {
+        "title": "Passport Wallets & Full Ecosystem",
+        "description": "Introduced premium RFID passport wallets and launched travel sets, expanding into a complete travel accessories brand."
+      },
       "label": "Timeline",
-      "title": "Our Journey",
-      "2019": { "title": "The Beginning", "description": "natOnat launched on Amazon with a simple mission: protect luggage in style." },
-      "2022": { "title": "First 10K Customers", "description": "Reached our first milestone of 10,000 happy travelers." },
-      "2023": { "title": "Brand Evolution", "description": "Launched our D2C website and began building the natOnat brand identity." },
-      "2025": { "title": "Passport Wallets & Full Ecosystem", "description": "Introduced premium RFID passport wallets and launched travel sets, expanding into a complete travel accessories brand." }
+      "title": "Our Journey"
     },
     "values": {
       "title": "Our Values",
-      "quality": { "title": "Quality First", "description": "We never compromise on materials or craftsmanship. Every product is built to last." },
-      "design": { "title": "Smart Design", "description": "Simple solutions to real travel problems. Our sizing system proves it." },
-      "luxury": { "title": "Accessible Luxury", "description": "Premium quality at fair prices. Better value than competitors." },
-      "customer": { "title": "Customer Obsessed", "description": "Every decision starts with the traveler in mind." }
+      "quality": {
+        "title": "Quality First",
+        "description": "We never compromise on materials or craftsmanship. Every product is built to last."
+      },
+      "design": {
+        "title": "Smart Design",
+        "description": "Simple solutions to real travel problems. Our sizing system proves it."
+      },
+      "luxury": {
+        "title": "Accessible Luxury",
+        "description": "Premium quality at fair prices. Better value than competitors."
+      },
+      "customer": {
+        "title": "Customer Obsessed",
+        "description": "Every decision starts with the traveler in mind."
+      }
     },
     "mission": {
       "label": "Purpose",
@@ -1635,19 +1713,47 @@
       "sizeGuide": {
         "title": "Available Sizes",
         "sizes": [
-          { "name": "S", "height": "55-60 cm", "desc": "Small (cabin)" },
-          { "name": "M", "height": "65-70 cm", "desc": "Medium" },
-          { "name": "L", "height": "75-80 cm", "desc": "Large" },
-          { "name": "XL", "height": "85-90 cm", "desc": "Extra Large" }
+          {
+            "name": "S",
+            "height": "55-60 cm",
+            "desc": "Small (cabin)"
+          },
+          {
+            "name": "M",
+            "height": "65-70 cm",
+            "desc": "Medium"
+          },
+          {
+            "name": "L",
+            "height": "75-80 cm",
+            "desc": "Large"
+          },
+          {
+            "name": "XL",
+            "height": "85-90 cm",
+            "desc": "Extra Large"
+          }
         ]
       },
       "whyChoose": {
         "title": "Why Choose This Bundle?",
         "features": [
-          { "title": "Complete Freedom", "desc": "Pick any 3 covers from 28 designs" },
-          { "title": "Real Savings", "desc": "Save 15% compared to buying separately" },
-          { "title": "Full Customization", "desc": "Each cover gets its own size" },
-          { "title": "Consistent Quality", "desc": "Same premium fabric on all covers" }
+          {
+            "title": "Complete Freedom",
+            "desc": "Pick any 3 covers from 28 designs"
+          },
+          {
+            "title": "Real Savings",
+            "desc": "Save 15% compared to buying separately"
+          },
+          {
+            "title": "Full Customization",
+            "desc": "Each cover gets its own size"
+          },
+          {
+            "title": "Consistent Quality",
+            "desc": "Same premium fabric on all covers"
+          }
         ]
       }
     },
@@ -1683,19 +1789,47 @@
       "sizeGuide": {
         "title": "Available Sizes",
         "sizes": [
-          { "name": "S", "height": "55-60 cm", "desc": "Small (cabin)" },
-          { "name": "M", "height": "65-70 cm", "desc": "Medium" },
-          { "name": "L", "height": "75-80 cm", "desc": "Large" },
-          { "name": "XL", "height": "85-90 cm", "desc": "Extra Large" }
+          {
+            "name": "S",
+            "height": "55-60 cm",
+            "desc": "Small (cabin)"
+          },
+          {
+            "name": "M",
+            "height": "65-70 cm",
+            "desc": "Medium"
+          },
+          {
+            "name": "L",
+            "height": "75-80 cm",
+            "desc": "Large"
+          },
+          {
+            "name": "XL",
+            "height": "85-90 cm",
+            "desc": "Extra Large"
+          }
         ]
       },
       "whyChoose": {
         "title": "Why Choose This Bundle?",
         "features": [
-          { "title": "Everything in One Order", "desc": "Cover + backpack + passport wallet" },
-          { "title": "Big Savings", "desc": "Save 18% on the bundle" },
-          { "title": "Freedom of Choice", "desc": "Pick any cover and any backpack color" },
-          { "title": "Quality in Every Piece", "desc": "Best materials in every product" }
+          {
+            "title": "Everything in One Order",
+            "desc": "Cover + backpack + passport wallet"
+          },
+          {
+            "title": "Big Savings",
+            "desc": "Save 18% on the bundle"
+          },
+          {
+            "title": "Freedom of Choice",
+            "desc": "Pick any cover and any backpack color"
+          },
+          {
+            "title": "Quality in Every Piece",
+            "desc": "Best materials in every product"
+          }
         ]
       }
     },
@@ -1731,19 +1865,47 @@
       "sizeGuide": {
         "title": "Available Sizes",
         "sizes": [
-          { "name": "S", "height": "55-60 cm", "desc": "Small (cabin)" },
-          { "name": "M", "height": "65-70 cm", "desc": "Medium" },
-          { "name": "L", "height": "75-80 cm", "desc": "Large" },
-          { "name": "XL", "height": "85-90 cm", "desc": "Extra Large" }
+          {
+            "name": "S",
+            "height": "55-60 cm",
+            "desc": "Small (cabin)"
+          },
+          {
+            "name": "M",
+            "height": "65-70 cm",
+            "desc": "Medium"
+          },
+          {
+            "name": "L",
+            "height": "75-80 cm",
+            "desc": "Large"
+          },
+          {
+            "name": "XL",
+            "height": "85-90 cm",
+            "desc": "Extra Large"
+          }
         ]
       },
       "whyChoose": {
         "title": "Why Choose This Bundle?",
         "features": [
-          { "title": "Protection + Comfort", "desc": "Cover for luggage, backpack for essentials" },
-          { "title": "Save 12%", "desc": "Less than buying each piece separately" },
-          { "title": "Perfect Coordination", "desc": "Backpack and cover together elegantly" },
-          { "title": "Freedom of Choice", "desc": "Pick any cover and any backpack color" }
+          {
+            "title": "Protection + Comfort",
+            "desc": "Cover for luggage, backpack for essentials"
+          },
+          {
+            "title": "Save 12%",
+            "desc": "Less than buying each piece separately"
+          },
+          {
+            "title": "Perfect Coordination",
+            "desc": "Backpack and cover together elegantly"
+          },
+          {
+            "title": "Freedom of Choice",
+            "desc": "Pick any cover and any backpack color"
+          }
         ]
       }
     },
@@ -1779,19 +1941,47 @@
       "sizeGuide": {
         "title": "Available Sizes",
         "sizes": [
-          { "name": "S", "height": "55-60 cm", "desc": "Small (cabin)" },
-          { "name": "M", "height": "65-70 cm", "desc": "Medium" },
-          { "name": "L", "height": "75-80 cm", "desc": "Large" },
-          { "name": "XL", "height": "85-90 cm", "desc": "Extra Large" }
+          {
+            "name": "S",
+            "height": "55-60 cm",
+            "desc": "Small (cabin)"
+          },
+          {
+            "name": "M",
+            "height": "65-70 cm",
+            "desc": "Medium"
+          },
+          {
+            "name": "L",
+            "height": "75-80 cm",
+            "desc": "Large"
+          },
+          {
+            "name": "XL",
+            "height": "85-90 cm",
+            "desc": "Extra Large"
+          }
         ]
       },
       "whyChoose": {
         "title": "Why Choose This Bundle?",
         "features": [
-          { "title": "For Two Together", "desc": "2 different covers + 1 shared backpack" },
-          { "title": "Save 15%", "desc": "Less than buying pieces separately" },
-          { "title": "Free Choice", "desc": "Each person picks what suits them" },
-          { "title": "Perfect Sharing", "desc": "One backpack for two" }
+          {
+            "title": "For Two Together",
+            "desc": "2 different covers + 1 shared backpack"
+          },
+          {
+            "title": "Save 15%",
+            "desc": "Less than buying pieces separately"
+          },
+          {
+            "title": "Free Choice",
+            "desc": "Each person picks what suits them"
+          },
+          {
+            "title": "Perfect Sharing",
+            "desc": "One backpack for two"
+          }
         ]
       }
     },
@@ -1827,18 +2017,42 @@
       "sizeGuide": {
         "title": "Available Colors",
         "sizes": [
-          { "name": "Black", "height": "", "desc": "Classic and sleek" },
-          { "name": "Green", "height": "", "desc": "Vibrant and unique" },
-          { "name": "Brown", "height": "", "desc": "Warm and natural" }
+          {
+            "name": "Black",
+            "height": "",
+            "desc": "Classic and sleek"
+          },
+          {
+            "name": "Green",
+            "height": "",
+            "desc": "Vibrant and unique"
+          },
+          {
+            "name": "Brown",
+            "height": "",
+            "desc": "Warm and natural"
+          }
         ]
       },
       "whyChoose": {
         "title": "Why Choose This Bundle?",
         "features": [
-          { "title": "Two at a Lower Price", "desc": "Save EGP 199 on the pair" },
-          { "title": "Color Variety", "desc": "Pick a different color for each" },
-          { "title": "Double Quality", "desc": "Same great features in both" },
-          { "title": "Versatility", "desc": "A backpack for every occasion" }
+          {
+            "title": "Two at a Lower Price",
+            "desc": "Save EGP 199 on the pair"
+          },
+          {
+            "title": "Color Variety",
+            "desc": "Pick a different color for each"
+          },
+          {
+            "title": "Double Quality",
+            "desc": "Same great features in both"
+          },
+          {
+            "title": "Versatility",
+            "desc": "A backpack for every occasion"
+          }
         ]
       }
     },
@@ -1874,19 +2088,47 @@
       "sizeGuide": {
         "title": "Available Sizes",
         "sizes": [
-          { "name": "S", "height": "55-60 cm", "desc": "Small (cabin)" },
-          { "name": "M", "height": "65-70 cm", "desc": "Medium" },
-          { "name": "L", "height": "75-80 cm", "desc": "Large" },
-          { "name": "XL", "height": "85-90 cm", "desc": "Extra Large" }
+          {
+            "name": "S",
+            "height": "55-60 cm",
+            "desc": "Small (cabin)"
+          },
+          {
+            "name": "M",
+            "height": "65-70 cm",
+            "desc": "Medium"
+          },
+          {
+            "name": "L",
+            "height": "75-80 cm",
+            "desc": "Large"
+          },
+          {
+            "name": "XL",
+            "height": "85-90 cm",
+            "desc": "Extra Large"
+          }
         ]
       },
       "whyChoose": {
         "title": "Why Choose This Bundle?",
         "features": [
-          { "title": "Complete Protection", "desc": "Cover for luggage + wallet for passport" },
-          { "title": "Save 15%", "desc": "Less than buying pieces separately" },
-          { "title": "Elegant Coordination", "desc": "Complete set for a refined look" },
-          { "title": "Freedom of Choice", "desc": "Pick any cover and any wallet color" }
+          {
+            "title": "Complete Protection",
+            "desc": "Cover for luggage + wallet for passport"
+          },
+          {
+            "title": "Save 15%",
+            "desc": "Less than buying pieces separately"
+          },
+          {
+            "title": "Elegant Coordination",
+            "desc": "Complete set for a refined look"
+          },
+          {
+            "title": "Freedom of Choice",
+            "desc": "Pick any cover and any wallet color"
+          }
         ]
       }
     },
@@ -2051,11 +2293,26 @@
         "title": "Why Choose natOnat Luggage Covers in Egypt?",
         "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
         "features": [
-          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
-          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
-          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
-          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
-          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+          {
+            "title": "Ultimate Suitcase Protection",
+            "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling."
+          },
+          {
+            "title": "Premium Elastic Fabric",
+            "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure."
+          },
+          {
+            "title": "Smart Access Design",
+            "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly."
+          },
+          {
+            "title": "Ultra-Secure Fit",
+            "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey."
+          },
+          {
+            "title": "Eco-Friendly & Washable",
+            "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers."
+          }
         ]
       },
       "sizeGuide": {
@@ -2107,11 +2364,26 @@
         "title": "Why Choose natOnat Luggage Covers?",
         "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
         "features": [
-          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
-          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
-          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
-          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
-          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+          {
+            "title": "Ultimate Suitcase Protection",
+            "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling."
+          },
+          {
+            "title": "Premium Elastic Fabric",
+            "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure."
+          },
+          {
+            "title": "Smart Access Design",
+            "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly."
+          },
+          {
+            "title": "Ultra-Secure Fit",
+            "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey."
+          },
+          {
+            "title": "Eco-Friendly & Washable",
+            "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers."
+          }
         ]
       },
       "sizeGuide": {
@@ -2163,11 +2435,26 @@
         "title": "Why Choose natOnat Luggage Covers in Egypt?",
         "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
         "features": [
-          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
-          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
-          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
-          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
-          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+          {
+            "title": "Ultimate Suitcase Protection",
+            "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling."
+          },
+          {
+            "title": "Premium Elastic Fabric",
+            "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure."
+          },
+          {
+            "title": "Smart Access Design",
+            "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly."
+          },
+          {
+            "title": "Ultra-Secure Fit",
+            "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey."
+          },
+          {
+            "title": "Eco-Friendly & Washable",
+            "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers."
+          }
         ]
       },
       "sizeGuide": {
@@ -2219,11 +2506,26 @@
         "title": "Why Choose natOnat Luggage Covers in Egypt?",
         "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
         "features": [
-          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
-          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
-          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
-          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
-          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+          {
+            "title": "Ultimate Suitcase Protection",
+            "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling."
+          },
+          {
+            "title": "Premium Elastic Fabric",
+            "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure."
+          },
+          {
+            "title": "Smart Access Design",
+            "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly."
+          },
+          {
+            "title": "Ultra-Secure Fit",
+            "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey."
+          },
+          {
+            "title": "Eco-Friendly & Washable",
+            "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers."
+          }
         ]
       },
       "sizeGuide": {
@@ -2275,11 +2577,26 @@
         "title": "Why Choose natOnat Luggage Covers in Egypt?",
         "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
         "features": [
-          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
-          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
-          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
-          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
-          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+          {
+            "title": "Ultimate Suitcase Protection",
+            "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling."
+          },
+          {
+            "title": "Premium Elastic Fabric",
+            "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure."
+          },
+          {
+            "title": "Smart Access Design",
+            "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly."
+          },
+          {
+            "title": "Ultra-Secure Fit",
+            "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey."
+          },
+          {
+            "title": "Eco-Friendly & Washable",
+            "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers."
+          }
         ]
       },
       "sizeGuide": {
@@ -2331,11 +2648,26 @@
         "title": "Why Choose natOnat Luggage Covers in Egypt?",
         "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
         "features": [
-          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
-          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
-          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
-          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
-          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+          {
+            "title": "Ultimate Suitcase Protection",
+            "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling."
+          },
+          {
+            "title": "Premium Elastic Fabric",
+            "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure."
+          },
+          {
+            "title": "Smart Access Design",
+            "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly."
+          },
+          {
+            "title": "Ultra-Secure Fit",
+            "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey."
+          },
+          {
+            "title": "Eco-Friendly & Washable",
+            "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers."
+          }
         ]
       },
       "sizeGuide": {
@@ -2387,11 +2719,26 @@
         "title": "Why Choose natOnat Luggage Covers in Egypt?",
         "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
         "features": [
-          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
-          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
-          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
-          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
-          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+          {
+            "title": "Ultimate Suitcase Protection",
+            "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling."
+          },
+          {
+            "title": "Premium Elastic Fabric",
+            "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure."
+          },
+          {
+            "title": "Smart Access Design",
+            "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly."
+          },
+          {
+            "title": "Ultra-Secure Fit",
+            "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey."
+          },
+          {
+            "title": "Eco-Friendly & Washable",
+            "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers."
+          }
         ]
       },
       "sizeGuide": {
@@ -2443,11 +2790,26 @@
         "title": "Why Choose natOnat Luggage Covers in Egypt?",
         "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
         "features": [
-          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
-          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
-          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
-          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
-          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+          {
+            "title": "Ultimate Suitcase Protection",
+            "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling."
+          },
+          {
+            "title": "Premium Elastic Fabric",
+            "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure."
+          },
+          {
+            "title": "Smart Access Design",
+            "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly."
+          },
+          {
+            "title": "Ultra-Secure Fit",
+            "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey."
+          },
+          {
+            "title": "Eco-Friendly & Washable",
+            "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers."
+          }
         ]
       },
       "sizeGuide": {
@@ -2499,11 +2861,26 @@
         "title": "Why Choose natOnat Luggage Covers in Egypt?",
         "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
         "features": [
-          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
-          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
-          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
-          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
-          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+          {
+            "title": "Ultimate Suitcase Protection",
+            "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling."
+          },
+          {
+            "title": "Premium Elastic Fabric",
+            "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure."
+          },
+          {
+            "title": "Smart Access Design",
+            "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly."
+          },
+          {
+            "title": "Ultra-Secure Fit",
+            "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey."
+          },
+          {
+            "title": "Eco-Friendly & Washable",
+            "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers."
+          }
         ]
       },
       "sizeGuide": {
@@ -2555,11 +2932,26 @@
         "title": "Why Choose natOnat Luggage Covers in Egypt?",
         "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
         "features": [
-          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
-          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
-          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
-          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
-          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+          {
+            "title": "Ultimate Suitcase Protection",
+            "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling."
+          },
+          {
+            "title": "Premium Elastic Fabric",
+            "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure."
+          },
+          {
+            "title": "Smart Access Design",
+            "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly."
+          },
+          {
+            "title": "Ultra-Secure Fit",
+            "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey."
+          },
+          {
+            "title": "Eco-Friendly & Washable",
+            "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers."
+          }
         ]
       },
       "sizeGuide": {
@@ -2611,11 +3003,26 @@
         "title": "Why Choose natOnat Luggage Covers in Egypt?",
         "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
         "features": [
-          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
-          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
-          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
-          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
-          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+          {
+            "title": "Ultimate Suitcase Protection",
+            "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling."
+          },
+          {
+            "title": "Premium Elastic Fabric",
+            "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure."
+          },
+          {
+            "title": "Smart Access Design",
+            "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly."
+          },
+          {
+            "title": "Ultra-Secure Fit",
+            "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey."
+          },
+          {
+            "title": "Eco-Friendly & Washable",
+            "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers."
+          }
         ]
       },
       "sizeGuide": {
@@ -2667,11 +3074,26 @@
         "title": "Why Choose natOnat Luggage Covers in Egypt?",
         "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
         "features": [
-          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
-          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
-          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
-          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
-          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+          {
+            "title": "Ultimate Suitcase Protection",
+            "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling."
+          },
+          {
+            "title": "Premium Elastic Fabric",
+            "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure."
+          },
+          {
+            "title": "Smart Access Design",
+            "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly."
+          },
+          {
+            "title": "Ultra-Secure Fit",
+            "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey."
+          },
+          {
+            "title": "Eco-Friendly & Washable",
+            "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers."
+          }
         ]
       },
       "sizeGuide": {
@@ -2723,11 +3145,26 @@
         "title": "Why Choose natOnat Luggage Covers in Egypt?",
         "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
         "features": [
-          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
-          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
-          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
-          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
-          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+          {
+            "title": "Ultimate Suitcase Protection",
+            "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling."
+          },
+          {
+            "title": "Premium Elastic Fabric",
+            "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure."
+          },
+          {
+            "title": "Smart Access Design",
+            "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly."
+          },
+          {
+            "title": "Ultra-Secure Fit",
+            "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey."
+          },
+          {
+            "title": "Eco-Friendly & Washable",
+            "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers."
+          }
         ]
       },
       "sizeGuide": {
@@ -2779,11 +3216,26 @@
         "title": "Why Choose natOnat Luggage Covers in Egypt?",
         "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
         "features": [
-          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
-          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
-          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
-          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
-          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+          {
+            "title": "Ultimate Suitcase Protection",
+            "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling."
+          },
+          {
+            "title": "Premium Elastic Fabric",
+            "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure."
+          },
+          {
+            "title": "Smart Access Design",
+            "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly."
+          },
+          {
+            "title": "Ultra-Secure Fit",
+            "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey."
+          },
+          {
+            "title": "Eco-Friendly & Washable",
+            "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers."
+          }
         ]
       },
       "sizeGuide": {
@@ -2835,11 +3287,26 @@
         "title": "Why Choose natOnat Luggage Covers in Egypt?",
         "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
         "features": [
-          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
-          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
-          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
-          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
-          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+          {
+            "title": "Ultimate Suitcase Protection",
+            "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling."
+          },
+          {
+            "title": "Premium Elastic Fabric",
+            "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure."
+          },
+          {
+            "title": "Smart Access Design",
+            "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly."
+          },
+          {
+            "title": "Ultra-Secure Fit",
+            "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey."
+          },
+          {
+            "title": "Eco-Friendly & Washable",
+            "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers."
+          }
         ]
       },
       "sizeGuide": {
@@ -2891,11 +3358,26 @@
         "title": "Why Choose natOnat Luggage Covers in Egypt?",
         "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
         "features": [
-          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
-          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
-          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
-          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
-          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+          {
+            "title": "Ultimate Suitcase Protection",
+            "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling."
+          },
+          {
+            "title": "Premium Elastic Fabric",
+            "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure."
+          },
+          {
+            "title": "Smart Access Design",
+            "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly."
+          },
+          {
+            "title": "Ultra-Secure Fit",
+            "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey."
+          },
+          {
+            "title": "Eco-Friendly & Washable",
+            "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers."
+          }
         ]
       },
       "sizeGuide": {
@@ -2947,11 +3429,26 @@
         "title": "Why Choose natOnat Luggage Covers in Egypt?",
         "intro": "natOnat combines durability, smart functionality, and clean design to protect your suitcase trip after trip.",
         "features": [
-          { "title": "Ultimate Suitcase Protection", "desc": "Helps protect your luggage from scratches, dirt, dust, and rough handling." },
-          { "title": "Premium Elastic Fabric", "desc": "High-quality Spandex + Polyester blend for a snug, stretch fit." },
-          { "title": "Smart Access Design", "desc": "Openings for handles and zippers for easy access while traveling." },
-          { "title": "Ultra-Secure Fit", "desc": "Velcro + buckle system keeps the cover secure during your trip." },
-          { "title": "Eco-Friendly & Washable", "desc": "Washable and reusable for frequent travelers." }
+          {
+            "title": "Ultimate Suitcase Protection",
+            "desc": "Helps protect your luggage from scratches, dirt, dust, and rough handling."
+          },
+          {
+            "title": "Premium Elastic Fabric",
+            "desc": "High-quality Spandex + Polyester blend for a snug, stretch fit."
+          },
+          {
+            "title": "Smart Access Design",
+            "desc": "Openings for handles and zippers for easy access while traveling."
+          },
+          {
+            "title": "Ultra-Secure Fit",
+            "desc": "Velcro + buckle system keeps the cover secure during your trip."
+          },
+          {
+            "title": "Eco-Friendly & Washable",
+            "desc": "Washable and reusable for frequent travelers."
+          }
         ]
       },
       "sizeGuide": {
@@ -3003,11 +3500,26 @@
         "title": "Why Choose natOnat Luggage Covers in Egypt?",
         "intro": "natOnat combines durability, smart functionality, and bold design to protect your suitcase trip after trip.",
         "features": [
-          { "title": "Ultimate Suitcase Protection", "desc": "Helps protect your luggage from scratches, dirt, dust, and rough handling." },
-          { "title": "Premium Elastic Fabric", "desc": "High-quality Spandex + Polyester blend for a snug, stretch fit." },
-          { "title": "Smart Access Design", "desc": "Openings for handles and zippers for easy access while traveling." },
-          { "title": "Ultra-Secure Fit", "desc": "Velcro + buckle system keeps the cover secure during your trip." },
-          { "title": "Eco-Friendly & Washable", "desc": "Washable and reusable for frequent travelers." }
+          {
+            "title": "Ultimate Suitcase Protection",
+            "desc": "Helps protect your luggage from scratches, dirt, dust, and rough handling."
+          },
+          {
+            "title": "Premium Elastic Fabric",
+            "desc": "High-quality Spandex + Polyester blend for a snug, stretch fit."
+          },
+          {
+            "title": "Smart Access Design",
+            "desc": "Openings for handles and zippers for easy access while traveling."
+          },
+          {
+            "title": "Ultra-Secure Fit",
+            "desc": "Velcro + buckle system keeps the cover secure during your trip."
+          },
+          {
+            "title": "Eco-Friendly & Washable",
+            "desc": "Washable and reusable for frequent travelers."
+          }
         ]
       },
       "sizeGuide": {
@@ -3059,11 +3571,26 @@
         "title": "Why Choose natOnat Luggage Covers in Egypt?",
         "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector (جراب شنطة سفر) keeps your suitcase looking brand new from departure to arrival.",
         "features": [
-          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
-          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
-          { "title": "Smart Access Design", "desc": "Equipped with: 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
-          { "title": "Ultra-Secure Fit", "desc": "A strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
-          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+          {
+            "title": "Ultimate Suitcase Protection",
+            "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling."
+          },
+          {
+            "title": "Premium Elastic Fabric",
+            "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure."
+          },
+          {
+            "title": "Smart Access Design",
+            "desc": "Equipped with: 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly."
+          },
+          {
+            "title": "Ultra-Secure Fit",
+            "desc": "A strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey."
+          },
+          {
+            "title": "Eco-Friendly & Washable",
+            "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers."
+          }
         ]
       },
       "sizeGuide": {
@@ -3115,11 +3642,26 @@
         "title": "Why Choose natOnat Luggage Covers in Egypt?",
         "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
         "features": [
-          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
-          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
-          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
-          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
-          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+          {
+            "title": "Ultimate Suitcase Protection",
+            "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling."
+          },
+          {
+            "title": "Premium Elastic Fabric",
+            "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure."
+          },
+          {
+            "title": "Smart Access Design",
+            "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly."
+          },
+          {
+            "title": "Ultra-Secure Fit",
+            "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey."
+          },
+          {
+            "title": "Eco-Friendly & Washable",
+            "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers."
+          }
         ]
       },
       "sizeGuide": {
@@ -3171,11 +3713,26 @@
         "title": "Why Choose natOnat Luggage Covers in Egypt?",
         "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
         "features": [
-          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
-          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
-          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
-          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
-          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+          {
+            "title": "Ultimate Suitcase Protection",
+            "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling."
+          },
+          {
+            "title": "Premium Elastic Fabric",
+            "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure."
+          },
+          {
+            "title": "Smart Access Design",
+            "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly."
+          },
+          {
+            "title": "Ultra-Secure Fit",
+            "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey."
+          },
+          {
+            "title": "Eco-Friendly & Washable",
+            "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers."
+          }
         ]
       },
       "sizeGuide": {
@@ -3227,11 +3784,26 @@
         "title": "Why Choose natOnat Luggage Covers in Egypt?",
         "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
         "features": [
-          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
-          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
-          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
-          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
-          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+          {
+            "title": "Ultimate Suitcase Protection",
+            "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling."
+          },
+          {
+            "title": "Premium Elastic Fabric",
+            "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure."
+          },
+          {
+            "title": "Smart Access Design",
+            "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly."
+          },
+          {
+            "title": "Ultra-Secure Fit",
+            "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey."
+          },
+          {
+            "title": "Eco-Friendly & Washable",
+            "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers."
+          }
         ]
       },
       "sizeGuide": {
@@ -3283,11 +3855,26 @@
         "title": "Why Choose natOnat Luggage Covers in Egypt?",
         "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
         "features": [
-          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
-          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
-          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
-          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
-          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+          {
+            "title": "Ultimate Suitcase Protection",
+            "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling."
+          },
+          {
+            "title": "Premium Elastic Fabric",
+            "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure."
+          },
+          {
+            "title": "Smart Access Design",
+            "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly."
+          },
+          {
+            "title": "Ultra-Secure Fit",
+            "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey."
+          },
+          {
+            "title": "Eco-Friendly & Washable",
+            "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers."
+          }
         ]
       },
       "sizeGuide": {
@@ -3339,11 +3926,26 @@
         "title": "Why Choose natOnat Luggage Covers in Egypt?",
         "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
         "features": [
-          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
-          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
-          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
-          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
-          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+          {
+            "title": "Ultimate Suitcase Protection",
+            "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling."
+          },
+          {
+            "title": "Premium Elastic Fabric",
+            "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure."
+          },
+          {
+            "title": "Smart Access Design",
+            "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly."
+          },
+          {
+            "title": "Ultra-Secure Fit",
+            "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey."
+          },
+          {
+            "title": "Eco-Friendly & Washable",
+            "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers."
+          }
         ]
       },
       "sizeGuide": {
@@ -3395,11 +3997,26 @@
         "title": "Why Choose natOnat Luggage Covers in Egypt?",
         "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
         "features": [
-          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
-          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
-          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
-          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
-          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+          {
+            "title": "Ultimate Suitcase Protection",
+            "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling."
+          },
+          {
+            "title": "Premium Elastic Fabric",
+            "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure."
+          },
+          {
+            "title": "Smart Access Design",
+            "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly."
+          },
+          {
+            "title": "Ultra-Secure Fit",
+            "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey."
+          },
+          {
+            "title": "Eco-Friendly & Washable",
+            "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers."
+          }
         ]
       },
       "sizeGuide": {
@@ -3451,11 +4068,26 @@
         "title": "Why Choose natOnat Luggage Covers in Egypt?",
         "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
         "features": [
-          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
-          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
-          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
-          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
-          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+          {
+            "title": "Ultimate Suitcase Protection",
+            "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling."
+          },
+          {
+            "title": "Premium Elastic Fabric",
+            "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure."
+          },
+          {
+            "title": "Smart Access Design",
+            "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly."
+          },
+          {
+            "title": "Ultra-Secure Fit",
+            "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey."
+          },
+          {
+            "title": "Eco-Friendly & Washable",
+            "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers."
+          }
         ]
       },
       "sizeGuide": {
@@ -3507,11 +4139,26 @@
         "title": "Why Choose natOnat Luggage Covers in Egypt?",
         "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
         "features": [
-          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
-          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
-          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
-          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
-          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+          {
+            "title": "Ultimate Suitcase Protection",
+            "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling."
+          },
+          {
+            "title": "Premium Elastic Fabric",
+            "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure."
+          },
+          {
+            "title": "Smart Access Design",
+            "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly."
+          },
+          {
+            "title": "Ultra-Secure Fit",
+            "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey."
+          },
+          {
+            "title": "Eco-Friendly & Washable",
+            "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers."
+          }
         ]
       },
       "sizeGuide": {
@@ -3563,11 +4210,26 @@
         "title": "Why Choose natOnat Luggage Covers in Egypt?",
         "intro": "As a leading travel accessories brand in Egypt, natOnat combines durability, smart functionality, and modern design. Our luggage protector keeps your suitcase looking brand new from departure to arrival.",
         "features": [
-          { "title": "Ultimate Suitcase Protection", "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling." },
-          { "title": "Premium Elastic Fabric", "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure." },
-          { "title": "Smart Access Design", "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly." },
-          { "title": "Ultra-Secure Fit", "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey." },
-          { "title": "Eco-Friendly & Washable", "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers." }
+          {
+            "title": "Ultimate Suitcase Protection",
+            "desc": "Protect your luggage from scratches, dirt, dust, and rough airport handling."
+          },
+          {
+            "title": "Premium Elastic Fabric",
+            "desc": "Made from a high-quality Spandex + Polyester blend for a snug, stretch fit that stays smooth and secure."
+          },
+          {
+            "title": "Smart Access Design",
+            "desc": "Equipped with 2 top openings for telescopic handles and hidden side zippers for side handles — practical, clean, and travel-friendly."
+          },
+          {
+            "title": "Ultra-Secure Fit",
+            "desc": "Strong Velcro + reinforced buckle system keeps your luggage cover locked in place throughout your journey."
+          },
+          {
+            "title": "Eco-Friendly & Washable",
+            "desc": "Fully washable and reusable, making it a sustainable choice for frequent travelers."
+          }
         ]
       },
       "sizeGuide": {
@@ -3619,12 +4281,30 @@
         "title": "Why Choose Passport Wallet?",
         "intro": "Premium quality meets smart design. This passport holder offers the perfect balance of security, functionality, and style for the modern traveler.",
         "features": [
-          { "title": "RFID Blocking Protection", "desc": "Built-in shielding prevents unauthorized scanning of your passport and cards." },
-          { "title": "Magnetic Clasp Closure", "desc": "Easy-open magnetic button keeps your documents secure yet accessible." },
-          { "title": "Vaccine Card Slot", "desc": "Dedicated compartment for your vaccination certificate." },
-          { "title": "5 Card Pockets", "desc": "Multiple slots for credit cards, business cards, and SIM cards." },
-          { "title": "Premium Faux Leather", "desc": "Soft PU leather in Cognac Brown with leather lining for a luxurious feel." },
-          { "title": "Compact & Lightweight", "desc": "Slim design fits easily in pockets or bags without bulk." }
+          {
+            "title": "RFID Blocking Protection",
+            "desc": "Built-in shielding prevents unauthorized scanning of your passport and cards."
+          },
+          {
+            "title": "Magnetic Clasp Closure",
+            "desc": "Easy-open magnetic button keeps your documents secure yet accessible."
+          },
+          {
+            "title": "Vaccine Card Slot",
+            "desc": "Dedicated compartment for your vaccination certificate."
+          },
+          {
+            "title": "5 Card Pockets",
+            "desc": "Multiple slots for credit cards, business cards, and SIM cards."
+          },
+          {
+            "title": "Premium Faux Leather",
+            "desc": "Soft PU leather in Cognac Brown with leather lining for a luxurious feel."
+          },
+          {
+            "title": "Compact & Lightweight",
+            "desc": "Slim design fits easily in pockets or bags without bulk."
+          }
         ]
       },
       "targetAudience": {
@@ -3675,12 +4355,30 @@
         "title": "Why Choose Passport Wallet?",
         "intro": "Premium quality meets smart design. This passport holder offers the perfect balance of security, functionality, and style for the modern traveler.",
         "features": [
-          { "title": "RFID Blocking Protection", "desc": "Built-in shielding prevents unauthorized scanning of your passport and cards." },
-          { "title": "Magnetic Clasp Closure", "desc": "Easy-open magnetic button keeps your documents secure yet accessible." },
-          { "title": "Vaccine Card Slot", "desc": "Dedicated compartment for your vaccination certificate." },
-          { "title": "5 Card Pockets", "desc": "Multiple slots for credit cards, business cards, and SIM cards." },
-          { "title": "Premium Faux Leather", "desc": "Soft PU leather in Espresso Brown with leather lining for a luxurious feel." },
-          { "title": "Compact & Lightweight", "desc": "Slim design fits easily in pockets or bags without bulk." }
+          {
+            "title": "RFID Blocking Protection",
+            "desc": "Built-in shielding prevents unauthorized scanning of your passport and cards."
+          },
+          {
+            "title": "Magnetic Clasp Closure",
+            "desc": "Easy-open magnetic button keeps your documents secure yet accessible."
+          },
+          {
+            "title": "Vaccine Card Slot",
+            "desc": "Dedicated compartment for your vaccination certificate."
+          },
+          {
+            "title": "5 Card Pockets",
+            "desc": "Multiple slots for credit cards, business cards, and SIM cards."
+          },
+          {
+            "title": "Premium Faux Leather",
+            "desc": "Soft PU leather in Espresso Brown with leather lining for a luxurious feel."
+          },
+          {
+            "title": "Compact & Lightweight",
+            "desc": "Slim design fits easily in pockets or bags without bulk."
+          }
         ]
       },
       "targetAudience": {
@@ -3731,12 +4429,30 @@
         "title": "Why Choose Passport Wallet?",
         "intro": "Premium quality meets smart design. This passport holder offers the perfect balance of security, functionality, and style for the modern traveler.",
         "features": [
-          { "title": "RFID Blocking Protection", "desc": "Built-in shielding prevents unauthorized scanning of your passport and cards." },
-          { "title": "Magnetic Clasp Closure", "desc": "Easy-open magnetic button keeps your documents secure yet accessible." },
-          { "title": "Vaccine Card Slot", "desc": "Dedicated compartment for your vaccination certificate." },
-          { "title": "5 Card Pockets", "desc": "Multiple slots for credit cards, business cards, and SIM cards." },
-          { "title": "Premium Faux Leather", "desc": "Soft PU leather in Honey Brown with leather lining for a luxurious feel." },
-          { "title": "Compact & Lightweight", "desc": "Slim design fits easily in pockets or bags without bulk." }
+          {
+            "title": "RFID Blocking Protection",
+            "desc": "Built-in shielding prevents unauthorized scanning of your passport and cards."
+          },
+          {
+            "title": "Magnetic Clasp Closure",
+            "desc": "Easy-open magnetic button keeps your documents secure yet accessible."
+          },
+          {
+            "title": "Vaccine Card Slot",
+            "desc": "Dedicated compartment for your vaccination certificate."
+          },
+          {
+            "title": "5 Card Pockets",
+            "desc": "Multiple slots for credit cards, business cards, and SIM cards."
+          },
+          {
+            "title": "Premium Faux Leather",
+            "desc": "Soft PU leather in Honey Brown with leather lining for a luxurious feel."
+          },
+          {
+            "title": "Compact & Lightweight",
+            "desc": "Slim design fits easily in pockets or bags without bulk."
+          }
         ]
       },
       "targetAudience": {
@@ -3787,12 +4503,30 @@
         "title": "Why Choose PackOnat Packing Folder?",
         "intro": "Premium quality meets smart design. The PackOnat packing folder offers the perfect balance of storage, organization, and style for the modern traveler.",
         "features": [
-          { "title": "Smart Organization", "desc": "Multiple compartments for clothes, shoes, documents, and daily essentials." },
-          { "title": "Premium Materials", "desc": "Durable, water-resistant fabric that protects your belongings in any weather." },
-          { "title": "Compact Design", "desc": "Space-saving design that maximizes luggage space while keeping clothes organized." },
-          { "title": "Classic Black Color", "desc": "Elegant black color that suits all tastes and travel styles." },
-          { "title": "Secure Storage", "desc": "Secure zippers keep your items contained and organized." },
-          { "title": "Lightweight & Spacious", "desc": "Generous capacity without added weight - perfect for daily use or short trips." }
+          {
+            "title": "Smart Organization",
+            "desc": "Multiple compartments for clothes, shoes, documents, and daily essentials."
+          },
+          {
+            "title": "Premium Materials",
+            "desc": "Durable, water-resistant fabric that protects your belongings in any weather."
+          },
+          {
+            "title": "Compact Design",
+            "desc": "Space-saving design that maximizes luggage space while keeping clothes organized."
+          },
+          {
+            "title": "Classic Black Color",
+            "desc": "Elegant black color that suits all tastes and travel styles."
+          },
+          {
+            "title": "Secure Storage",
+            "desc": "Secure zippers keep your items contained and organized."
+          },
+          {
+            "title": "Lightweight & Spacious",
+            "desc": "Generous capacity without added weight - perfect for daily use or short trips."
+          }
         ]
       },
       "targetAudience": {
@@ -3843,12 +4577,30 @@
         "title": "Why Choose PackOnat Packing Folder?",
         "intro": "Premium quality meets smart design. The PackOnat packing folder offers the perfect balance of storage, organization, and style for the modern traveler.",
         "features": [
-          { "title": "Smart Organization", "desc": "Multiple compartments for clothes, shoes, documents, and daily essentials." },
-          { "title": "Premium Materials", "desc": "Durable, water-resistant fabric that protects your belongings in any weather." },
-          { "title": "Compact Design", "desc": "Space-saving design that maximizes luggage space while keeping clothes organized." },
-          { "title": "Forest Green Color", "desc": "The forest green color adds a natural, refreshing look to your travel gear." },
-          { "title": "Secure Storage", "desc": "Secure zippers keep your items contained and organized." },
-          { "title": "Lightweight & Spacious", "desc": "Generous capacity without added weight - perfect for daily use or short trips." }
+          {
+            "title": "Smart Organization",
+            "desc": "Multiple compartments for clothes, shoes, documents, and daily essentials."
+          },
+          {
+            "title": "Premium Materials",
+            "desc": "Durable, water-resistant fabric that protects your belongings in any weather."
+          },
+          {
+            "title": "Compact Design",
+            "desc": "Space-saving design that maximizes luggage space while keeping clothes organized."
+          },
+          {
+            "title": "Forest Green Color",
+            "desc": "The forest green color adds a natural, refreshing look to your travel gear."
+          },
+          {
+            "title": "Secure Storage",
+            "desc": "Secure zippers keep your items contained and organized."
+          },
+          {
+            "title": "Lightweight & Spacious",
+            "desc": "Generous capacity without added weight - perfect for daily use or short trips."
+          }
         ]
       },
       "targetAudience": {
@@ -3899,12 +4651,30 @@
         "title": "Why Choose PackOnat Packing Folder?",
         "intro": "Premium quality meets smart design. The PackOnat packing folder offers the perfect balance of storage, organization, and style for the modern traveler.",
         "features": [
-          { "title": "Smart Organization", "desc": "Multiple compartments for clothes, shoes, documents, and daily essentials." },
-          { "title": "Premium Materials", "desc": "Durable, water-resistant fabric that protects your belongings in any weather." },
-          { "title": "Compact Design", "desc": "Space-saving design that maximizes luggage space while keeping clothes organized." },
-          { "title": "Bold Red Color", "desc": "The striking red color adds confidence and style to your travel gear." },
-          { "title": "Secure Storage", "desc": "Secure zippers keep your items contained and organized." },
-          { "title": "Lightweight & Spacious", "desc": "Generous capacity without added weight - perfect for daily use or short trips." }
+          {
+            "title": "Smart Organization",
+            "desc": "Multiple compartments for clothes, shoes, documents, and daily essentials."
+          },
+          {
+            "title": "Premium Materials",
+            "desc": "Durable, water-resistant fabric that protects your belongings in any weather."
+          },
+          {
+            "title": "Compact Design",
+            "desc": "Space-saving design that maximizes luggage space while keeping clothes organized."
+          },
+          {
+            "title": "Bold Red Color",
+            "desc": "The striking red color adds confidence and style to your travel gear."
+          },
+          {
+            "title": "Secure Storage",
+            "desc": "Secure zippers keep your items contained and organized."
+          },
+          {
+            "title": "Lightweight & Spacious",
+            "desc": "Generous capacity without added weight - perfect for daily use or short trips."
+          }
         ]
       },
       "targetAudience": {

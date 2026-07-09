@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
-import { Minus, Plus, ShoppingBag, Sparkles, Trash2, X } from "lucide-react";
+import { useMemo } from "react";
+import { Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
 import { useCatalogProducts } from "@/app/lib/catalog-context";
 import { useQuantityDiscountSettings, useSizeGuideSizes } from "@/app/lib/site-settings-context";
 import type { Product } from "@/lib/products";
-import { isProductSizeOutOfStock } from "@/lib/product-stock";
+import { isProductOutOfStock, isProductSizeOutOfStock } from "@/lib/product-stock";
 import { getNextQuantityDiscount, getQuantityDiscountPercent } from "@/lib/quantity-discount";
 
 export function CartSlider() {
@@ -20,6 +21,7 @@ export function CartSlider() {
   const quantityDiscountSettings = useQuantityDiscountSettings();
   const {
     items,
+    addToCart,
     removeFromCart,
     updateQuantity,
     updateCartItem,
@@ -48,6 +50,46 @@ export function CartSlider() {
   const getSizeOptions = (product?: Product) => {
     if (!product?.sizePrices) return [];
     return sizes.filter((size) => product.sizePrices?.[size.id as keyof NonNullable<Product["sizePrices"]>]);
+  };
+
+  const suggestedProduct = useMemo(() => {
+    const cartProductIds = new Set(items.map((item) => item.id));
+    const isPackOnat = (product: Product) => {
+      const categories = Array.isArray(product.category) ? product.category : [product.category];
+      return categories.includes("packonat") || product.slug.toLowerCase().includes("packonat");
+    };
+
+    return products.find((product) => isPackOnat(product) && !cartProductIds.has(product.id) && !isProductOutOfStock(product)) ||
+      products.find((product) => isPackOnat(product) && !isProductOutOfStock(product));
+  }, [items, products]);
+
+  const suggestedSize = suggestedProduct
+    ? getSizeOptions(suggestedProduct).find((size) => !isProductSizeOutOfStock(suggestedProduct, size.id))
+    : undefined;
+  const suggestedSizePrice =
+    suggestedProduct && suggestedSize
+      ? suggestedProduct.sizePrices?.[suggestedSize.id as keyof NonNullable<Product["sizePrices"]>]
+      : undefined;
+  const suggestedColor = suggestedProduct?.colors?.[0];
+  const suggestedPrice = suggestedSizePrice?.price ?? suggestedProduct?.price ?? 0;
+  const suggestedOriginalPrice = suggestedSizePrice?.originalPrice ?? suggestedProduct?.originalPrice;
+
+  const addSuggestedProduct = () => {
+    if (!suggestedProduct) return;
+
+    addToCart({
+      id: suggestedProduct.id,
+      name: suggestedProduct.name,
+      slug: suggestedProduct.slug,
+      type: suggestedProduct.type,
+      price: suggestedPrice,
+      basePrice: suggestedPrice,
+      originalPrice: suggestedOriginalPrice,
+      quantity: 1,
+      image: suggestedColor?.image || suggestedProduct.image,
+      size: suggestedSize?.id,
+      color: suggestedColor?.name,
+    });
   };
 
   const updateItemSize = (item: typeof items[number], nextSize: string) => {
@@ -92,7 +134,7 @@ export function CartSlider() {
       />
 
       {/* Slider */}
-      <div className="absolute top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col">
+      <div className="absolute top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col lg:max-w-xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[#0F1A26]/10 px-4 py-3 sm:px-5 sm:py-4">
           <div className="flex items-center gap-3">
@@ -161,9 +203,6 @@ export function CartSlider() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <span className="text-[10px] font-semibold uppercase tracking-wider text-[#EEBC3F] sm:text-xs">
-                          {item.type}
-                        </span>
                         <h3 className="truncate text-sm font-semibold text-[#0F1A26]">
                           {item.name}
                         </h3>
@@ -171,12 +210,12 @@ export function CartSlider() {
                           <div className="mt-1.5 flex flex-wrap gap-1">
                             {item.size && (
                               <span className="rounded bg-[#EEBC3F]/20 px-2 py-0.5 text-[11px] font-medium text-[#0F1A26]">
-                                {t("size")} {item.size.toUpperCase()}
+                                {item.size.toUpperCase()}
                               </span>
                             )}
                             {item.color && (
                               <span className="rounded bg-[#EEBC3F]/20 px-2 py-0.5 text-[11px] font-medium capitalize text-[#0F1A26]">
-                                {t("color")} {item.color}
+                                {item.color}
                               </span>
                             )}
                           </div>
@@ -308,6 +347,72 @@ export function CartSlider() {
                 </div>
                 );
               })}
+
+              {quantityDiscountSettings.enabled && suggestedProduct && (
+                <div className="overflow-hidden rounded-2xl border border-[#0F1A26]/10 bg-white shadow-sm">
+                  <div className="border-b border-[#0F1A26]/5 bg-[#F8F6F3] px-3 py-2.5">
+                    <div className="min-w-0">
+                      <p className="text-xs font-black text-[#0F1A26]">
+                        {t("upsell.title")}
+                      </p>
+                      <p className="mt-0.5 text-xs font-bold text-[#0F1A26]/70">
+                        {nextQuantityDiscount
+                          ? t("summary.quantityDiscountNext", {
+                              count: Math.max(1, nextQuantityDiscount.minQuantity - totalItems),
+                              percent: nextQuantityDiscount.percent,
+                            })
+                          : t("summary.quantityDiscountUnlocked", { percent: quantityDiscountPercent })}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 p-3">
+                    <Link
+                      href={`/product/${suggestedProduct.slug}`}
+                      onClick={closeCart}
+                      className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-[#F1EBE3]"
+                    >
+                      <Image
+                        src={suggestedColor?.image || suggestedProduct.image}
+                        alt={suggestedProduct.name}
+                        fill
+                        sizes="64px"
+                        className="object-contain p-1.5"
+                      />
+                    </Link>
+
+                    <div className="min-w-0 flex-1">
+                      <Link
+                        href={`/product/${suggestedProduct.slug}`}
+                        onClick={closeCart}
+                        className="block truncate text-sm font-black text-[#0F1A26] transition hover:text-[#EEBC3F]"
+                      >
+                        {suggestedProduct.name}
+                      </Link>
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] font-bold text-[#0F1A26]/55">
+                        {suggestedSize && <span>{suggestedSize.label}</span>}
+                        {suggestedColor && <span>{suggestedColor.name}</span>}
+                      </div>
+                      <div className="mt-1.5 flex items-baseline gap-2">
+                        <span className="text-sm font-black text-[#0F1A26]">EGP {suggestedPrice}</span>
+                        {suggestedOriginalPrice && suggestedOriginalPrice > suggestedPrice && (
+                          <span className="text-xs font-bold text-[#0F1A26]/35 line-through">
+                            EGP {suggestedOriginalPrice}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <Button
+                      type="button"
+                      onClick={addSuggestedProduct}
+                      className="h-9 shrink-0 rounded-full bg-[#EEBC3F] px-3 text-[11px] font-black text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white sm:px-4 sm:text-xs"
+                    >
+                      {t("upsell.addToCart")}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -315,52 +420,43 @@ export function CartSlider() {
         {/* Footer with Summary */}
         {items.length > 0 && (
           <div className="shrink-0 border-t border-[#0F1A26]/10 bg-[#F1EBE3] p-3 sm:p-4">
-            {quantityDiscountSettings.enabled && (
-              <div className="mb-2 overflow-hidden rounded-2xl border border-[#EEBC3F]/35 bg-white p-3 shadow-sm">
-                <div className="mb-2 flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#0F1A26] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[#EEBC3F]">
-                      <Sparkles className="h-3 w-3" />
-                      {quantityDiscountSettings.title}
-                    </span>
-                    <p className="mt-2 text-xs font-bold leading-5 text-[#0F1A26]">
+            <div className="mb-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {quantityDiscountSettings.enabled && (
+                <div className="rounded-2xl border border-[#0F1A26]/10 bg-white p-2.5">
+                  <div className="mb-1.5 flex items-center justify-between gap-2 text-[10px] font-semibold text-[#0F1A26] sm:text-[11px]">
+                    <span className="line-clamp-1">
                       {nextQuantityDiscount
                         ? t("summary.quantityDiscountNext", {
                             count: Math.max(1, nextQuantityDiscount.minQuantity - totalItems),
                             percent: nextQuantityDiscount.percent,
                           })
                         : t("summary.quantityDiscountUnlocked", { percent: quantityDiscountPercent })}
-                    </p>
-                  </div>
-                  <div className="shrink-0 rounded-xl bg-[#FFF7DF] px-3 py-2 text-center ring-1 ring-[#EEBC3F]/35">
-                    <span className="block text-[10px] font-black uppercase text-[#0F1A26]/45">
-                      {t("summary.quantityDiscount")}
                     </span>
-                    <span className="text-lg font-black text-[#0F1A26]">{quantityDiscountPercent}%</span>
+                    <span className="shrink-0">{quantityDiscountPercent}%</span>
+                  </div>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-[#0F1A26]/10">
+                    <div
+                      className="h-full rounded-full bg-[#0F1A26] transition-all duration-300"
+                      style={{ width: `${quantityDiscountProgress}%` }}
+                    />
                   </div>
                 </div>
-                <div className="relative h-2 rounded-full bg-[#0F1A26]/10">
+              )}
+              <div className="rounded-2xl border border-[#0F1A26]/10 bg-white p-2.5">
+                <div className="mb-1.5 flex items-center justify-between gap-2 text-[10px] font-semibold text-[#0F1A26] sm:text-[11px]">
+                  <span className="line-clamp-1">
+                    {remainingForFreeShipping > 0
+                      ? t("summary.freeShippingProgress", { amount: remainingForFreeShipping })
+                      : t("summary.freeShippingUnlocked")}
+                  </span>
+                  <span className="shrink-0">{Math.round(freeShippingProgress)}%</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-[#0F1A26]/10 overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-[#0F1A26] transition-all duration-500"
-                    style={{ width: `${quantityDiscountProgress}%` }}
+                    className="h-full rounded-full bg-[#EEBC3F] transition-all duration-300"
+                    style={{ width: `${freeShippingProgress}%` }}
                   />
                 </div>
-              </div>
-            )}
-            <div className="mb-2 rounded-2xl border border-[#0F1A26]/10 bg-white p-2.5">
-              <div className="mb-1.5 flex items-center justify-between gap-3 text-[11px] font-semibold text-[#0F1A26] sm:text-xs">
-                <span>
-                  {remainingForFreeShipping > 0
-                    ? t("summary.freeShippingProgress", { amount: remainingForFreeShipping })
-                    : t("summary.freeShippingUnlocked")}
-                </span>
-                <span>{Math.round(freeShippingProgress)}%</span>
-              </div>
-              <div className="h-1.5 rounded-full bg-[#0F1A26]/10 overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-[#EEBC3F] transition-all duration-300"
-                  style={{ width: `${freeShippingProgress}%` }}
-                />
               </div>
             </div>
             <div className="mb-3 space-y-1.5">
@@ -395,9 +491,6 @@ export function CartSlider() {
                   </span>
                 </div>
               </div>
-              <p className="text-center text-[10px] text-[#0F1A26]/45 sm:text-[11px]">
-                {t("summary.shippingAtCheckout")}
-              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-2">
@@ -409,15 +502,15 @@ export function CartSlider() {
                   closeCart();
                 }}
               >
-                <Button className="h-11 w-full rounded-full bg-[#EEBC3F] px-2 text-xs font-bold text-[#0F1A26] transition-all duration-300 hover:bg-[#0F1A26] hover:text-white sm:h-12 sm:text-sm">
+                <Button className="h-10 w-full rounded-full bg-[#EEBC3F] px-2 text-xs font-bold text-[#0F1A26] transition-all duration-300 hover:bg-[#0F1A26] hover:text-white sm:h-11">
                   <span className="truncate">{t("summary.proceedToCheckout")}</span>
                 </Button>
               </Link>
 
-              <Link href="/cart" onClick={closeCart} className="block">
+              <Link href="/shop" onClick={closeCart} className="block">
                 <Button
                   variant="outline"
-                  className="h-11 w-full rounded-full border-[#0F1A26]/20 px-2 text-xs font-bold text-[#0F1A26] transition-all duration-300 hover:bg-[#0F1A26] sm:h-12 sm:text-sm"
+                  className="h-10 w-full rounded-full border-[#0F1A26]/20 px-2 text-xs font-bold text-[#0F1A26] transition-all duration-300 hover:bg-[#0F1A26] sm:h-11"
                 >
                   <span className="truncate">{t("summary.proceedToCart")}</span>
                 </Button>

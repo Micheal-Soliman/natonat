@@ -670,7 +670,7 @@
       "total": "الإجمالي",
       "checkout": "إتمام الطلب",
       "proceedToCheckout": "إتمام الطلب",
-      "proceedToCart": "عرض السلة",
+      "proceedToCart": "كمل تسوق",
       "continueShopping": "مواصلة التسوق",
       "note": "يتم حساب الشحن والضرائب عند الدفع",
       "egyptOnly": "🚚 توصيل لجميع محافظات مصر فقط",
@@ -682,7 +682,11 @@
       "quantityDiscountNext": "زود {count} قطعة كمان وافتح خصم {percent}%",
       "quantityDiscountUnlocked": "فتحت خصم {percent}% على الطلب ده"
     },
-    "savings": "سوف توفر {amount} جنيه"
+    "savings": "سوف توفر {amount} جنيه",
+    "upsell": {
+      "title": "عرض خاص ليك",
+      "addToCart": "أضف إلى السلة"
+    }
   },
   "checkout": {
     "header": {
@@ -860,6 +864,11 @@
       "discountCode": "كود الخصم {code}",
       "buyNowMode": "🛒 شراء فوري",
       "cartMode": "🛍️ من السلة"
+    },
+    "upsell": {
+      "title": "ضيف PackOnat قبل ما تخلص",
+      "subtitle": "خلي هدومك مترتبة وضيفها للطلب بضغطة واحدة.",
+      "addToCart": "أضف PackOnat"
     }
   },
   "orderConfirmed": {
