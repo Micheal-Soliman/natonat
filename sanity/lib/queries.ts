@@ -326,6 +326,12 @@ export const siteSettingsQuery = groq`
         label
       }
     },
+    "paymentDiscounts": *[_type == "paymentDiscountSettings"][0] {
+      enabled,
+      cardPercent,
+      instapayPercent,
+      codPercent
+    },
     "sizeGuide": *[_type == "sizeGuideSettings"][0] {
       label,
       title,

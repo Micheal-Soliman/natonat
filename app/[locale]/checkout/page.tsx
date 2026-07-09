@@ -86,15 +86,6 @@ void arabicCityNames;
 
 const ARAMEX_CITIES_CACHE_KEY = "natonat-aramex-cities-eg-v2";
 const ARAMEX_CITIES_CACHE_TTL = 24 * 60 * 60 * 1000;
-const CARD_PAYMENT_DISCOUNT_PERCENT = 5;
-const INSTAPAY_PAYMENT_DISCOUNT_PERCENT = 2;
-
-function getPaymentDiscountPercent(paymentMethod: string) {
-  if (paymentMethod === "card") return CARD_PAYMENT_DISCOUNT_PERCENT;
-  if (paymentMethod === "instapay") return INSTAPAY_PAYMENT_DISCOUNT_PERCENT;
-  return 0;
-}
-
 const citySearchAliases: Record<string, string[]> = {
   cairo: ["cairo", "القاهرة", "قاهره", "القاهره", "el qahera", "alqahira"],
   "new cairo": ["new cairo", "التجمع", "القاهرة الجديدة", "القاهره الجديده", "tagamoa", "tagamo3", "newcairo"],
@@ -498,13 +489,23 @@ export default function CheckoutPage() {
 function CheckoutContent() {
   const t = useTranslations('checkout');
   const products = useCatalogProducts();
-  const { checkoutPopup } = useSiteSettings();
+  const { checkoutPopup, paymentDiscounts } = useSiteSettings();
   const locale = useLocale();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { items, addToCart, subtotal, discount: cartDiscount, originalSubtotal, appliedDiscounts, clearCart, buyNowItem, setBuyNowItem } = useCart();
   const checkoutTracked = useRef(false);
   const autoAppliedDiscountRef = useRef("");
+  const getPaymentDiscountPercent = useCallback(
+    (method: string) => {
+      if (!paymentDiscounts.enabled) return 0;
+      if (method === "card") return paymentDiscounts.cardPercent;
+      if (method === "instapay") return paymentDiscounts.instapayPercent;
+      if (method === "cod") return paymentDiscounts.codPercent;
+      return 0;
+    },
+    [paymentDiscounts],
+  );
 
   // Group duplicate items (same id + size + color) and sum quantities
   const checkoutItems = useMemo(() => {
@@ -1230,7 +1231,7 @@ function CheckoutContent() {
         ? Math.round(discountBase * (discountPercent / 100))
         : 0;
     },
-    [appliedDiscountCode, paymentMethod, total]
+    [appliedDiscountCode, getPaymentDiscountPercent, paymentMethod, total]
   );
 
   // Discount for non-COD payment methods
@@ -1254,7 +1255,7 @@ function CheckoutContent() {
         : 0;
 
     return Math.max(0, checkoutSubtotal - codeDiscountAmount - paymentDiscountBeforeShipping);
-  }, [appliedDiscountCode, checkoutSubtotal, codeDiscountAmount, paymentMethod]);
+  }, [appliedDiscountCode, checkoutSubtotal, codeDiscountAmount, getPaymentDiscountPercent, paymentMethod]);
   const displayedTotal = deliveryMethod === "delivery" && !formData.city
     ? totalBeforeShipping
     : finalTotal;
@@ -1265,6 +1266,9 @@ function CheckoutContent() {
   const displayedDiscountLabel = hasAppliedDiscountCode && appliedDiscountCode
     ? `${t("summary.discount")} (${appliedDiscountCode.code})`
     : t("summary.discount");
+  const cardPaymentDiscountPercent = getPaymentDiscountPercent("card");
+  const instapayPaymentDiscountPercent = getPaymentDiscountPercent("instapay");
+  const codPaymentDiscountPercent = getPaymentDiscountPercent("cod");
 
   const validateDiscountCode = useCallback(
     async (rawCode: string, options: { silent?: boolean } = {}) => {
@@ -1997,7 +2001,9 @@ function CheckoutContent() {
                             <p className="text-sm text-[#0F1A26]/70 mt-1">
                               {t("form.payment.card.subtitle")}
                             </p>
-                            <p className="text-sm text-green-600 font-bold mt-1">{CARD_PAYMENT_DISCOUNT_PERCENT}% OFF</p>
+                            {cardPaymentDiscountPercent > 0 && (
+                              <p className="text-sm text-green-600 font-bold mt-1">{cardPaymentDiscountPercent}% OFF</p>
+                            )}
                           </div>
 
                           <CardPaymentLogoImages />
@@ -2030,6 +2036,9 @@ function CheckoutContent() {
                         <p className="text-sm text-[#0F1A26]/70 mt-1">
                           {t("form.payment.cod.subtitle")}
                         </p>
+                        {codPaymentDiscountPercent > 0 && (
+                          <p className="text-sm text-green-600 font-bold mt-1">{codPaymentDiscountPercent}% OFF</p>
+                        )}
                       </div>
                     </label>
 
@@ -2060,7 +2069,9 @@ function CheckoutContent() {
                             <p className="text-sm text-[#0F1A26]/70 mt-1">
                               {t("form.payment.instapay.subtitle")}
                             </p>
-                            <p className="text-sm text-green-600 font-bold mt-1">{INSTAPAY_PAYMENT_DISCOUNT_PERCENT}% OFF</p>
+                            {instapayPaymentDiscountPercent > 0 && (
+                              <p className="text-sm text-green-600 font-bold mt-1">{instapayPaymentDiscountPercent}% OFF</p>
+                            )}
                           </div>
 
                           <InstaPayLogoImages />

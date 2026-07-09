@@ -122,6 +122,13 @@ export type CheckoutPopupSettings = {
   product?: FlashSaleProduct;
 };
 
+export type PaymentDiscountSettings = {
+  enabled: boolean;
+  cardPercent: number;
+  instapayPercent: number;
+  codPercent: number;
+};
+
 export type ConversionRescueSettings = {
   _updatedAt?: string;
   enabled: boolean;
@@ -144,6 +151,7 @@ export type SiteSettings = {
   flashSaleSection: FlashSaleSectionSettings;
   conversionRescue: ConversionRescueSettings;
   quantityDiscount: QuantityDiscountSettings;
+  paymentDiscounts: PaymentDiscountSettings;
   sizeGuide: SizeGuideSettings;
   discountAnnouncements: DiscountAnnouncement[];
   checkoutPopup: CheckoutPopupSettings;
@@ -155,6 +163,7 @@ type SiteSettingsQueryResult = {
   flashSaleSection?: Partial<FlashSaleSectionSettings> | null;
   conversionRescue?: Partial<ConversionRescueSettings> | null;
   quantityDiscount?: Partial<QuantityDiscountSettings> | null;
+  paymentDiscounts?: Partial<PaymentDiscountSettings> | null;
   legacyFlashSaleSection?: Partial<FlashSaleSectionSettings> | null;
   sizeGuide?: Partial<SizeGuideSettings> | null;
   checkoutPopup?: Partial<CheckoutPopupSettings> | null;
@@ -238,6 +247,31 @@ const fallbackCheckoutPopup: CheckoutPopupSettings = {
   declineLabel: "\u0644\u0627 \u0623\u0631\u064a\u062f",
   showForPaymentMethods: ["cod", "instapay"],
 };
+
+const fallbackPaymentDiscounts: PaymentDiscountSettings = {
+  enabled: true,
+  cardPercent: 5,
+  instapayPercent: 2,
+  codPercent: 0,
+};
+
+function normalizePercent(value: unknown, fallback: number) {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue)
+    ? Math.max(0, Math.min(90, numericValue))
+    : fallback;
+}
+
+function mergePaymentDiscounts(
+  paymentDiscounts?: Partial<PaymentDiscountSettings> | null,
+): PaymentDiscountSettings {
+  return {
+    enabled: paymentDiscounts?.enabled ?? fallbackPaymentDiscounts.enabled,
+    cardPercent: normalizePercent(paymentDiscounts?.cardPercent, fallbackPaymentDiscounts.cardPercent),
+    instapayPercent: normalizePercent(paymentDiscounts?.instapayPercent, fallbackPaymentDiscounts.instapayPercent),
+    codPercent: normalizePercent(paymentDiscounts?.codPercent, fallbackPaymentDiscounts.codPercent),
+  };
+}
 
 function mergeSizeGuide(sizeGuide?: Partial<SizeGuideSettings>): SizeGuideSettings {
   return {
@@ -423,6 +457,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
       quantityDiscount: normalizeQuantityDiscountSettings(
         settings?.quantityDiscount || settings?.legacy?.quantityDiscount,
       ),
+      paymentDiscounts: mergePaymentDiscounts(settings?.paymentDiscounts),
       sizeGuide: mergeSizeGuide(settings?.sizeGuide || settings?.legacy?.sizeGuide),
       discountAnnouncements: mergeDiscountAnnouncements(settings?.discountAnnouncements),
       checkoutPopup: mergeCheckoutPopup(settings?.checkoutPopup),
@@ -434,6 +469,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
       flashSaleSection: fallbackFlashSaleSection,
       conversionRescue: fallbackConversionRescue,
       quantityDiscount: fallbackQuantityDiscount,
+      paymentDiscounts: fallbackPaymentDiscounts,
       sizeGuide: fallbackSizeGuide,
       discountAnnouncements: [],
       checkoutPopup: fallbackCheckoutPopup,

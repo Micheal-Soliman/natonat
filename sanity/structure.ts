@@ -37,6 +37,14 @@ export const structure: StructureResolver = (S) =>
             .title("Quantity discount"),
         ),
       S.listItem()
+        .title("Payment discounts")
+        .child(
+          S.document()
+            .schemaType("paymentDiscountSettings")
+            .documentId("paymentDiscountSettings")
+            .title("Payment discounts"),
+        ),
+      S.listItem()
         .title("Size guide")
         .child(
           S.document()
