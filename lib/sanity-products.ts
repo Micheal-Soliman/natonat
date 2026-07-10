@@ -87,12 +87,18 @@ function hidePublicBundles(products: Product[]) {
   return products.filter((product) => !isBundleProduct(product));
 }
 
-export async function getCatalogProducts(): Promise<Product[]> {
+type CatalogProductsOptions = {
+  live?: boolean;
+};
+
+export async function getCatalogProducts(options: CatalogProductsOptions = {}): Promise<Product[]> {
   try {
     const sanityProducts = await sanityClient.fetch<SanityProduct[]>(
       activeProductsQuery,
       {},
-      { next: { revalidate: 60, tags: ["products"] } },
+      options.live
+        ? { cache: "no-store" }
+        : { next: { revalidate: 60, tags: ["products"] } },
     );
     const normalized = hidePublicBundles(normalizeProducts(sanityProducts));
     return normalized.length > 0 ? normalized : hidePublicBundles(fallbackProducts);

@@ -61,6 +61,10 @@ const HEADERS = [
   "Aramex Tracking Number",
   "Aramex Tracking Link",
   "Aramex GUID",
+  "Aramex Status",
+  "Aramex Latest Update",
+  "Aramex Latest Location",
+  "Aramex Synced At",
   "Aramex Error",
   "InstaPay Proof Status",
   "InstaPay Proof File",
@@ -96,7 +100,13 @@ function doPost(e) {
 }
 
 function doGet(e) {
-  const orderRef = e && e.parameter ? e.parameter.order_ref : "";
+  const params = e && e.parameter ? e.parameter : {};
+  const action = params.action || "";
+  const orderRef = params.order_ref || "";
+
+  if (action === "list") {
+    return listOrders(params);
+  }
 
   if (!orderRef) {
     return jsonOutput({
@@ -139,6 +149,63 @@ function doGet(e) {
     }
 
     return jsonOutput({ success: false, error: "Order not found" });
+  } catch (error) {
+    return jsonOutput({ success: false, error: error.toString() });
+  }
+}
+
+function listOrders(params) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(SHEET_NAME);
+
+    if (!sheet) {
+      return jsonOutput({ success: false, error: "Sheet not found" });
+    }
+
+    ensureHeaders(sheet);
+
+    const values = sheet.getDataRange().getValues();
+    if (values.length <= 1) {
+      return jsonOutput({ success: true, orders: [], total: 0 });
+    }
+
+    const headers = values[0] || [];
+    const rawPayloadIndex = headers.indexOf("Raw Payload");
+    const maxLimit = 1000;
+    const requestedLimit = Number(params.limit || 500);
+    const limit = Math.max(1, Math.min(maxLimit, Number.isFinite(requestedLimit) ? requestedLimit : 500));
+
+    const orders = [];
+    for (let rowIndex = values.length - 1; rowIndex >= 1 && orders.length < limit; rowIndex--) {
+      const row = values[rowIndex];
+      const rawPayload = rawPayloadIndex >= 0 ? row[rawPayloadIndex] : "";
+      let order = null;
+
+      if (rawPayload) {
+        try {
+          order = JSON.parse(rawPayload);
+        } catch (error) {
+          order = null;
+        }
+      }
+
+      if (!order) {
+        order = rowToObject(headers, row);
+      }
+
+      orders.push({
+        ...order,
+        sheet_row: rowIndex + 1,
+      });
+    }
+
+    return jsonOutput({
+      success: true,
+      orders,
+      returned: orders.length,
+      total: values.length - 1,
+    });
   } catch (error) {
     return jsonOutput({ success: false, error: error.toString() });
   }
@@ -322,6 +389,10 @@ function buildOrderRowObject(data) {
     "Aramex Tracking Number": trackingNumber,
     "Aramex Tracking Link": trackingLink,
     "Aramex GUID": aramex.guid || "",
+    "Aramex Status": aramex.status || "",
+    "Aramex Latest Update": aramex.latestDescription || aramex.latestDate || "",
+    "Aramex Latest Location": aramex.latestLocation || "",
+    "Aramex Synced At": aramex.syncedAt || "",
     "Aramex Error": aramex.error || "",
     "InstaPay Proof Status": instapayProofStatus,
     "InstaPay Proof File": instapayProof.file_name || "",
