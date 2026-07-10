@@ -1,4 +1,4 @@
-import { defineArrayMember, defineField, defineType } from "sanity";
+import { defineField, defineType } from "sanity";
 
 export const checkoutPopupSettings = defineType({
   name: "checkoutPopupSettings",
@@ -70,25 +70,6 @@ export const checkoutPopupSettings = defineType({
       title: "Decline button label",
       type: "string",
       initialValue: "\u0644\u0627 \u0623\u0631\u064a\u062f",
-    }),
-    defineField({
-      name: "showForPaymentMethods",
-      title: "Show for payment methods",
-      type: "array",
-      of: [
-        defineArrayMember({
-          type: "string",
-          options: {
-            list: [
-              { title: "Cash on Delivery", value: "cod" },
-              { title: "InstaPay / Wallets", value: "instapay" },
-              { title: "Card", value: "card" },
-            ],
-          },
-        }),
-      ],
-      initialValue: ["cod", "instapay"],
-      description: "Leave empty to show for all methods.",
     }),
   ],
   preview: {

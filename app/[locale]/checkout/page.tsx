@@ -1292,11 +1292,9 @@ function CheckoutContent() {
     const successPath = `/order-confirmed?order_ref=${encodeURIComponent(orderRef)}&method=${encodeURIComponent(paymentMethod)}&success=true`;
     setPendingSuccessPath(successPath);
 
-    const popupPaymentMethods = checkoutPopup.showForPaymentMethods || [];
     const shouldShowCheckoutPopup =
       checkoutPopup.enabled &&
-      Boolean(checkoutPopupProduct?.slug) &&
-      (popupPaymentMethods.length === 0 || popupPaymentMethods.includes(paymentMethod));
+      Boolean(checkoutPopupProduct?.slug);
 
     if (shouldShowCheckoutPopup) {
       setShowPackonatUpsell(true);

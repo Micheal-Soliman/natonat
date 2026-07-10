@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { sanityClient } from "@/sanity/lib/client";
 import { discountCodeByCodeQuery } from "@/sanity/lib/queries";
+import { validateConversionRescueCode } from "@/lib/conversion-rescue-code";
 import { validateReferralDiscount } from "@/lib/referrals";
 
 type DiscountType = "percentage" | "fixed" | "free_shipping";
@@ -131,6 +132,33 @@ export async function POST(req: Request) {
   if (!code) return jsonInvalid("Enter a discount code");
   const subtotal = Math.max(0, getNumber(body.subtotal));
   const shipping = Math.max(0, getNumber(body.shipping));
+  const rescueCode = validateConversionRescueCode(code);
+
+  if (rescueCode) {
+    if (!rescueCode.valid) {
+      return jsonInvalid(
+        rescueCode.reason === "expired" ? "Discount code has expired" : "Discount code is not valid",
+      );
+    }
+
+    const discountAmount = Math.max(0, Math.round(subtotal * (rescueCode.percent / 100)));
+    if (discountAmount <= 0) {
+      return jsonInvalid("Discount code is valid, but there is nothing to discount");
+    }
+
+    return NextResponse.json({
+      valid: true,
+      code: rescueCode.code,
+      discountId: "conversion-rescue",
+      title: "Conversion rescue discount",
+      discountType: "percentage",
+      value: rescueCode.percent,
+      discountAmount,
+      eligibleSubtotal: subtotal,
+      combineWithPaymentDiscount: false,
+      message: `${rescueCode.percent}% discount applied`,
+    });
+  }
 
   let discounts: DiscountCodeDocument[] = [];
 

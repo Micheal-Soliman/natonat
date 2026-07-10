@@ -307,6 +307,9 @@ export const siteSettingsQuery = groq`
       delaySeconds,
       dismissDays,
       discountCode,
+      discountPercent,
+      codePrefix,
+      codeValidityHours,
       discountLabel,
       eyebrow,
       title,
@@ -379,7 +382,6 @@ export const siteSettingsQuery = groq`
       hint,
       acceptLabel,
       declineLabel,
-      showForPaymentMethods,
       "imageUrl": image.asset->url,
       product->{
         legacyId,

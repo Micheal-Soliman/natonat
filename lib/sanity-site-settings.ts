@@ -117,7 +117,6 @@ export type CheckoutPopupSettings = {
   hint: string;
   acceptLabel: string;
   declineLabel: string;
-  showForPaymentMethods: string[];
   imageUrl?: string;
   product?: FlashSaleProduct;
 };
@@ -135,6 +134,9 @@ export type ConversionRescueSettings = {
   delaySeconds: number;
   dismissDays: number;
   discountCode: string;
+  discountPercent: number;
+  codePrefix: string;
+  codeValidityHours: number;
   discountLabel: string;
   eyebrow: string;
   title: string;
@@ -225,6 +227,9 @@ const fallbackConversionRescue: ConversionRescueSettings = {
   delaySeconds: 30,
   dismissDays: 7,
   discountCode: "",
+  discountPercent: 5,
+  codePrefix: "NAT",
+  codeValidityHours: 24,
   discountLabel: "",
   eyebrow: "",
   title: "",
@@ -245,7 +250,6 @@ const fallbackCheckoutPopup: CheckoutPopupSettings = {
   hint: "\u0644\u0648 \u0636\u0641\u062a\u0647 \u062f\u0644\u0648\u0642\u062a\u064a \u0647\u064a\u0628\u0642\u0649 \u0639\u0646\u062f\u0643 \u0645\u0646\u062a\u062c\u064a\u0646 \u0648\u064a\u0638\u0647\u0631\u0644\u0643 \u062e\u0635\u0645 7%.",
   acceptLabel: "\u0623\u0648\u0627\u0641\u0642",
   declineLabel: "\u0644\u0627 \u0623\u0631\u064a\u062f",
-  showForPaymentMethods: ["cod", "instapay"],
 };
 
 const fallbackPaymentDiscounts: PaymentDiscountSettings = {
@@ -371,9 +375,21 @@ function mergeConversionRescue(
   return {
     ...fallbackConversionRescue,
     ...conversionRescue,
-    enabled: Boolean(conversionRescue?.enabled && conversionRescue.discountCode),
+    enabled: Boolean(
+      conversionRescue?.enabled &&
+        (Number(conversionRescue.discountPercent) > 0 || conversionRescue.discountCode),
+    ),
     delaySeconds,
     dismissDays,
+    discountPercent: normalizePercent(
+      conversionRescue?.discountPercent,
+      fallbackConversionRescue.discountPercent,
+    ),
+    codePrefix: conversionRescue?.codePrefix?.trim().toUpperCase() || fallbackConversionRescue.codePrefix,
+    codeValidityHours: Math.max(
+      1,
+      Math.min(168, Number(conversionRescue?.codeValidityHours) || fallbackConversionRescue.codeValidityHours),
+    ),
     discountCode: conversionRescue?.discountCode?.trim().toUpperCase() || "",
     targetPath: conversionRescue?.targetPath?.trim() || fallbackConversionRescue.targetPath,
   };
@@ -436,7 +452,6 @@ function mergeCheckoutPopup(
     hint: checkoutPopup?.hint?.trim() || fallbackCheckoutPopup.hint,
     acceptLabel: checkoutPopup?.acceptLabel?.trim() || fallbackCheckoutPopup.acceptLabel,
     declineLabel: checkoutPopup?.declineLabel?.trim() || fallbackCheckoutPopup.declineLabel,
-    showForPaymentMethods: checkoutPopup?.showForPaymentMethods?.filter(Boolean) || [],
   };
 }
 

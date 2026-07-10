@@ -10,6 +10,9 @@ type ConversionRescueSettings = {
   delaySeconds: number;
   dismissDays: number;
   discountCode: string;
+  discountPercent: number;
+  codePrefix: string;
+  codeValidityHours: number;
   discountLabel: string;
   eyebrow: string;
   title: string;
@@ -23,6 +26,13 @@ type ConversionRescueSettings = {
 
 type SiteSettingsResponse = {
   conversionRescue?: ConversionRescueSettings;
+};
+
+type RescueCodeResponse = {
+  success?: boolean;
+  code?: string;
+  percent?: number;
+  label?: string;
 };
 
 const storagePrefix = "natonat-conversion-rescue";
@@ -72,13 +82,13 @@ function localizeTargetPath(pathname: string, targetPath: string) {
 }
 
 function getStorageKey(settings: ConversionRescueSettings) {
-  return `${settings.discountCode}:${settings._updatedAt || "current"}`;
+  return `${settings.codePrefix || "NAT"}:${settings.discountPercent || 0}:${settings._updatedAt || "current"}`;
 }
 
 function isReady(settings?: ConversionRescueSettings | null) {
   return Boolean(
     settings?.enabled &&
-      settings.discountCode &&
+      (settings.discountPercent > 0 || settings.discountCode) &&
       settings.discountLabel &&
       settings.eyebrow &&
       settings.title &&
@@ -89,6 +99,8 @@ function isReady(settings?: ConversionRescueSettings | null) {
 export function DynamicConversionRescuePopup() {
   const pathname = usePathname();
   const [settings, setSettings] = useState<ConversionRescueSettings | null>(null);
+  const [offerCode, setOfferCode] = useState("");
+  const [offerLabel, setOfferLabel] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -125,16 +137,43 @@ export function DynamicConversionRescuePopup() {
     };
   }, []);
 
-  const openPopup = useCallback(() => {
+  const openPopup = useCallback(async () => {
     if (!settings || !isReady(settings) || !shouldRunOnPath || !storageKey) return;
     if (Date.now() < getDismissUntil(storageKey)) return;
 
+    let nextCode = "";
+    let nextLabel = settings.discountLabel;
+
+    try {
+      const res = await fetch("/api/discounts/rescue-code", {
+        method: "POST",
+        cache: "no-store",
+      });
+      const data = (await res.json()) as RescueCodeResponse;
+      if (res.ok && data.success && data.code) {
+        nextCode = data.code;
+        nextLabel = data.label || settings.discountLabel;
+      }
+    } catch {
+      nextCode = "";
+    }
+
+    if (!nextCode && settings.discountCode) {
+      nextCode = settings.discountCode;
+    }
+
+    if (!nextCode) return;
+
+    setOfferCode(nextCode);
+    setOfferLabel(nextLabel);
+    setCopied(false);
+
     window.gtag?.("event", "discount_rescue_popup_show", {
-      offer_code: settings.discountCode,
+      offer_code: nextCode,
       reason: "time-on-site",
     });
     window.fbq?.("trackCustom", "DiscountRescuePopupShow", {
-      offer_code: settings.discountCode,
+      offer_code: nextCode,
       reason: "time-on-site",
     });
     setIsOpen(true);
@@ -165,12 +204,12 @@ export function DynamicConversionRescuePopup() {
   }, [settings, storageKey]);
 
   const saveCode = async () => {
-    if (!settings) return;
+    if (!settings || !offerCode) return;
 
-    setStoredValue("natonat-saved-discount-code", settings.discountCode);
+    setStoredValue("natonat-saved-discount-code", offerCode);
 
     try {
-      await navigator.clipboard.writeText(settings.discountCode);
+      await navigator.clipboard.writeText(offerCode);
       setCopied(true);
     } catch {
       setCopied(false);
@@ -183,19 +222,19 @@ export function DynamicConversionRescuePopup() {
     await saveCode();
     setStoredValue(`${storagePrefix}:${storageKey}:claimedAt`, new Date().toISOString());
     window.gtag?.("event", "discount_rescue_claim", {
-      offer_code: settings.discountCode,
+      offer_code: offerCode,
     });
     window.fbq?.("trackCustom", "DiscountRescueClaim", {
-      offer_code: settings.discountCode,
+      offer_code: offerCode,
     });
 
     const targetUrl = new URL(localizeTargetPath(pathname, settings.targetPath || "/shop"), window.location.origin);
-    targetUrl.searchParams.set("discount", settings.discountCode);
+    targetUrl.searchParams.set("discount", offerCode);
     window.location.assign(targetUrl.toString());
     setIsOpen(false);
   };
 
-  if (!settings || !isReady(settings) || !isOpen) return null;
+  if (!settings || !isReady(settings) || !isOpen || !offerCode) return null;
 
   return (
     <div className="fixed inset-0 z-[230] flex items-center justify-center px-4 py-6">
@@ -242,11 +281,11 @@ export function DynamicConversionRescuePopup() {
           </span>
           <div className="mt-2 flex items-center justify-center gap-3">
             <span className="text-4xl font-black tracking-[0.12em] text-[#0F1A26]">
-              {settings.discountCode}
+              {offerCode}
             </span>
           </div>
           <span className="mt-3 inline-flex rounded-full bg-[#0F1A26] px-4 py-1.5 text-xs font-black text-[#EEBC3F]">
-            {settings.discountLabel}
+            {offerLabel || settings.discountLabel}
           </span>
         </div>
 
