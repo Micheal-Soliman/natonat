@@ -289,9 +289,17 @@ export default function AdminDashboardPage() {
   const [statusFilter, setStatusFilter] = useState("all");
 
   useEffect(() => {
+    const urlToken = new URLSearchParams(window.location.search).get("token")?.trim() || "";
     const stored = window.localStorage.getItem("natonat-admin-token") || "";
-    setToken(stored);
-    setSavedToken(stored);
+    const initialToken = urlToken || stored;
+
+    if (urlToken) {
+      window.localStorage.setItem("natonat-admin-token", urlToken);
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+
+    setToken(initialToken);
+    setSavedToken(initialToken);
   }, []);
 
   const loadOrders = async (activeToken = savedToken) => {
