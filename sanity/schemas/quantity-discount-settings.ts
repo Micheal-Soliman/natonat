@@ -25,6 +25,13 @@ export const quantityDiscountSettings = defineType({
       initialValue: "Add more products to unlock automatic order discounts.",
     }),
     defineField({
+      name: "ribbonLabel",
+      title: "Single product ribbon label",
+      description: "One label shown on every product card and product page ribbon.",
+      type: "string",
+      initialValue: "Buy more, save more",
+    }),
+    defineField({
       name: "tiers",
       title: "Discount tiers",
       type: "array",
@@ -46,8 +53,8 @@ export const quantityDiscountSettings = defineType({
             }),
             defineField({
               name: "label",
-              title: "Ribbon label",
-              description: "Text shown on the product card/product image ribbon. Example: اشتري 2 وخد خصم 7%",
+              title: "Tracker label",
+              description: "Only used inside the quantity tracker, not on product ribbons.",
               type: "string",
             }),
           ],

@@ -71,6 +71,13 @@ export const siteSettings = defineType({
           initialValue: "Add more products to unlock automatic order discounts.",
         }),
         defineField({
+          name: "ribbonLabel",
+          title: "Single product ribbon label",
+          description: "One label shown on every product card and product page ribbon.",
+          type: "string",
+          initialValue: "Buy more, save more",
+        }),
+        defineField({
           name: "tiers",
           title: "Discount tiers",
           type: "array",
@@ -92,7 +99,8 @@ export const siteSettings = defineType({
                 }),
                 defineField({
                   name: "label",
-                  title: "Short label",
+                  title: "Tracker label",
+                  description: "Only used inside the quantity tracker, not on product ribbons.",
                   type: "string",
                 }),
               ],

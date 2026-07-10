@@ -1,7 +1,5 @@
 "use client";
 
-import { useTranslations } from "next-intl";
-
 import { useQuantityDiscountSettings } from "@/app/lib/site-settings-context";
 
 type QuantityDiscountRibbonProps = {
@@ -13,22 +11,13 @@ type QuantityDiscountRibbonProps = {
 export function QuantityDiscountRibbon({
   className = "",
   compact = false,
-  seed = 0,
 }: QuantityDiscountRibbonProps) {
-  const t = useTranslations("quantityDiscount");
   const settings = useQuantityDiscountSettings();
   const firstTier = settings.enabled ? settings.tiers[0] : null;
 
   if (!firstTier) return null;
 
-  const visibleTiers = settings.tiers.slice(0, 3);
-  const selectedTier = visibleTiers[Math.abs(seed) % visibleTiers.length] || firstTier;
-  const label =
-    selectedTier.label ||
-    t("ribbon", {
-      count: selectedTier.minQuantity,
-      percent: selectedTier.percent,
-    });
+  const label = settings.ribbonLabel;
 
   return (
     <div

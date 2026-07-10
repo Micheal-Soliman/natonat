@@ -139,6 +139,7 @@ export const siteSettingsQuery = groq`
         enabled,
         title,
         description,
+        ribbonLabel,
         tiers[] {
           minQuantity,
           percent,
@@ -320,6 +321,7 @@ export const siteSettingsQuery = groq`
       enabled,
       title,
       description,
+      ribbonLabel,
       tiers[] {
         minQuantity,
         percent,
