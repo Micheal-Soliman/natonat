@@ -46,7 +46,8 @@ export const quantityDiscountSettings = defineType({
             }),
             defineField({
               name: "label",
-              title: "Short label",
+              title: "Ribbon label",
+              description: "Text shown on the product card/product image ribbon. Example: اشتري 2 وخد خصم 7%",
               type: "string",
             }),
           ],

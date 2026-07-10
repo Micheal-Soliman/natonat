@@ -831,6 +831,10 @@
       "invalidEmail": "Enter a valid email address",
       "invalidPhone": "Enter a valid Egyptian mobile number",
       "invalidCity": "Choose a city from the list",
+      "instapayProofRequired": "Upload the InstaPay payment screenshot before placing the order.",
+      "instapayProofImage": "Upload an image file only.",
+      "instapayProofSize": "Payment screenshot must be 5 MB or smaller.",
+      "instapayProofRead": "Could not read the screenshot. Try another image.",
       "reviewFields": "Please review the highlighted fields before placing the order.",
       "stockChanged": "Some quantities are no longer available. Refresh your cart and try again."
     },
@@ -959,7 +963,10 @@
           "transferDetails": "Transfer Details",
           "accountName": "Account Name",
           "accountNumber": "Account Number",
-          "instruction": "Please transfer the total amount and use your order number as reference"
+          "instruction": "Please transfer the total amount and use your order number as reference",
+          "proofLabel": "Upload payment screenshot",
+          "proofHint": "Your order will wait for admin approval. Aramex is created only after the payment proof is approved.",
+          "proofReady": "Screenshot ready: {file}"
         }
       },
       "processing": "Processing...",

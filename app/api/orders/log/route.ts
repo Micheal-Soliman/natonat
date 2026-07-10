@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
-import { sendOrderEmail, sendCustomerConfirmationEmail } from "@/lib/email";
+import {
+  sendOrderEmail,
+  sendCustomerConfirmationEmail,
+  sendInstapayApprovalEmail,
+  sendInstapayPendingCustomerEmail,
+} from "@/lib/email";
 import { getCatalogProducts } from "@/lib/sanity-products";
 import {
   adjustInventoryForConfirmedOrder,
@@ -31,6 +36,8 @@ type StoredOrder = OrderLogBody & {
     reason?: string;
     updatedAt?: string;
   };
+  instapay_proof_email_sent_at?: string;
+  instapay_pending_customer_email_sent_at?: string;
 };
 
 function getNestedString(value: unknown, key: string) {
@@ -98,7 +105,55 @@ function shouldSendOrderEmail(order: StoredOrder) {
     return paymentStatus === "paid" && deliveryMethod !== "delivery";
   }
 
+  if (source === "instapay_admin_approved") {
+    return paymentStatus === "paid";
+  }
+
   return false;
+}
+
+function shouldSendInstapayApprovalEmail(order: StoredOrder) {
+  const source = getOrderStatusValue(order.source);
+  const status = getOrderStatusValue(order.status);
+  const paymentMethod = getOrderStatusValue(order.payment_method);
+  const paymentStatus = getOrderStatusValue(order.payment_status);
+
+  return (
+    source === "checkout_instapay_proof" &&
+    paymentMethod === "instapay" &&
+    status === "pending_instapay_approval" &&
+    paymentStatus.includes("pending instapay approval") &&
+    !order.instapay_proof_email_sent_at
+  );
+}
+
+function shouldSendInstapayPendingCustomerEmail(order: StoredOrder) {
+  const source = getOrderStatusValue(order.source);
+  const status = getOrderStatusValue(order.status);
+  const paymentMethod = getOrderStatusValue(order.payment_method);
+  const paymentStatus = getOrderStatusValue(order.payment_status);
+
+  return (
+    source === "checkout_instapay_proof" &&
+    paymentMethod === "instapay" &&
+    status === "pending_instapay_approval" &&
+    paymentStatus.includes("pending instapay approval") &&
+    Boolean((order.customer as { email?: string } | undefined)?.email) &&
+    !order.instapay_pending_customer_email_sent_at
+  );
+}
+
+function stripInstapayProofAttachment(order: StoredOrder) {
+  const proof = order.instapay_proof;
+  if (!proof || typeof proof !== "object") return order;
+
+  const proofMetadata = { ...(proof as Record<string, unknown>) };
+  delete proofMetadata.data_url;
+
+  return {
+    ...order,
+    instapay_proof: proofMetadata,
+  };
 }
 
 function shouldAdjustInventory(order: StoredOrder) {
@@ -442,10 +497,49 @@ export async function POST(req: Request) {
       sendCustomerConfirmationEmail(updatedOrder).catch(err => console.error("Failed to send customer confirmation email:", err));
     }
 
-    orderStore.set(orderRef, updatedOrder);
+    if (shouldSendInstapayApprovalEmail(updatedOrder)) {
+      const instapayEmailHistoryEntry: OrderHistoryEntry = {
+        status: "instapay_approval_email_sent",
+        timestamp: new Date().toISOString(),
+        source: "email_notification",
+        event_key: `instapay_approval_email:${orderRef}`,
+      };
+
+      updatedOrder = {
+        ...updatedOrder,
+        instapay_proof_email_sent_at: instapayEmailHistoryEntry.timestamp,
+        history: [...(updatedOrder.history || history), instapayEmailHistoryEntry],
+      };
+
+      sendInstapayApprovalEmail(updatedOrder).catch((err) =>
+        console.error("Failed to send InstaPay approval email:", err)
+      );
+    }
+
+    if (shouldSendInstapayPendingCustomerEmail(updatedOrder)) {
+      const instapayCustomerHistoryEntry: OrderHistoryEntry = {
+        status: "instapay_pending_customer_email_sent",
+        timestamp: new Date().toISOString(),
+        source: "customer_email_notification",
+        event_key: `instapay_pending_customer_email:${orderRef}`,
+      };
+
+      updatedOrder = {
+        ...updatedOrder,
+        instapay_pending_customer_email_sent_at: instapayCustomerHistoryEntry.timestamp,
+        history: [...(updatedOrder.history || history), instapayCustomerHistoryEntry],
+      };
+
+      sendInstapayPendingCustomerEmail(updatedOrder).catch((err) =>
+        console.error("Failed to send InstaPay pending customer email:", err)
+      );
+    }
+
+    const storedOrder = stripInstapayProofAttachment(updatedOrder);
+    orderStore.set(orderRef, storedOrder);
 
     // Forward the ENTIRE updated order to Google Sheets
-    body = updatedOrder;
+    body = storedOrder;
 
     // Clean up old orders after 48 hours (extended to cover weekend payments)
     setTimeout(() => {

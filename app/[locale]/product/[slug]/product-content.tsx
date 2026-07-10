@@ -1704,8 +1704,9 @@ export default function ProductPageContent({
 
                 {/* Product Badges */}
                 <QuantityDiscountRibbon
+                  compact
                   seed={product.id}
-                  className="absolute left-3 top-3 z-30 max-w-[48%] sm:left-6 sm:top-6 sm:max-w-[280px]"
+                  className="absolute left-3 top-3 z-30 max-w-[42%] sm:left-5 sm:top-5 sm:max-w-[180px]"
                 />
                 {isBagCover && (
                   <div className="absolute right-3 top-3 z-20 flex max-w-[48%] items-start gap-2 rounded-2xl border border-white/80 bg-white/95 px-2.5 py-2 text-[#0F1A26] shadow-xl shadow-[#0F1A26]/10 backdrop-blur-sm sm:right-6 sm:top-6 sm:max-w-[330px] sm:px-4 sm:py-3">

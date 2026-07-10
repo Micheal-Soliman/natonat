@@ -65,6 +65,13 @@ type OrderEmailData = {
   aramex?: {
     trackingNumber?: string;
   };
+  instapay_proof?: {
+    file_name?: string;
+    file_type?: string;
+    file_size?: number;
+    data_url?: string;
+    uploaded_at?: string;
+  };
 };
 
 function escapeHtml(value: unknown) {
@@ -238,6 +245,161 @@ export async function sendOrderEmail(orderData: OrderEmailData) {
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error('Error sending order email:', error);
+    return { success: false, error };
+  }
+}
+
+function getDataUrlAttachment(proof: OrderEmailData["instapay_proof"]) {
+  const dataUrl = proof?.data_url;
+  if (!dataUrl) return null;
+
+  const match = dataUrl.match(/^data:(.+);base64,(.+)$/);
+  if (!match) return null;
+
+  return {
+    filename: proof?.file_name || "instapay-proof.png",
+    contentType: proof?.file_type || match[1],
+    content: Buffer.from(match[2], "base64"),
+  };
+}
+
+export async function sendInstapayApprovalEmail(orderData: OrderEmailData) {
+  const adminEmail = "natonateg@gmail.com";
+  const itemsHtml = (orderData.items || []).map(renderItemHtml).join("");
+  const totalsHtml = renderTotalsHtml(orderData);
+  const proofAttachment = getDataUrlAttachment(orderData.instapay_proof);
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.natonat.com";
+  const approvalToken = process.env.INSTAPAY_APPROVAL_TOKEN;
+  const approvalUrl =
+    approvalToken && orderData.order_ref
+      ? `${appUrl}/api/orders/instapay/approve?order_ref=${encodeURIComponent(orderData.order_ref)}&token=${encodeURIComponent(approvalToken)}`
+      : "";
+
+  const approvalBlock = approvalUrl
+    ? `
+        <p style="margin-top: 18px;">
+          <a href="${approvalUrl}" style="display:inline-block;background:#EEBC3F;color:#0F1A26;text-decoration:none;font-weight:bold;padding:12px 16px;border-radius:999px;">
+            Approve InstaPay and create Aramex shipment
+          </a>
+        </p>
+      `
+    : `
+        <p style="margin-top: 18px; padding: 12px; background: #fff8e1; border-radius: 10px; color: #7a5a00;">
+          Approval link is disabled because INSTAPAY_APPROVAL_TOKEN is not configured. Review the proof, then approve from the admin flow/manual process.
+        </p>
+      `;
+
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: adminEmail,
+    subject: `InstaPay approval needed: ${orderData.order_ref || "N/A"}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 14px;">
+        <h2 style="color: #0F1A26; text-align: center;">InstaPay Order Waiting for Approval</h2>
+        <p style="text-align:center;color:#666;">Do not create Aramex until this payment proof is approved.</p>
+
+        <div style="background:#F8F6F3;border-radius:12px;padding:14px;margin:18px 0;">
+          <p><strong>Order Reference:</strong> ${escapeHtml(orderData.order_ref)}</p>
+          <p><strong>Customer:</strong> ${escapeHtml(orderData.customer?.first_name || "")} ${escapeHtml(orderData.customer?.last_name || "")}</p>
+          <p><strong>Phone:</strong> ${escapeHtml(orderData.customer?.phone || "")}</p>
+          <p><strong>Email:</strong> ${escapeHtml(orderData.customer?.email || "")}</p>
+          <p><strong>City:</strong> ${escapeHtml(orderData.customer?.city || "")}</p>
+          <p><strong>Address:</strong> ${escapeHtml(orderData.customer?.address || "")}</p>
+          <p><strong>Payment Method:</strong> InstaPay</p>
+          <p><strong>Status:</strong> Pending InstaPay Approval</p>
+        </div>
+
+        <h3 style="margin-top: 24px; border-bottom: 2px solid #EEBC3F; padding-bottom: 5px;">Order Summary</h3>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+          <thead>
+            <tr style="background-color: #f8f8f8;">
+              <th style="padding: 10px; text-align: left;">Item</th>
+              <th style="padding: 10px; text-align: left;">Qty</th>
+              <th style="padding: 10px; text-align: left;">Price</th>
+              <th style="padding: 10px; text-align: left;">Total</th>
+            </tr>
+          </thead>
+          <tbody>${itemsHtml}</tbody>
+        </table>
+
+        <div style="margin-top: 20px; text-align: right;">${totalsHtml}</div>
+
+        <div style="margin-top: 18px; padding: 12px; border: 1px dashed #EEBC3F; border-radius: 12px;">
+          <p><strong>Proof file:</strong> ${escapeHtml(orderData.instapay_proof?.file_name || "Attached")}</p>
+          <p><strong>Uploaded at:</strong> ${escapeHtml(orderData.instapay_proof?.uploaded_at || "N/A")}</p>
+          ${proofAttachment ? "<p>The payment screenshot is attached to this email.</p>" : "<p style='color:#c0392b;'>No screenshot attachment was found.</p>"}
+        </div>
+
+        ${approvalBlock}
+      </div>
+    `,
+    attachments: proofAttachment ? [proofAttachment] : [],
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log("InstaPay approval email sent: %s", info.messageId);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error("Error sending InstaPay approval email:", error);
+    return { success: false, error };
+  }
+}
+
+export async function sendInstapayPendingCustomerEmail(orderData: OrderEmailData) {
+  const customerEmail = orderData.customer?.email;
+  if (!customerEmail) {
+    return { success: false, error: "Missing customer email" };
+  }
+
+  const itemsHtml = (orderData.items || []).map(renderItemHtml).join("");
+  const totalsHtml = renderTotalsHtml(orderData);
+
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: customerEmail,
+    subject: `We received your InstaPay proof - ${orderData.order_ref || "N/A"}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 14px;">
+        <h2 style="color: #0F1A26; text-align: center;">Payment Proof Received</h2>
+        <p style="font-size: 16px; text-align: center; color: #555;">
+          We received your InstaPay payment screenshot. Your order is waiting for payment confirmation by our team.
+        </p>
+
+        <div style="background:#F8F6F3;border-radius:12px;padding:14px;margin:18px 0;">
+          <p><strong>Order Reference:</strong> ${escapeHtml(orderData.order_ref)}</p>
+          <p><strong>Status:</strong> Payment proof under review</p>
+          <p><strong>Payment Method:</strong> InstaPay</p>
+        </div>
+
+        <h3 style="margin-top: 24px; border-bottom: 2px solid #EEBC3F; padding-bottom: 5px;">Order Summary</h3>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+          <thead>
+            <tr style="background-color: #f8f8f8;">
+              <th style="padding: 10px; text-align: left;">Item</th>
+              <th style="padding: 10px; text-align: left;">Qty</th>
+              <th style="padding: 10px; text-align: left;">Price</th>
+              <th style="padding: 10px; text-align: left;">Total</th>
+            </tr>
+          </thead>
+          <tbody>${itemsHtml}</tbody>
+        </table>
+
+        <div style="margin-top: 20px; text-align: right;">${totalsHtml}</div>
+
+        <p style="margin-top: 18px; padding: 12px; background: #fff8e1; border-radius: 10px; color: #7a5a00;">
+          Aramex shipping will be created only after payment approval. You will receive another email when the order is confirmed.
+        </p>
+      </div>
+    `,
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log("InstaPay pending customer email sent: %s", info.messageId);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error("Error sending InstaPay pending customer email:", error);
     return { success: false, error };
   }
 }

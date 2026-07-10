@@ -15,6 +15,29 @@ import { trackMetaPixelEvent } from "@/lib/meta-pixel";
 import { useCatalogProducts } from "@/app/lib/catalog-context";
 import { useSiteSettings } from "@/app/lib/site-settings-context";
 
+const INSTAPAY_PROOF_MAX_BYTES = 5 * 1024 * 1024;
+
+type InstaPayProofState = {
+  file: File;
+  dataUrl: string;
+} | null;
+
+function readFileAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result);
+        return;
+      }
+
+      reject(new Error("Could not read payment proof"));
+    };
+    reader.onerror = () => reject(reader.error || new Error("Could not read payment proof"));
+    reader.readAsDataURL(file);
+  });
+}
+
 
 function generateOrderRef() {
   return `NAT-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
@@ -689,6 +712,7 @@ function CheckoutContent() {
   }, [aramexCities, formData.city]);
 
   const [paymentMethod, setPaymentMethod] = useState("cod");
+  const [instapayProof, setInstapayProof] = useState<InstaPayProofState>(null);
   const [deliveryMethod, setDeliveryMethod] = useState("delivery");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess] = useState(false);
@@ -776,6 +800,9 @@ function CheckoutContent() {
     }
 
     if (!paymentMethod) nextErrors.paymentMethod = requiredMessage;
+    if (paymentMethod === "instapay" && !instapayProof) {
+      nextErrors.instapayProof = t("validation.instapayProofRequired");
+    }
 
     if (Object.keys(nextErrors).length > 0) {
       setFieldErrors(nextErrors);
@@ -1032,6 +1059,93 @@ function CheckoutContent() {
         setSubmitError(err instanceof Error ? err.message : "Payment initialization failed");
         return;
       }
+    }
+
+    if (paymentMethod === "instapay") {
+      if (!instapayProof) {
+        setIsSubmitting(false);
+        setFieldErrors((current) => ({
+          ...current,
+          instapayProof: t("validation.instapayProofRequired"),
+        }));
+        setSubmitError(t("validation.instapayProofRequired"));
+        return;
+      }
+
+      const shippingRuleInstaPay = getShippingRule({
+        deliveryMethod,
+        subtotal: checkoutSubtotal,
+        city: formData.governorate,
+      });
+
+      try {
+        const logRes = await fetch("/api/orders/log", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            source: "checkout_instapay_proof",
+            order_ref: orderRef,
+            locale,
+            payment_method: "instapay",
+            status: "pending_instapay_approval",
+            payment_status: "Pending InstaPay Approval",
+            amount_egp: confirmedFinalTotal,
+            amount_cents: Math.round(confirmedFinalTotal * 100),
+            shipping_egp: shipping,
+            discount_egp: confirmedCodeDiscountAmount,
+            discount_code: confirmedAppliedDiscountCode?.code || null,
+            discount: confirmedDiscountPayload,
+            payment_discount_egp: confirmedPaymentDiscount,
+            delivery_method: deliveryMethod,
+            aramex: null,
+            customer: {
+              email: formData.email,
+              phone: formData.phone,
+              first_name: formData.firstName,
+              last_name: "",
+              city: formData.city,
+              governorate: formData.governorate,
+              address: formData.address,
+            },
+            items: serializedCheckoutItems,
+            instapay_proof: {
+              file_name: instapayProof.file.name,
+              file_type: instapayProof.file.type,
+              file_size: instapayProof.file.size,
+              data_url: instapayProof.dataUrl,
+              uploaded_at: new Date().toISOString(),
+            },
+            extras: {
+              shipping_rule: shippingRuleInstaPay,
+              city_key: formData.city,
+              subtotal_egp: checkoutSubtotal,
+              free_shipping_threshold: 1000,
+              discount: confirmedDiscountPayload,
+              payment_discount: confirmedPaymentDiscount > 0 ? confirmedPaymentDiscount : null,
+              payment_discount_percent: confirmedPaymentDiscount > 0 ? getPaymentDiscountPercent(paymentMethod) : null,
+              instapay_requires_admin_approval: true,
+            },
+            created_at: new Date().toISOString(),
+          }),
+        });
+
+        const logData = await logRes.json();
+
+        if (!logRes.ok) {
+          throw new Error(logData?.error || "Failed to log InstaPay order");
+        }
+      } catch (error) {
+        console.error("Failed to log InstaPay order:", error);
+        setIsSubmitting(false);
+        setSubmitError(error instanceof Error ? error.message : "Failed to log InstaPay order");
+        return;
+      }
+
+      setIsSubmitting(false);
+      clearCart();
+      setBuyNowItem(null);
+      router.push(`/order-confirmed?order_ref=${encodeURIComponent(orderRef)}&method=instapay&success=true`);
+      return;
     }
 
     // --- Delivery Order Flow ---
@@ -2114,6 +2228,64 @@ function CheckoutContent() {
                         <p className="text-xs text-[#0F1A26]/60 mt-3 text-center">
                           {t("form.payment.instapay.instruction")}
                         </p>
+
+                        <div className="mt-4 rounded-2xl border border-dashed border-[#0F1A26]/20 bg-white p-3">
+                          <label className="block text-sm font-black text-[#0F1A26]">
+                            {t("form.payment.instapay.proofLabel")}
+                          </label>
+                          <p className="mt-1 text-xs font-semibold leading-5 text-[#0F1A26]/55">
+                            {t("form.payment.instapay.proofHint")}
+                          </p>
+                          <input
+                            type="file"
+                            accept="image/png,image/jpeg,image/webp"
+                            className="mt-3 block w-full rounded-xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-3 py-2 text-sm font-semibold text-[#0F1A26] file:me-3 file:rounded-full file:border-0 file:bg-[#EEBC3F] file:px-4 file:py-2 file:text-sm file:font-black file:text-[#0F1A26]"
+                            onChange={async (event) => {
+                              const file = event.target.files?.[0];
+                              setFieldErrors((current) => ({ ...current, instapayProof: "" }));
+
+                              if (!file) {
+                                setInstapayProof(null);
+                                return;
+                              }
+
+                              if (!file.type.startsWith("image/")) {
+                                setInstapayProof(null);
+                                setFieldErrors((current) => ({
+                                  ...current,
+                                  instapayProof: t("validation.instapayProofImage"),
+                                }));
+                                return;
+                              }
+
+                              if (file.size > INSTAPAY_PROOF_MAX_BYTES) {
+                                setInstapayProof(null);
+                                setFieldErrors((current) => ({
+                                  ...current,
+                                  instapayProof: t("validation.instapayProofSize"),
+                                }));
+                                return;
+                              }
+
+                              try {
+                                const dataUrl = await readFileAsDataUrl(file);
+                                setInstapayProof({ file, dataUrl });
+                              } catch {
+                                setInstapayProof(null);
+                                setFieldErrors((current) => ({
+                                  ...current,
+                                  instapayProof: t("validation.instapayProofRead"),
+                                }));
+                              }
+                            }}
+                          />
+                          {instapayProof && (
+                            <p className="mt-2 rounded-full bg-green-50 px-3 py-1.5 text-xs font-black text-green-700">
+                              {t("form.payment.instapay.proofReady", { file: instapayProof.file.name })}
+                            </p>
+                          )}
+                          {renderFieldError("instapayProof")}
+                        </div>
                       </div>
                     )}
                     {renderFieldError("paymentMethod")}
