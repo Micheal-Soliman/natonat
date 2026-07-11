@@ -13,6 +13,7 @@ import {
   Eye,
   PackageCheck,
   PackageX,
+  ReceiptText,
   RefreshCw,
   ShieldCheck,
   Search,
@@ -82,6 +83,28 @@ type InventoryResponse = {
   error?: string;
 };
 
+type AdminExpense = {
+  _id: string;
+  title?: string;
+  amountEgp?: number;
+  category?: string;
+  expenseDate?: string;
+  paymentMethod?: string;
+  vendor?: string;
+  relatedOrderRef?: string;
+  notes?: string;
+  _updatedAt?: string;
+};
+
+type ExpensesResponse = {
+  success?: boolean;
+  expenses?: AdminExpense[];
+  total?: number;
+  source?: string;
+  fetchedAt?: string;
+  error?: string;
+};
+
 type AramexSyncResponse = {
   success?: boolean;
   synced?: number;
@@ -96,7 +119,7 @@ type AdminActionResponse = {
   details?: unknown;
 };
 
-type AdminTab = "finance" | "orders" | "stock";
+type AdminTab = "finance" | "orders" | "stock" | "expenses";
 type DatePreset = "all" | "today" | "yesterday" | "7d" | "30d" | "custom";
 
 type AdminStatusAction = {
@@ -258,6 +281,16 @@ function getOrderDate(order: AdminOrder) {
   return date && Number.isFinite(date.getTime()) ? date : null;
 }
 
+function getExpenseDate(expense: AdminExpense) {
+  const raw = expense.expenseDate || expense._updatedAt;
+  const date = raw ? new Date(raw) : null;
+  return date && Number.isFinite(date.getTime()) ? date : null;
+}
+
+function getExpenseAmount(expense: AdminExpense) {
+  return getNumber(expense.amountEgp);
+}
+
 function getSubtotal(order: AdminOrder) {
   const extras = getExtras(order);
   return (
@@ -354,6 +387,18 @@ function getAramexSyncedAt(order: AdminOrder) {
   return getString(aramex.syncedAt || order["Aramex Synced At"]);
 }
 
+function getCustomerEmailSentAt(order: AdminOrder) {
+  return getString(order.email_sent_at || order["Email Sent At"]);
+}
+
+function getInstaPayPendingCustomerEmailSentAt(order: AdminOrder) {
+  return getString(order.instapay_pending_customer_email_sent_at || order["InstaPay Pending Customer Email Sent At"]);
+}
+
+function getInstaPayApprovalEmailSentAt(order: AdminOrder) {
+  return getString(order.instapay_proof_email_sent_at || order["InstaPay Approval Email Sent At"]);
+}
+
 function isReturned(order: AdminOrder) {
   const text = `${getStatus(order)} ${getPaymentStatus(order)} ${getAramexStatus(order)} ${getAramexLatestUpdate(order)}`.toLowerCase();
   return text.includes("return") || text.includes("rto") || text.includes("cancel");
@@ -362,6 +407,17 @@ function isReturned(order: AdminOrder) {
 function isDelivered(order: AdminOrder) {
   const text = `${getStatus(order)} ${getAramexStatus(order)} ${getAramexLatestUpdate(order)}`.toLowerCase();
   return text.includes("delivered") || text.includes("تم التسليم");
+}
+
+function isInTransit(order: AdminOrder) {
+  const text = `${getAramexStatus(order)} ${getAramexLatestUpdate(order)}`.toLowerCase();
+  return (
+    text.includes("transit") ||
+    text.includes("out for delivery") ||
+    text.includes("forwarded") ||
+    text.includes("departed") ||
+    text.includes("arrived")
+  );
 }
 
 function isPaid(order: AdminOrder) {
@@ -687,6 +743,18 @@ function OrderDetailsPanel({
           </section>
 
           <section className="mt-5 rounded-[1.5rem] border border-[#0F1A26]/10 p-4">
+            <h4 className="mb-3 text-lg font-black">Customer notifications</h4>
+            <KeyValueGrid
+              data={{
+                customer_confirmation_email: getCustomerEmailSentAt(order) || "Not recorded",
+                instapay_pending_customer_email: getInstaPayPendingCustomerEmailSentAt(order) || "Not recorded",
+                admin_instapay_approval_email: getInstaPayApprovalEmailSentAt(order) || "Not recorded",
+                confirmation_email_tracking_number: getTrackingNumber(order) || "Tracking not available yet",
+              }}
+            />
+          </section>
+
+          <section className="mt-5 rounded-[1.5rem] border border-[#0F1A26]/10 p-4">
             <h4 className="mb-3 text-lg font-black">Audit timeline</h4>
             {auditRows.length ? (
               <div className="space-y-3">
@@ -732,9 +800,12 @@ export default function AdminDashboardPage() {
   const [savedToken, setSavedToken] = useState("");
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [inventory, setInventory] = useState<AdminInventoryItem[]>([]);
+  const [expenses, setExpenses] = useState<AdminExpense[]>([]);
   const [inventoryFetchedAt, setInventoryFetchedAt] = useState("");
+  const [expensesFetchedAt, setExpensesFetchedAt] = useState("");
   const [loading, setLoading] = useState(false);
   const [inventoryLoading, setInventoryLoading] = useState(false);
+  const [expensesLoading, setExpensesLoading] = useState(false);
   const [aramexSyncing, setAramexSyncing] = useState(false);
   const [aramexSyncMessage, setAramexSyncMessage] = useState("");
   const [error, setError] = useState("");
@@ -802,9 +873,33 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const loadExpenses = async (activeToken = savedToken) => {
+    setExpensesLoading(true);
+
+    try {
+      const res = await fetch("/api/admin/expenses", {
+        headers: activeToken ? { Authorization: `Bearer ${activeToken}` } : {},
+        cache: "no-store",
+      });
+      const data = (await res.json()) as ExpensesResponse;
+
+      if (!res.ok || !data.success || !Array.isArray(data.expenses)) {
+        throw new Error(data.error || "Could not load expenses");
+      }
+
+      setExpenses(data.expenses);
+      setExpensesFetchedAt(data.fetchedAt || new Date().toISOString());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not load expenses");
+    } finally {
+      setExpensesLoading(false);
+    }
+  };
+
   const refreshAll = (activeToken = savedToken) => {
     void loadOrders(activeToken);
     void loadInventory(activeToken);
+    void loadExpenses(activeToken);
   };
 
   const loginAndLoad = async () => {
@@ -1025,6 +1120,104 @@ export default function AdminDashboardPage() {
     URL.revokeObjectURL(url);
   };
 
+  const exportExpensesCsv = () => {
+    const headers = [
+      "date",
+      "title",
+      "category",
+      "amount_egp",
+      "payment_method",
+      "vendor",
+      "related_order_ref",
+      "notes",
+    ];
+    const rows = visibleExpenses.map((expense) => [
+      expense.expenseDate || "",
+      expense.title || "",
+      expense.category || "",
+      String(getExpenseAmount(expense)),
+      expense.paymentMethod || "",
+      expense.vendor || "",
+      expense.relatedOrderRef || "",
+      expense.notes || "",
+    ]);
+
+    const csv = [headers, ...rows]
+      .map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `natonat-expenses-${dateRange.label.toLowerCase().replaceAll(" ", "-")}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportFinanceReportCsv = () => {
+    const rows: string[][] = [
+      ["natOnat finance report"],
+      ["period", dateRange.label],
+      [],
+      ["summary"],
+      ["gross_sales", String(stats.grossSales)],
+      ["net_revenue_before_expenses", String(stats.netRevenue)],
+      ["expenses", String(expenseStats.total)],
+      ["net_after_expenses", String(expenseStats.netAfterExpenses)],
+      ["known_product_cost", String(stats.knownProductCost)],
+      ["actual_shipping_cost", String(stats.actualShippingCost)],
+      ["known_profit_after_expenses", String(expenseStats.profitAfterKnownCostsAndExpenses)],
+      ["returned_cancelled_value", String(stats.returnedValue)],
+      ["discounts", String(stats.discounts)],
+      ["shipping_collected", String(stats.shippingCollected)],
+      ["cod_expected_to_collect", String(stats.codToCollectValue)],
+      ["paid_online_collected", String(stats.paidOnlineValue)],
+      [],
+      ["daily_close"],
+      ["date", "orders", "confirmed", "gross", "discounts", "shipping", "returns", "expenses", "net", "net_after_expenses", "aramex_issues"],
+      ...dailyClose.map((day) => [
+        day.date,
+        String(day.orders),
+        String(day.confirmed),
+        String(day.gross),
+        String(day.discounts),
+        String(day.shipping),
+        String(day.returned),
+        String(day.expenses),
+        String(day.net),
+        String(day.netAfterExpenses),
+        String(day.aramexIssues),
+      ]),
+      [],
+      ["payment_breakdown"],
+      ["method", "orders", "gross", "discounts", "shipping", "returns", "net"],
+      ...stats.paymentBreakdown.map((row) => [
+        row.bucket,
+        String(row.orders),
+        String(row.gross),
+        String(row.discounts),
+        String(row.shipping),
+        String(row.returns),
+        String(row.net),
+      ]),
+      [],
+      ["expense_breakdown"],
+      ["category", "entries", "total"],
+      ...expenseStats.categories.map((row) => [row.category, String(row.count), String(row.total)]),
+    ];
+
+    const csv = rows
+      .map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `natonat-finance-report-${dateRange.label.toLowerCase().replaceAll(" ", "-")}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   useEffect(() => {
     if (!savedToken) return;
     refreshAll(savedToken);
@@ -1091,6 +1284,17 @@ export default function AdminDashboardPage() {
       return true;
     });
   }, [dateRange.from, dateRange.to, orders]);
+
+  const visibleExpenses = useMemo(() => {
+    return expenses.filter((expense) => {
+      if (!dateRange.from && !dateRange.to) return true;
+      const date = getExpenseDate(expense);
+      if (!date) return false;
+      if (dateRange.from && date < dateRange.from) return false;
+      if (dateRange.to && date > dateRange.to) return false;
+      return true;
+    });
+  }, [dateRange.from, dateRange.to, expenses]);
 
   const inventoryLookup = useMemo(() => {
     const bySlug = new Map<string, AdminInventoryItem>();
@@ -1222,16 +1426,59 @@ export default function AdminDashboardPage() {
     };
   }, [inventoryLookup.byId, inventoryLookup.byName, inventoryLookup.bySlug, visibleOrders]);
 
+  const expenseStats = useMemo(() => {
+    const total = visibleExpenses.reduce((sum, expense) => sum + getExpenseAmount(expense), 0);
+    const categoryMap = new Map<string, { category: string; count: number; total: number }>();
+    const paymentMap = new Map<string, { paymentMethod: string; count: number; total: number }>();
+
+    visibleExpenses.forEach((expense) => {
+      const category = expense.category || "other";
+      const categoryRow = categoryMap.get(category) || { category, count: 0, total: 0 };
+      categoryRow.count += 1;
+      categoryRow.total += getExpenseAmount(expense);
+      categoryMap.set(category, categoryRow);
+
+      const paymentMethod = expense.paymentMethod || "unknown";
+      const paymentRow = paymentMap.get(paymentMethod) || { paymentMethod, count: 0, total: 0 };
+      paymentRow.count += 1;
+      paymentRow.total += getExpenseAmount(expense);
+      paymentMap.set(paymentMethod, paymentRow);
+    });
+
+    const recent = [...visibleExpenses]
+      .sort((a, b) => (getExpenseDate(b)?.getTime() || 0) - (getExpenseDate(a)?.getTime() || 0))
+      .slice(0, 20);
+
+    return {
+      total,
+      count: visibleExpenses.length,
+      netAfterExpenses: stats.netRevenue - total,
+      profitAfterKnownCostsAndExpenses: stats.grossProfitFromKnownCosts - total,
+      categories: Array.from(categoryMap.values()).sort((a, b) => b.total - a.total),
+      paymentMethods: Array.from(paymentMap.values()).sort((a, b) => b.total - a.total),
+      recent,
+    };
+  }, [stats.grossProfitFromKnownCosts, stats.netRevenue, visibleExpenses]);
+
   const inventoryStats = useMemo(() => {
     const lowItems = inventory.filter((item) => isInventoryLow(item) && !isInventoryOut(item));
     const outItems = inventory.filter(isInventoryOut);
+    let retailValue = 0;
+    let costValue = 0;
+    let missingCostProducts = 0;
+
     const totalKnownUnits = inventory.reduce((sum, item) => {
       const rows = getSizeRows(item);
       const rowQuantity = rows.reduce(
         (rowSum, row) => rowSum + (typeof row.quantity === "number" && item.sizeStock?.[row.size.toLowerCase() as "s" | "m" | "l" | "xl"] ? row.quantity : 0),
         0,
       );
-      return sum + (rowQuantity || (typeof item.stockQuantity === "number" ? item.stockQuantity : 0));
+      const knownQuantity = rowQuantity || (typeof item.stockQuantity === "number" ? item.stockQuantity : 0);
+      const unitCost = getNumber(item.costPrice) + getNumber(item.packagingCost);
+      retailValue += knownQuantity * getNumber(item.price);
+      costValue += knownQuantity * unitCost;
+      if (knownQuantity > 0 && unitCost <= 0) missingCostProducts += 1;
+      return sum + knownQuantity;
     }, 0);
     const trackedVariants = inventory.reduce((sum, item) => sum + getSizeRows(item).length, 0);
 
@@ -1239,6 +1486,9 @@ export default function AdminDashboardPage() {
       products: inventory.length,
       trackedVariants,
       totalKnownUnits,
+      retailValue,
+      costValue,
+      missingCostProducts,
       lowItems,
       outItems,
     };
@@ -1332,6 +1582,34 @@ export default function AdminDashboardPage() {
       .slice(0, 12);
     const instapayAttention = visibleOrders.filter(isPendingInstaPay).slice(0, 12);
     const returnsAttention = visibleOrders.filter(isReturned).slice(0, 12);
+    const codOrders = revenueOrders.filter((order) => getPaymentBucket(order) === "cod");
+    const codDelivered = codOrders.filter(isDelivered);
+    const codInTransit = codOrders.filter((order) => !isDelivered(order) && !isReturned(order));
+    const fulfillmentRows = [
+      { label: "Delivered", orders: visibleOrders.filter(isDelivered).length, value: visibleOrders.filter(isDelivered).reduce((sum, order) => sum + getAmount(order), 0), tone: "bg-emerald-50 text-emerald-700" },
+      { label: "In transit", orders: visibleOrders.filter(isInTransit).length, value: visibleOrders.filter(isInTransit).reduce((sum, order) => sum + getAmount(order), 0), tone: "bg-sky-50 text-sky-700" },
+      { label: "Returned / cancelled", orders: visibleOrders.filter(isReturned).length, value: visibleOrders.filter(isReturned).reduce((sum, order) => sum + getAmount(order), 0), tone: "bg-rose-50 text-rose-700" },
+      { label: "Missing Aramex", orders: visibleOrders.filter(needsAramex).length, value: visibleOrders.filter(needsAramex).reduce((sum, order) => sum + getAmount(order), 0), tone: "bg-amber-50 text-amber-800" },
+      { label: "Aramex failed", orders: visibleOrders.filter((order) => Boolean(getAramexError(order))).length, value: visibleOrders.filter((order) => Boolean(getAramexError(order))).reduce((sum, order) => sum + getAmount(order), 0), tone: "bg-orange-50 text-orange-800" },
+    ];
+    const notificationRows = [
+      {
+        label: "Customer confirmation sent",
+        orders: visibleOrders.filter((order) => Boolean(getCustomerEmailSentAt(order))).length,
+      },
+      {
+        label: "InstaPay pending email sent",
+        orders: visibleOrders.filter((order) => Boolean(getInstaPayPendingCustomerEmailSentAt(order))).length,
+      },
+      {
+        label: "Admin approval email sent",
+        orders: visibleOrders.filter((order) => Boolean(getInstaPayApprovalEmailSentAt(order))).length,
+      },
+      {
+        label: "Confirmed with customer email missing",
+        orders: visibleOrders.filter((order) => isConfirmed(order) && !getCustomerEmailSentAt(order)).length,
+      },
+    ];
 
     return {
       topProducts: Array.from(productMap.values())
@@ -1346,6 +1624,12 @@ export default function AdminDashboardPage() {
       aramexAttention,
       instapayAttention,
       returnsAttention,
+      fulfillmentRows,
+      notificationRows,
+      codDeliveredOrders: codDelivered.length,
+      codDeliveredValue: codDelivered.reduce((sum, order) => sum + getAmount(order), 0),
+      codPendingCollectionOrders: codInTransit.length,
+      codPendingCollectionValue: codInTransit.reduce((sum, order) => sum + getAmount(order), 0),
       attentionCount: aramexAttention.length + instapayAttention.length + returnsAttention.length,
     };
   }, [visibleOrders]);
@@ -1412,7 +1696,9 @@ export default function AdminDashboardPage() {
         gross: number;
         discounts: number;
         shipping: number;
+        expenses: number;
         net: number;
+        netAfterExpenses: number;
         aramexIssues: number;
       }
     >();
@@ -1430,7 +1716,9 @@ export default function AdminDashboardPage() {
           gross: 0,
           discounts: 0,
           shipping: 0,
+          expenses: 0,
           net: 0,
+          netAfterExpenses: 0,
           aramexIssues: 0,
         };
 
@@ -1447,10 +1735,37 @@ export default function AdminDashboardPage() {
       dayMap.set(key, row);
     });
 
+    visibleExpenses.forEach((expense) => {
+      const date = getExpenseDate(expense);
+      const key = date ? date.toISOString().slice(0, 10) : "No date";
+      const row =
+        dayMap.get(key) ||
+        {
+          date: key,
+          orders: 0,
+          confirmed: 0,
+          returned: 0,
+          gross: 0,
+          discounts: 0,
+          shipping: 0,
+          expenses: 0,
+          net: 0,
+          netAfterExpenses: 0,
+          aramexIssues: 0,
+        };
+
+      row.expenses += getExpenseAmount(expense);
+      dayMap.set(key, row);
+    });
+
     return Array.from(dayMap.values())
+      .map((row) => ({
+        ...row,
+        netAfterExpenses: row.net - row.expenses,
+      }))
       .sort((a, b) => b.date.localeCompare(a.date))
       .slice(0, 14);
-  }, [visibleOrders]);
+  }, [visibleExpenses, visibleOrders]);
 
   const financeAlerts = useMemo(() => {
     return [
@@ -1575,11 +1890,12 @@ export default function AdminDashboardPage() {
         ) : (
           <>
         <section className="mt-6 rounded-[2rem] border border-[#0F1A26]/10 bg-white p-3 shadow-sm">
-          <div className="grid gap-2 sm:grid-cols-3">
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
             {([
               { id: "finance", label: "Finance", sub: "Revenue, discounts, returns", icon: BarChart3 },
               { id: "orders", label: "Orders", sub: "Full order lifecycle", icon: ClipboardList },
               { id: "stock", label: "Stock", sub: "Sanity inventory by size", icon: Boxes },
+              { id: "expenses", label: "Expenses", sub: "Costs and net after spend", icon: ReceiptText },
             ] as const).map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -1653,11 +1969,20 @@ export default function AdminDashboardPage() {
         {activeTab === "finance" && (
           <>
         <section className="mt-6 rounded-[2rem] border border-[#0F1A26]/10 bg-white p-5 shadow-sm">
-          <SectionHeader
-            eyebrow="Finance Control"
-            title="Money view with real order-source numbers"
-            description="These cards are calculated from confirmed orders returned by the orders API. Returned or cancelled Aramex statuses are deducted from net revenue, while discounts and shipping are shown separately."
-          />
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <SectionHeader
+              eyebrow="Finance Control"
+              title="Money view with real order-source numbers"
+              description="These cards are calculated from confirmed orders returned by the orders API. Returned or cancelled Aramex statuses are deducted from net revenue, while discounts and shipping are shown separately."
+            />
+            <button
+              onClick={exportFinanceReportCsv}
+              className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-2xl bg-[#EEBC3F] px-5 text-sm font-black text-[#0F1A26] transition hover:-translate-y-0.5"
+            >
+              <Download className="h-4 w-4" />
+              Export finance report
+            </button>
+          </div>
           <div className="mt-4 grid gap-3 rounded-3xl bg-[#F8F6F3] p-4 sm:grid-cols-3">
             <DataPill label="data source" value="Google Sheets orders webhook + in-memory fallback for recent orders" />
             <DataPill label="auto refresh" value="Every 60 seconds while the admin page is open" />
@@ -1808,7 +2133,9 @@ export default function AdminDashboardPage() {
                   <th className="px-5 py-3">Discounts</th>
                   <th className="px-5 py-3">Shipping</th>
                   <th className="px-5 py-3">Returns</th>
+                  <th className="px-5 py-3">Expenses</th>
                   <th className="px-5 py-3">Net</th>
+                  <th className="px-5 py-3">Net after expenses</th>
                   <th className="px-5 py-3">Aramex issues</th>
                 </tr>
               </thead>
@@ -1822,12 +2149,14 @@ export default function AdminDashboardPage() {
                     <td className="px-5 py-4 text-emerald-700">-{money.format(day.discounts)}</td>
                     <td className="px-5 py-4">{money.format(day.shipping)}</td>
                     <td className="px-5 py-4 text-rose-700">{day.returned}</td>
+                    <td className="px-5 py-4 text-rose-700">-{money.format(day.expenses)}</td>
                     <td className="px-5 py-4 font-black">{money.format(day.net)}</td>
+                    <td className="px-5 py-4 font-black">{money.format(day.netAfterExpenses)}</td>
                     <td className="px-5 py-4 font-black">{day.aramexIssues}</td>
                   </tr>
                 )) : (
                   <tr>
-                    <td colSpan={9} className="px-5 py-8 text-center text-sm font-bold text-[#0F1A26]/45">
+                    <td colSpan={11} className="px-5 py-8 text-center text-sm font-bold text-[#0F1A26]/45">
                       No daily finance rows in this period.
                     </td>
                   </tr>
@@ -1887,6 +2216,61 @@ export default function AdminDashboardPage() {
               <DataPill label="pending / unpaid orders" value={String(stats.awaitingPaymentOrders)} />
               <DataPill label="returned or cancelled value" value={money.format(stats.returnedValue)} />
             </div>
+          </div>
+        </section>
+
+        <section className="mt-6 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+          <div className="rounded-[2rem] border border-[#0F1A26]/10 bg-white p-5 shadow-sm">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-[#EEBC3F]">Cash collection</p>
+            <h2 className="mt-2 text-2xl font-black">COD money status</h2>
+            <p className="mt-2 text-sm font-semibold leading-6 text-[#0F1A26]/55">
+              COD is not treated like collected cash. This separates delivered COD from COD still moving through fulfillment.
+            </p>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <DataPill label="cod delivered / collectable" value={`${money.format(operations.codDeliveredValue)} / ${operations.codDeliveredOrders} orders`} />
+              <DataPill label="cod still pending delivery" value={`${money.format(operations.codPendingCollectionValue)} / ${operations.codPendingCollectionOrders} orders`} />
+              <DataPill label="paid online collected" value={`${money.format(stats.paidOnlineValue)} / ${stats.paidOnlineOrders} orders`} />
+              <DataPill label="returns deducted" value={`-${money.format(stats.returnedValue)}`} />
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-[2rem] border border-[#0F1A26]/10 bg-white shadow-sm">
+            <div className="border-b border-[#0F1A26]/10 px-5 py-4">
+              <h2 className="text-lg font-black">Fulfillment finance impact</h2>
+              <p className="text-xs font-bold text-[#0F1A26]/45">
+                Aramex state grouped with order value, so returns and shipment issues are visible financially.
+              </p>
+            </div>
+            <div className="grid gap-3 p-5 md:grid-cols-2">
+              {operations.fulfillmentRows.map((row) => (
+                <div key={row.label} className={`rounded-2xl p-4 ${row.tone}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-black">{row.label}</p>
+                      <p className="mt-1 text-xs font-bold opacity-65">{row.orders} orders</p>
+                    </div>
+                    <p className="text-sm font-black">{money.format(row.value)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-6 overflow-hidden rounded-[2rem] border border-[#0F1A26]/10 bg-white shadow-sm">
+          <div className="border-b border-[#0F1A26]/10 px-5 py-4">
+            <h2 className="text-lg font-black">Customer notification health</h2>
+            <p className="text-xs font-bold text-[#0F1A26]/45">
+              Checks whether customer/admin emails were recorded for confirmation and InstaPay flows.
+            </p>
+          </div>
+          <div className="grid gap-3 p-5 sm:grid-cols-2 xl:grid-cols-4">
+            {operations.notificationRows.map((row) => (
+              <div key={row.label} className="rounded-2xl bg-[#F8F6F3] p-4">
+                <p className="text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45">{row.label}</p>
+                <p className="mt-2 text-2xl font-black">{row.orders}</p>
+              </div>
+            ))}
           </div>
         </section>
 
@@ -2041,6 +2425,21 @@ export default function AdminDashboardPage() {
                 <p className="text-xs font-black uppercase text-rose-700/70">Out of stock</p>
                 <p className="mt-2 text-2xl font-black text-rose-700">{inventoryStats.outItems.length}</p>
               </div>
+              <div className="rounded-2xl bg-emerald-50 p-4">
+                <p className="text-xs font-black uppercase text-emerald-700/70">Retail stock value</p>
+                <p className="mt-2 text-2xl font-black text-emerald-700">{money.format(inventoryStats.retailValue)}</p>
+              </div>
+              <div className="rounded-2xl bg-[#0F1A26] p-4 text-white">
+                <p className="text-xs font-black uppercase text-white/45">Known stock cost</p>
+                <p className="mt-2 text-2xl font-black">{money.format(inventoryStats.costValue)}</p>
+              </div>
+              <div className="rounded-2xl bg-yellow-50 p-4 sm:col-span-2">
+                <p className="text-xs font-black uppercase text-yellow-800/70">Products missing cost</p>
+                <p className="mt-2 text-2xl font-black text-yellow-800">{inventoryStats.missingCostProducts}</p>
+                <p className="mt-1 text-xs font-bold leading-5 text-yellow-900/60">
+                  Add Product cost and Packaging cost in Sanity to make stock valuation and profit readiness more reliable.
+                </p>
+              </div>
             </div>
           </div>
 
@@ -2158,6 +2557,130 @@ export default function AdminDashboardPage() {
                     </td>
                   </tr>
                 ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+          </>
+        )}
+
+        {activeTab === "expenses" && (
+          <>
+        <section className="mt-6 rounded-[2rem] border border-[#0F1A26]/10 bg-white p-5 shadow-sm">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <SectionHeader
+              eyebrow="Expense control"
+              title="Costs that reduce real net profit"
+              description="These expenses are managed from Sanity CMS and filtered by the same date range as finance. Use this for ads, packaging, refunds, tools, and manual shipping adjustments."
+            />
+            <button
+              onClick={exportExpensesCsv}
+              className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-2xl bg-[#0F1A26] px-5 text-sm font-black text-white transition hover:-translate-y-0.5"
+            >
+              <Download className="h-4 w-4" />
+              Export expenses
+            </button>
+          </div>
+
+          {expensesFetchedAt && (
+            <p className="mt-3 text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/35">
+              Live CMS sync: {new Date(expensesFetchedAt).toLocaleString("en-EG")}
+            </p>
+          )}
+        </section>
+
+        <section className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard title="Expenses" value={money.format(expenseStats.total)} subtitle={`${expenseStats.count} entries in period`} icon={ReceiptText} tone={expenseStats.total ? "red" : "green"} />
+          <StatCard title="Net After Expenses" value={money.format(expenseStats.netAfterExpenses)} subtitle="Net revenue minus entered expenses" icon={Banknote} tone={expenseStats.netAfterExpenses >= 0 ? "green" : "red"} />
+          <StatCard title="Known Profit After Expenses" value={money.format(expenseStats.profitAfterKnownCostsAndExpenses)} subtitle="Known-cost profit minus expenses" icon={BarChart3} tone={expenseStats.profitAfterKnownCostsAndExpenses >= 0 ? "green" : "red"} />
+          <StatCard title="Expense Data Source" value="Sanity CMS" subtitle={expensesLoading ? "Loading expenses..." : "Manual operational expenses"} icon={ShieldCheck} />
+        </section>
+
+        <section className="mt-6 grid gap-4 xl:grid-cols-2">
+          <div className="overflow-hidden rounded-[2rem] border border-[#0F1A26]/10 bg-white shadow-sm">
+            <div className="border-b border-[#0F1A26]/10 px-5 py-4">
+              <h2 className="text-lg font-black">Expenses by category</h2>
+              <p className="text-xs font-bold text-[#0F1A26]/45">Where money is going operationally.</p>
+            </div>
+            <div className="divide-y divide-[#0F1A26]/8">
+              {expenseStats.categories.length ? expenseStats.categories.map((row) => (
+                <div key={row.category} className="grid grid-cols-[1fr_auto] items-center gap-3 px-5 py-4">
+                  <div>
+                    <p className="font-black capitalize">{row.category.replaceAll("_", " ")}</p>
+                    <p className="text-xs font-bold text-[#0F1A26]/45">{row.count} entries</p>
+                  </div>
+                  <p className="font-black text-rose-700">{money.format(row.total)}</p>
+                </div>
+              )) : (
+                <p className="p-5 text-sm font-bold text-[#0F1A26]/45">No expenses in this period.</p>
+              )}
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-[2rem] border border-[#0F1A26]/10 bg-white shadow-sm">
+            <div className="border-b border-[#0F1A26]/10 px-5 py-4">
+              <h2 className="text-lg font-black">Expenses by payment method</h2>
+              <p className="text-xs font-bold text-[#0F1A26]/45">How expenses were paid.</p>
+            </div>
+            <div className="divide-y divide-[#0F1A26]/8">
+              {expenseStats.paymentMethods.length ? expenseStats.paymentMethods.map((row) => (
+                <div key={row.paymentMethod} className="grid grid-cols-[1fr_auto] items-center gap-3 px-5 py-4">
+                  <div>
+                    <p className="font-black capitalize">{row.paymentMethod.replaceAll("_", " ")}</p>
+                    <p className="text-xs font-bold text-[#0F1A26]/45">{row.count} entries</p>
+                  </div>
+                  <p className="font-black text-rose-700">{money.format(row.total)}</p>
+                </div>
+              )) : (
+                <p className="p-5 text-sm font-bold text-[#0F1A26]/45">No payment method data yet.</p>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-6 overflow-hidden rounded-[2rem] border border-[#0F1A26]/10 bg-white shadow-sm">
+          <div className="border-b border-[#0F1A26]/10 px-5 py-4">
+            <h2 className="text-lg font-black">Expense ledger</h2>
+            <p className="text-xs font-bold text-[#0F1A26]/45">
+              Latest expense entries in the selected period. Add or edit them from Sanity CMS.
+            </p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-[#0F1A26]/10 text-left text-sm">
+              <thead className="bg-[#F8F6F3] text-xs uppercase tracking-[0.12em] text-[#0F1A26]/45">
+                <tr>
+                  <th className="px-5 py-3">Date</th>
+                  <th className="px-5 py-3">Title</th>
+                  <th className="px-5 py-3">Category</th>
+                  <th className="px-5 py-3">Amount</th>
+                  <th className="px-5 py-3">Payment</th>
+                  <th className="px-5 py-3">Vendor</th>
+                  <th className="px-5 py-3">Order</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#0F1A26]/8">
+                {expenseStats.recent.length ? expenseStats.recent.map((expense) => (
+                  <tr key={expense._id}>
+                    <td className="px-5 py-4 align-top font-bold">
+                      {getExpenseDate(expense)?.toLocaleDateString("en-EG") || "-"}
+                    </td>
+                    <td className="px-5 py-4 align-top">
+                      <p className="font-black">{expense.title || "Expense"}</p>
+                      {expense.notes && <p className="mt-1 max-w-[340px] text-xs font-semibold leading-5 text-[#0F1A26]/45">{expense.notes}</p>}
+                    </td>
+                    <td className="px-5 py-4 align-top font-bold capitalize">{(expense.category || "other").replaceAll("_", " ")}</td>
+                    <td className="px-5 py-4 align-top font-black text-rose-700">{money.format(getExpenseAmount(expense))}</td>
+                    <td className="px-5 py-4 align-top capitalize">{(expense.paymentMethod || "-").replaceAll("_", " ")}</td>
+                    <td className="px-5 py-4 align-top">{expense.vendor || "-"}</td>
+                    <td className="px-5 py-4 align-top font-bold">{expense.relatedOrderRef || "-"}</td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan={7} className="px-5 py-8 text-center text-sm font-bold text-[#0F1A26]/45">
+                      No expenses recorded for this period.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

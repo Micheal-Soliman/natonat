@@ -98,7 +98,7 @@ export async function POST(req: Request) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          source: "admin_instapay_approved_aramex_failed",
+          source: "instapay_admin_approved_aramex_failed",
           order_ref: orderRef,
           status: "confirmed",
           payment_status: "Paid",
@@ -129,7 +129,7 @@ export async function POST(req: Request) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      source: "admin_instapay_approved",
+      source: "instapay_admin_approved",
       order_ref: orderRef,
       status: nextStatus,
       payment_status: "Paid",

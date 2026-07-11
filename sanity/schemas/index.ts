@@ -11,6 +11,7 @@ import { checkoutPopupSettings } from "./checkout-popup-settings";
 import { productReview } from "./product-review";
 import { referralProgram } from "./referral-program";
 import { referralRecord } from "./referral-record";
+import { adminExpense } from "./admin-expense";
 
 export const schemaTypes = [
   product,
@@ -25,5 +26,6 @@ export const schemaTypes = [
   checkoutPopupSettings,
   referralProgram,
   referralRecord,
+  adminExpense,
   productReview,
 ];

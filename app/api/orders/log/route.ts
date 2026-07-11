@@ -105,7 +105,7 @@ function shouldSendOrderEmail(order: StoredOrder) {
     return paymentStatus === "paid" && deliveryMethod !== "delivery";
   }
 
-  if (source === "instapay_admin_approved") {
+  if (source === "instapay_admin_approved" || source === "admin_instapay_approved") {
     return paymentStatus === "paid";
   }
 
