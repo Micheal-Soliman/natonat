@@ -179,6 +179,7 @@ function listOrders(params) {
     const orders = [];
     for (let rowIndex = values.length - 1; rowIndex >= 1 && orders.length < limit; rowIndex--) {
       const row = values[rowIndex];
+      const rowObject = rowToObject(headers, row);
       const rawPayload = rawPayloadIndex >= 0 ? row[rawPayloadIndex] : "";
       let order = null;
 
@@ -191,10 +192,11 @@ function listOrders(params) {
       }
 
       if (!order) {
-        order = rowToObject(headers, row);
+        order = rowObject;
       }
 
       orders.push({
+        ...rowObject,
         ...order,
         sheet_row: rowIndex + 1,
       });

@@ -1431,6 +1431,7 @@ export default function AdminDashboardPage() {
     const allOrdersValue = filteredMetricOrders.reduce((sum, order) => sum + getAmount(order), 0);
     const unconfirmedValue = unconfirmedOrders.reduce((sum, order) => sum + getAmount(order), 0);
     const missingTotalOrders = filteredMetricOrders.filter((order) => getAmount(order) <= 0);
+    const missingDateOrders = filteredMetricOrders.filter((order) => !getOrderDate(order));
     const missingCustomerOrders = filteredMetricOrders.filter((order) => !getString(getCustomer(order).phone) && !getString(getCustomer(order).first_name));
     const missingItemsOrders = filteredMetricOrders.filter((order) => getItems(order).length === 0);
     const cardOrders = filteredMetricOrders.filter((order) => getPaymentBucket(order) === "card");
@@ -1497,6 +1498,7 @@ export default function AdminDashboardPage() {
       codToCollectValue,
       aramexBlockedValue,
       missingTotalOrders: missingTotalOrders.length,
+      missingDateOrders: missingDateOrders.length,
       missingCustomerOrders: missingCustomerOrders.length,
       missingItemsOrders: missingItemsOrders.length,
       cardOrders: cardOrders.length,
@@ -2155,7 +2157,7 @@ export default function AdminDashboardPage() {
           <StatCard title="All Orders Value" value={money.format(stats.allOrdersValue)} subtitle="Raw total value for current period" icon={ClipboardList} tone="dark" />
           <StatCard title="Unconfirmed Value" value={money.format(stats.unconfirmedValue)} subtitle={`${stats.unconfirmedOrders} pending/unpaid orders`} icon={AlertTriangle} tone={stats.unconfirmedOrders ? "gold" : "dark"} />
           <StatCard title="Average Order Value" value={money.format(stats.averageOrderValue)} subtitle="Confirmed non-returned orders" icon={BarChart3} tone="dark" />
-          <StatCard title="Data Gaps" value={String(stats.missingTotalOrders + stats.missingItemsOrders + stats.missingCustomerOrders)} subtitle="Missing total/items/customer fields" icon={ShieldCheck} tone={stats.missingTotalOrders + stats.missingItemsOrders + stats.missingCustomerOrders ? "red" : "green"} />
+          <StatCard title="Data Gaps" value={String(stats.missingTotalOrders + stats.missingDateOrders + stats.missingItemsOrders + stats.missingCustomerOrders)} subtitle="Missing date/total/items/customer fields" icon={ShieldCheck} tone={stats.missingTotalOrders + stats.missingDateOrders + stats.missingItemsOrders + stats.missingCustomerOrders ? "red" : "green"} />
         </section>
 
         <section className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -2184,6 +2186,7 @@ export default function AdminDashboardPage() {
             <p className="mt-1 text-xs font-bold text-[#0F1A26]/45">If a finance number looks empty, this tells you what data is missing from the order source.</p>
             <div className="mt-4 grid gap-3">
               <DataPill label="orders missing total" value={String(stats.missingTotalOrders)} />
+              <DataPill label="orders missing date" value={String(stats.missingDateOrders)} />
               <DataPill label="orders missing items" value={String(stats.missingItemsOrders)} />
               <DataPill label="orders missing customer" value={String(stats.missingCustomerOrders)} />
               <DataPill label="orders included in finance period" value={String(stats.totalOrders)} />
