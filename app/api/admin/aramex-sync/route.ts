@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { trackShipment } from "@/lib/aramex";
+import { isAdminAuthorized } from "@/lib/admin-auth";
 
 type AdminOrder = Record<string, unknown> & {
   order_ref?: string;
@@ -16,28 +17,6 @@ type TrackBody = {
   limit?: number;
   orderRefs?: string[];
 };
-
-function getBearerToken(req: Request) {
-  const auth = req.headers.get("authorization") || "";
-  if (!auth.toLowerCase().startsWith("bearer ")) return "";
-  return auth.slice(7).trim();
-}
-
-function isAuthorized(req: Request) {
-  const configuredToken = process.env.ADMIN_DASHBOARD_TOKEN;
-  if (!configuredToken) {
-    return process.env.NODE_ENV !== "production";
-  }
-
-  const url = new URL(req.url);
-  const providedToken =
-    getBearerToken(req) ||
-    req.headers.get("x-admin-token") ||
-    url.searchParams.get("token") ||
-    "";
-
-  return providedToken === configuredToken;
-}
 
 function getString(value: unknown) {
   if (typeof value === "string") return value;
@@ -130,7 +109,7 @@ async function saveOrder(webhookUrl: string, order: AdminOrder) {
 }
 
 export async function POST(req: Request) {
-  if (!isAuthorized(req)) {
+  if (!isAdminAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

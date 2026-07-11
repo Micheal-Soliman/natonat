@@ -1,34 +1,13 @@
 import { NextResponse } from "next/server";
 
+import { isAdminAuthorized } from "@/lib/admin-auth";
 import { getCatalogProducts } from "@/lib/sanity-products";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-function getBearerToken(req: Request) {
-  const auth = req.headers.get("authorization") || "";
-  if (!auth.toLowerCase().startsWith("bearer ")) return "";
-  return auth.slice(7).trim();
-}
-
-function isAuthorized(req: Request) {
-  const configuredToken = process.env.ADMIN_DASHBOARD_TOKEN;
-  if (!configuredToken) {
-    return process.env.NODE_ENV !== "production";
-  }
-
-  const url = new URL(req.url);
-  const providedToken =
-    getBearerToken(req) ||
-    req.headers.get("x-admin-token") ||
-    url.searchParams.get("token") ||
-    "";
-
-  return providedToken === configuredToken;
-}
-
 export async function GET(req: Request) {
-  if (!isAuthorized(req)) {
+  if (!isAdminAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -43,6 +22,10 @@ export async function GET(req: Request) {
     stockQuantity: product.stockQuantity ?? null,
     sizeStock: product.sizeStock || {},
     sizePrices: product.sizePrices || null,
+    price: product.price,
+    originalPrice: product.originalPrice,
+    costPrice: product.costPrice ?? null,
+    packagingCost: product.packagingCost ?? null,
     image: product.image,
   }));
 

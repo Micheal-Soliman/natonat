@@ -3,17 +3,23 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
+  BarChart3,
   Banknote,
   Boxes,
   CheckCircle2,
+  ClipboardList,
   CreditCard,
+  Download,
+  Eye,
   PackageCheck,
   PackageX,
   RefreshCw,
+  ShieldCheck,
   Search,
   Truck,
   Undo2,
   WalletCards,
+  X,
 } from "lucide-react";
 
 type AdminOrder = Record<string, unknown> & {
@@ -51,6 +57,10 @@ type AdminInventoryItem = {
   category?: string | string[];
   stockStatus?: "in_stock" | "low_stock" | "out_of_stock";
   stockQuantity?: number | null;
+  price?: number | null;
+  originalPrice?: number | null;
+  costPrice?: number | null;
+  packagingCost?: number | null;
   sizeStock?: Partial<
     Record<
       "s" | "m" | "l" | "xl",
@@ -80,11 +90,68 @@ type AramexSyncResponse = {
   error?: string;
 };
 
+type AdminActionResponse = {
+  success?: boolean;
+  error?: string;
+  details?: unknown;
+};
+
+type AdminTab = "finance" | "orders" | "stock";
+type DatePreset = "all" | "today" | "yesterday" | "7d" | "30d" | "custom";
+
+type AdminStatusAction = {
+  label: string;
+  action: string;
+  status: string;
+  paymentStatus?: string;
+  aramexStatus?: string;
+  aramexError?: string;
+  note: string;
+  tone: string;
+};
+
 const money = new Intl.NumberFormat("en-EG", {
   style: "currency",
   currency: "EGP",
   maximumFractionDigits: 0,
 });
+
+const ADMIN_STATUS_ACTIONS: AdminStatusAction[] = [
+  {
+    label: "Mark delivered",
+    action: "mark_delivered",
+    status: "delivered",
+    paymentStatus: "Paid",
+    aramexStatus: "Delivered",
+    aramexError: "",
+    note: "Admin marked this order as delivered.",
+    tone: "bg-emerald-600 text-white",
+  },
+  {
+    label: "Mark returned",
+    action: "mark_returned",
+    status: "returned",
+    aramexStatus: "Returned",
+    note: "Admin marked this order as returned. Finance should deduct this value.",
+    tone: "bg-rose-600 text-white",
+  },
+  {
+    label: "Mark cancelled",
+    action: "mark_cancelled",
+    status: "cancelled",
+    aramexStatus: "Cancelled",
+    note: "Admin marked this order as cancelled. Finance should deduct this value.",
+    tone: "bg-[#0F1A26] text-white",
+  },
+  {
+    label: "Resolve issue",
+    action: "resolve_issue",
+    status: "confirmed",
+    aramexError: "",
+    note: "Admin marked the operational issue as resolved.",
+    tone: "bg-[#EEBC3F] text-[#0F1A26]",
+  },
+];
 
 function getString(value: unknown) {
   if (typeof value === "string") return value;
@@ -98,9 +165,31 @@ function getNumber(value: unknown) {
 }
 
 function getObject(value: unknown): Record<string, unknown> {
+  if (typeof value === "string" && value.trim().startsWith("{")) {
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      return getObject(parsed);
+    } catch {
+      return {};
+    }
+  }
+
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : {};
+}
+
+function getArray(value: unknown): unknown[] {
+  if (Array.isArray(value)) return value;
+  if (typeof value === "string" && value.trim().startsWith("[")) {
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
 }
 
 function getOrderRef(order: AdminOrder) {
@@ -123,11 +212,109 @@ function getShipping(order: AdminOrder) {
   return getNumber(order.shipping_egp || order["Shipping (EGP)"]);
 }
 
-function getDiscount(order: AdminOrder) {
-  return (
-    getNumber(order.discount_egp || order["Discount (EGP)"]) +
-    getNumber(order.payment_discount_egp || order["Payment Discount (EGP)"])
+function getExtras(order: AdminOrder) {
+  return getObject(order.extras || order["Extras (Full JSON)"]);
+}
+
+function getActualShippingCost(order: AdminOrder) {
+  const extras = getExtras(order);
+  const aramex = getAramex(order);
+  return getNumber(
+    extras.actual_shipping_cost_egp ??
+      extras.aramex_cost_egp ??
+      extras.shipping_cost_egp ??
+      aramex.cost ??
+      aramex.costEgp ??
+      order["Actual Shipping Cost (EGP)"] ??
+      order["Aramex Cost (EGP)"],
   );
+}
+
+function getItems(order: AdminOrder) {
+  const items = order.items || order["Items (Full JSON)"] || order["Items"];
+  if (typeof items === "string" && items.trim().startsWith("[")) {
+    try {
+      const parsed = JSON.parse(items) as unknown;
+      return Array.isArray(parsed) ? (parsed as Record<string, unknown>[]) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  return Array.isArray(items) ? (items as Record<string, unknown>[]) : [];
+}
+
+function getCreatedAt(order: AdminOrder) {
+  return getString(order.created_at || order["Created At"] || order["Timestamp"]);
+}
+
+function getUpdatedAt(order: AdminOrder) {
+  return getString(order.updated_at || order["Updated At"]);
+}
+
+function getOrderDate(order: AdminOrder) {
+  const raw = getCreatedAt(order) || getUpdatedAt(order);
+  const date = raw ? new Date(raw) : null;
+  return date && Number.isFinite(date.getTime()) ? date : null;
+}
+
+function getSubtotal(order: AdminOrder) {
+  const extras = getExtras(order);
+  return (
+    getNumber(extras.subtotal_egp) ||
+    getNumber(order["Subtotal (EGP)"]) ||
+    Math.max(0, getAmount(order) - getShipping(order) + getDiscount(order))
+  );
+}
+
+function getDiscount(order: AdminOrder) {
+  return getOrderDiscount(order) + getPaymentDiscount(order);
+}
+
+function getOrderDiscount(order: AdminOrder) {
+  const extras = getExtras(order);
+  return (
+    getNumber(order.discount_egp || order["Discount (EGP)"]) ||
+    getNumber(extras.discount_egp) ||
+    getNumber(extras.quantity_discount) ||
+    getNumber(extras.rescue_discount) ||
+    0
+  );
+}
+
+function getPaymentDiscount(order: AdminOrder) {
+  const extras = getExtras(order);
+  return (
+    getNumber(order.payment_discount_egp || order["Payment Discount (EGP)"]) ||
+    getNumber(extras.payment_discount) ||
+    getNumber(extras.payment_discount_egp) ||
+    0
+  );
+}
+
+function getItemQuantity(item: Record<string, unknown>) {
+  return getNumber(item.quantity ?? item.qty) || 1;
+}
+
+function getItemUnitPrice(item: Record<string, unknown>) {
+  return getNumber(
+    item.unit_price_egp ??
+      item.price_egp ??
+      item.unit_price ??
+      item.unitPrice ??
+      item.price,
+  );
+}
+
+function getItemLineTotal(item: Record<string, unknown>) {
+  const lineTotal = getNumber(item.line_total_egp ?? item.line_total ?? item.lineTotal ?? item.total);
+  if (lineTotal > 0) return lineTotal;
+
+  return getItemUnitPrice(item) * getItemQuantity(item);
+}
+
+function getItemKey(item: Record<string, unknown>) {
+  return getString(item.slug || item.product_slug || item.productSlug || item.id || item.product_id || item.productId);
 }
 
 function getPaymentMethod(order: AdminOrder) {
@@ -172,6 +359,11 @@ function isReturned(order: AdminOrder) {
   return text.includes("return") || text.includes("rto") || text.includes("cancel");
 }
 
+function isDelivered(order: AdminOrder) {
+  const text = `${getStatus(order)} ${getAramexStatus(order)} ${getAramexLatestUpdate(order)}`.toLowerCase();
+  return text.includes("delivered") || text.includes("تم التسليم");
+}
+
 function isPaid(order: AdminOrder) {
   const paymentStatus = getPaymentStatus(order);
   return paymentStatus === "paid" || paymentStatus.includes("cash on delivery");
@@ -193,6 +385,14 @@ function needsAramex(order: AdminOrder) {
     !isPendingInstaPay(order) &&
     !getTrackingNumber(order)
   );
+}
+
+function getPaymentBucket(order: AdminOrder) {
+  const method = getPaymentMethod(order);
+  if (method.includes("card") || method.includes("paymob")) return "card";
+  if (method.includes("instapay") || method.includes("wallet")) return "instapay";
+  if (method.includes("cod") || method.includes("cash")) return "cod";
+  return method || "unknown";
 }
 
 function getSizeRows(item: AdminInventoryItem) {
@@ -273,8 +473,262 @@ function StatCard({
   );
 }
 
+function SectionHeader({
+  eyebrow,
+  title,
+  description,
+}: {
+  eyebrow: string;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-[#EEBC3F]">{eyebrow}</p>
+        <h2 className="mt-2 text-2xl font-black text-[#0F1A26] sm:text-3xl">{title}</h2>
+        <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-[#0F1A26]/55">{description}</p>
+      </div>
+    </div>
+  );
+}
+
+function DataPill({ label, value, dark = false }: { label: string; value: string; dark?: boolean }) {
+  return (
+    <div className={`rounded-2xl p-3 ${dark ? "border border-white/10 bg-white/10" : "bg-[#F8F6F3]"}`}>
+      <p className={`text-[11px] font-black uppercase tracking-[0.12em] ${dark ? "text-white/45" : "text-[#0F1A26]/40"}`}>{label}</p>
+      <p className={`mt-1 break-words text-sm font-black ${dark ? "text-white" : "text-[#0F1A26]"}`}>{value || "-"}</p>
+    </div>
+  );
+}
+
+function KeyValueGrid({ data }: { data: Record<string, unknown> }) {
+  const rows = Object.entries(data).filter(([, value]) => value !== undefined && value !== null && value !== "");
+
+  if (!rows.length) {
+    return <p className="rounded-2xl bg-[#F8F6F3] p-4 text-sm font-bold text-[#0F1A26]/45">No data recorded.</p>;
+  }
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      {rows.map(([key, value]) => (
+        <DataPill
+          key={key}
+          label={key.replaceAll("_", " ")}
+          value={typeof value === "object" ? JSON.stringify(value) : getString(value)}
+        />
+      ))}
+    </div>
+  );
+}
+
+function OrderDetailsPanel({
+  order,
+  onClose,
+  onApproveInstaPay,
+  onStatusAction,
+  actionLoadingRef,
+}: {
+  order: AdminOrder;
+  onClose: () => void;
+  onApproveInstaPay: (order: AdminOrder) => void;
+  onStatusAction: (order: AdminOrder, action: AdminStatusAction) => void;
+  actionLoadingRef: string;
+}) {
+  const customer = getCustomer(order);
+  const aramex = getAramex(order);
+  const extras = getExtras(order);
+  const items = getItems(order);
+  const orderRef = getOrderRef(order);
+  const auditRows = [...getArray(order.admin_audit), ...getArray(order.history)]
+    .map((entry) => getObject(entry))
+    .filter((entry) => Object.keys(entry).length > 0)
+    .slice()
+    .reverse()
+    .slice(0, 12);
+
+  return (
+    <div className="fixed inset-0 z-50 bg-[#0F1A26]/50 p-3 backdrop-blur-sm sm:p-6">
+      <div className="ms-auto flex h-full max-w-4xl flex-col overflow-hidden rounded-[2rem] bg-white shadow-2xl">
+        <div className="flex items-start justify-between gap-4 border-b border-[#0F1A26]/10 p-5">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-[#EEBC3F]">Order full details</p>
+            <h3 className="mt-2 text-2xl font-black">{getOrderRef(order) || "No order ref"}</h3>
+            <p className="mt-1 text-sm font-semibold text-[#0F1A26]/50">
+              {getCreatedAt(order) || "No creation date"} {getUpdatedAt(order) ? `- updated ${getUpdatedAt(order)}` : ""}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#F4EFE8] text-[#0F1A26] transition hover:bg-[#0F1A26] hover:text-white"
+            aria-label="Close order details"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-auto p-5">
+          {isPendingInstaPay(order) && (
+            <div className="mb-5 rounded-3xl border border-amber-200 bg-amber-50 p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-700/70">Waiting payment approval</p>
+                  <p className="mt-1 text-sm font-bold text-amber-900">
+                    Approving this order marks payment as paid and creates Aramex shipment if delivery is required.
+                  </p>
+                </div>
+                <button
+                  onClick={() => onApproveInstaPay(order)}
+                  disabled={actionLoadingRef === `instapay:${getOrderRef(order)}`}
+                  className="h-11 rounded-2xl bg-[#0F1A26] px-5 text-sm font-black text-white transition hover:-translate-y-0.5 disabled:opacity-60"
+                >
+                  {actionLoadingRef === `instapay:${getOrderRef(order)}` ? "Approving..." : "Approve InstaPay"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          <section className="mb-5 rounded-[1.5rem] border border-[#0F1A26]/10 p-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <h4 className="text-lg font-black">Admin actions</h4>
+                <p className="mt-1 text-xs font-bold text-[#0F1A26]/45">
+                  Every action writes an audit entry and updates finance/status reading.
+                </p>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                {ADMIN_STATUS_ACTIONS.map((action) => (
+                  <button
+                    key={action.action}
+                    onClick={() => onStatusAction(order, action)}
+                    disabled={actionLoadingRef === `status:${orderRef}:${action.action}`}
+                    className={`h-10 rounded-2xl px-3 text-xs font-black transition hover:-translate-y-0.5 disabled:opacity-60 ${action.tone}`}
+                  >
+                    {actionLoadingRef === `status:${orderRef}:${action.action}` ? "Saving..." : action.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <DataPill label="total" value={money.format(getAmount(order))} />
+            <DataPill label="subtotal" value={money.format(getSubtotal(order))} />
+            <DataPill label="discounts" value={money.format(getDiscount(order))} />
+            <DataPill label="shipping" value={money.format(getShipping(order))} />
+          </div>
+
+          <div className="mt-5 grid gap-5 lg:grid-cols-2">
+            <section className="rounded-[1.5rem] border border-[#0F1A26]/10 p-4">
+              <h4 className="mb-3 text-lg font-black">Customer</h4>
+              <KeyValueGrid data={customer} />
+            </section>
+
+            <section className="rounded-[1.5rem] border border-[#0F1A26]/10 p-4">
+              <h4 className="mb-3 text-lg font-black">Payment & order status</h4>
+              <KeyValueGrid
+                data={{
+                  payment_method: getPaymentMethod(order),
+                  payment_status: getPaymentStatus(order),
+                  order_status: getStatus(order),
+                  delivery_method: getString(order.delivery_method || order["Delivery Method"]),
+                  source: getString(order.source),
+                }}
+              />
+            </section>
+          </div>
+
+          <section className="mt-5 rounded-[1.5rem] border border-[#0F1A26]/10 p-4">
+            <h4 className="mb-3 text-lg font-black">Products</h4>
+            {items.length ? (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-[#0F1A26]/10 text-left text-sm">
+                  <thead className="text-xs uppercase tracking-[0.12em] text-[#0F1A26]/45">
+                    <tr>
+                      <th className="py-2 pe-3">Product</th>
+                      <th className="py-2 pe-3">Variant</th>
+                      <th className="py-2 pe-3">Qty</th>
+                      <th className="py-2 pe-3">Unit</th>
+                      <th className="py-2 pe-3">Line</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#0F1A26]/8">
+                    {items.map((item, index) => (
+                      <tr key={`${getString(item.id || item.slug || item.name)}-${index}`}>
+                        <td className="py-3 pe-3 font-black">{getString(item.name || item.title || item.slug)}</td>
+                        <td className="py-3 pe-3 text-[#0F1A26]/60">
+                          {[item.size, item.color, item.variant, item.option].map(getString).filter(Boolean).join(" / ") || "-"}
+                        </td>
+                        <td className="py-3 pe-3 font-bold">{getString(item.quantity || item.qty || 1)}</td>
+                        <td className="py-3 pe-3">{money.format(getItemUnitPrice(item))}</td>
+                        <td className="py-3 pe-3 font-black">{money.format(getItemLineTotal(item))}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="rounded-2xl bg-[#F8F6F3] p-4 text-sm font-bold text-[#0F1A26]/45">No product lines recorded.</p>
+            )}
+          </section>
+
+          <section className="mt-5 rounded-[1.5rem] border border-[#0F1A26]/10 p-4">
+            <h4 className="mb-3 text-lg font-black">Aramex tracking</h4>
+            <KeyValueGrid
+              data={{
+                tracking_number: getTrackingNumber(order),
+                status: getAramexStatus(order),
+                latest_update: getAramexLatestUpdate(order),
+                synced_at: getAramexSyncedAt(order),
+                error: getAramexError(order),
+                ...aramex,
+              }}
+            />
+          </section>
+
+          <section className="mt-5 rounded-[1.5rem] border border-[#0F1A26]/10 p-4">
+            <h4 className="mb-3 text-lg font-black">Audit timeline</h4>
+            {auditRows.length ? (
+              <div className="space-y-3">
+                {auditRows.map((entry, index) => (
+                  <div key={`${getString(entry.timestamp)}-${index}`} className="rounded-2xl bg-[#F8F6F3] p-3">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="text-sm font-black">
+                        {getString(entry.action || entry.status || entry.source || "event")}
+                      </p>
+                      <p className="text-xs font-bold text-[#0F1A26]/40">{getString(entry.timestamp)}</p>
+                    </div>
+                    <p className="mt-1 text-xs font-semibold leading-5 text-[#0F1A26]/55">
+                      {getString(entry.note || entry.source || entry.event_key)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="rounded-2xl bg-[#F8F6F3] p-4 text-sm font-bold text-[#0F1A26]/45">
+                No audit events recorded yet.
+              </p>
+            )}
+          </section>
+
+          <section className="mt-5 rounded-[1.5rem] border border-[#0F1A26]/10 p-4">
+            <h4 className="mb-3 text-lg font-black">Finance extras / raw order payload</h4>
+            <div className="grid gap-5 lg:grid-cols-2">
+              <KeyValueGrid data={extras} />
+              <pre className="max-h-[360px] overflow-auto rounded-2xl bg-[#0F1A26] p-4 text-xs font-semibold leading-5 text-white/80">
+                {JSON.stringify(order, null, 2)}
+              </pre>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminDashboardPage() {
-  const [token, setToken] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [savedToken, setSavedToken] = useState("");
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [inventory, setInventory] = useState<AdminInventoryItem[]>([]);
@@ -287,19 +741,19 @@ export default function AdminDashboardPage() {
   const [query, setQuery] = useState("");
   const [paymentFilter, setPaymentFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [activeTab, setActiveTab] = useState<AdminTab>("finance");
+  const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);
+  const [datePreset, setDatePreset] = useState<DatePreset>("all");
+  const [customDateFrom, setCustomDateFrom] = useState("");
+  const [customDateTo, setCustomDateTo] = useState("");
+  const [actionLoadingRef, setActionLoadingRef] = useState("");
+  const [ordersPage, setOrdersPage] = useState(1);
+  const [ordersPageSize, setOrdersPageSize] = useState(25);
 
   useEffect(() => {
-    const urlToken = new URLSearchParams(window.location.search).get("token")?.trim() || "";
-    const stored = window.localStorage.getItem("natonat-admin-token") || "";
-    const initialToken = urlToken || stored;
-
-    if (urlToken) {
-      window.localStorage.setItem("natonat-admin-token", urlToken);
-      window.history.replaceState(null, "", window.location.pathname);
-    }
-
-    setToken(initialToken);
-    setSavedToken(initialToken);
+    window.localStorage.removeItem("natonat-admin-token");
+    const stored = window.localStorage.getItem("natonat-admin-session") || "";
+    setSavedToken(stored);
   }, []);
 
   const loadOrders = async (activeToken = savedToken) => {
@@ -353,10 +807,39 @@ export default function AdminDashboardPage() {
     void loadInventory(activeToken);
   };
 
-  const saveTokenAndLoad = () => {
-    window.localStorage.setItem("natonat-admin-token", token);
-    setSavedToken(token);
-    refreshAll(token);
+  const loginAndLoad = async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = (await res.json()) as { success?: boolean; sessionToken?: string; error?: string };
+
+      if (!res.ok || !data.success || !data.sessionToken) {
+        throw new Error(data.error || "Could not login");
+      }
+
+      window.localStorage.setItem("natonat-admin-session", data.sessionToken);
+      setSavedToken(data.sessionToken);
+      setPassword("");
+      refreshAll(data.sessionToken);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not login");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const logout = () => {
+    window.localStorage.removeItem("natonat-admin-session");
+    setSavedToken("");
+    setOrders([]);
+    setInventory([]);
+    setSelectedOrder(null);
   };
 
   const syncAramex = async () => {
@@ -388,14 +871,172 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const syncOneAramex = async (order: AdminOrder) => {
+    const orderRef = getOrderRef(order);
+    if (!orderRef) return;
+
+    setActionLoadingRef(`aramex:${orderRef}`);
+    setError("");
+
+    try {
+      const res = await fetch("/api/admin/aramex-sync", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(savedToken ? { Authorization: `Bearer ${savedToken}` } : {}),
+        },
+        body: JSON.stringify({ orderRefs: [orderRef], limit: 1 }),
+      });
+      const data = (await res.json()) as AramexSyncResponse;
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Could not sync this Aramex order");
+      }
+
+      setAramexSyncMessage(`Aramex synced for ${orderRef}: ${data.synced || 0} updated, ${data.failed || 0} failed.`);
+      await loadOrders(savedToken);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not sync this Aramex order");
+    } finally {
+      setActionLoadingRef("");
+    }
+  };
+
+  const approveInstaPayOrder = async (order: AdminOrder) => {
+    const orderRef = getOrderRef(order);
+    if (!orderRef) return;
+
+    setActionLoadingRef(`instapay:${orderRef}`);
+    setError("");
+
+    try {
+      const res = await fetch("/api/admin/instapay-approve", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(savedToken ? { Authorization: `Bearer ${savedToken}` } : {}),
+        },
+        body: JSON.stringify({ orderRef }),
+      });
+      const data = (await res.json()) as AdminActionResponse;
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Could not approve InstaPay order");
+      }
+
+      setAramexSyncMessage(`InstaPay approved for ${orderRef}.`);
+      setSelectedOrder(null);
+      await loadOrders(savedToken);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not approve InstaPay order");
+    } finally {
+      setActionLoadingRef("");
+    }
+  };
+
+  const updateOrderStatus = async (order: AdminOrder, statusAction: AdminStatusAction) => {
+    const orderRef = getOrderRef(order);
+    if (!orderRef) return;
+
+    setActionLoadingRef(`status:${orderRef}:${statusAction.action}`);
+    setError("");
+
+    try {
+      const res = await fetch("/api/admin/order-status", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(savedToken ? { Authorization: `Bearer ${savedToken}` } : {}),
+        },
+        body: JSON.stringify({
+          orderRef,
+          action: statusAction.action,
+          status: statusAction.status,
+          paymentStatus: statusAction.paymentStatus,
+          aramexStatus: statusAction.aramexStatus,
+          aramexError: statusAction.aramexError,
+          note: statusAction.note,
+        }),
+      });
+      const data = (await res.json()) as AdminActionResponse;
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Could not update order status");
+      }
+
+      setAramexSyncMessage(`${statusAction.label} saved for ${orderRef}.`);
+      setSelectedOrder(null);
+      await loadOrders(savedToken);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not update order status");
+    } finally {
+      setActionLoadingRef("");
+    }
+  };
+
+  const exportOrdersCsv = () => {
+    const headers = [
+      "order_ref",
+      "created_at",
+      "customer",
+      "phone",
+      "city",
+      "payment_method",
+      "payment_status",
+      "status",
+      "subtotal_egp",
+      "discount_egp",
+      "shipping_egp",
+      "total_egp",
+      "aramex_tracking",
+      "aramex_status",
+      "aramex_error",
+    ];
+    const rows = filteredOrders.map((order) => {
+      const customer = getCustomer(order);
+      return [
+        getOrderRef(order),
+        getCreatedAt(order),
+        getString(customer.first_name || customer.name),
+        getString(customer.phone),
+        getString(customer.city),
+        getPaymentMethod(order),
+        getPaymentStatus(order),
+        getStatus(order),
+        String(getSubtotal(order)),
+        String(getDiscount(order)),
+        String(getShipping(order)),
+        String(getAmount(order)),
+        getTrackingNumber(order),
+        getAramexStatus(order),
+        getAramexError(order),
+      ];
+    });
+
+    const csv = [headers, ...rows]
+      .map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `natonat-orders-${dateRange.label.toLowerCase().replaceAll(" ", "-")}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   useEffect(() => {
-    if (!savedToken && process.env.NODE_ENV === "production") return;
+    if (!savedToken) return;
     refreshAll(savedToken);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [savedToken]);
 
   useEffect(() => {
-    if (!savedToken && process.env.NODE_ENV === "production") return;
+    setOrdersPage(1);
+  }, [customDateFrom, customDateTo, datePreset, paymentFilter, query, statusFilter]);
+
+  useEffect(() => {
+    if (!savedToken) return;
 
     const timer = window.setInterval(() => {
       refreshAll(savedToken);
@@ -405,29 +1046,171 @@ export default function AdminDashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [savedToken]);
 
+  const dateRange = useMemo(() => {
+    const now = new Date();
+    const startOfDay = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const endOfDay = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+
+    if (datePreset === "today") {
+      return { from: startOfDay(now), to: endOfDay(now), label: "Today" };
+    }
+
+    if (datePreset === "yesterday") {
+      const yesterday = new Date(now);
+      yesterday.setDate(now.getDate() - 1);
+      return { from: startOfDay(yesterday), to: endOfDay(yesterday), label: "Yesterday" };
+    }
+
+    if (datePreset === "7d" || datePreset === "30d") {
+      const days = datePreset === "7d" ? 7 : 30;
+      const from = startOfDay(new Date(now));
+      from.setDate(from.getDate() - (days - 1));
+      return { from, to: endOfDay(now), label: `Last ${days} days` };
+    }
+
+    if (datePreset === "custom" && (customDateFrom || customDateTo)) {
+      const from = customDateFrom ? startOfDay(new Date(customDateFrom)) : null;
+      const to = customDateTo ? endOfDay(new Date(customDateTo)) : null;
+      return {
+        from: from && Number.isFinite(from.getTime()) ? from : null,
+        to: to && Number.isFinite(to.getTime()) ? to : null,
+        label: "Custom range",
+      };
+    }
+
+    return { from: null, to: null, label: "All time" };
+  }, [customDateFrom, customDateTo, datePreset]);
+
+  const visibleOrders = useMemo(() => {
+    return orders.filter((order) => {
+      if (!dateRange.from && !dateRange.to) return true;
+      const date = getOrderDate(order);
+      if (!date) return false;
+      if (dateRange.from && date < dateRange.from) return false;
+      if (dateRange.to && date > dateRange.to) return false;
+      return true;
+    });
+  }, [dateRange.from, dateRange.to, orders]);
+
+  const inventoryLookup = useMemo(() => {
+    const bySlug = new Map<string, AdminInventoryItem>();
+    const byId = new Map<string, AdminInventoryItem>();
+    const byName = new Map<string, AdminInventoryItem>();
+
+    inventory.forEach((item) => {
+      if (item.slug) bySlug.set(item.slug.toLowerCase(), item);
+      byId.set(String(item.id), item);
+      byName.set(item.name.toLowerCase(), item);
+    });
+
+    return { bySlug, byId, byName };
+  }, [inventory]);
+
   const stats = useMemo(() => {
-    const activeOrders = orders.filter((order) => !isReturned(order));
-    const confirmedOrders = activeOrders.filter(isConfirmed);
-    const grossSales = orders.reduce((sum, order) => sum + getAmount(order), 0);
-    const netRevenue = confirmedOrders.reduce((sum, order) => sum + getAmount(order), 0);
-    const returnedValue = orders.filter(isReturned).reduce((sum, order) => sum + getAmount(order), 0);
-    const discounts = orders.reduce((sum, order) => sum + getDiscount(order), 0);
-    const shippingCollected = orders.reduce((sum, order) => sum + getShipping(order), 0);
-    const cardOrders = orders.filter((order) => getPaymentMethod(order).includes("card") || getPaymentMethod(order).includes("paymob"));
-    const codOrders = orders.filter((order) => getPaymentMethod(order) === "cod");
-    const instapayOrders = orders.filter((order) => getPaymentMethod(order) === "instapay");
-    const aramexFailed = orders.filter((order) => getAramexError(order));
-    const aramexMissing = orders.filter(needsAramex);
-    const aramexSynced = orders.filter((order) => getAramexStatus(order));
-    const pendingInstaPay = orders.filter(isPendingInstaPay);
+    const confirmedOrders = visibleOrders.filter(isConfirmed);
+    const revenueOrders = confirmedOrders.filter((order) => !isReturned(order));
+    const returnedOrders = confirmedOrders.filter(isReturned);
+    const unconfirmedOrders = visibleOrders.filter((order) => !isConfirmed(order) && !isReturned(order));
+    const grossSales = confirmedOrders.reduce((sum, order) => sum + getSubtotal(order), 0);
+    const collectedRevenue = revenueOrders.reduce((sum, order) => sum + getAmount(order), 0);
+    const returnedValue = returnedOrders.reduce((sum, order) => sum + getAmount(order), 0);
+    const discounts = confirmedOrders.reduce((sum, order) => sum + getDiscount(order), 0);
+    const orderDiscounts = confirmedOrders.reduce((sum, order) => sum + getOrderDiscount(order), 0);
+    const paymentDiscounts = confirmedOrders.reduce((sum, order) => sum + getPaymentDiscount(order), 0);
+    const shippingCollected = confirmedOrders.reduce((sum, order) => sum + getShipping(order), 0);
+    const allOrdersValue = visibleOrders.reduce((sum, order) => sum + getAmount(order), 0);
+    const unconfirmedValue = unconfirmedOrders.reduce((sum, order) => sum + getAmount(order), 0);
+    const missingTotalOrders = visibleOrders.filter((order) => getAmount(order) <= 0);
+    const missingCustomerOrders = visibleOrders.filter((order) => !getString(getCustomer(order).phone) && !getString(getCustomer(order).first_name));
+    const missingItemsOrders = visibleOrders.filter((order) => getItems(order).length === 0);
+    const cardOrders = visibleOrders.filter((order) => getPaymentBucket(order) === "card");
+    const codOrders = visibleOrders.filter((order) => getPaymentBucket(order) === "cod");
+    const instapayOrders = visibleOrders.filter((order) => getPaymentBucket(order) === "instapay");
+    const aramexFailed = visibleOrders.filter((order) => getAramexError(order));
+    const aramexMissing = visibleOrders.filter(needsAramex);
+    const aramexSynced = visibleOrders.filter((order) => getAramexStatus(order));
+    const pendingInstaPay = visibleOrders.filter(isPendingInstaPay);
+    const deliveredOrders = visibleOrders.filter(isDelivered);
+    const awaitingPaymentOrders = visibleOrders.filter((order) => !isConfirmed(order) && !isReturned(order));
+    const paidOnlineOrders = revenueOrders.filter((order) => ["card", "instapay"].includes(getPaymentBucket(order)));
+    const codRevenueOrders = revenueOrders.filter((order) => getPaymentBucket(order) === "cod");
+    const paidOnlineValue = paidOnlineOrders.reduce((sum, order) => sum + getAmount(order), 0);
+    const codToCollectValue = codRevenueOrders.reduce((sum, order) => sum + getAmount(order), 0);
+    const aramexBlockedValue = visibleOrders
+      .filter((order) => getAramexError(order) || needsAramex(order))
+      .reduce((sum, order) => sum + getAmount(order), 0);
+    const actualShippingCost = revenueOrders.reduce((sum, order) => sum + getActualShippingCost(order), 0);
+    const missingActualShippingCostOrders = revenueOrders.filter(
+      (order) => getString(order.delivery_method || order["Delivery Method"]).toLowerCase() === "delivery" && getActualShippingCost(order) <= 0,
+    );
+    let knownProductCost = 0;
+    let missingProductCostLines = 0;
+    let productCostLines = 0;
+
+    revenueOrders.forEach((order) => {
+      getItems(order).forEach((item) => {
+        const key = getItemKey(item).toLowerCase();
+        const name = getString(item.name || item.title).toLowerCase();
+        const product =
+          inventoryLookup.bySlug.get(key) ||
+          inventoryLookup.byId.get(key) ||
+          inventoryLookup.byName.get(name);
+        const unitCost = getNumber(product?.costPrice) + getNumber(product?.packagingCost);
+        productCostLines += 1;
+        if (product && unitCost > 0) {
+          knownProductCost += unitCost * getItemQuantity(item);
+        } else {
+          missingProductCostLines += 1;
+        }
+      });
+    });
+    const grossProfitFromKnownCosts = collectedRevenue - knownProductCost - actualShippingCost;
+    const marginFromKnownCosts = collectedRevenue > 0 ? (grossProfitFromKnownCosts / collectedRevenue) * 100 : 0;
+
+    const paymentBreakdown = ["cod", "card", "instapay", "unknown"].map((bucket) => {
+      const bucketOrders = confirmedOrders.filter((order) => getPaymentBucket(order) === bucket);
+      return {
+        bucket,
+        orders: bucketOrders.length,
+        gross: bucketOrders.reduce((sum, order) => sum + getSubtotal(order), 0),
+        discounts: bucketOrders.reduce((sum, order) => sum + getDiscount(order), 0),
+        shipping: bucketOrders.reduce((sum, order) => sum + getShipping(order), 0),
+        net: bucketOrders.filter((order) => !isReturned(order)).reduce((sum, order) => sum + getAmount(order), 0),
+        returns: bucketOrders.filter(isReturned).reduce((sum, order) => sum + getAmount(order), 0),
+      };
+    }).filter((row) => row.orders > 0);
 
     return {
       grossSales,
-      netRevenue,
+      netRevenue: collectedRevenue,
       returnedValue,
       discounts,
+      orderDiscounts,
+      paymentDiscounts,
       shippingCollected,
-      totalOrders: orders.length,
+      allOrdersValue,
+      unconfirmedValue,
+      totalOrders: visibleOrders.length,
+      confirmedOrders: confirmedOrders.length,
+      unconfirmedOrders: unconfirmedOrders.length,
+      deliveredOrders: deliveredOrders.length,
+      awaitingPaymentOrders: awaitingPaymentOrders.length,
+      averageOrderValue: revenueOrders.length ? collectedRevenue / revenueOrders.length : 0,
+      paidOnlineOrders: paidOnlineOrders.length,
+      paidOnlineValue,
+      codToCollectOrders: codRevenueOrders.length,
+      codToCollectValue,
+      aramexBlockedValue,
+      actualShippingCost,
+      missingActualShippingCostOrders: missingActualShippingCostOrders.length,
+      knownProductCost,
+      missingProductCostLines,
+      productCostLines,
+      grossProfitFromKnownCosts,
+      marginFromKnownCosts,
+      missingTotalOrders: missingTotalOrders.length,
+      missingCustomerOrders: missingCustomerOrders.length,
+      missingItemsOrders: missingItemsOrders.length,
       cardOrders: cardOrders.length,
       codOrders: codOrders.length,
       instapayOrders: instapayOrders.length,
@@ -435,8 +1218,9 @@ export default function AdminDashboardPage() {
       aramexMissing: aramexMissing.length,
       aramexSynced: aramexSynced.length,
       pendingInstaPay: pendingInstaPay.length,
+      paymentBreakdown,
     };
-  }, [orders]);
+  }, [inventoryLookup.byId, inventoryLookup.byName, inventoryLookup.bySlug, visibleOrders]);
 
   const inventoryStats = useMemo(() => {
     const lowItems = inventory.filter((item) => isInventoryLow(item) && !isInventoryOut(item));
@@ -463,7 +1247,7 @@ export default function AdminDashboardPage() {
   const filteredOrders = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
-    return orders.filter((order) => {
+    return visibleOrders.filter((order) => {
       const customer = getCustomer(order);
       const searchable = [
         getOrderRef(order),
@@ -490,7 +1274,219 @@ export default function AdminDashboardPage() {
 
       return true;
     });
-  }, [orders, paymentFilter, query, statusFilter]);
+  }, [paymentFilter, query, statusFilter, visibleOrders]);
+
+  const operations = useMemo(() => {
+    const confirmedOrders = visibleOrders.filter(isConfirmed);
+    const revenueOrders = confirmedOrders.filter((order) => !isReturned(order));
+    const productMap = new Map<
+      string,
+      {
+        name: string;
+        qty: number;
+        orders: Set<string>;
+        directRevenue: number;
+        estimatedRevenue: number;
+        missingPriceLines: number;
+      }
+    >();
+    const cityMap = new Map<string, { city: string; orders: number; revenue: number }>();
+
+    revenueOrders.forEach((order, orderIndex) => {
+      const customer = getCustomer(order);
+      const orderRef = getOrderRef(order) || `order-${orderIndex}`;
+      const city = getString(customer.city || order["City"]) || "Unknown";
+      const cityRow = cityMap.get(city) || { city, orders: 0, revenue: 0 };
+      cityRow.orders += 1;
+      cityRow.revenue += getAmount(order);
+      cityMap.set(city, cityRow);
+
+      const orderItems = getItems(order);
+      const totalUnits = orderItems.reduce((sum, item) => sum + getItemQuantity(item), 0) || 1;
+      const orderSubtotal = getSubtotal(order) || Math.max(0, getAmount(order) - getShipping(order) + getDiscount(order));
+
+      orderItems.forEach((item) => {
+        const name = getString(item.name || item.title || item.slug || item.id) || "Unknown product";
+        const qty = getItemQuantity(item);
+        const line = getItemLineTotal(item);
+        const estimatedLine = line > 0 ? 0 : orderSubtotal * (qty / totalUnits);
+        const row = productMap.get(name) || {
+          name,
+          qty: 0,
+          orders: new Set<string>(),
+          directRevenue: 0,
+          estimatedRevenue: 0,
+          missingPriceLines: 0,
+        };
+        row.qty += qty;
+        row.orders.add(orderRef);
+        row.directRevenue += line;
+        row.estimatedRevenue += estimatedLine;
+        if (line <= 0) row.missingPriceLines += 1;
+        productMap.set(name, row);
+      });
+    });
+
+    const aramexAttention = visibleOrders
+      .filter((order) => getAramexError(order) || needsAramex(order))
+      .slice(0, 12);
+    const instapayAttention = visibleOrders.filter(isPendingInstaPay).slice(0, 12);
+    const returnsAttention = visibleOrders.filter(isReturned).slice(0, 12);
+
+    return {
+      topProducts: Array.from(productMap.values())
+        .map((product) => ({
+          ...product,
+          ordersCount: product.orders.size,
+          revenue: product.directRevenue + product.estimatedRevenue,
+        }))
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 8),
+      topCities: Array.from(cityMap.values()).sort((a, b) => b.revenue - a.revenue).slice(0, 8),
+      aramexAttention,
+      instapayAttention,
+      returnsAttention,
+      attentionCount: aramexAttention.length + instapayAttention.length + returnsAttention.length,
+    };
+  }, [visibleOrders]);
+
+  const financeLedger = useMemo(() => {
+    return visibleOrders
+      .map((order) => {
+        const amount = getAmount(order);
+        const bucket = getPaymentBucket(order);
+        const returned = isReturned(order);
+        const confirmed = isConfirmed(order);
+        const aramexIssue = Boolean(getAramexError(order) || needsAramex(order));
+
+        let movement = "Not counted yet";
+        let explanation = "Order is not confirmed or paid yet.";
+        let tone = "bg-[#F8F6F3] text-[#0F1A26]";
+
+        if (returned) {
+          movement = "Deducted";
+          explanation = "Returned/cancelled order. Its value is removed from net revenue.";
+          tone = "bg-rose-100 text-rose-700";
+        } else if (confirmed && bucket === "cod") {
+          movement = "COD to collect";
+          explanation = "Confirmed COD order. It is expected revenue until delivery/collection is confirmed.";
+          tone = "bg-amber-100 text-amber-800";
+        } else if (confirmed && ["card", "instapay"].includes(bucket)) {
+          movement = "Paid online";
+          explanation = "Confirmed online-paid order. It counts in net revenue unless returned/cancelled.";
+          tone = "bg-emerald-100 text-emerald-700";
+        } else if (isPendingInstaPay(order)) {
+          movement = "Waiting approval";
+          explanation = "InstaPay proof is waiting admin approval before shipment/revenue confidence.";
+          tone = "bg-yellow-100 text-yellow-800";
+        }
+
+        if (aramexIssue && !returned) {
+          explanation += " Aramex needs attention before fulfillment is clean.";
+        }
+
+        return {
+          order,
+          orderRef: getOrderRef(order),
+          amount,
+          bucket,
+          movement,
+          explanation,
+          tone,
+          date: getOrderDate(order)?.getTime() || 0,
+          aramexIssue,
+        };
+      })
+      .sort((a, b) => b.date - a.date)
+      .slice(0, 20);
+  }, [visibleOrders]);
+
+  const dailyClose = useMemo(() => {
+    const dayMap = new Map<
+      string,
+      {
+        date: string;
+        orders: number;
+        confirmed: number;
+        returned: number;
+        gross: number;
+        discounts: number;
+        shipping: number;
+        net: number;
+        aramexIssues: number;
+      }
+    >();
+
+    visibleOrders.forEach((order) => {
+      const date = getOrderDate(order);
+      const key = date ? date.toISOString().slice(0, 10) : "No date";
+      const row =
+        dayMap.get(key) ||
+        {
+          date: key,
+          orders: 0,
+          confirmed: 0,
+          returned: 0,
+          gross: 0,
+          discounts: 0,
+          shipping: 0,
+          net: 0,
+          aramexIssues: 0,
+        };
+
+      row.orders += 1;
+      if (isConfirmed(order)) row.confirmed += 1;
+      if (isReturned(order)) row.returned += 1;
+      if (isConfirmed(order)) {
+        row.gross += getSubtotal(order);
+        row.discounts += getDiscount(order);
+        row.shipping += getShipping(order);
+      }
+      if (isConfirmed(order) && !isReturned(order)) row.net += getAmount(order);
+      if (getAramexError(order) || needsAramex(order)) row.aramexIssues += 1;
+      dayMap.set(key, row);
+    });
+
+    return Array.from(dayMap.values())
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 14);
+  }, [visibleOrders]);
+
+  const financeAlerts = useMemo(() => {
+    return [
+      {
+        label: "Product cost lines missing",
+        value: stats.missingProductCostLines,
+        detail: `${stats.missingProductCostLines} of ${stats.productCostLines} sold item lines have no CMS cost yet.`,
+        tone: stats.missingProductCostLines ? "bg-amber-50 text-amber-800" : "bg-emerald-50 text-emerald-700",
+      },
+      {
+        label: "Actual shipping cost missing",
+        value: stats.missingActualShippingCostOrders,
+        detail: "Add Aramex actual cost per shipped order when available to get true gross profit.",
+        tone: stats.missingActualShippingCostOrders ? "bg-amber-50 text-amber-800" : "bg-emerald-50 text-emerald-700",
+      },
+      {
+        label: "Aramex attention",
+        value: stats.aramexFailed + stats.aramexMissing,
+        detail: "Orders with failed or missing shipment tracking can affect revenue confidence.",
+        tone: stats.aramexFailed + stats.aramexMissing ? "bg-rose-50 text-rose-700" : "bg-emerald-50 text-emerald-700",
+      },
+      {
+        label: "Pending approvals",
+        value: stats.pendingInstaPay,
+        detail: "InstaPay orders waiting approval are not clean fulfillment revenue yet.",
+        tone: stats.pendingInstaPay ? "bg-yellow-50 text-yellow-800" : "bg-emerald-50 text-emerald-700",
+      },
+    ];
+  }, [stats.aramexFailed, stats.aramexMissing, stats.missingActualShippingCostOrders, stats.missingProductCostLines, stats.pendingInstaPay, stats.productCostLines]);
+
+  const ordersPageCount = Math.max(1, Math.ceil(filteredOrders.length / ordersPageSize));
+  const safeOrdersPage = Math.min(ordersPage, ordersPageCount);
+  const paginatedOrders = filteredOrders.slice(
+    (safeOrdersPage - 1) * ordersPageSize,
+    safeOrdersPage * ordersPageSize,
+  );
 
   return (
     <main className="min-h-screen bg-[#F4EFE8] px-4 py-6 text-[#0F1A26] sm:px-6 lg:px-8" dir="ltr">
@@ -506,22 +1502,52 @@ export default function AdminDashboardPage() {
             </div>
 
             <div className="rounded-2xl border border-white/10 bg-white/10 p-3">
-              <label className="text-xs font-black uppercase tracking-[0.16em] text-white/50">Admin token</label>
-              <div className="mt-2 flex flex-col gap-2 sm:flex-row">
-                <input
-                  value={token}
-                  onChange={(event) => setToken(event.target.value)}
-                  type="password"
-                  placeholder="ADMIN_DASHBOARD_TOKEN"
-                  className="h-11 min-w-[260px] rounded-xl border border-white/10 bg-white px-3 text-sm font-bold text-[#0F1A26] outline-none"
-                />
-                <button
-                  onClick={saveTokenAndLoad}
-                  className="h-11 rounded-xl bg-[#EEBC3F] px-5 text-sm font-black text-[#0F1A26] transition hover:-translate-y-0.5"
-                >
-                  Load
-                </button>
-              </div>
+              {savedToken ? (
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.16em] text-white/50">Admin access</p>
+                    <p className="mt-1 text-sm font-bold text-white/80">Signed in</p>
+                  </div>
+                  <button
+                    onClick={logout}
+                    className="h-11 rounded-xl border border-white/15 px-5 text-sm font-black text-white transition hover:bg-white/10"
+                  >
+                    Logout
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <label className="text-xs font-black uppercase tracking-[0.16em] text-white/50">Admin login</label>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+                    <input
+                      value={username}
+                      onChange={(event) => setUsername(event.target.value)}
+                      type="text"
+                      placeholder="Username"
+                      autoComplete="username"
+                      className="h-11 min-w-[180px] rounded-xl border border-white/10 bg-white px-3 text-sm font-bold text-[#0F1A26] outline-none"
+                    />
+                    <input
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") void loginAndLoad();
+                      }}
+                      type="password"
+                      placeholder="Password"
+                      autoComplete="current-password"
+                      className="h-11 min-w-[180px] rounded-xl border border-white/10 bg-white px-3 text-sm font-bold text-[#0F1A26] outline-none"
+                    />
+                    <button
+                      onClick={loginAndLoad}
+                      disabled={loading}
+                      className="h-11 rounded-xl bg-[#EEBC3F] px-5 text-sm font-black text-[#0F1A26] transition hover:-translate-y-0.5 disabled:opacity-60"
+                    >
+                      Login
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </section>
@@ -538,11 +1564,158 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
+        {!savedToken ? (
+          <section className="mt-6 rounded-[2rem] border border-[#0F1A26]/10 bg-white p-8 text-center shadow-sm">
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-[#EEBC3F]">Login required</p>
+            <h2 className="mt-3 text-2xl font-black">Enter the admin username and password to load the dashboard.</h2>
+            <p className="mx-auto mt-2 max-w-xl text-sm font-semibold leading-6 text-[#0F1A26]/55">
+              Orders, finance, Aramex sync, and inventory data are hidden until you sign in.
+            </p>
+          </section>
+        ) : (
+          <>
+        <section className="mt-6 rounded-[2rem] border border-[#0F1A26]/10 bg-white p-3 shadow-sm">
+          <div className="grid gap-2 sm:grid-cols-3">
+            {([
+              { id: "finance", label: "Finance", sub: "Revenue, discounts, returns", icon: BarChart3 },
+              { id: "orders", label: "Orders", sub: "Full order lifecycle", icon: ClipboardList },
+              { id: "stock", label: "Stock", sub: "Sanity inventory by size", icon: Boxes },
+            ] as const).map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-3 rounded-3xl p-4 text-left transition ${
+                    isActive ? "bg-[#0F1A26] text-white shadow-lg shadow-[#0F1A26]/15" : "bg-[#F8F6F3] text-[#0F1A26] hover:bg-[#F4EFE8]"
+                  }`}
+                >
+                  <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${isActive ? "bg-[#EEBC3F] text-[#0F1A26]" : "bg-white"}`}>
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <span>
+                    <span className="block text-base font-black">{tab.label}</span>
+                    <span className={`mt-0.5 block text-xs font-bold ${isActive ? "text-white/60" : "text-[#0F1A26]/45"}`}>{tab.sub}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="mt-4 rounded-[2rem] border border-[#0F1A26]/10 bg-white p-4 shadow-sm">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0F1A26]/45">Dashboard period</p>
+              <p className="mt-1 text-lg font-black">{dateRange.label} · {visibleOrders.length} orders in view</p>
+            </div>
+            <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
+              <select
+                value={datePreset}
+                onChange={(event) => setDatePreset(event.target.value as DatePreset)}
+                className="h-11 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-4 text-sm font-black outline-none"
+              >
+                <option value="all">All time</option>
+                <option value="today">Today</option>
+                <option value="yesterday">Yesterday</option>
+                <option value="7d">Last 7 days</option>
+                <option value="30d">Last 30 days</option>
+                <option value="custom">Custom range</option>
+              </select>
+              {datePreset === "custom" && (
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <input
+                    type="date"
+                    value={customDateFrom}
+                    onChange={(event) => setCustomDateFrom(event.target.value)}
+                    className="h-11 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-4 text-sm font-black outline-none"
+                  />
+                  <input
+                    type="date"
+                    value={customDateTo}
+                    onChange={(event) => setCustomDateTo(event.target.value)}
+                    className="h-11 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-4 text-sm font-black outline-none"
+                  />
+                </div>
+              )}
+              <button
+                onClick={exportOrdersCsv}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-[#0F1A26] px-5 text-sm font-black text-white transition hover:-translate-y-0.5"
+              >
+                <Download className="h-4 w-4" />
+                Export CSV
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {activeTab === "finance" && (
+          <>
+        <section className="mt-6 rounded-[2rem] border border-[#0F1A26]/10 bg-white p-5 shadow-sm">
+          <SectionHeader
+            eyebrow="Finance Control"
+            title="Money view with real order-source numbers"
+            description="These cards are calculated from confirmed orders returned by the orders API. Returned or cancelled Aramex statuses are deducted from net revenue, while discounts and shipping are shown separately."
+          />
+          <div className="mt-4 grid gap-3 rounded-3xl bg-[#F8F6F3] p-4 sm:grid-cols-3">
+            <DataPill label="data source" value="Google Sheets orders webhook + in-memory fallback for recent orders" />
+            <DataPill label="auto refresh" value="Every 60 seconds while the admin page is open" />
+            <DataPill label="aramex sync" value="Manual Sync Aramex button updates shipment status on stored orders" />
+          </div>
+        </section>
+
+        <section className="mt-6 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+          <div className="rounded-[2rem] border border-[#0F1A26]/10 bg-white p-5 shadow-sm">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-[#EEBC3F]">Money map</p>
+                <h2 className="mt-2 text-2xl font-black">Where the money came from and where it stands</h2>
+                <p className="mt-2 text-sm font-semibold leading-6 text-[#0F1A26]/55">
+                  This separates collected online money, COD money still to collect, pending/unapproved money, and value blocked by fulfillment issues.
+                </p>
+              </div>
+              <Banknote className="h-8 w-8 shrink-0 text-[#EEBC3F]" />
+            </div>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <DataPill label="paid online now" value={`${money.format(stats.paidOnlineValue)} / ${stats.paidOnlineOrders} orders`} />
+              <DataPill label="cod expected to collect" value={`${money.format(stats.codToCollectValue)} / ${stats.codToCollectOrders} orders`} />
+              <DataPill label="pending or unpaid" value={`${money.format(stats.unconfirmedValue)} / ${stats.unconfirmedOrders} orders`} />
+              <DataPill label="returned or cancelled" value={`-${money.format(stats.returnedValue)}`} />
+              <DataPill label="blocked by aramex attention" value={`${money.format(stats.aramexBlockedValue)} / ${stats.aramexFailed + stats.aramexMissing} orders`} />
+              <DataPill label="net revenue currently shown" value={money.format(stats.netRevenue)} />
+            </div>
+          </div>
+
+          <div className="rounded-[2rem] border border-[#0F1A26]/10 bg-[#0F1A26] p-5 text-white shadow-sm">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-[#EEBC3F]">Finance reading</p>
+            <h2 className="mt-2 text-2xl font-black">What should the admin understand?</h2>
+            <div className="mt-5 space-y-3 text-sm font-semibold leading-6 text-white/70">
+              <p>
+                Net revenue is confirmed paid/confirmable orders, after removing returned or cancelled value.
+              </p>
+              <p>
+                COD is shown as expected collection, not guaranteed cash, until delivery and collection are confirmed.
+              </p>
+              <p>
+                Aramex attention means money or fulfillment can be at risk because tracking is missing, failed, returned, or blocked.
+              </p>
+            </div>
+          </div>
+        </section>
+
         <section className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard title="Gross Sales" value={money.format(stats.grossSales)} subtitle={`${stats.totalOrders} total orders`} icon={Banknote} tone="gold" />
           <StatCard title="Net Revenue" value={money.format(stats.netRevenue)} subtitle="Confirmed/paid minus returned orders" icon={CheckCircle2} tone="green" />
           <StatCard title="Returned / Cancelled" value={money.format(stats.returnedValue)} subtitle="Auto deducted from revenue view" icon={Undo2} tone="red" />
           <StatCard title="Discounts" value={money.format(stats.discounts)} subtitle={`Shipping collected: ${money.format(stats.shippingCollected)}`} icon={CreditCard} />
+        </section>
+
+        <section className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard title="All Orders Value" value={money.format(stats.allOrdersValue)} subtitle="Raw total value for current period" icon={ClipboardList} tone="dark" />
+          <StatCard title="Unconfirmed Value" value={money.format(stats.unconfirmedValue)} subtitle={`${stats.unconfirmedOrders} pending/unpaid orders`} icon={AlertTriangle} tone={stats.unconfirmedOrders ? "gold" : "dark"} />
+          <StatCard title="Average Order Value" value={money.format(stats.averageOrderValue)} subtitle="Confirmed non-returned orders" icon={BarChart3} tone="dark" />
+          <StatCard title="Data Gaps" value={String(stats.missingTotalOrders + stats.missingItemsOrders + stats.missingCustomerOrders)} subtitle="Missing total/items/customer fields" icon={ShieldCheck} tone={stats.missingTotalOrders + stats.missingItemsOrders + stats.missingCustomerOrders ? "red" : "green"} />
         </section>
 
         <section className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -552,6 +1725,285 @@ export default function AdminDashboardPage() {
           <StatCard title="Aramex Attention" value={String(stats.aramexFailed + stats.aramexMissing)} subtitle={`${stats.aramexSynced} synced / ${stats.aramexFailed} failed / ${stats.aramexMissing} missing`} icon={AlertTriangle} tone={stats.aramexFailed + stats.aramexMissing ? "red" : "green"} />
         </section>
 
+        <section className="mt-6 grid gap-4 lg:grid-cols-[1fr_1fr]">
+          <div className="rounded-[2rem] border border-[#0F1A26]/10 bg-white p-5 shadow-sm">
+            <h2 className="text-lg font-black">Finance equation</h2>
+            <p className="mt-1 text-xs font-bold text-[#0F1A26]/45">How the visible finance numbers are currently calculated.</p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <DataPill label="confirmed subtotal" value={money.format(stats.grossSales)} />
+              <DataPill label="order/code discounts" value={`-${money.format(stats.orderDiscounts)}`} />
+              <DataPill label="payment discounts" value={`-${money.format(stats.paymentDiscounts)}`} />
+              <DataPill label="shipping collected" value={money.format(stats.shippingCollected)} />
+              <DataPill label="returned/cancelled deduction" value={`-${money.format(stats.returnedValue)}`} />
+              <DataPill label="net revenue shown" value={money.format(stats.netRevenue)} />
+            </div>
+          </div>
+
+          <div className="rounded-[2rem] border border-[#0F1A26]/10 bg-white p-5 shadow-sm">
+            <h2 className="text-lg font-black">Data quality checks</h2>
+            <p className="mt-1 text-xs font-bold text-[#0F1A26]/45">If a finance number looks empty, this tells you what data is missing from the order source.</p>
+            <div className="mt-4 grid gap-3">
+              <DataPill label="orders missing total" value={String(stats.missingTotalOrders)} />
+              <DataPill label="orders missing items" value={String(stats.missingItemsOrders)} />
+              <DataPill label="orders missing customer" value={String(stats.missingCustomerOrders)} />
+              <DataPill label="orders included in finance period" value={String(stats.totalOrders)} />
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-6 grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+          <div className="rounded-[2rem] border border-[#0F1A26]/10 bg-[#0F1A26] p-5 text-white shadow-sm">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-[#EEBC3F]">Profit readiness</p>
+            <h2 className="mt-2 text-2xl font-black">Is this profit number trustworthy?</h2>
+            <p className="mt-2 text-sm font-semibold leading-6 text-white/60">
+              Profit is shown as a readiness view. It uses product cost and packaging cost from Sanity, plus actual shipping cost when the order source provides it.
+            </p>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <DataPill label="known product cost" value={money.format(stats.knownProductCost)} dark />
+              <DataPill label="actual shipping cost" value={money.format(stats.actualShippingCost)} dark />
+              <DataPill label="gross profit from known costs" value={money.format(stats.grossProfitFromKnownCosts)} dark />
+              <DataPill label="known-cost margin" value={`${stats.marginFromKnownCosts.toFixed(1)}%`} dark />
+            </div>
+            {(stats.missingProductCostLines > 0 || stats.missingActualShippingCostOrders > 0) && (
+              <div className="mt-4 rounded-2xl border border-[#EEBC3F]/30 bg-[#EEBC3F]/10 p-4 text-sm font-bold leading-6 text-[#FFE7A3]">
+                This is not final net profit yet: add product cost/packaging cost in Sanity and actual Aramex cost per order to make profit fully reliable.
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-[2rem] border border-[#0F1A26]/10 bg-white p-5 shadow-sm">
+            <h2 className="text-lg font-black">Finance alerts</h2>
+            <p className="mt-1 text-xs font-bold text-[#0F1A26]/45">
+              These explain exactly why finance may be incomplete or needs admin action.
+            </p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {financeAlerts.map((alert) => (
+                <div key={alert.label} className={`rounded-2xl p-4 ${alert.tone}`}>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-black">{alert.label}</p>
+                    <span className="rounded-full bg-white/70 px-3 py-1 text-xs font-black">{alert.value}</span>
+                  </div>
+                  <p className="mt-2 text-xs font-bold leading-5 opacity-70">{alert.detail}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-6 overflow-hidden rounded-[2rem] border border-[#0F1A26]/10 bg-white shadow-sm">
+          <div className="border-b border-[#0F1A26]/10 px-5 py-4">
+            <h2 className="text-lg font-black">Daily close report</h2>
+            <p className="text-xs font-bold text-[#0F1A26]/45">
+              Day-by-day finance movement so the admin can reconcile money, orders, discounts, returns, and Aramex issues.
+            </p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-[#0F1A26]/10 text-left text-sm">
+              <thead className="bg-[#F8F6F3] text-xs uppercase tracking-[0.12em] text-[#0F1A26]/45">
+                <tr>
+                  <th className="px-5 py-3">Date</th>
+                  <th className="px-5 py-3">Orders</th>
+                  <th className="px-5 py-3">Confirmed</th>
+                  <th className="px-5 py-3">Gross</th>
+                  <th className="px-5 py-3">Discounts</th>
+                  <th className="px-5 py-3">Shipping</th>
+                  <th className="px-5 py-3">Returns</th>
+                  <th className="px-5 py-3">Net</th>
+                  <th className="px-5 py-3">Aramex issues</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#0F1A26]/8">
+                {dailyClose.length ? dailyClose.map((day) => (
+                  <tr key={day.date}>
+                    <td className="px-5 py-4 font-black">{day.date}</td>
+                    <td className="px-5 py-4 font-bold">{day.orders}</td>
+                    <td className="px-5 py-4 font-bold">{day.confirmed}</td>
+                    <td className="px-5 py-4">{money.format(day.gross)}</td>
+                    <td className="px-5 py-4 text-emerald-700">-{money.format(day.discounts)}</td>
+                    <td className="px-5 py-4">{money.format(day.shipping)}</td>
+                    <td className="px-5 py-4 text-rose-700">{day.returned}</td>
+                    <td className="px-5 py-4 font-black">{money.format(day.net)}</td>
+                    <td className="px-5 py-4 font-black">{day.aramexIssues}</td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan={9} className="px-5 py-8 text-center text-sm font-bold text-[#0F1A26]/45">
+                      No daily finance rows in this period.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="mt-6 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+          <div className="overflow-hidden rounded-[2rem] border border-[#0F1A26]/10 bg-white shadow-sm">
+            <div className="border-b border-[#0F1A26]/10 px-5 py-4">
+              <h2 className="text-lg font-black">Payment method finance breakdown</h2>
+              <p className="text-xs font-bold text-[#0F1A26]/45">Gross, discounts, shipping, returns, and net by payment channel.</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-[#0F1A26]/10 text-left text-sm">
+                <thead className="bg-[#F8F6F3] text-xs uppercase tracking-[0.12em] text-[#0F1A26]/45">
+                  <tr>
+                    <th className="px-5 py-3">Method</th>
+                    <th className="px-5 py-3">Orders</th>
+                    <th className="px-5 py-3">Gross</th>
+                    <th className="px-5 py-3">Discounts</th>
+                    <th className="px-5 py-3">Shipping</th>
+                    <th className="px-5 py-3">Returns</th>
+                    <th className="px-5 py-3">Net</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#0F1A26]/8">
+                  {stats.paymentBreakdown.map((row) => (
+                    <tr key={row.bucket}>
+                      <td className="px-5 py-4 font-black uppercase">{row.bucket}</td>
+                      <td className="px-5 py-4 font-bold">{row.orders}</td>
+                      <td className="px-5 py-4">{money.format(row.gross)}</td>
+                      <td className="px-5 py-4 text-emerald-700">-{money.format(row.discounts)}</td>
+                      <td className="px-5 py-4">{money.format(row.shipping)}</td>
+                      <td className="px-5 py-4 text-rose-700">{money.format(row.returns)}</td>
+                      <td className="px-5 py-4 font-black">{money.format(row.net)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="rounded-[2rem] border border-[#0F1A26]/10 bg-white p-5 shadow-sm">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0F1A26]/45">Operations impact</p>
+                <h2 className="mt-2 text-2xl font-black">What affects revenue?</h2>
+              </div>
+              <ShieldCheck className="h-8 w-8 text-[#EEBC3F]" />
+            </div>
+            <div className="mt-5 grid gap-3">
+              <DataPill label="confirmed orders" value={String(stats.confirmedOrders)} />
+              <DataPill label="delivered orders" value={String(stats.deliveredOrders)} />
+              <DataPill label="pending / unpaid orders" value={String(stats.awaitingPaymentOrders)} />
+              <DataPill label="returned or cancelled value" value={money.format(stats.returnedValue)} />
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-6 overflow-hidden rounded-[2rem] border border-[#0F1A26]/10 bg-white shadow-sm">
+          <div className="border-b border-[#0F1A26]/10 px-5 py-4">
+            <h2 className="text-lg font-black">Finance ledger explanation</h2>
+            <p className="text-xs font-bold text-[#0F1A26]/45">
+              Recent orders in the selected period, with exactly how each one affects finance.
+            </p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-[#0F1A26]/10 text-left text-sm">
+              <thead className="bg-[#F8F6F3] text-xs uppercase tracking-[0.12em] text-[#0F1A26]/45">
+                <tr>
+                  <th className="px-5 py-3">Order</th>
+                  <th className="px-5 py-3">Movement</th>
+                  <th className="px-5 py-3">Payment</th>
+                  <th className="px-5 py-3">Amount</th>
+                  <th className="px-5 py-3">Why</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#0F1A26]/8">
+                {financeLedger.length ? financeLedger.map((entry) => (
+                  <tr key={`${entry.orderRef}-${entry.date}`}>
+                    <td className="px-5 py-4 align-top">
+                      <button onClick={() => setSelectedOrder(entry.order)} className="font-black text-[#0F1A26] underline-offset-4 hover:underline">
+                        {entry.orderRef || "No ref"}
+                      </button>
+                      <p className="mt-1 text-xs font-bold text-[#0F1A26]/40">{getCreatedAt(entry.order) || "No date"}</p>
+                    </td>
+                    <td className="px-5 py-4 align-top">
+                      <span className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${entry.tone}`}>
+                        {entry.movement}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 align-top font-black uppercase">{entry.bucket}</td>
+                    <td className="px-5 py-4 align-top font-black">{money.format(entry.amount)}</td>
+                    <td className="max-w-[420px] px-5 py-4 align-top text-xs font-semibold leading-5 text-[#0F1A26]/55">
+                      {entry.explanation}
+                    </td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan={5} className="px-5 py-8 text-center text-sm font-bold text-[#0F1A26]/45">
+                      No finance movements in this period.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="mt-6 grid gap-4 lg:grid-cols-2">
+          <div className="overflow-hidden rounded-[2rem] border border-[#0F1A26]/10 bg-white shadow-sm">
+            <div className="border-b border-[#0F1A26]/10 px-5 py-4">
+              <h2 className="text-lg font-black">Top selling products</h2>
+              <p className="text-xs font-bold text-[#0F1A26]/45">Based on confirmed non-returned order lines.</p>
+            </div>
+            <div className="divide-y divide-[#0F1A26]/8">
+              {operations.topProducts.length ? operations.topProducts.map((product, index) => (
+                <div key={product.name} className="grid gap-3 px-5 py-4 sm:grid-cols-[auto_1fr_auto] sm:items-center">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#F8F6F3] text-xs font-black">{index + 1}</span>
+                  <div>
+                    <p className="font-black">{product.name}</p>
+                    <p className="text-xs font-bold text-[#0F1A26]/45">
+                      {product.qty} units · {product.ordersCount} orders
+                    </p>
+                    <p className="mt-1 text-[11px] font-bold leading-5 text-[#0F1A26]/45">
+                      Direct: {money.format(product.directRevenue)}
+                      {product.estimatedRevenue > 0 && (
+                        <> · Estimated from order subtotal: {money.format(product.estimatedRevenue)}</>
+                      )}
+                      {product.missingPriceLines > 0 && (
+                        <> · {product.missingPriceLines} lines missing item price</>
+                      )}
+                    </p>
+                  </div>
+                  <div className="text-left sm:text-right">
+                    <p className="font-black">{money.format(product.revenue)}</p>
+                    <p className="text-[11px] font-bold text-[#0F1A26]/40">
+                      {product.estimatedRevenue > 0 ? "mixed calculation" : "from line totals"}
+                    </p>
+                  </div>
+                </div>
+              )) : (
+                <p className="p-5 text-sm font-bold text-[#0F1A26]/45">No product sales lines recorded yet.</p>
+              )}
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-[2rem] border border-[#0F1A26]/10 bg-white shadow-sm">
+            <div className="border-b border-[#0F1A26]/10 px-5 py-4">
+              <h2 className="text-lg font-black">Top delivery cities</h2>
+              <p className="text-xs font-bold text-[#0F1A26]/45">Useful for ads, shipping focus, and Aramex issue tracking.</p>
+            </div>
+            <div className="divide-y divide-[#0F1A26]/8">
+              {operations.topCities.length ? operations.topCities.map((city, index) => (
+                <div key={city.city} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 px-5 py-4">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#F8F6F3] text-xs font-black">{index + 1}</span>
+                  <div>
+                    <p className="font-black">{city.city}</p>
+                    <p className="text-xs font-bold text-[#0F1A26]/45">{city.orders} orders</p>
+                  </div>
+                  <p className="font-black">{money.format(city.revenue)}</p>
+                </div>
+              )) : (
+                <p className="p-5 text-sm font-bold text-[#0F1A26]/45">No city data recorded yet.</p>
+              )}
+            </div>
+          </div>
+        </section>
+          </>
+        )}
+
+        {activeTab === "stock" && (
+          <>
         <section className="mt-6 grid gap-4 lg:grid-cols-[1fr_1.4fr]">
           <div className="rounded-[2rem] border border-[#0F1A26]/10 bg-white p-5 shadow-sm">
             <div className="flex items-start justify-between gap-4">
@@ -654,6 +2106,142 @@ export default function AdminDashboardPage() {
           </div>
         </section>
 
+        <section className="mt-6 overflow-hidden rounded-[2rem] border border-[#0F1A26]/10 bg-white shadow-sm">
+          <div className="flex items-center justify-between border-b border-[#0F1A26]/10 px-5 py-4">
+            <div>
+              <h2 className="text-lg font-black">Full stock by product and size</h2>
+              <p className="text-xs font-bold text-[#0F1A26]/45">This is read from Sanity CMS stock fields. Updating CMS stock updates this dashboard on refresh.</p>
+            </div>
+            <Boxes className="h-6 w-6 text-[#EEBC3F]" />
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-[#0F1A26]/10 text-left text-sm">
+              <thead className="bg-[#F8F6F3] text-xs uppercase tracking-[0.12em] text-[#0F1A26]/45">
+                <tr>
+                  <th className="px-5 py-3">Product</th>
+                  <th className="px-5 py-3">Type</th>
+                  <th className="px-5 py-3">Category</th>
+                  <th className="px-5 py-3">Stock rows</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#0F1A26]/8">
+                {inventory.map((item) => (
+                  <tr key={item.slug}>
+                    <td className="px-5 py-4 align-top">
+                      <p className="font-black">{item.name}</p>
+                      <p className="text-xs font-semibold text-[#0F1A26]/45">{item.slug}</p>
+                    </td>
+                    <td className="px-5 py-4 align-top font-bold">{item.type || "-"}</td>
+                    <td className="px-5 py-4 align-top text-[#0F1A26]/60">{Array.isArray(item.category) ? item.category.join(", ") : item.category || "-"}</td>
+                    <td className="px-5 py-4">
+                      <div className="flex flex-wrap gap-2">
+                        {getSizeRows(item).map((row) => {
+                          const isBad = row.status === "out_of_stock" || row.quantity === 0;
+                          const isLow = row.status === "low_stock" || (typeof row.quantity === "number" && row.quantity > 0 && row.quantity <= 3);
+                          return (
+                            <span
+                              key={row.size}
+                              className={`rounded-full px-3 py-1 text-xs font-black ${
+                                isBad
+                                  ? "bg-rose-100 text-rose-700"
+                                  : isLow
+                                    ? "bg-amber-100 text-amber-700"
+                                    : "bg-emerald-50 text-emerald-700"
+                              }`}
+                            >
+                              {row.size}: {typeof row.quantity === "number" ? `${row.quantity} left` : row.status}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+          </>
+        )}
+
+        {activeTab === "orders" && (
+          <>
+        <section className="mt-6 rounded-[2rem] border border-[#0F1A26]/10 bg-white p-5 shadow-sm">
+          <SectionHeader
+            eyebrow="Action Center"
+            title="Orders that need attention"
+            description="This queue highlights operational risk: InstaPay orders waiting approval, Aramex failures or missing tracking, and returned/cancelled orders that affect finance."
+          />
+
+          <div className="mt-5 grid gap-4 lg:grid-cols-3">
+            <div className="rounded-3xl bg-amber-50 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="font-black text-amber-800">InstaPay approval</h3>
+                <span className="rounded-full bg-amber-200 px-3 py-1 text-xs font-black text-amber-900">{operations.instapayAttention.length}</span>
+              </div>
+              <div className="mt-3 space-y-2">
+                {operations.instapayAttention.length ? operations.instapayAttention.map((order) => (
+                  <div key={getOrderRef(order)} className="rounded-2xl bg-white p-3 text-sm font-bold shadow-sm">
+                    <button onClick={() => setSelectedOrder(order)} className="block w-full text-left">
+                      <span className="block font-black">{getOrderRef(order)}</span>
+                      <span className="text-[#0F1A26]/50">{money.format(getAmount(order))}</span>
+                    </button>
+                    <button
+                      onClick={() => void approveInstaPayOrder(order)}
+                      disabled={actionLoadingRef === `instapay:${getOrderRef(order)}`}
+                      className="mt-3 h-9 w-full rounded-xl bg-[#0F1A26] text-xs font-black text-white transition hover:-translate-y-0.5 disabled:opacity-60"
+                    >
+                      {actionLoadingRef === `instapay:${getOrderRef(order)}` ? "Approving..." : "Approve payment"}
+                    </button>
+                  </div>
+                )) : <p className="text-sm font-bold text-amber-800/60">No pending InstaPay orders.</p>}
+              </div>
+            </div>
+
+            <div className="rounded-3xl bg-rose-50 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="font-black text-rose-800">Aramex issues</h3>
+                <span className="rounded-full bg-rose-200 px-3 py-1 text-xs font-black text-rose-900">{operations.aramexAttention.length}</span>
+              </div>
+              <div className="mt-3 space-y-2">
+                {operations.aramexAttention.length ? operations.aramexAttention.map((order) => (
+                  <div key={getOrderRef(order)} className="rounded-2xl bg-white p-3 text-sm font-bold shadow-sm">
+                    <button onClick={() => setSelectedOrder(order)} className="block w-full text-left">
+                      <span className="block font-black">{getOrderRef(order)}</span>
+                      <span className="line-clamp-2 text-[#0F1A26]/50">{getAramexError(order) || "Missing Aramex tracking"}</span>
+                    </button>
+                    {(getTrackingNumber(order) || getAramexError(order)) && (
+                      <button
+                        onClick={() => void syncOneAramex(order)}
+                        disabled={actionLoadingRef === `aramex:${getOrderRef(order)}`}
+                        className="mt-3 h-9 w-full rounded-xl border border-[#0F1A26]/10 text-xs font-black text-[#0F1A26] transition hover:-translate-y-0.5 disabled:opacity-60"
+                      >
+                        {actionLoadingRef === `aramex:${getOrderRef(order)}` ? "Syncing..." : "Sync tracking"}
+                      </button>
+                    )}
+                  </div>
+                )) : <p className="text-sm font-bold text-rose-800/60">No Aramex issues.</p>}
+              </div>
+            </div>
+
+            <div className="rounded-3xl bg-[#F8F6F3] p-4">
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="font-black text-[#0F1A26]">Returns / cancelled</h3>
+                <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-[#0F1A26]">{operations.returnsAttention.length}</span>
+              </div>
+              <div className="mt-3 space-y-2">
+                {operations.returnsAttention.length ? operations.returnsAttention.map((order) => (
+                  <button key={getOrderRef(order)} onClick={() => setSelectedOrder(order)} className="block w-full rounded-2xl bg-white p-3 text-left text-sm font-bold shadow-sm">
+                    <span className="block font-black">{getOrderRef(order)}</span>
+                    <span className="text-[#0F1A26]/50">Deducted: {money.format(getAmount(order))}</span>
+                  </button>
+                )) : <p className="text-sm font-bold text-[#0F1A26]/45">No returns detected.</p>}
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section className="mt-6 rounded-[2rem] border border-[#0F1A26]/10 bg-white p-4 shadow-sm">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="relative flex-1">
@@ -710,9 +2298,26 @@ export default function AdminDashboardPage() {
           <div className="flex items-center justify-between border-b border-[#0F1A26]/10 px-5 py-4">
             <div>
               <h2 className="text-lg font-black">Orders</h2>
-              <p className="text-xs font-bold text-[#0F1A26]/45">{filteredOrders.length} visible orders</p>
+              <p className="text-xs font-bold text-[#0F1A26]/45">
+                {filteredOrders.length} visible orders · page {safeOrdersPage} of {ordersPageCount}
+              </p>
             </div>
-            <PackageCheck className="h-6 w-6 text-[#EEBC3F]" />
+            <div className="flex items-center gap-2">
+              <select
+                value={ordersPageSize}
+                onChange={(event) => {
+                  setOrdersPageSize(Number(event.target.value));
+                  setOrdersPage(1);
+                }}
+                className="h-10 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-3 text-xs font-black outline-none"
+              >
+                <option value={10}>10 rows</option>
+                <option value={25}>25 rows</option>
+                <option value={50}>50 rows</option>
+                <option value={100}>100 rows</option>
+              </select>
+              <PackageCheck className="h-6 w-6 text-[#EEBC3F]" />
+            </div>
           </div>
 
           <div className="overflow-x-auto">
@@ -725,10 +2330,11 @@ export default function AdminDashboardPage() {
                   <th className="px-5 py-3">Total</th>
                   <th className="px-5 py-3">Aramex</th>
                   <th className="px-5 py-3">Status</th>
+                  <th className="px-5 py-3">Details</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#0F1A26]/8">
-                {filteredOrders.map((order, index) => {
+                {paginatedOrders.map((order, index) => {
                   const customer = getCustomer(order);
                   const tracking = getTrackingNumber(order);
                   const aramexStatus = getAramexStatus(order);
@@ -794,14 +2400,73 @@ export default function AdminDashboardPage() {
                           </p>
                         )}
                       </td>
+                      <td className="px-5 py-4 align-top">
+                        {(tracking || getAramexError(order)) && (
+                          <button
+                            onClick={() => void syncOneAramex(order)}
+                            disabled={actionLoadingRef === `aramex:${orderRef}`}
+                            className="mb-2 inline-flex h-10 items-center justify-center gap-2 rounded-2xl border border-[#0F1A26]/10 bg-white px-4 text-xs font-black text-[#0F1A26] transition hover:-translate-y-0.5 disabled:opacity-60"
+                          >
+                            <RefreshCw className={`h-4 w-4 ${actionLoadingRef === `aramex:${orderRef}` ? "animate-spin" : ""}`} />
+                            Sync
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setSelectedOrder(order)}
+                          className="inline-flex h-10 items-center justify-center gap-2 rounded-2xl bg-[#0F1A26] px-4 text-xs font-black text-white transition hover:-translate-y-0.5"
+                        >
+                          <Eye className="h-4 w-4" />
+                          Details
+                        </button>
+                      </td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
           </div>
+
+          <div className="flex flex-col gap-3 border-t border-[#0F1A26]/10 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs font-bold text-[#0F1A26]/45">
+              Showing {filteredOrders.length ? (safeOrdersPage - 1) * ordersPageSize + 1 : 0}
+              {" - "}
+              {Math.min(safeOrdersPage * ordersPageSize, filteredOrders.length)} of {filteredOrders.length}
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setOrdersPage((page) => Math.max(1, page - 1))}
+                disabled={safeOrdersPage <= 1}
+                className="h-10 rounded-2xl border border-[#0F1A26]/10 px-4 text-xs font-black text-[#0F1A26] transition hover:bg-[#F8F6F3] disabled:opacity-40"
+              >
+                Previous
+              </button>
+              <span className="rounded-2xl bg-[#F8F6F3] px-4 py-2 text-xs font-black">
+                {safeOrdersPage} / {ordersPageCount}
+              </span>
+              <button
+                onClick={() => setOrdersPage((page) => Math.min(ordersPageCount, page + 1))}
+                disabled={safeOrdersPage >= ordersPageCount}
+                className="h-10 rounded-2xl border border-[#0F1A26]/10 px-4 text-xs font-black text-[#0F1A26] transition hover:bg-[#F8F6F3] disabled:opacity-40"
+              >
+                Next
+              </button>
+            </div>
+          </div>
         </section>
+          </>
+        )}
+          </>
+        )}
       </div>
+      {selectedOrder && (
+        <OrderDetailsPanel
+          order={selectedOrder}
+          onClose={() => setSelectedOrder(null)}
+          onApproveInstaPay={(order) => void approveInstaPayOrder(order)}
+          onStatusAction={(order, action) => void updateOrderStatus(order, action)}
+          actionLoadingRef={actionLoadingRef}
+        />
+      )}
     </main>
   );
 }

@@ -5,8 +5,6 @@ const CODE_PARTS = 5;
 function getSecret() {
   return (
     process.env.RESCUE_DISCOUNT_SECRET ||
-    process.env.ADMIN_DASHBOARD_TOKEN ||
-    process.env.SANITY_API_WRITE_TOKEN ||
     ""
   );
 }

@@ -25,7 +25,7 @@ export async function POST() {
 
   if (!generated) {
     return NextResponse.json(
-      { error: "RESCUE_DISCOUNT_SECRET or ADMIN_DASHBOARD_TOKEN is required" },
+      { error: "RESCUE_DISCOUNT_SECRET is required" },
       { status: 503 },
     );
   }

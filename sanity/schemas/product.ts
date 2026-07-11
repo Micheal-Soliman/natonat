@@ -164,6 +164,22 @@ export const product = defineType({
       validation: (Rule) => Rule.min(0),
     }),
     defineField({
+      name: "costPrice",
+      title: "Product cost",
+      type: "number",
+      group: "pricing",
+      description: "Internal cost per unit. Used only in the admin finance dashboard.",
+      validation: (Rule) => Rule.min(0),
+    }),
+    defineField({
+      name: "packagingCost",
+      title: "Packaging cost",
+      type: "number",
+      group: "pricing",
+      description: "Optional internal packaging cost per unit for profit readiness.",
+      validation: (Rule) => Rule.min(0),
+    }),
+    defineField({
       name: "stockStatus",
       title: "Stock status",
       type: "string",

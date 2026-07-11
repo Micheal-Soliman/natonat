@@ -10,6 +10,8 @@ export interface Product {
   theme: string;
   price: number;
   originalPrice: number;
+  costPrice?: number;
+  packagingCost?: number;
   type: string;
   tag: string | null;
   image: string;
