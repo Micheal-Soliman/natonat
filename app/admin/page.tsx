@@ -239,20 +239,6 @@ function getExtras(order: AdminOrder) {
   return getObject(order.extras || order["Extras (Full JSON)"]);
 }
 
-function getActualShippingCost(order: AdminOrder) {
-  const extras = getExtras(order);
-  const aramex = getAramex(order);
-  return getNumber(
-    extras.actual_shipping_cost_egp ??
-      extras.aramex_cost_egp ??
-      extras.shipping_cost_egp ??
-      aramex.cost ??
-      aramex.costEgp ??
-      order["Actual Shipping Cost (EGP)"] ??
-      order["Aramex Cost (EGP)"],
-  );
-}
-
 function getItems(order: AdminOrder) {
   const items = order.items || order["Items (Full JSON)"] || order["Items"];
   if (typeof items === "string" && items.trim().startsWith("[")) {
@@ -296,7 +282,7 @@ function getSubtotal(order: AdminOrder) {
   return (
     getNumber(extras.subtotal_egp) ||
     getNumber(order["Subtotal (EGP)"]) ||
-    Math.max(0, getAmount(order) - getShipping(order) + getDiscount(order))
+    0
   );
 }
 
@@ -325,8 +311,9 @@ function getPaymentDiscount(order: AdminOrder) {
   );
 }
 
-function getItemQuantity(item: Record<string, unknown>) {
-  return getNumber(item.quantity ?? item.qty) || 1;
+function getItemRecordedQuantity(item: Record<string, unknown>) {
+  const quantity = getNumber(item.quantity ?? item.qty);
+  return quantity > 0 ? quantity : 0;
 }
 
 function getItemUnitPrice(item: Record<string, unknown>) {
@@ -340,18 +327,23 @@ function getItemUnitPrice(item: Record<string, unknown>) {
 }
 
 function getItemLineTotal(item: Record<string, unknown>) {
-  const lineTotal = getNumber(item.line_total_egp ?? item.line_total ?? item.lineTotal ?? item.total);
-  if (lineTotal > 0) return lineTotal;
-
-  return getItemUnitPrice(item) * getItemQuantity(item);
-}
-
-function getItemKey(item: Record<string, unknown>) {
-  return getString(item.slug || item.product_slug || item.productSlug || item.id || item.product_id || item.productId);
+  return getNumber(item.line_total_egp ?? item.line_total ?? item.lineTotal ?? item.total);
 }
 
 function getPaymentMethod(order: AdminOrder) {
   return getString(order.payment_method || order["Payment Method"]).toLowerCase();
+}
+
+function getDeliveryMethod(order: AdminOrder) {
+  const extras = getExtras(order);
+  return getString(order.delivery_method || order["Delivery Method"] || extras.delivery_method).toLowerCase();
+}
+
+function getDeliveryBucket(order: AdminOrder) {
+  const method = getDeliveryMethod(order);
+  if (method.includes("pickup") || method.includes("pick up")) return "pickup";
+  if (method.includes("delivery") || method.includes("ship")) return "delivery";
+  return method || "unknown";
 }
 
 function getStatus(order: AdminOrder) {
@@ -436,7 +428,7 @@ function isPendingInstaPay(order: AdminOrder) {
 
 function needsAramex(order: AdminOrder) {
   return (
-    getString(order.delivery_method || order["Delivery Method"]).toLowerCase() === "delivery" &&
+    getDeliveryBucket(order) === "delivery" &&
     isConfirmed(order) &&
     !isPendingInstaPay(order) &&
     !getTrackingNumber(order)
@@ -811,7 +803,12 @@ export default function AdminDashboardPage() {
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [paymentFilter, setPaymentFilter] = useState("all");
+  const [deliveryFilter, setDeliveryFilter] = useState("all");
+  const [cityFilter, setCityFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [expenseQuery, setExpenseQuery] = useState("");
+  const [expenseCategoryFilter, setExpenseCategoryFilter] = useState("all");
+  const [expensePaymentFilter, setExpensePaymentFilter] = useState("all");
   const [activeTab, setActiveTab] = useState<AdminTab>("finance");
   const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);
   const [datePreset, setDatePreset] = useState<DatePreset>("all");
@@ -1131,7 +1128,7 @@ export default function AdminDashboardPage() {
       "related_order_ref",
       "notes",
     ];
-    const rows = visibleExpenses.map((expense) => [
+    const rows = filteredExpenses.map((expense) => [
       expense.expenseDate || "",
       expense.title || "",
       expense.category || "",
@@ -1164,10 +1161,14 @@ export default function AdminDashboardPage() {
       ["net_revenue_before_expenses", String(stats.netRevenue)],
       ["expenses", String(expenseStats.total)],
       ["net_after_expenses", String(expenseStats.netAfterExpenses)],
-      ["known_product_cost", String(stats.knownProductCost)],
-      ["actual_shipping_cost", String(stats.actualShippingCost)],
-      ["known_profit_after_expenses", String(expenseStats.profitAfterKnownCostsAndExpenses)],
+      ["orders_count", String(stats.totalOrders)],
+      ["pickup_orders", String(stats.pickupOrders)],
+      ["delivery_orders", String(stats.deliveryOrders)],
+      ["pieces_sold", String(stats.totalPieces)],
+      ["returned_cancelled_orders", String(stats.returnedOrders)],
       ["returned_cancelled_value", String(stats.returnedValue)],
+      ["shipped_not_delivered_orders", String(stats.shippedNotDeliveredOrders)],
+      ["shipped_not_delivered_value", String(stats.shippedNotDeliveredValue)],
       ["discounts", String(stats.discounts)],
       ["shipping_collected", String(stats.shippingCollected)],
       ["cod_expected_to_collect", String(stats.codToCollectValue)],
@@ -1226,7 +1227,7 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     setOrdersPage(1);
-  }, [customDateFrom, customDateTo, datePreset, paymentFilter, query, statusFilter]);
+  }, [cityFilter, customDateFrom, customDateTo, datePreset, deliveryFilter, paymentFilter, query, statusFilter]);
 
   useEffect(() => {
     if (!savedToken) return;
@@ -1296,25 +1297,106 @@ export default function AdminDashboardPage() {
     });
   }, [dateRange.from, dateRange.to, expenses]);
 
-  const inventoryLookup = useMemo(() => {
-    const bySlug = new Map<string, AdminInventoryItem>();
-    const byId = new Map<string, AdminInventoryItem>();
-    const byName = new Map<string, AdminInventoryItem>();
+  const orderFilterOptions = useMemo(() => {
+    const paymentBuckets = new Map<string, number>();
+    const deliveryBuckets = new Map<string, number>();
+    const cityBuckets = new Map<string, { label: string; count: number }>();
+    const statusBuckets = new Map<string, number>();
 
-    inventory.forEach((item) => {
-      if (item.slug) bySlug.set(item.slug.toLowerCase(), item);
-      byId.set(String(item.id), item);
-      byName.set(item.name.toLowerCase(), item);
+    visibleOrders.forEach((order) => {
+      const payment = getPaymentBucket(order);
+      paymentBuckets.set(payment, (paymentBuckets.get(payment) || 0) + 1);
+
+      const delivery = getDeliveryBucket(order);
+      deliveryBuckets.set(delivery, (deliveryBuckets.get(delivery) || 0) + 1);
+
+      const customer = getCustomer(order);
+      const city = getString(customer.city || order["City"]) || "Unknown";
+      const cityKey = city.toLowerCase();
+      const cityRow = cityBuckets.get(cityKey) || { label: city, count: 0 };
+      cityRow.count += 1;
+      cityBuckets.set(cityKey, cityRow);
+
+      const status = getStatus(order) || "unknown";
+      statusBuckets.set(status, (statusBuckets.get(status) || 0) + 1);
     });
 
-    return { bySlug, byId, byName };
-  }, [inventory]);
+    return {
+      payments: Array.from(paymentBuckets.entries()).sort((a, b) => b[1] - a[1]),
+      deliveries: Array.from(deliveryBuckets.entries()).sort((a, b) => b[1] - a[1]),
+      cities: Array.from(cityBuckets.entries()).sort((a, b) => b[1].count - a[1].count),
+      statuses: Array.from(statusBuckets.entries()).sort((a, b) => b[1] - a[1]),
+    };
+  }, [visibleOrders]);
+
+  const filteredMetricOrders = useMemo(() => {
+    return visibleOrders.filter((order) => {
+      if (paymentFilter !== "all" && getPaymentBucket(order) !== paymentFilter) return false;
+      if (deliveryFilter !== "all" && getDeliveryBucket(order) !== deliveryFilter) return false;
+
+      if (cityFilter !== "all") {
+        const customer = getCustomer(order);
+        const city = (getString(customer.city || order["City"]) || "Unknown").toLowerCase();
+        if (city !== cityFilter) return false;
+      }
+
+      if (statusFilter === "pending_instapay" && !isPendingInstaPay(order)) return false;
+      if (statusFilter === "aramex_missing" && !needsAramex(order)) return false;
+      if (statusFilter === "aramex_failed" && !getAramexError(order)) return false;
+      if (statusFilter === "returned" && !isReturned(order)) return false;
+      if (statusFilter === "confirmed" && !isConfirmed(order)) return false;
+      if (statusFilter.startsWith("raw:") && getStatus(order) !== statusFilter.slice(4)) return false;
+
+      return true;
+    });
+  }, [cityFilter, deliveryFilter, paymentFilter, statusFilter, visibleOrders]);
+
+  const expenseFilterOptions = useMemo(() => {
+    const categories = new Map<string, number>();
+    const paymentMethods = new Map<string, number>();
+
+    visibleExpenses.forEach((expense) => {
+      const category = expense.category || "other";
+      categories.set(category, (categories.get(category) || 0) + 1);
+
+      const paymentMethod = expense.paymentMethod || "unknown";
+      paymentMethods.set(paymentMethod, (paymentMethods.get(paymentMethod) || 0) + 1);
+    });
+
+    return {
+      categories: Array.from(categories.entries()).sort((a, b) => b[1] - a[1]),
+      paymentMethods: Array.from(paymentMethods.entries()).sort((a, b) => b[1] - a[1]),
+    };
+  }, [visibleExpenses]);
+
+  const filteredExpenses = useMemo(() => {
+    const normalizedQuery = expenseQuery.trim().toLowerCase();
+
+    return visibleExpenses.filter((expense) => {
+      if (expenseCategoryFilter !== "all" && expense.category !== expenseCategoryFilter) return false;
+      if (expensePaymentFilter !== "all" && expense.paymentMethod !== expensePaymentFilter) return false;
+
+      if (normalizedQuery) {
+        const searchable = [
+          expense.title,
+          expense.vendor,
+          expense.relatedOrderRef,
+          expense.notes,
+          expense.category,
+          expense.paymentMethod,
+        ].join(" ").toLowerCase();
+        if (!searchable.includes(normalizedQuery)) return false;
+      }
+
+      return true;
+    });
+  }, [expenseCategoryFilter, expensePaymentFilter, expenseQuery, visibleExpenses]);
 
   const stats = useMemo(() => {
-    const confirmedOrders = visibleOrders.filter(isConfirmed);
+    const confirmedOrders = filteredMetricOrders.filter(isConfirmed);
     const revenueOrders = confirmedOrders.filter((order) => !isReturned(order));
     const returnedOrders = confirmedOrders.filter(isReturned);
-    const unconfirmedOrders = visibleOrders.filter((order) => !isConfirmed(order) && !isReturned(order));
+    const unconfirmedOrders = filteredMetricOrders.filter((order) => !isConfirmed(order) && !isReturned(order));
     const grossSales = confirmedOrders.reduce((sum, order) => sum + getSubtotal(order), 0);
     const collectedRevenue = revenueOrders.reduce((sum, order) => sum + getAmount(order), 0);
     const returnedValue = returnedOrders.reduce((sum, order) => sum + getAmount(order), 0);
@@ -1322,55 +1404,34 @@ export default function AdminDashboardPage() {
     const orderDiscounts = confirmedOrders.reduce((sum, order) => sum + getOrderDiscount(order), 0);
     const paymentDiscounts = confirmedOrders.reduce((sum, order) => sum + getPaymentDiscount(order), 0);
     const shippingCollected = confirmedOrders.reduce((sum, order) => sum + getShipping(order), 0);
-    const allOrdersValue = visibleOrders.reduce((sum, order) => sum + getAmount(order), 0);
+    const allOrdersValue = filteredMetricOrders.reduce((sum, order) => sum + getAmount(order), 0);
     const unconfirmedValue = unconfirmedOrders.reduce((sum, order) => sum + getAmount(order), 0);
-    const missingTotalOrders = visibleOrders.filter((order) => getAmount(order) <= 0);
-    const missingCustomerOrders = visibleOrders.filter((order) => !getString(getCustomer(order).phone) && !getString(getCustomer(order).first_name));
-    const missingItemsOrders = visibleOrders.filter((order) => getItems(order).length === 0);
-    const cardOrders = visibleOrders.filter((order) => getPaymentBucket(order) === "card");
-    const codOrders = visibleOrders.filter((order) => getPaymentBucket(order) === "cod");
-    const instapayOrders = visibleOrders.filter((order) => getPaymentBucket(order) === "instapay");
-    const aramexFailed = visibleOrders.filter((order) => getAramexError(order));
-    const aramexMissing = visibleOrders.filter(needsAramex);
-    const aramexSynced = visibleOrders.filter((order) => getAramexStatus(order));
-    const pendingInstaPay = visibleOrders.filter(isPendingInstaPay);
-    const deliveredOrders = visibleOrders.filter(isDelivered);
-    const awaitingPaymentOrders = visibleOrders.filter((order) => !isConfirmed(order) && !isReturned(order));
+    const missingTotalOrders = filteredMetricOrders.filter((order) => getAmount(order) <= 0);
+    const missingCustomerOrders = filteredMetricOrders.filter((order) => !getString(getCustomer(order).phone) && !getString(getCustomer(order).first_name));
+    const missingItemsOrders = filteredMetricOrders.filter((order) => getItems(order).length === 0);
+    const cardOrders = filteredMetricOrders.filter((order) => getPaymentBucket(order) === "card");
+    const codOrders = filteredMetricOrders.filter((order) => getPaymentBucket(order) === "cod");
+    const instapayOrders = filteredMetricOrders.filter((order) => getPaymentBucket(order) === "instapay");
+    const aramexFailed = filteredMetricOrders.filter((order) => getAramexError(order));
+    const aramexMissing = filteredMetricOrders.filter(needsAramex);
+    const aramexSynced = filteredMetricOrders.filter((order) => getAramexStatus(order));
+    const pendingInstaPay = filteredMetricOrders.filter(isPendingInstaPay);
+    const deliveredOrders = filteredMetricOrders.filter(isDelivered);
+    const pickupOrders = filteredMetricOrders.filter((order) => getDeliveryBucket(order) === "pickup");
+    const deliveryOrders = filteredMetricOrders.filter((order) => getDeliveryBucket(order) === "delivery");
+    const shippedNotDeliveredOrders = filteredMetricOrders.filter((order) => isInTransit(order) && !isDelivered(order) && !isReturned(order));
+    const totalPieces = revenueOrders.reduce((sum, order) => {
+      const items = getItems(order);
+      return sum + items.reduce((itemSum, item) => itemSum + getItemRecordedQuantity(item), 0);
+    }, 0);
+    const awaitingPaymentOrders = filteredMetricOrders.filter((order) => !isConfirmed(order) && !isReturned(order));
     const paidOnlineOrders = revenueOrders.filter((order) => ["card", "instapay"].includes(getPaymentBucket(order)));
     const codRevenueOrders = revenueOrders.filter((order) => getPaymentBucket(order) === "cod");
     const paidOnlineValue = paidOnlineOrders.reduce((sum, order) => sum + getAmount(order), 0);
     const codToCollectValue = codRevenueOrders.reduce((sum, order) => sum + getAmount(order), 0);
-    const aramexBlockedValue = visibleOrders
+    const aramexBlockedValue = filteredMetricOrders
       .filter((order) => getAramexError(order) || needsAramex(order))
       .reduce((sum, order) => sum + getAmount(order), 0);
-    const actualShippingCost = revenueOrders.reduce((sum, order) => sum + getActualShippingCost(order), 0);
-    const missingActualShippingCostOrders = revenueOrders.filter(
-      (order) => getString(order.delivery_method || order["Delivery Method"]).toLowerCase() === "delivery" && getActualShippingCost(order) <= 0,
-    );
-    let knownProductCost = 0;
-    let missingProductCostLines = 0;
-    let productCostLines = 0;
-
-    revenueOrders.forEach((order) => {
-      getItems(order).forEach((item) => {
-        const key = getItemKey(item).toLowerCase();
-        const name = getString(item.name || item.title).toLowerCase();
-        const product =
-          inventoryLookup.bySlug.get(key) ||
-          inventoryLookup.byId.get(key) ||
-          inventoryLookup.byName.get(name);
-        const unitCost = getNumber(product?.costPrice) + getNumber(product?.packagingCost);
-        productCostLines += 1;
-        if (product && unitCost > 0) {
-          knownProductCost += unitCost * getItemQuantity(item);
-        } else {
-          missingProductCostLines += 1;
-        }
-      });
-    });
-    const grossProfitFromKnownCosts = collectedRevenue - knownProductCost - actualShippingCost;
-    const marginFromKnownCosts = collectedRevenue > 0 ? (grossProfitFromKnownCosts / collectedRevenue) * 100 : 0;
-
     const paymentBreakdown = ["cod", "card", "instapay", "unknown"].map((bucket) => {
       const bucketOrders = confirmedOrders.filter((order) => getPaymentBucket(order) === bucket);
       return {
@@ -1394,10 +1455,16 @@ export default function AdminDashboardPage() {
       shippingCollected,
       allOrdersValue,
       unconfirmedValue,
-      totalOrders: visibleOrders.length,
+      totalOrders: filteredMetricOrders.length,
       confirmedOrders: confirmedOrders.length,
       unconfirmedOrders: unconfirmedOrders.length,
+      returnedOrders: returnedOrders.length,
       deliveredOrders: deliveredOrders.length,
+      pickupOrders: pickupOrders.length,
+      deliveryOrders: deliveryOrders.length,
+      shippedNotDeliveredOrders: shippedNotDeliveredOrders.length,
+      shippedNotDeliveredValue: shippedNotDeliveredOrders.reduce((sum, order) => sum + getAmount(order), 0),
+      totalPieces,
       awaitingPaymentOrders: awaitingPaymentOrders.length,
       averageOrderValue: revenueOrders.length ? collectedRevenue / revenueOrders.length : 0,
       paidOnlineOrders: paidOnlineOrders.length,
@@ -1405,13 +1472,6 @@ export default function AdminDashboardPage() {
       codToCollectOrders: codRevenueOrders.length,
       codToCollectValue,
       aramexBlockedValue,
-      actualShippingCost,
-      missingActualShippingCostOrders: missingActualShippingCostOrders.length,
-      knownProductCost,
-      missingProductCostLines,
-      productCostLines,
-      grossProfitFromKnownCosts,
-      marginFromKnownCosts,
       missingTotalOrders: missingTotalOrders.length,
       missingCustomerOrders: missingCustomerOrders.length,
       missingItemsOrders: missingItemsOrders.length,
@@ -1424,14 +1484,14 @@ export default function AdminDashboardPage() {
       pendingInstaPay: pendingInstaPay.length,
       paymentBreakdown,
     };
-  }, [inventoryLookup.byId, inventoryLookup.byName, inventoryLookup.bySlug, visibleOrders]);
+  }, [filteredMetricOrders]);
 
   const expenseStats = useMemo(() => {
-    const total = visibleExpenses.reduce((sum, expense) => sum + getExpenseAmount(expense), 0);
+    const total = filteredExpenses.reduce((sum, expense) => sum + getExpenseAmount(expense), 0);
     const categoryMap = new Map<string, { category: string; count: number; total: number }>();
     const paymentMap = new Map<string, { paymentMethod: string; count: number; total: number }>();
 
-    visibleExpenses.forEach((expense) => {
+    filteredExpenses.forEach((expense) => {
       const category = expense.category || "other";
       const categoryRow = categoryMap.get(category) || { category, count: 0, total: 0 };
       categoryRow.count += 1;
@@ -1445,27 +1505,23 @@ export default function AdminDashboardPage() {
       paymentMap.set(paymentMethod, paymentRow);
     });
 
-    const recent = [...visibleExpenses]
+    const recent = [...filteredExpenses]
       .sort((a, b) => (getExpenseDate(b)?.getTime() || 0) - (getExpenseDate(a)?.getTime() || 0))
       .slice(0, 20);
 
     return {
       total,
-      count: visibleExpenses.length,
+      count: filteredExpenses.length,
       netAfterExpenses: stats.netRevenue - total,
-      profitAfterKnownCostsAndExpenses: stats.grossProfitFromKnownCosts - total,
       categories: Array.from(categoryMap.values()).sort((a, b) => b.total - a.total),
       paymentMethods: Array.from(paymentMap.values()).sort((a, b) => b.total - a.total),
       recent,
     };
-  }, [stats.grossProfitFromKnownCosts, stats.netRevenue, visibleExpenses]);
+  }, [filteredExpenses, stats.netRevenue]);
 
   const inventoryStats = useMemo(() => {
     const lowItems = inventory.filter((item) => isInventoryLow(item) && !isInventoryOut(item));
     const outItems = inventory.filter(isInventoryOut);
-    let retailValue = 0;
-    let costValue = 0;
-    let missingCostProducts = 0;
 
     const totalKnownUnits = inventory.reduce((sum, item) => {
       const rows = getSizeRows(item);
@@ -1474,10 +1530,6 @@ export default function AdminDashboardPage() {
         0,
       );
       const knownQuantity = rowQuantity || (typeof item.stockQuantity === "number" ? item.stockQuantity : 0);
-      const unitCost = getNumber(item.costPrice) + getNumber(item.packagingCost);
-      retailValue += knownQuantity * getNumber(item.price);
-      costValue += knownQuantity * unitCost;
-      if (knownQuantity > 0 && unitCost <= 0) missingCostProducts += 1;
       return sum + knownQuantity;
     }, 0);
     const trackedVariants = inventory.reduce((sum, item) => sum + getSizeRows(item).length, 0);
@@ -1486,9 +1538,6 @@ export default function AdminDashboardPage() {
       products: inventory.length,
       trackedVariants,
       totalKnownUnits,
-      retailValue,
-      costValue,
-      missingCostProducts,
       lowItems,
       outItems,
     };
@@ -1497,7 +1546,7 @@ export default function AdminDashboardPage() {
   const filteredOrders = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
-    return visibleOrders.filter((order) => {
+    return filteredMetricOrders.filter((order) => {
       const customer = getCustomer(order);
       const searchable = [
         getOrderRef(order),
@@ -1510,24 +1559,12 @@ export default function AdminDashboardPage() {
 
       if (normalizedQuery && !searchable.includes(normalizedQuery)) return false;
 
-      const method = getPaymentMethod(order);
-      if (paymentFilter !== "all") {
-        if (paymentFilter === "card" && !(method.includes("card") || method.includes("paymob"))) return false;
-        if (paymentFilter !== "card" && method !== paymentFilter) return false;
-      }
-
-      if (statusFilter === "pending_instapay" && !isPendingInstaPay(order)) return false;
-      if (statusFilter === "aramex_missing" && !needsAramex(order)) return false;
-      if (statusFilter === "aramex_failed" && !getAramexError(order)) return false;
-      if (statusFilter === "returned" && !isReturned(order)) return false;
-      if (statusFilter === "confirmed" && !isConfirmed(order)) return false;
-
       return true;
     });
-  }, [paymentFilter, query, statusFilter, visibleOrders]);
+  }, [filteredMetricOrders, query]);
 
   const operations = useMemo(() => {
-    const confirmedOrders = visibleOrders.filter(isConfirmed);
+    const confirmedOrders = filteredMetricOrders.filter(isConfirmed);
     const revenueOrders = confirmedOrders.filter((order) => !isReturned(order));
     const productMap = new Map<
       string,
@@ -1536,8 +1573,6 @@ export default function AdminDashboardPage() {
         qty: number;
         orders: Set<string>;
         directRevenue: number;
-        estimatedRevenue: number;
-        missingPriceLines: number;
       }
     >();
     const cityMap = new Map<string, { city: string; orders: number; revenue: number }>();
@@ -1552,62 +1587,55 @@ export default function AdminDashboardPage() {
       cityMap.set(city, cityRow);
 
       const orderItems = getItems(order);
-      const totalUnits = orderItems.reduce((sum, item) => sum + getItemQuantity(item), 0) || 1;
-      const orderSubtotal = getSubtotal(order) || Math.max(0, getAmount(order) - getShipping(order) + getDiscount(order));
 
       orderItems.forEach((item) => {
         const name = getString(item.name || item.title || item.slug || item.id) || "Unknown product";
-        const qty = getItemQuantity(item);
+        const qty = getItemRecordedQuantity(item);
         const line = getItemLineTotal(item);
-        const estimatedLine = line > 0 ? 0 : orderSubtotal * (qty / totalUnits);
         const row = productMap.get(name) || {
           name,
           qty: 0,
           orders: new Set<string>(),
           directRevenue: 0,
-          estimatedRevenue: 0,
-          missingPriceLines: 0,
         };
         row.qty += qty;
         row.orders.add(orderRef);
         row.directRevenue += line;
-        row.estimatedRevenue += estimatedLine;
-        if (line <= 0) row.missingPriceLines += 1;
         productMap.set(name, row);
       });
     });
 
-    const aramexAttention = visibleOrders
+    const aramexAttention = filteredMetricOrders
       .filter((order) => getAramexError(order) || needsAramex(order))
       .slice(0, 12);
-    const instapayAttention = visibleOrders.filter(isPendingInstaPay).slice(0, 12);
-    const returnsAttention = visibleOrders.filter(isReturned).slice(0, 12);
+    const instapayAttention = filteredMetricOrders.filter(isPendingInstaPay).slice(0, 12);
+    const returnsAttention = filteredMetricOrders.filter(isReturned).slice(0, 12);
     const codOrders = revenueOrders.filter((order) => getPaymentBucket(order) === "cod");
     const codDelivered = codOrders.filter(isDelivered);
     const codInTransit = codOrders.filter((order) => !isDelivered(order) && !isReturned(order));
     const fulfillmentRows = [
-      { label: "Delivered", orders: visibleOrders.filter(isDelivered).length, value: visibleOrders.filter(isDelivered).reduce((sum, order) => sum + getAmount(order), 0), tone: "bg-emerald-50 text-emerald-700" },
-      { label: "In transit", orders: visibleOrders.filter(isInTransit).length, value: visibleOrders.filter(isInTransit).reduce((sum, order) => sum + getAmount(order), 0), tone: "bg-sky-50 text-sky-700" },
-      { label: "Returned / cancelled", orders: visibleOrders.filter(isReturned).length, value: visibleOrders.filter(isReturned).reduce((sum, order) => sum + getAmount(order), 0), tone: "bg-rose-50 text-rose-700" },
-      { label: "Missing Aramex", orders: visibleOrders.filter(needsAramex).length, value: visibleOrders.filter(needsAramex).reduce((sum, order) => sum + getAmount(order), 0), tone: "bg-amber-50 text-amber-800" },
-      { label: "Aramex failed", orders: visibleOrders.filter((order) => Boolean(getAramexError(order))).length, value: visibleOrders.filter((order) => Boolean(getAramexError(order))).reduce((sum, order) => sum + getAmount(order), 0), tone: "bg-orange-50 text-orange-800" },
+      { label: "Delivered", orders: filteredMetricOrders.filter(isDelivered).length, value: filteredMetricOrders.filter(isDelivered).reduce((sum, order) => sum + getAmount(order), 0), tone: "bg-emerald-50 text-emerald-700" },
+      { label: "In transit", orders: filteredMetricOrders.filter(isInTransit).length, value: filteredMetricOrders.filter(isInTransit).reduce((sum, order) => sum + getAmount(order), 0), tone: "bg-sky-50 text-sky-700" },
+      { label: "Returned / cancelled", orders: filteredMetricOrders.filter(isReturned).length, value: filteredMetricOrders.filter(isReturned).reduce((sum, order) => sum + getAmount(order), 0), tone: "bg-rose-50 text-rose-700" },
+      { label: "Missing Aramex", orders: filteredMetricOrders.filter(needsAramex).length, value: filteredMetricOrders.filter(needsAramex).reduce((sum, order) => sum + getAmount(order), 0), tone: "bg-amber-50 text-amber-800" },
+      { label: "Aramex failed", orders: filteredMetricOrders.filter((order) => Boolean(getAramexError(order))).length, value: filteredMetricOrders.filter((order) => Boolean(getAramexError(order))).reduce((sum, order) => sum + getAmount(order), 0), tone: "bg-orange-50 text-orange-800" },
     ];
     const notificationRows = [
       {
         label: "Customer confirmation sent",
-        orders: visibleOrders.filter((order) => Boolean(getCustomerEmailSentAt(order))).length,
+        orders: filteredMetricOrders.filter((order) => Boolean(getCustomerEmailSentAt(order))).length,
       },
       {
         label: "InstaPay pending email sent",
-        orders: visibleOrders.filter((order) => Boolean(getInstaPayPendingCustomerEmailSentAt(order))).length,
+        orders: filteredMetricOrders.filter((order) => Boolean(getInstaPayPendingCustomerEmailSentAt(order))).length,
       },
       {
         label: "Admin approval email sent",
-        orders: visibleOrders.filter((order) => Boolean(getInstaPayApprovalEmailSentAt(order))).length,
+        orders: filteredMetricOrders.filter((order) => Boolean(getInstaPayApprovalEmailSentAt(order))).length,
       },
       {
         label: "Confirmed with customer email missing",
-        orders: visibleOrders.filter((order) => isConfirmed(order) && !getCustomerEmailSentAt(order)).length,
+        orders: filteredMetricOrders.filter((order) => isConfirmed(order) && !getCustomerEmailSentAt(order)).length,
       },
     ];
 
@@ -1616,7 +1644,7 @@ export default function AdminDashboardPage() {
         .map((product) => ({
           ...product,
           ordersCount: product.orders.size,
-          revenue: product.directRevenue + product.estimatedRevenue,
+          revenue: product.directRevenue,
         }))
         .sort((a, b) => b.revenue - a.revenue)
         .slice(0, 8),
@@ -1632,10 +1660,10 @@ export default function AdminDashboardPage() {
       codPendingCollectionValue: codInTransit.reduce((sum, order) => sum + getAmount(order), 0),
       attentionCount: aramexAttention.length + instapayAttention.length + returnsAttention.length,
     };
-  }, [visibleOrders]);
+  }, [filteredMetricOrders]);
 
   const financeLedger = useMemo(() => {
-    return visibleOrders
+    return filteredMetricOrders
       .map((order) => {
         const amount = getAmount(order);
         const bucket = getPaymentBucket(order);
@@ -1683,7 +1711,7 @@ export default function AdminDashboardPage() {
       })
       .sort((a, b) => b.date - a.date)
       .slice(0, 20);
-  }, [visibleOrders]);
+  }, [filteredMetricOrders]);
 
   const dailyClose = useMemo(() => {
     const dayMap = new Map<
@@ -1703,7 +1731,7 @@ export default function AdminDashboardPage() {
       }
     >();
 
-    visibleOrders.forEach((order) => {
+    filteredMetricOrders.forEach((order) => {
       const date = getOrderDate(order);
       const key = date ? date.toISOString().slice(0, 10) : "No date";
       const row =
@@ -1735,7 +1763,7 @@ export default function AdminDashboardPage() {
       dayMap.set(key, row);
     });
 
-    visibleExpenses.forEach((expense) => {
+    filteredExpenses.forEach((expense) => {
       const date = getExpenseDate(expense);
       const key = date ? date.toISOString().slice(0, 10) : "No date";
       const row =
@@ -1765,36 +1793,24 @@ export default function AdminDashboardPage() {
       }))
       .sort((a, b) => b.date.localeCompare(a.date))
       .slice(0, 14);
-  }, [visibleExpenses, visibleOrders]);
+  }, [filteredExpenses, filteredMetricOrders]);
 
   const financeAlerts = useMemo(() => {
     return [
       {
-        label: "Product cost lines missing",
-        value: stats.missingProductCostLines,
-        detail: `${stats.missingProductCostLines} of ${stats.productCostLines} sold item lines have no CMS cost yet.`,
-        tone: stats.missingProductCostLines ? "bg-amber-50 text-amber-800" : "bg-emerald-50 text-emerald-700",
-      },
-      {
-        label: "Actual shipping cost missing",
-        value: stats.missingActualShippingCostOrders,
-        detail: "Add Aramex actual cost per shipped order when available to get true gross profit.",
-        tone: stats.missingActualShippingCostOrders ? "bg-amber-50 text-amber-800" : "bg-emerald-50 text-emerald-700",
-      },
-      {
         label: "Aramex attention",
         value: stats.aramexFailed + stats.aramexMissing,
-        detail: "Orders with failed or missing shipment tracking can affect revenue confidence.",
+        detail: "Orders with failed or missing shipment tracking need admin review.",
         tone: stats.aramexFailed + stats.aramexMissing ? "bg-rose-50 text-rose-700" : "bg-emerald-50 text-emerald-700",
       },
       {
         label: "Pending approvals",
         value: stats.pendingInstaPay,
-        detail: "InstaPay orders waiting approval are not clean fulfillment revenue yet.",
+        detail: "InstaPay orders waiting approval are not confirmed yet.",
         tone: stats.pendingInstaPay ? "bg-yellow-50 text-yellow-800" : "bg-emerald-50 text-emerald-700",
       },
     ];
-  }, [stats.aramexFailed, stats.aramexMissing, stats.missingActualShippingCostOrders, stats.missingProductCostLines, stats.pendingInstaPay, stats.productCostLines]);
+  }, [stats.aramexFailed, stats.aramexMissing, stats.pendingInstaPay]);
 
   const ordersPageCount = Math.max(1, Math.ceil(filteredOrders.length / ordersPageSize));
   const safeOrdersPage = Math.min(ordersPage, ordersPageCount);
@@ -1955,6 +1971,64 @@ export default function AdminDashboardPage() {
                   />
                 </div>
               )}
+              <select
+                value={paymentFilter}
+                onChange={(event) => setPaymentFilter(event.target.value)}
+                className="h-11 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-4 text-sm font-black outline-none"
+              >
+                <option value="all">All payments ({visibleOrders.length})</option>
+                {orderFilterOptions.payments.map(([bucket, count]) => (
+                  <option key={bucket} value={bucket}>{bucket.replaceAll("_", " ")} ({count})</option>
+                ))}
+              </select>
+              <select
+                value={deliveryFilter}
+                onChange={(event) => setDeliveryFilter(event.target.value)}
+                className="h-11 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-4 text-sm font-black outline-none"
+              >
+                <option value="all">All delivery ({visibleOrders.length})</option>
+                {orderFilterOptions.deliveries.map(([bucket, count]) => (
+                  <option key={bucket} value={bucket}>{bucket.replaceAll("_", " ")} ({count})</option>
+                ))}
+              </select>
+              <select
+                value={cityFilter}
+                onChange={(event) => setCityFilter(event.target.value)}
+                className="h-11 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-4 text-sm font-black outline-none"
+              >
+                <option value="all">All cities ({visibleOrders.length})</option>
+                {orderFilterOptions.cities.map(([key, row]) => (
+                  <option key={key} value={key}>{row.label} ({row.count})</option>
+                ))}
+              </select>
+              <select
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value)}
+                className="h-11 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-4 text-sm font-black outline-none"
+              >
+                <option value="all">All statuses ({visibleOrders.length})</option>
+                <option value="confirmed">Confirmed / paid ({visibleOrders.filter(isConfirmed).length})</option>
+                <option value="returned">Returned / cancelled ({visibleOrders.filter(isReturned).length})</option>
+                <option value="pending_instapay">Pending InstaPay ({visibleOrders.filter(isPendingInstaPay).length})</option>
+                <option value="aramex_missing">Missing Aramex ({visibleOrders.filter(needsAramex).length})</option>
+                <option value="aramex_failed">Aramex failed ({visibleOrders.filter((order) => Boolean(getAramexError(order))).length})</option>
+                {orderFilterOptions.statuses.map(([status, count]) => (
+                  <option key={status} value={`raw:${status}`}>{status.replaceAll("_", " ")} ({count})</option>
+                ))}
+              </select>
+              {(paymentFilter !== "all" || deliveryFilter !== "all" || cityFilter !== "all" || statusFilter !== "all") && (
+                <button
+                  onClick={() => {
+                    setPaymentFilter("all");
+                    setDeliveryFilter("all");
+                    setCityFilter("all");
+                    setStatusFilter("all");
+                  }}
+                  className="inline-flex h-11 items-center justify-center rounded-2xl border border-[#0F1A26]/10 px-4 text-sm font-black text-[#0F1A26]/65 transition hover:bg-[#F8F6F3]"
+                >
+                  Reset filters
+                </button>
+              )}
               <button
                 onClick={exportOrdersCsv}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-[#0F1A26] px-5 text-sm font-black text-white transition hover:-translate-y-0.5"
@@ -1964,6 +2038,9 @@ export default function AdminDashboardPage() {
               </button>
             </div>
           </div>
+          <p className="mt-3 text-xs font-bold text-[#0F1A26]/45">
+            Showing {filteredMetricOrders.length} of {visibleOrders.length} orders after filters. All finance and operations cards follow these filters.
+          </p>
         </section>
 
         {activeTab === "finance" && (
@@ -1988,6 +2065,20 @@ export default function AdminDashboardPage() {
             <DataPill label="auto refresh" value="Every 60 seconds while the admin page is open" />
             <DataPill label="aramex sync" value="Manual Sync Aramex button updates shipment status on stored orders" />
           </div>
+        </section>
+
+        <section className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard title="Orders" value={String(stats.totalOrders)} subtitle={`${stats.confirmedOrders} confirmed / ${stats.unconfirmedOrders} pending`} icon={ClipboardList} tone="dark" />
+          <StatCard title="Pieces Sold" value={String(stats.totalPieces)} subtitle="Confirmed non-returned order items" icon={PackageCheck} tone="green" />
+          <StatCard title="Pickup Orders" value={String(stats.pickupOrders)} subtitle={`${stats.deliveryOrders} delivery orders`} icon={Truck} tone="gold" />
+          <StatCard title="Shipped Not Delivered" value={String(stats.shippedNotDeliveredOrders)} subtitle={money.format(stats.shippedNotDeliveredValue)} icon={AlertTriangle} tone={stats.shippedNotDeliveredOrders ? "gold" : "green"} />
+        </section>
+
+        <section className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard title="Spent" value={money.format(expenseStats.total)} subtitle={`${expenseStats.count} entered expenses`} icon={ReceiptText} tone={expenseStats.total ? "red" : "green"} />
+          <StatCard title="Revenue" value={money.format(stats.netRevenue)} subtitle="After returns/cancellations" icon={Banknote} tone="green" />
+          <StatCard title="Returns" value={String(stats.returnedOrders)} subtitle={money.format(stats.returnedValue)} icon={Undo2} tone={stats.returnedOrders ? "red" : "green"} />
+          <StatCard title="Net After Spend" value={money.format(expenseStats.netAfterExpenses)} subtitle="Revenue minus entered expenses only" icon={CheckCircle2} tone={expenseStats.netAfterExpenses >= 0 ? "green" : "red"} />
         </section>
 
         <section className="mt-6 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
@@ -2076,30 +2167,10 @@ export default function AdminDashboardPage() {
           </div>
         </section>
 
-        <section className="mt-6 grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
-          <div className="rounded-[2rem] border border-[#0F1A26]/10 bg-[#0F1A26] p-5 text-white shadow-sm">
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-[#EEBC3F]">Profit readiness</p>
-            <h2 className="mt-2 text-2xl font-black">Is this profit number trustworthy?</h2>
-            <p className="mt-2 text-sm font-semibold leading-6 text-white/60">
-              Profit is shown as a readiness view. It uses product cost and packaging cost from Sanity, plus actual shipping cost when the order source provides it.
-            </p>
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <DataPill label="known product cost" value={money.format(stats.knownProductCost)} dark />
-              <DataPill label="actual shipping cost" value={money.format(stats.actualShippingCost)} dark />
-              <DataPill label="gross profit from known costs" value={money.format(stats.grossProfitFromKnownCosts)} dark />
-              <DataPill label="known-cost margin" value={`${stats.marginFromKnownCosts.toFixed(1)}%`} dark />
-            </div>
-            {(stats.missingProductCostLines > 0 || stats.missingActualShippingCostOrders > 0) && (
-              <div className="mt-4 rounded-2xl border border-[#EEBC3F]/30 bg-[#EEBC3F]/10 p-4 text-sm font-bold leading-6 text-[#FFE7A3]">
-                This is not final net profit yet: add product cost/packaging cost in Sanity and actual Aramex cost per order to make profit fully reliable.
-              </div>
-            )}
-          </div>
-
-          <div className="rounded-[2rem] border border-[#0F1A26]/10 bg-white p-5 shadow-sm">
+        <section className="mt-6 rounded-[2rem] border border-[#0F1A26]/10 bg-white p-5 shadow-sm">
             <h2 className="text-lg font-black">Finance alerts</h2>
             <p className="mt-1 text-xs font-bold text-[#0F1A26]/45">
-              These explain exactly why finance may be incomplete or needs admin action.
+              Only operational alerts based on real order/payment/shipping status are shown here.
             </p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               {financeAlerts.map((alert) => (
@@ -2112,7 +2183,6 @@ export default function AdminDashboardPage() {
                 </div>
               ))}
             </div>
-          </div>
         </section>
 
         <section className="mt-6 overflow-hidden rounded-[2rem] border border-[#0F1A26]/10 bg-white shadow-sm">
@@ -2340,19 +2410,13 @@ export default function AdminDashboardPage() {
                       {product.qty} units · {product.ordersCount} orders
                     </p>
                     <p className="mt-1 text-[11px] font-bold leading-5 text-[#0F1A26]/45">
-                      Direct: {money.format(product.directRevenue)}
-                      {product.estimatedRevenue > 0 && (
-                        <> · Estimated from order subtotal: {money.format(product.estimatedRevenue)}</>
-                      )}
-                      {product.missingPriceLines > 0 && (
-                        <> · {product.missingPriceLines} lines missing item price</>
-                      )}
+                      Recorded line revenue: {money.format(product.directRevenue)}
                     </p>
                   </div>
                   <div className="text-left sm:text-right">
                     <p className="font-black">{money.format(product.revenue)}</p>
                     <p className="text-[11px] font-bold text-[#0F1A26]/40">
-                      {product.estimatedRevenue > 0 ? "mixed calculation" : "from line totals"}
+                      from item line totals only
                     </p>
                   </div>
                 </div>
@@ -2424,21 +2488,6 @@ export default function AdminDashboardPage() {
               <div className="rounded-2xl bg-rose-50 p-4">
                 <p className="text-xs font-black uppercase text-rose-700/70">Out of stock</p>
                 <p className="mt-2 text-2xl font-black text-rose-700">{inventoryStats.outItems.length}</p>
-              </div>
-              <div className="rounded-2xl bg-emerald-50 p-4">
-                <p className="text-xs font-black uppercase text-emerald-700/70">Retail stock value</p>
-                <p className="mt-2 text-2xl font-black text-emerald-700">{money.format(inventoryStats.retailValue)}</p>
-              </div>
-              <div className="rounded-2xl bg-[#0F1A26] p-4 text-white">
-                <p className="text-xs font-black uppercase text-white/45">Known stock cost</p>
-                <p className="mt-2 text-2xl font-black">{money.format(inventoryStats.costValue)}</p>
-              </div>
-              <div className="rounded-2xl bg-yellow-50 p-4 sm:col-span-2">
-                <p className="text-xs font-black uppercase text-yellow-800/70">Products missing cost</p>
-                <p className="mt-2 text-2xl font-black text-yellow-800">{inventoryStats.missingCostProducts}</p>
-                <p className="mt-1 text-xs font-bold leading-5 text-yellow-900/60">
-                  Add Product cost and Packaging cost in Sanity to make stock valuation and profit readiness more reliable.
-                </p>
               </div>
             </div>
           </div>
@@ -2568,11 +2617,11 @@ export default function AdminDashboardPage() {
           <>
         <section className="mt-6 rounded-[2rem] border border-[#0F1A26]/10 bg-white p-5 shadow-sm">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <SectionHeader
-              eyebrow="Expense control"
-              title="Costs that reduce real net profit"
-              description="These expenses are managed from Sanity CMS and filtered by the same date range as finance. Use this for ads, packaging, refunds, tools, and manual shipping adjustments."
-            />
+          <SectionHeader
+            eyebrow="Expense control"
+            title="Entered expenses"
+            description="These are only the expenses manually entered in Sanity CMS and filtered by the same date range as finance."
+          />
             <button
               onClick={exportExpensesCsv}
               className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-2xl bg-[#0F1A26] px-5 text-sm font-black text-white transition hover:-translate-y-0.5"
@@ -2587,12 +2636,57 @@ export default function AdminDashboardPage() {
               Live CMS sync: {new Date(expensesFetchedAt).toLocaleString("en-EG")}
             </p>
           )}
+          <div className="mt-4 grid gap-2 lg:grid-cols-[1fr_auto_auto_auto]">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#0F1A26]/35" />
+              <input
+                value={expenseQuery}
+                onChange={(event) => setExpenseQuery(event.target.value)}
+                placeholder="Search title, vendor, order ref, notes..."
+                className="h-11 w-full rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] ps-11 pe-4 text-sm font-bold outline-none focus:border-[#EEBC3F]"
+              />
+            </div>
+            <select
+              value={expenseCategoryFilter}
+              onChange={(event) => setExpenseCategoryFilter(event.target.value)}
+              className="h-11 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-4 text-sm font-black outline-none"
+            >
+              <option value="all">All categories ({visibleExpenses.length})</option>
+              {expenseFilterOptions.categories.map(([category, count]) => (
+                <option key={category} value={category}>{category.replaceAll("_", " ")} ({count})</option>
+              ))}
+            </select>
+            <select
+              value={expensePaymentFilter}
+              onChange={(event) => setExpensePaymentFilter(event.target.value)}
+              className="h-11 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-4 text-sm font-black outline-none"
+            >
+              <option value="all">All payment methods ({visibleExpenses.length})</option>
+              {expenseFilterOptions.paymentMethods.map(([paymentMethod, count]) => (
+                <option key={paymentMethod} value={paymentMethod}>{paymentMethod.replaceAll("_", " ")} ({count})</option>
+              ))}
+            </select>
+            {(expenseQuery || expenseCategoryFilter !== "all" || expensePaymentFilter !== "all") && (
+              <button
+                onClick={() => {
+                  setExpenseQuery("");
+                  setExpenseCategoryFilter("all");
+                  setExpensePaymentFilter("all");
+                }}
+                className="h-11 rounded-2xl border border-[#0F1A26]/10 px-4 text-sm font-black text-[#0F1A26]/65 transition hover:bg-[#F8F6F3]"
+              >
+                Reset expenses
+              </button>
+            )}
+          </div>
+          <p className="mt-3 text-xs font-bold text-[#0F1A26]/45">
+            Showing {filteredExpenses.length} of {visibleExpenses.length} expense entries after filters.
+          </p>
         </section>
 
         <section className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard title="Expenses" value={money.format(expenseStats.total)} subtitle={`${expenseStats.count} entries in period`} icon={ReceiptText} tone={expenseStats.total ? "red" : "green"} />
           <StatCard title="Net After Expenses" value={money.format(expenseStats.netAfterExpenses)} subtitle="Net revenue minus entered expenses" icon={Banknote} tone={expenseStats.netAfterExpenses >= 0 ? "green" : "red"} />
-          <StatCard title="Known Profit After Expenses" value={money.format(expenseStats.profitAfterKnownCostsAndExpenses)} subtitle="Known-cost profit minus expenses" icon={BarChart3} tone={expenseStats.profitAfterKnownCostsAndExpenses >= 0 ? "green" : "red"} />
           <StatCard title="Expense Data Source" value="Sanity CMS" subtitle={expensesLoading ? "Loading expenses..." : "Manual operational expenses"} icon={ShieldCheck} />
         </section>
 
@@ -2781,22 +2875,45 @@ export default function AdminDashboardPage() {
               onChange={(event) => setPaymentFilter(event.target.value)}
               className="h-12 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-4 text-sm font-black outline-none"
             >
-              <option value="all">All payments</option>
-              <option value="cod">COD</option>
-              <option value="card">Card / Paymob</option>
-              <option value="instapay">InstaPay</option>
+              <option value="all">All payments ({visibleOrders.length})</option>
+              {orderFilterOptions.payments.map(([bucket, count]) => (
+                <option key={bucket} value={bucket}>{bucket.replaceAll("_", " ")} ({count})</option>
+              ))}
+            </select>
+            <select
+              value={deliveryFilter}
+              onChange={(event) => setDeliveryFilter(event.target.value)}
+              className="h-12 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-4 text-sm font-black outline-none"
+            >
+              <option value="all">All delivery ({visibleOrders.length})</option>
+              {orderFilterOptions.deliveries.map(([bucket, count]) => (
+                <option key={bucket} value={bucket}>{bucket.replaceAll("_", " ")} ({count})</option>
+              ))}
+            </select>
+            <select
+              value={cityFilter}
+              onChange={(event) => setCityFilter(event.target.value)}
+              className="h-12 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-4 text-sm font-black outline-none"
+            >
+              <option value="all">All cities ({visibleOrders.length})</option>
+              {orderFilterOptions.cities.map(([key, row]) => (
+                <option key={key} value={key}>{row.label} ({row.count})</option>
+              ))}
             </select>
             <select
               value={statusFilter}
               onChange={(event) => setStatusFilter(event.target.value)}
               className="h-12 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-4 text-sm font-black outline-none"
             >
-              <option value="all">All statuses</option>
-              <option value="confirmed">Confirmed / paid</option>
-              <option value="pending_instapay">Pending InstaPay</option>
-              <option value="aramex_missing">Missing Aramex</option>
-              <option value="aramex_failed">Aramex failed</option>
-              <option value="returned">Returned / cancelled</option>
+              <option value="all">All statuses ({visibleOrders.length})</option>
+              <option value="confirmed">Confirmed / paid ({visibleOrders.filter(isConfirmed).length})</option>
+              <option value="pending_instapay">Pending InstaPay ({visibleOrders.filter(isPendingInstaPay).length})</option>
+              <option value="aramex_missing">Missing Aramex ({visibleOrders.filter(needsAramex).length})</option>
+              <option value="aramex_failed">Aramex failed ({visibleOrders.filter((order) => Boolean(getAramexError(order))).length})</option>
+              <option value="returned">Returned / cancelled ({visibleOrders.filter(isReturned).length})</option>
+              {orderFilterOptions.statuses.map(([status, count]) => (
+                <option key={status} value={`raw:${status}`}>{status.replaceAll("_", " ")} ({count})</option>
+              ))}
             </select>
             <button
               onClick={() => refreshAll()}
