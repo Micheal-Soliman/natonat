@@ -35,6 +35,46 @@ function getNumber(value: unknown) {
   return 0;
 }
 
+function parseDateValue(value: unknown) {
+  if (value instanceof Date && Number.isFinite(value.getTime())) return value;
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    if (value > 20_000 && value < 80_000) {
+      const date = new Date(Math.round((value - 25569) * 86400 * 1000));
+      return Number.isFinite(date.getTime()) ? date : null;
+    }
+
+    const timestamp = value > 1_000_000_000_000 ? value : value * 1000;
+    const date = new Date(timestamp);
+    return Number.isFinite(date.getTime()) ? date : null;
+  }
+
+  const raw = getString(value).trim();
+  if (!raw) return null;
+
+  const normalized = raw
+    .replace(/\u200f|\u200e/g, "")
+    .replace(/\s+/g, " ")
+    .replace(/^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}(?::\d{2})?)$/, "$1T$2");
+
+  const direct = new Date(normalized);
+  if (Number.isFinite(direct.getTime())) return direct;
+
+  const dayFirstMatch = normalized.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})(?:,?\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?)?$/i);
+  if (dayFirstMatch) {
+    const [, day, month, year, hour = "0", minute = "0", second = "0", meridiem] = dayFirstMatch;
+    let fullYear = Number(year);
+    if (fullYear < 100) fullYear += 2000;
+    let hours = Number(hour);
+    if (meridiem?.toUpperCase() === "PM" && hours < 12) hours += 12;
+    if (meridiem?.toUpperCase() === "AM" && hours === 12) hours = 0;
+    const date = new Date(fullYear, Number(month) - 1, Number(day), hours, Number(minute), Number(second));
+    return Number.isFinite(date.getTime()) ? date : null;
+  }
+
+  return null;
+}
+
 function getObject(value: unknown): OrderRecord {
   if (typeof value === "string" && value.trim().startsWith("{")) {
     try {
@@ -85,6 +125,8 @@ function normalizeOrder(input: unknown) {
   const extras = getObject(order.extras || order["Extras (JSON)"] || order["Extras (Full JSON)"]);
   const aramexFromJson = getObject(order.aramex);
   const items = getArray(order.items || order["Items (Full JSON)"] || order["Items"]);
+  const createdDate = parseDateValue(order.created_at || order["Created At"] || order.Timestamp);
+  const updatedDate = parseDateValue(order.updated_at || order["Updated At"] || order["Aramex Synced At"]);
 
   const customer = {
     ...customerFromJson,
@@ -113,8 +155,8 @@ function normalizeOrder(input: unknown) {
     ...order,
     order_ref: firstString(order.order_ref, order["Order Ref"]),
     source: firstString(order.source, order.Source),
-    created_at: firstString(order.created_at, order["Created At"], order.Timestamp),
-    updated_at: firstString(order.updated_at, order["Updated At"], order["Aramex Synced At"]),
+    created_at: createdDate?.toISOString() || firstString(order.created_at, order["Created At"], order.Timestamp),
+    updated_at: updatedDate?.toISOString() || firstString(order.updated_at, order["Updated At"], order["Aramex Synced At"]),
     status: firstString(order.status, order.Status),
     payment_status: firstString(order.payment_status, order["Payment Status"]),
     payment_method: firstString(order.payment_method, order["Payment Method"]),

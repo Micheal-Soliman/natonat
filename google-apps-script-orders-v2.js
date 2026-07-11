@@ -281,7 +281,7 @@ function formatHeaders(sheet, startColumn, count) {
 
 function buildOrderRowObject(data) {
   const now = new Date();
-  const timestamp = Utilities.formatDate(now, "Africa/Cairo", "yyyy-MM-dd HH:mm:ss");
+  const timestamp = now.toISOString();
   const source = data.source || "";
   const orderRef = data.order_ref || "";
   const status = data.status || "";

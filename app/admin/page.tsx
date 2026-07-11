@@ -203,12 +203,59 @@ const ADMIN_STATUS_ACTIONS: AdminStatusAction[] = [
 function getString(value: unknown) {
   if (typeof value === "string") return value;
   if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  if (value instanceof Date) return value.toISOString();
   return "";
 }
 
 function getNumber(value: unknown) {
-  const next = Number(value);
-  return Number.isFinite(next) ? next : 0;
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim()) {
+    const cleaned = value.replace(/[^\d.-]/g, "");
+    const next = Number(cleaned);
+    return Number.isFinite(next) ? next : 0;
+  }
+  return 0;
+}
+
+function parseDateValue(value: unknown) {
+  if (value instanceof Date && Number.isFinite(value.getTime())) return value;
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    // Google Sheets serial date: days since 1899-12-30.
+    if (value > 20_000 && value < 80_000) {
+      const date = new Date(Math.round((value - 25569) * 86400 * 1000));
+      return Number.isFinite(date.getTime()) ? date : null;
+    }
+
+    const timestamp = value > 1_000_000_000_000 ? value : value * 1000;
+    const date = new Date(timestamp);
+    return Number.isFinite(date.getTime()) ? date : null;
+  }
+
+  const raw = getString(value).trim();
+  if (!raw) return null;
+
+  const normalized = raw
+    .replace(/\u200f|\u200e/g, "")
+    .replace(/\s+/g, " ")
+    .replace(/^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}(?::\d{2})?)$/, "$1T$2");
+
+  const direct = new Date(normalized);
+  if (Number.isFinite(direct.getTime())) return direct;
+
+  const dayFirstMatch = normalized.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})(?:,?\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?)?$/i);
+  if (dayFirstMatch) {
+    const [, day, month, year, hour = "0", minute = "0", second = "0", meridiem] = dayFirstMatch;
+    let fullYear = Number(year);
+    if (fullYear < 100) fullYear += 2000;
+    let hours = Number(hour);
+    if (meridiem?.toUpperCase() === "PM" && hours < 12) hours += 12;
+    if (meridiem?.toUpperCase() === "AM" && hours === 12) hours = 0;
+    const date = new Date(fullYear, Number(month) - 1, Number(day), hours, Number(minute), Number(second));
+    return Number.isFinite(date.getTime()) ? date : null;
+  }
+
+  return null;
 }
 
 function getObject(value: unknown): Record<string, unknown> {
@@ -286,15 +333,11 @@ function getUpdatedAt(order: AdminOrder) {
 }
 
 function getOrderDate(order: AdminOrder) {
-  const raw = getCreatedAt(order) || getUpdatedAt(order);
-  const date = raw ? new Date(raw) : null;
-  return date && Number.isFinite(date.getTime()) ? date : null;
+  return parseDateValue(order.created_at || order["Created At"] || order["Timestamp"] || order.updated_at || order["Updated At"]);
 }
 
 function getExpenseDate(expense: AdminExpense) {
-  const raw = expense.expenseDate || expense._updatedAt;
-  const date = raw ? new Date(raw) : null;
-  return date && Number.isFinite(date.getTime()) ? date : null;
+  return parseDateValue(expense.expenseDate || expense._updatedAt);
 }
 
 function getExpenseAmount(expense: AdminExpense) {
@@ -1759,7 +1802,8 @@ export default function AdminDashboardPage() {
 
     filteredMetricOrders.forEach((order) => {
       const date = getOrderDate(order);
-      const key = date ? date.toISOString().slice(0, 10) : "No date";
+      if (!date) return;
+      const key = date.toISOString().slice(0, 10);
       const row =
         dayMap.get(key) ||
         {
@@ -1791,7 +1835,8 @@ export default function AdminDashboardPage() {
 
     filteredExpenses.forEach((expense) => {
       const date = getExpenseDate(expense);
-      const key = date ? date.toISOString().slice(0, 10) : "No date";
+      if (!date) return;
+      const key = date.toISOString().slice(0, 10);
       const row =
         dayMap.get(key) ||
         {
@@ -2071,6 +2116,20 @@ export default function AdminDashboardPage() {
 
         {activeTab === "finance" && (
           <>
+        {stats.totalOrders > 0 && (stats.missingDateOrders === stats.totalOrders || stats.missingTotalOrders === stats.totalOrders) && (
+          <section className="mt-6 rounded-[2rem] border border-rose-200 bg-rose-50 p-5 text-rose-800 shadow-sm">
+            <p className="text-xs font-black uppercase tracking-[0.18em]">Data source issue</p>
+            <h2 className="mt-2 text-xl font-black">Orders loaded, but key fields are missing or unreadable.</h2>
+            <p className="mt-2 text-sm font-bold leading-6">
+              The dashboard is protecting the finance numbers. It will not pretend this data is valid until the order source includes readable date and total fields.
+            </p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <DataPill label="orders loaded" value={String(stats.totalOrders)} />
+              <DataPill label="missing date" value={String(stats.missingDateOrders)} />
+              <DataPill label="missing total" value={String(stats.missingTotalOrders)} />
+            </div>
+          </section>
+        )}
         <section className="mt-6 rounded-[2rem] border border-[#0F1A26]/10 bg-white p-5 shadow-sm">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <SectionHeader
@@ -2218,6 +2277,11 @@ export default function AdminDashboardPage() {
             <p className="text-xs font-bold text-[#0F1A26]/45">
               Day-by-day finance movement so the admin can reconcile money, orders, discounts, returns, and Aramex issues.
             </p>
+            {stats.missingDateOrders > 0 && (
+              <p className="mt-2 rounded-2xl bg-amber-50 px-4 py-2 text-xs font-black text-amber-800">
+                {stats.missingDateOrders} orders are excluded from Daily Close because their source date is missing or unreadable. Check Data quality above.
+              </p>
+            )}
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-[#0F1A26]/10 text-left text-sm">
