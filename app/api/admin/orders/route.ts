@@ -7,7 +7,14 @@ type SheetsListResponse = {
   total?: number;
   returned?: number;
   error?: string;
+  message?: string;
+  details?: unknown;
 };
+
+function getSafeDetails(value: unknown) {
+  if (typeof value !== "string") return value;
+  return value.length > 700 ? `${value.slice(0, 700)}...` : value;
+}
 
 export async function GET(req: Request) {
   if (!isAdminAuthorized(req)) {
@@ -27,10 +34,22 @@ export async function GET(req: Request) {
   url.searchParams.set("action", "list");
   url.searchParams.set("limit", requestUrl.searchParams.get("limit") || "500");
 
-  const res = await fetch(url.toString(), {
-    method: "GET",
-    cache: "no-store",
-  });
+  let res: Response;
+
+  try {
+    res = await fetch(url.toString(), {
+      method: "GET",
+      cache: "no-store",
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error: "Could not connect to Google Sheets webhook",
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: 502 },
+    );
+  }
 
   const text = await res.text();
   let data: SheetsListResponse | null = null;
@@ -44,8 +63,12 @@ export async function GET(req: Request) {
   if (!res.ok || !data?.success || !Array.isArray(data.orders)) {
     return NextResponse.json(
       {
-        error: data?.error || "Could not fetch orders from Google Sheets",
-        details: data || text,
+        error: data?.error || data?.message || "Could not fetch orders from Google Sheets",
+        details: {
+          status: res.status,
+          statusText: res.statusText,
+          response: data || getSafeDetails(text),
+        },
       },
       { status: 502 },
     );

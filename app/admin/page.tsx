@@ -50,6 +50,30 @@ type OrdersResponse = {
   details?: unknown;
 };
 
+function formatApiError(error: string | undefined, details: unknown, fallback: string) {
+  const base = error || fallback;
+  if (!details) return base;
+
+  if (typeof details === "string") return `${base}: ${details}`;
+
+  if (typeof details === "object" && details) {
+    const record = details as Record<string, unknown>;
+    const status = [record.status, record.statusText].filter(Boolean).join(" ");
+    const response = record.response;
+
+    if (response && typeof response === "object") {
+      const responseRecord = response as Record<string, unknown>;
+      const nestedError = responseRecord.error || responseRecord.message;
+      if (nestedError) return [base, status, String(nestedError)].filter(Boolean).join(" · ");
+    }
+
+    if (typeof response === "string") return [base, status, response].filter(Boolean).join(" · ");
+    if (status) return `${base} · ${status}`;
+  }
+
+  return base;
+}
+
 type AdminInventoryItem = {
   id: number;
   slug: string;
@@ -836,7 +860,7 @@ export default function AdminDashboardPage() {
       const data = (await res.json()) as OrdersResponse;
 
       if (!res.ok || !data.success || !Array.isArray(data.orders)) {
-        throw new Error(data.error || "Could not load orders");
+        throw new Error(formatApiError(data.error, data.details, "Could not load orders"));
       }
 
       setOrders(data.orders);
