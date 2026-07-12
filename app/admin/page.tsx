@@ -3125,6 +3125,9 @@ export default function AdminDashboardPage() {
                       <td className="px-5 py-4 align-top">
                         <p className="font-black text-[#0F1A26]">{orderRef || "No ref"}</p>
                         <p className="mt-1 text-xs font-bold text-[#0F1A26]/45">{getString(order.source)}</p>
+                        <p className="mt-1 text-xs font-bold text-[#0F1A26]/55">
+                          Order created {formatAdminDateTime(getCreatedAt(order)) || "No date"}
+                        </p>
                       </td>
                       <td className="px-5 py-4 align-top">
                         <p className="font-bold">{getString(customer.first_name) || "Customer"}</p>

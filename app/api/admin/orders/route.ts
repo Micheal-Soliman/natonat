@@ -181,6 +181,21 @@ function normalizeOrder(input: unknown) {
   };
 }
 
+type NormalizedOrder = ReturnType<typeof normalizeOrder>;
+
+function hasMeaningfulOrderData(order: NormalizedOrder) {
+  const customer = getObject(order.customer);
+  const aramex = getObject(order.aramex);
+
+  return Boolean(
+    firstString(order.order_ref, order.source) ||
+      firstString(customer.first_name, customer.last_name, customer.phone, customer.email) ||
+      firstString(aramex.trackingNumber) ||
+      getNumber(order.amount_egp) > 0 ||
+      getArray(order.items).length > 0,
+  );
+}
+
 export async function GET(req: Request) {
   if (!isAdminAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -239,12 +254,14 @@ export async function GET(req: Request) {
     );
   }
 
-  const orders = data.orders.map(normalizeOrder);
+  const normalizedOrders = data.orders.map(normalizeOrder);
+  const orders = normalizedOrders.filter(hasMeaningfulOrderData);
 
   return NextResponse.json({
     success: true,
     orders,
     total: data.total ?? orders.length,
     returned: data.returned ?? orders.length,
+    skipped_empty_rows: normalizedOrders.length - orders.length,
   });
 }
