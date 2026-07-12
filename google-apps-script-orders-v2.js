@@ -108,6 +108,14 @@ function doGet(e) {
     return listOrders(params);
   }
 
+  if (action === "preview_date_repair") {
+    return previewDateRepair(params);
+  }
+
+  if (action === "apply_date_repair") {
+    return applyDateRepair(params);
+  }
+
   if (!orderRef) {
     return jsonOutput({
       success: true,
@@ -213,6 +221,80 @@ function listOrders(params) {
   }
 }
 
+function previewDateRepair(params) {
+  try {
+    const result = collectDateRepairCandidates(params, {
+      defaultLimit: 100,
+      defaultMinimumDiffMinutes: 10,
+      minimumAllowedDiffMinutes: 1,
+    });
+
+    if (!result.success) return jsonOutput(result);
+
+    return jsonOutput({
+      success: true,
+      sheet: result.sheet,
+      mode: "preview_only",
+      note: "No cells were changed. Review candidates before adding/applying a repair action.",
+      minimum_diff_minutes: result.minimumDiffMinutes,
+      returned: result.candidates.length,
+      candidates: result.candidates,
+    });
+  } catch (error) {
+    return jsonOutput({ success: false, error: error.toString() });
+  }
+}
+
+function applyDateRepair(params) {
+  try {
+    const tokenCheck = validateDateRepairToken(params);
+    if (!tokenCheck.success) return jsonOutput(tokenCheck);
+
+    if (params.confirm !== "YES") {
+      return jsonOutput({
+        success: false,
+        error: "Missing confirmation. Add confirm=YES to apply date repair.",
+        mode: "blocked",
+      });
+    }
+
+    const result = collectDateRepairCandidates(params, {
+      defaultLimit: 500,
+      defaultMinimumDiffMinutes: 360,
+      minimumAllowedDiffMinutes: 60,
+    });
+
+    if (!result.success) return jsonOutput(result);
+
+    const changes = [];
+
+    result.candidates.forEach((candidate) => {
+      result.sheetObject.getRange(candidate.row, result.timestampColumn).setValue(candidate.suggested_timestamp);
+
+      changes.push({
+        row: candidate.row,
+        order_ref: candidate.order_ref,
+        previous_timestamp: candidate.current_timestamp,
+        repaired_timestamp: candidate.suggested_timestamp,
+        source: candidate.source,
+        diff_minutes: candidate.diff_minutes,
+      });
+    });
+
+    return jsonOutput({
+      success: true,
+      sheet: result.sheet,
+      mode: "applied",
+      minimum_diff_minutes: result.minimumDiffMinutes,
+      repaired: changes.length,
+      note: "Only the Timestamp column was updated.",
+      changes,
+    });
+  } catch (error) {
+    return jsonOutput({ success: false, error: error.toString() });
+  }
+}
+
 function isCodOrder(data) {
   const paymentMethod = String(data.payment_method || "").toLowerCase();
   const paymentStatus = String(data.payment_status || "").toLowerCase();
@@ -229,11 +311,14 @@ function upsertOrderRow(ss, sheetName, data) {
 
   ensureHeaders(sheet);
 
-  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  const rowObject = buildOrderRowObject(data);
-  const row = headers.map((header) => valueForCell(rowObject[header]));
   const orderRef = data.order_ref || "";
   const existingRow = orderRef ? findOrderRow(sheet, orderRef) : null;
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const existingRowObject = existingRow
+    ? rowToObject(headers, sheet.getRange(existingRow, 1, 1, headers.length).getValues()[0])
+    : {};
+  const rowObject = buildOrderRowObject(data, existingRowObject);
+  const row = headers.map((header) => valueForCell(rowObject[header]));
 
   if (existingRow) {
     sheet.getRange(existingRow, 1, 1, row.length).setValues([row]);
@@ -279,9 +364,16 @@ function formatHeaders(sheet, startColumn, count) {
   sheet.autoResizeColumns(startColumn, count);
 }
 
-function buildOrderRowObject(data) {
+function buildOrderRowObject(data, existingRowObject) {
   const now = new Date();
-  const timestamp = now.toISOString();
+  const timestamp = firstNonEmpty(
+    data.created_at,
+    data.createdAt,
+    data["Created At"],
+    existingRowObject && existingRowObject["Timestamp"],
+    data.Timestamp,
+    now.toISOString()
+  );
   const source = data.source || "";
   const orderRef = data.order_ref || "";
   const status = data.status || "";
@@ -541,6 +633,210 @@ function rowToObject(headers, row) {
   }, {});
 }
 
+function collectDateRepairCandidates(params, options) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheetName = params.sheet || SHEET_NAME;
+  const sheet = ss.getSheetByName(sheetName);
+
+  if (!sheet) {
+    return { success: false, error: "Sheet not found", sheet: sheetName };
+  }
+
+  ensureHeaders(sheet);
+
+  const values = sheet.getDataRange().getValues();
+  if (values.length <= 1) {
+    return {
+      success: true,
+      sheet: sheetName,
+      sheetObject: sheet,
+      timestampColumn: 0,
+      minimumDiffMinutes: options.defaultMinimumDiffMinutes,
+      candidates: [],
+    };
+  }
+
+  const headers = values[0] || [];
+  const timestampIndex = headers.indexOf("Timestamp");
+  if (timestampIndex === -1) {
+    return { success: false, error: "Timestamp column not found", sheet: sheetName };
+  }
+
+  const limit = Math.max(1, Math.min(500, Number(params.limit || options.defaultLimit)));
+  const minimumDiffMinutes = Math.max(
+    options.minimumAllowedDiffMinutes,
+    Number(params.minimum_diff_minutes || options.defaultMinimumDiffMinutes)
+  );
+  const candidates = [];
+
+  for (let rowIndex = 1; rowIndex < values.length && candidates.length < limit; rowIndex++) {
+    const row = values[rowIndex];
+    const rowObject = rowToObject(headers, row);
+    const candidate = getBestCreationDateCandidate(rowObject);
+    const currentDate = parseAnyDate(rowObject["Timestamp"]);
+
+    if (!candidate || !candidate.date || !currentDate) continue;
+
+    const diffMinutes = Math.round(Math.abs(currentDate.getTime() - candidate.date.getTime()) / 60000);
+    if (diffMinutes < minimumDiffMinutes) continue;
+
+    candidates.push({
+      row: rowIndex + 1,
+      order_ref: rowObject["Order Ref"] || "",
+      current_timestamp: currentDate.toISOString(),
+      suggested_timestamp: candidate.date.toISOString(),
+      source: candidate.source,
+      diff_minutes: diffMinutes,
+      payment_method: rowObject["Payment Method"] || "",
+      status: rowObject["Status"] || "",
+      aramex_synced_at: normalizeDateForOutput(rowObject["Aramex Synced At"]),
+    });
+  }
+
+  return {
+    success: true,
+    sheet: sheetName,
+    sheetObject: sheet,
+    timestampColumn: timestampIndex + 1,
+    minimumDiffMinutes,
+    candidates,
+  };
+}
+
+function validateDateRepairToken(params) {
+  const configuredToken = PropertiesService.getScriptProperties().getProperty("DATE_REPAIR_TOKEN");
+  if (!configuredToken) {
+    return {
+      success: false,
+      error: "DATE_REPAIR_TOKEN is not configured in Script Properties.",
+      mode: "blocked",
+    };
+  }
+
+  if (params.repair_token !== configuredToken) {
+    return {
+      success: false,
+      error: "Invalid or missing repair_token.",
+      mode: "blocked",
+    };
+  }
+
+  return { success: true };
+}
+
+function getBestCreationDateCandidate(rowObject) {
+  const rawPayload = parseJsonObject(rowObject["Raw Payload"]);
+  const rawDate = parseAnyDate(
+    rawPayload.created_at ||
+    rawPayload.createdAt ||
+    rawPayload.createdAtIso ||
+    rawPayload.order_created_at
+  );
+
+  if (rawDate) {
+    return { date: rawDate, source: "raw_payload.created_at" };
+  }
+
+  const refDate = parseDateFromOrderReference(
+    rowObject["Order Ref"] ||
+    rawPayload.order_ref ||
+    rowObject["Special Reference (Paymob)"] ||
+    rawPayload.special_reference
+  );
+
+  if (refDate) {
+    return { date: refDate, source: "order_ref_timestamp" };
+  }
+
+  return null;
+}
+
+function parseJsonObject(value) {
+  if (!value) return {};
+  if (typeof value === "object" && !(value instanceof Date)) return value;
+  if (typeof value !== "string") return {};
+
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  } catch (error) {
+    return {};
+  }
+}
+
+function parseDateFromOrderReference(value) {
+  const text = String(value || "");
+  const match = text.match(/NAT-(\d{10,13})/i);
+  if (!match) return null;
+
+  const raw = Number(match[1]);
+  if (!Number.isFinite(raw)) return null;
+
+  const timestamp = raw > 1000000000000 ? raw : raw * 1000;
+  const date = new Date(timestamp);
+  return Number.isFinite(date.getTime()) ? date : null;
+}
+
+function parseAnyDate(value) {
+  if (value instanceof Date && Number.isFinite(value.getTime())) return value;
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    if (value > 20000 && value < 80000) {
+      const dateFromSerial = new Date(Math.round((value - 25569) * 86400 * 1000));
+      return Number.isFinite(dateFromSerial.getTime()) ? dateFromSerial : null;
+    }
+
+    const timestamp = value > 1000000000000 ? value : value * 1000;
+    const dateFromTimestamp = new Date(timestamp);
+    return Number.isFinite(dateFromTimestamp.getTime()) ? dateFromTimestamp : null;
+  }
+
+  const raw = String(value || "").trim();
+  if (!raw) return null;
+
+  const normalized = raw
+    .replace(/\u200f|\u200e/g, "")
+    .replace(/\s+/g, " ")
+    .replace(/^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}(?::\d{2})?)$/, "$1T$2");
+
+  const direct = new Date(normalized);
+  if (Number.isFinite(direct.getTime())) return direct;
+
+  const dayFirstMatch = normalized.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})(?:,?\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?)?$/i);
+  if (!dayFirstMatch) return null;
+
+  const day = Number(dayFirstMatch[1]);
+  const month = Number(dayFirstMatch[2]);
+  let year = Number(dayFirstMatch[3]);
+  let hours = Number(dayFirstMatch[4] || 0);
+  const minutes = Number(dayFirstMatch[5] || 0);
+  const seconds = Number(dayFirstMatch[6] || 0);
+  const meridiem = String(dayFirstMatch[7] || "").toUpperCase();
+
+  if (year < 100) year += 2000;
+  if (meridiem === "PM" && hours < 12) hours += 12;
+  if (meridiem === "AM" && hours === 12) hours = 0;
+
+  const date = new Date(year, month - 1, day, hours, minutes, seconds);
+  return Number.isFinite(date.getTime()) ? date : null;
+}
+
+function normalizeDateForOutput(value) {
+  const date = parseAnyDate(value);
+  return date ? date.toISOString() : "";
+}
+
+function firstNonEmpty() {
+  for (let i = 0; i < arguments.length; i++) {
+    const value = arguments[i];
+    if (value === undefined || value === null) continue;
+    if (value instanceof Date && Number.isFinite(value.getTime())) return value.toISOString();
+    if (String(value).trim() !== "") return value;
+  }
+
+  return "";
+}
+
 function numberOrZero(value) {
   const next = Number(value);
   return Number.isFinite(next) ? next : 0;
@@ -558,6 +854,7 @@ function valueOrEmpty(value) {
 
 function valueForCell(value) {
   if (value === undefined || value === null) return "";
+  if (value instanceof Date && Number.isFinite(value.getTime())) return value.toISOString();
   if (typeof value === "object") return jsonStringifySafe(value);
   return value;
 }

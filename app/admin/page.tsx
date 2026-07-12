@@ -163,6 +163,12 @@ const money = new Intl.NumberFormat("en-EG", {
   maximumFractionDigits: 0,
 });
 
+const cairoDateTime = new Intl.DateTimeFormat("en-EG", {
+  dateStyle: "medium",
+  timeStyle: "short",
+  timeZone: "Africa/Cairo",
+});
+
 const ADMIN_STATUS_ACTIONS: AdminStatusAction[] = [
   {
     label: "Mark delivered",
@@ -346,11 +352,30 @@ function getExpenseAmount(expense: AdminExpense) {
 
 function getSubtotal(order: AdminOrder) {
   const extras = getExtras(order);
+  const total = getAmount(order);
+  const shipping = getShipping(order);
+  const discounts = getDiscount(order);
+
   return (
     getNumber(extras.subtotal_egp) ||
     getNumber(order["Subtotal (EGP)"]) ||
+    (total > 0 ? Math.max(0, total - shipping + discounts) : 0) ||
     0
   );
+}
+
+function formatAdminDateTime(value: unknown) {
+  const date = parseDateValue(value);
+  return date ? cairoDateTime.format(date) : "";
+}
+
+function formatAdminValue(value: unknown) {
+  if (typeof value === "string" || typeof value === "number" || value instanceof Date) {
+    const formattedDate = formatAdminDateTime(value);
+    if (formattedDate) return formattedDate;
+  }
+
+  return typeof value === "object" ? JSON.stringify(value) : getString(value);
 }
 
 function getDiscount(order: AdminOrder) {
@@ -394,7 +419,12 @@ function getItemUnitPrice(item: Record<string, unknown>) {
 }
 
 function getItemLineTotal(item: Record<string, unknown>) {
-  return getNumber(item.line_total_egp ?? item.line_total ?? item.lineTotal ?? item.total);
+  const recordedLineTotal = getNumber(item.line_total_egp ?? item.line_total ?? item.lineTotal ?? item.total);
+  if (recordedLineTotal > 0) return recordedLineTotal;
+
+  const quantity = getItemRecordedQuantity(item);
+  const unitPrice = getItemUnitPrice(item);
+  return quantity > 0 && unitPrice > 0 ? quantity * unitPrice : 0;
 }
 
 function getPaymentMethod(order: AdminOrder) {
@@ -630,7 +660,7 @@ function KeyValueGrid({ data }: { data: Record<string, unknown> }) {
         <DataPill
           key={key}
           label={key.replaceAll("_", " ")}
-          value={typeof value === "object" ? JSON.stringify(value) : getString(value)}
+          value={formatAdminValue(value)}
         />
       ))}
     </div>
@@ -670,7 +700,8 @@ function OrderDetailsPanel({
             <p className="text-xs font-black uppercase tracking-[0.18em] text-[#EEBC3F]">Order full details</p>
             <h3 className="mt-2 text-2xl font-black">{getOrderRef(order) || "No order ref"}</h3>
             <p className="mt-1 text-sm font-semibold text-[#0F1A26]/50">
-              {getCreatedAt(order) || "No creation date"} {getUpdatedAt(order) ? `- updated ${getUpdatedAt(order)}` : ""}
+              {formatAdminDateTime(getCreatedAt(order)) || "No creation date"}
+              {getUpdatedAt(order) ? ` - updated ${formatAdminDateTime(getUpdatedAt(order)) || getUpdatedAt(order)}` : ""}
             </p>
           </div>
           <button
@@ -794,7 +825,7 @@ function OrderDetailsPanel({
                 tracking_number: getTrackingNumber(order),
                 status: getAramexStatus(order),
                 latest_update: getAramexLatestUpdate(order),
-                synced_at: getAramexSyncedAt(order),
+                synced_at: formatAdminDateTime(getAramexSyncedAt(order)) || getAramexSyncedAt(order),
                 error: getAramexError(order),
                 ...aramex,
               }}
@@ -805,9 +836,9 @@ function OrderDetailsPanel({
             <h4 className="mb-3 text-lg font-black">Customer notifications</h4>
             <KeyValueGrid
               data={{
-                customer_confirmation_email: getCustomerEmailSentAt(order) || "Not recorded",
-                instapay_pending_customer_email: getInstaPayPendingCustomerEmailSentAt(order) || "Not recorded",
-                admin_instapay_approval_email: getInstaPayApprovalEmailSentAt(order) || "Not recorded",
+                customer_confirmation_email: formatAdminDateTime(getCustomerEmailSentAt(order)) || getCustomerEmailSentAt(order) || "Not recorded",
+                instapay_pending_customer_email: formatAdminDateTime(getInstaPayPendingCustomerEmailSentAt(order)) || getInstaPayPendingCustomerEmailSentAt(order) || "Not recorded",
+                admin_instapay_approval_email: formatAdminDateTime(getInstaPayApprovalEmailSentAt(order)) || getInstaPayApprovalEmailSentAt(order) || "Not recorded",
                 confirmation_email_tracking_number: getTrackingNumber(order) || "Tracking not available yet",
               }}
             />
@@ -1477,6 +1508,9 @@ export default function AdminDashboardPage() {
     const missingDateOrders = filteredMetricOrders.filter((order) => !getOrderDate(order));
     const missingCustomerOrders = filteredMetricOrders.filter((order) => !getString(getCustomer(order).phone) && !getString(getCustomer(order).first_name));
     const missingItemsOrders = filteredMetricOrders.filter((order) => getItems(order).length === 0);
+    const missingProductRevenueLines = revenueOrders.reduce((sum, order) => {
+      return sum + getItems(order).filter((item) => getItemRecordedQuantity(item) > 0 && getItemLineTotal(item) <= 0).length;
+    }, 0);
     const cardOrders = filteredMetricOrders.filter((order) => getPaymentBucket(order) === "card");
     const codOrders = filteredMetricOrders.filter((order) => getPaymentBucket(order) === "cod");
     const instapayOrders = filteredMetricOrders.filter((order) => getPaymentBucket(order) === "instapay");
@@ -1544,6 +1578,7 @@ export default function AdminDashboardPage() {
       missingDateOrders: missingDateOrders.length,
       missingCustomerOrders: missingCustomerOrders.length,
       missingItemsOrders: missingItemsOrders.length,
+      missingProductRevenueLines,
       cardOrders: cardOrders.length,
       codOrders: codOrders.length,
       instapayOrders: instapayOrders.length,
@@ -2173,7 +2208,7 @@ export default function AdminDashboardPage() {
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-[#EEBC3F]">Money map</p>
                 <h2 className="mt-2 text-2xl font-black">Where the money came from and where it stands</h2>
                 <p className="mt-2 text-sm font-semibold leading-6 text-[#0F1A26]/55">
-                  This separates collected online money, COD money still to collect, pending/unapproved money, and value blocked by fulfillment issues.
+                  This separates collected online money, COD money still to collect, pending/unapproved money, and value blocked by fulfillment issues. A zero here means no matching orders in the selected period, unless Data Gaps shows missing totals.
                 </p>
               </div>
               <Banknote className="h-8 w-8 shrink-0 text-[#EEBC3F]" />
@@ -2216,7 +2251,7 @@ export default function AdminDashboardPage() {
           <StatCard title="All Orders Value" value={money.format(stats.allOrdersValue)} subtitle="Raw total value for current period" icon={ClipboardList} tone="dark" />
           <StatCard title="Unconfirmed Value" value={money.format(stats.unconfirmedValue)} subtitle={`${stats.unconfirmedOrders} pending/unpaid orders`} icon={AlertTriangle} tone={stats.unconfirmedOrders ? "gold" : "dark"} />
           <StatCard title="Average Order Value" value={money.format(stats.averageOrderValue)} subtitle="Confirmed non-returned orders" icon={BarChart3} tone="dark" />
-          <StatCard title="Data Gaps" value={String(stats.missingTotalOrders + stats.missingDateOrders + stats.missingItemsOrders + stats.missingCustomerOrders)} subtitle="Missing date/total/items/customer fields" icon={ShieldCheck} tone={stats.missingTotalOrders + stats.missingDateOrders + stats.missingItemsOrders + stats.missingCustomerOrders ? "red" : "green"} />
+          <StatCard title="Data Gaps" value={String(stats.missingTotalOrders + stats.missingDateOrders + stats.missingItemsOrders + stats.missingCustomerOrders + stats.missingProductRevenueLines)} subtitle="Missing date/total/items/customer/product price fields" icon={ShieldCheck} tone={stats.missingTotalOrders + stats.missingDateOrders + stats.missingItemsOrders + stats.missingCustomerOrders + stats.missingProductRevenueLines ? "red" : "green"} />
         </section>
 
         <section className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -2238,6 +2273,9 @@ export default function AdminDashboardPage() {
               <DataPill label="returned/cancelled deduction" value={`-${money.format(stats.returnedValue)}`} />
               <DataPill label="net revenue shown" value={money.format(stats.netRevenue)} />
             </div>
+            <p className="mt-3 text-xs font-bold leading-5 text-[#0F1A26]/45">
+              If subtotal is not stored on an old order, the dashboard derives it from total + discounts - shipping. If item line total is missing, product revenue uses unit price x quantity.
+            </p>
           </div>
 
           <div className="rounded-[2rem] border border-[#0F1A26]/10 bg-white p-5 shadow-sm">
@@ -2248,6 +2286,7 @@ export default function AdminDashboardPage() {
               <DataPill label="orders missing date" value={String(stats.missingDateOrders)} />
               <DataPill label="orders missing items" value={String(stats.missingItemsOrders)} />
               <DataPill label="orders missing customer" value={String(stats.missingCustomerOrders)} />
+              <DataPill label="item lines missing price" value={String(stats.missingProductRevenueLines)} />
               <DataPill label="orders included in finance period" value={String(stats.totalOrders)} />
             </div>
           </div>
@@ -2460,7 +2499,7 @@ export default function AdminDashboardPage() {
                       <button onClick={() => setSelectedOrder(entry.order)} className="font-black text-[#0F1A26] underline-offset-4 hover:underline">
                         {entry.orderRef || "No ref"}
                       </button>
-                      <p className="mt-1 text-xs font-bold text-[#0F1A26]/40">{getCreatedAt(entry.order) || "No date"}</p>
+                      <p className="mt-1 text-xs font-bold text-[#0F1A26]/40">{formatAdminDateTime(getCreatedAt(entry.order)) || "No date"}</p>
                     </td>
                     <td className="px-5 py-4 align-top">
                       <span className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${entry.tone}`}>
@@ -2489,7 +2528,7 @@ export default function AdminDashboardPage() {
           <div className="overflow-hidden rounded-[2rem] border border-[#0F1A26]/10 bg-white shadow-sm">
             <div className="border-b border-[#0F1A26]/10 px-5 py-4">
               <h2 className="text-lg font-black">Top selling products</h2>
-              <p className="text-xs font-bold text-[#0F1A26]/45">Based on confirmed non-returned order lines.</p>
+              <p className="text-xs font-bold text-[#0F1A26]/45">Based on confirmed non-returned order lines. Revenue uses line total first, then unit price x quantity when needed.</p>
             </div>
             <div className="divide-y divide-[#0F1A26]/8">
               {operations.topProducts.length ? operations.topProducts.map((product, index) => (
@@ -2507,7 +2546,7 @@ export default function AdminDashboardPage() {
                   <div className="text-left sm:text-right">
                     <p className="font-black">{money.format(product.revenue)}</p>
                     <p className="text-[11px] font-bold text-[#0F1A26]/40">
-                      from item line totals only
+                      from item lines
                     </p>
                   </div>
                 </div>
@@ -2554,7 +2593,7 @@ export default function AdminDashboardPage() {
                 </p>
                 {inventoryFetchedAt && (
                   <p className="mt-2 text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/35">
-                    Live CMS sync: {new Date(inventoryFetchedAt).toLocaleString("en-EG")}
+                    Live CMS sync: {formatAdminDateTime(inventoryFetchedAt)}
                   </p>
                 )}
               </div>
@@ -2724,7 +2763,7 @@ export default function AdminDashboardPage() {
 
           {expensesFetchedAt && (
             <p className="mt-3 text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/35">
-              Live CMS sync: {new Date(expensesFetchedAt).toLocaleString("en-EG")}
+              Live CMS sync: {formatAdminDateTime(expensesFetchedAt)}
             </p>
           )}
           <div className="mt-4 grid gap-2 lg:grid-cols-[1fr_auto_auto_auto]">
@@ -3108,7 +3147,11 @@ export default function AdminDashboardPage() {
                             <p className="font-black text-emerald-700">{tracking}</p>
                             {aramexStatus && <p className="mt-1 text-xs font-black text-[#0F1A26]">{aramexStatus}</p>}
                             {aramexUpdate && <p className="mt-1 max-w-[260px] text-xs font-semibold text-[#0F1A26]/55">{aramexUpdate}</p>}
-                            {aramexSyncedAt && <p className="mt-1 text-[11px] font-bold text-[#0F1A26]/35">Synced {aramexSyncedAt}</p>}
+                            {aramexSyncedAt && (
+                              <p className="mt-1 text-[11px] font-bold text-[#0F1A26]/35">
+                                Synced {formatAdminDateTime(aramexSyncedAt) || aramexSyncedAt}
+                              </p>
+                            )}
                           </>
                         ) : (
                           <p className="font-bold text-[#0F1A26]/40">No tracking</p>
