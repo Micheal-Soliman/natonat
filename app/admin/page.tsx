@@ -2458,16 +2458,16 @@ export default function AdminDashboardPage() {
         </section>
 
         <section className="mt-4 rounded-[2rem] border border-[#0F1A26]/10 bg-white p-4 shadow-sm">
-          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-            <div>
+          <div className="grid gap-4">
+            <div className="min-w-0">
               <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0F1A26]/45">Dashboard period</p>
               <p className="mt-1 text-lg font-black">{dateRange.label} · {visibleOrders.length} orders in view</p>
             </div>
-            <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-[minmax(150px,0.8fr)_minmax(260px,1.4fr)_minmax(180px,1fr)_minmax(180px,1fr)_minmax(200px,1fr)_minmax(200px,1fr)_auto_auto]">
               <select
                 value={datePreset}
                 onChange={(event) => changeDatePreset(event.target.value as DatePreset)}
-                className="h-11 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-4 text-sm font-black outline-none"
+                className="h-11 w-full min-w-0 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-4 text-sm font-black outline-none"
               >
                 <option value="all">All time</option>
                 <option value="today">Today</option>
@@ -2477,18 +2477,18 @@ export default function AdminDashboardPage() {
                 <option value="custom">Custom range</option>
               </select>
               {datePreset === "custom" && (
-                <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto_auto]">
+                <div className="grid gap-2 sm:grid-cols-2 lg:col-span-4 lg:grid-cols-[minmax(150px,1fr)_minmax(150px,1fr)_auto_auto] 2xl:col-span-1 2xl:grid-cols-2">
                   <input
                     type="date"
                     value={customDateDraftFrom}
                     onChange={(event) => setCustomDateDraftFrom(event.target.value)}
-                    className="h-11 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-4 text-sm font-black outline-none"
+                    className="h-11 w-full min-w-0 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-4 text-sm font-black outline-none"
                   />
                   <input
                     type="date"
                     value={customDateDraftTo}
                     onChange={(event) => setCustomDateDraftTo(event.target.value)}
-                    className="h-11 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-4 text-sm font-black outline-none"
+                    className="h-11 w-full min-w-0 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-4 text-sm font-black outline-none"
                   />
                   <button
                     type="button"
@@ -2509,7 +2509,7 @@ export default function AdminDashboardPage() {
               <select
                 value={paymentFilter}
                 onChange={(event) => setPaymentFilter(event.target.value)}
-                className="h-11 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-4 text-sm font-black outline-none"
+                className="h-11 w-full min-w-0 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-4 text-sm font-black outline-none"
               >
                 <option value="all">All payments ({visibleOrders.length})</option>
                 {orderFilterOptions.payments.map(([bucket, count]) => (
@@ -2519,7 +2519,7 @@ export default function AdminDashboardPage() {
               <select
                 value={deliveryFilter}
                 onChange={(event) => setDeliveryFilter(event.target.value)}
-                className="h-11 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-4 text-sm font-black outline-none"
+                className="h-11 w-full min-w-0 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-4 text-sm font-black outline-none"
               >
                 <option value="all">All delivery ({visibleOrders.length})</option>
                 {orderFilterOptions.deliveries.map(([bucket, count]) => (
@@ -2529,7 +2529,7 @@ export default function AdminDashboardPage() {
               <select
                 value={cityFilter}
                 onChange={(event) => setCityFilter(event.target.value)}
-                className="h-11 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-4 text-sm font-black outline-none"
+                className="h-11 w-full min-w-0 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-4 text-sm font-black outline-none"
               >
                 <option value="all">All cities ({visibleOrders.length})</option>
                 {orderFilterOptions.cities.map(([key, row]) => (
@@ -2539,7 +2539,7 @@ export default function AdminDashboardPage() {
               <select
                 value={statusFilter}
                 onChange={(event) => setStatusFilter(event.target.value)}
-                className="h-11 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-4 text-sm font-black outline-none"
+                className="h-11 w-full min-w-0 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-4 text-sm font-black outline-none"
               >
                 <option value="all">All statuses ({visibleOrders.length})</option>
                 <option value="confirmed">Confirmed / paid ({visibleOrders.filter(isConfirmed).length})</option>
@@ -2559,14 +2559,14 @@ export default function AdminDashboardPage() {
                     setCityFilter("all");
                     setStatusFilter("all");
                   }}
-                  className="inline-flex h-11 items-center justify-center rounded-2xl border border-[#0F1A26]/10 px-4 text-sm font-black text-[#0F1A26]/65 transition hover:bg-[#F8F6F3]"
+                  className="inline-flex h-11 w-full items-center justify-center rounded-2xl border border-[#0F1A26]/10 px-4 text-sm font-black text-[#0F1A26]/65 transition hover:bg-[#F8F6F3]"
                 >
                   Reset filters
                 </button>
               )}
               <button
                 onClick={exportOrdersCsv}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-[#0F1A26] px-5 text-sm font-black text-white transition hover:-translate-y-0.5"
+                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[#0F1A26] px-5 text-sm font-black text-white transition hover:-translate-y-0.5"
               >
                 <Download className="h-4 w-4" />
                 Export CSV
