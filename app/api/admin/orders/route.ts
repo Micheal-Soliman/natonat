@@ -146,8 +146,12 @@ function normalizeOrder(input: unknown) {
     trackingLink: firstString(aramexFromJson.trackingLink, order["Aramex Tracking Link"]),
     guid: firstString(aramexFromJson.guid, order["Aramex GUID"]),
     status: firstString(aramexFromJson.status, order["Aramex Status"]),
+    latestCode: firstString(aramexFromJson.latestCode, aramexFromJson.updateCode, order["Aramex Update Code"]),
     latestDescription: firstString(aramexFromJson.latestDescription, order["Aramex Latest Update"]),
     latestLocation: firstString(aramexFromJson.latestLocation, order["Aramex Latest Location"]),
+    latestDate: firstString(aramexFromJson.latestDate, order["Aramex Latest Date"]),
+    latestComments: firstString(aramexFromJson.latestComments, order["Aramex Latest Comments"]),
+    latestProblemCode: firstString(aramexFromJson.latestProblemCode, order["Aramex Problem Code"]),
     syncedAt: firstString(aramexFromJson.syncedAt, order["Aramex Synced At"]),
     error: firstString(aramexFromJson.error, order["Aramex Error"]),
   };

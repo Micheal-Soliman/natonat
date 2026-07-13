@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import {
   AlertTriangle,
   BarChart3,
@@ -193,6 +194,28 @@ const MANUAL_ORDER_DELIVERY_METHODS = [
   { value: "pickup", label: "Pickup" },
 ] as const;
 
+const ARAMEX_TRACKING_STAGES = [
+  { key: "shipment_created", label: "Shipment Created / إنشاء الشحنة" },
+  { key: "shipment_picked_up", label: "Shipment Picked Up / استلام الشحنة" },
+  { key: "departed_origin", label: "Departed Origin / مغادرة المنشأ" },
+  { key: "in_transit", label: "In Transit / في الطريق" },
+  { key: "arrived_destination", label: "Arrived Destination / الوصول إلى الوجهة" },
+  { key: "out_for_delivery", label: "Out for Delivery / الخروج للتوصيل" },
+  { key: "delivered", label: "Delivered / تم التوصيل" },
+] as const;
+
+const OPERATIONAL_TRACKING_STAGES = [
+  { key: "pending_instapay_approval", label: "Pending InstaPay approval" },
+  { key: "needs_aramex_replacement", label: "Needs Aramex replacement" },
+  { key: "aramex_failed", label: "Aramex failed" },
+  { key: "missing_tracking", label: "Missing tracking" },
+  { key: "returned_cancelled", label: "Returned / Cancelled" },
+  { key: "pickup_order", label: "Pickup order" },
+  { key: "unknown", label: "Unknown" },
+] as const;
+
+const SHIPMENT_STATUS_STAGES = [...ARAMEX_TRACKING_STAGES, ...OPERATIONAL_TRACKING_STAGES] as const;
+
 const money = new Intl.NumberFormat("en-EG", {
   style: "currency",
   currency: "EGP",
@@ -374,7 +397,24 @@ function formatAdminValue(value: unknown) {
     if (formattedDate) return formattedDate;
   }
 
-  return typeof value === "object" ? JSON.stringify(value) : getString(value);
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (typeof value === "object" && value) return "Recorded details";
+  return getString(value);
+}
+
+function formatAdminLabel(label: string) {
+  return label
+    .replaceAll("_", " ")
+    .replaceAll("-", " ")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .trim();
+}
+
+function isEmptyAdminValue(value: unknown) {
+  if (value === undefined || value === null || value === "") return true;
+  if (Array.isArray(value)) return value.length === 0;
+  if (typeof value === "object") return Object.keys(getObject(value)).length === 0;
+  return false;
 }
 
 function getDiscount(order: AdminOrder) {
@@ -508,9 +548,151 @@ function getAramexLatestUpdate(order: AdminOrder) {
   return getString(aramex.latestDescription || aramex.latestDate || order["Aramex Latest Update"]);
 }
 
+function getAramexLatestLocation(order: AdminOrder) {
+  const aramex = getAramex(order);
+  return getString(aramex.latestLocation || order["Aramex Latest Location"]);
+}
+
+function getAramexLatestCode(order: AdminOrder) {
+  const aramex = getAramex(order);
+  return getString(aramex.latestCode || aramex.updateCode || order["Aramex Update Code"]);
+}
+
 function getAramexSyncedAt(order: AdminOrder) {
   const aramex = getAramex(order);
   return getString(aramex.syncedAt || order["Aramex Synced At"]);
+}
+
+function getStageLabel(stageKey: string) {
+  return SHIPMENT_STATUS_STAGES.find((stage) => stage.key === stageKey)?.label || stageKey;
+}
+
+function getTrackingRawText(value: unknown) {
+  if (!value) return "";
+  if (typeof value === "string") return value;
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return "";
+  }
+}
+
+function getAramexTrackingText(order: AdminOrder) {
+  const aramex = getAramex(order);
+  return [
+    getAramexStatus(order),
+    getAramexLatestCode(order),
+    getAramexLatestUpdate(order),
+    getAramexLatestLocation(order),
+    getString(aramex.latestDate),
+    getTrackingRawText(aramex.trackingRaw),
+  ]
+    .join(" ")
+    .toLowerCase();
+}
+
+function hasReturnedSignal(order: AdminOrder) {
+  const text = `${getStatus(order)} ${getPaymentStatus(order)} ${getAramexTrackingText(order)}`.toLowerCase();
+  return (
+    text.includes("return") ||
+    text.includes("returned") ||
+    text.includes("rto") ||
+    text.includes("cancel") ||
+    text.includes("مرتجع") ||
+    text.includes("إلغاء") ||
+    text.includes("ملغي")
+  );
+}
+
+function getAramexTimelineStageKey(order: AdminOrder) {
+  const text = getAramexTrackingText(order);
+
+  if (!text.trim()) return "";
+
+  if (
+    text.includes("delivered") ||
+    text.includes("تم التوصيل") ||
+    text.includes("signed") ||
+    text.includes("pod")
+  ) {
+    return "delivered";
+  }
+
+  if (
+    text.includes("out for delivery") ||
+    text.includes("with courier") ||
+    text.includes("الخروج للتوصيل") ||
+    text.includes("مندوب")
+  ) {
+    return "out_for_delivery";
+  }
+
+  if (
+    text.includes("arrived at destination") ||
+    text.includes("arrived destination") ||
+    text.includes("destination facility") ||
+    text.includes("الوصول إلى الوجهة")
+  ) {
+    return "arrived_destination";
+  }
+
+  if (
+    text.includes("departed origin") ||
+    text.includes("origin facility") ||
+    text.includes("مغادرة المنشأ")
+  ) {
+    return "departed_origin";
+  }
+
+  if (
+    text.includes("in transit") ||
+    text.includes("forwarded") ||
+    text.includes("departed") ||
+    text.includes("arrived") ||
+    text.includes("في الطريق")
+  ) {
+    return "in_transit";
+  }
+
+  if (
+    text.includes("picked up") ||
+    text.includes("collected") ||
+    text.includes("استلام الشحنة")
+  ) {
+    return "shipment_picked_up";
+  }
+
+  if (
+    text.includes("record created") ||
+    text.includes("shipment created") ||
+    text.includes("created") ||
+    text.includes("إنشاء الشحنة") ||
+    text.includes("تم إنشاء شحنة")
+  ) {
+    return "shipment_created";
+  }
+
+  return "";
+}
+
+function getOrderShipmentStatusKey(order: AdminOrder) {
+  if (isPendingInstaPay(order)) return "pending_instapay_approval";
+  if (needsAramexReplacement(order)) return "needs_aramex_replacement";
+  if (getAramexError(order)) return "aramex_failed";
+  if (hasReturnedSignal(order)) return "returned_cancelled";
+  if (needsAramex(order)) return "missing_tracking";
+
+  const timelineStage = getAramexTimelineStageKey(order);
+  if (timelineStage) return timelineStage;
+
+  if (getTrackingNumber(order)) return "shipment_created";
+  if (getDeliveryBucket(order) === "pickup") return "pickup_order";
+
+  return "unknown";
+}
+
+function getOrderShipmentStatusLabel(order: AdminOrder) {
+  return getStageLabel(getOrderShipmentStatusKey(order));
 }
 
 function getCustomerEmailSentAt(order: AdminOrder) {
@@ -526,24 +708,21 @@ function getInstaPayApprovalEmailSentAt(order: AdminOrder) {
 }
 
 function isReturned(order: AdminOrder) {
-  const text = `${getStatus(order)} ${getPaymentStatus(order)} ${getAramexStatus(order)} ${getAramexLatestUpdate(order)}`.toLowerCase();
-  return text.includes("return") || text.includes("rto") || text.includes("cancel");
+  return getOrderShipmentStatusKey(order) === "returned_cancelled";
 }
 
 function isDelivered(order: AdminOrder) {
-  const text = `${getStatus(order)} ${getAramexStatus(order)} ${getAramexLatestUpdate(order)}`.toLowerCase();
-  return text.includes("delivered") || text.includes("تم التسليم");
+  return getOrderShipmentStatusKey(order) === "delivered";
 }
 
 function isInTransit(order: AdminOrder) {
-  const text = `${getAramexStatus(order)} ${getAramexLatestUpdate(order)}`.toLowerCase();
-  return (
-    text.includes("transit") ||
-    text.includes("out for delivery") ||
-    text.includes("forwarded") ||
-    text.includes("departed") ||
-    text.includes("arrived")
-  );
+  return [
+    "shipment_picked_up",
+    "departed_origin",
+    "in_transit",
+    "arrived_destination",
+    "out_for_delivery",
+  ].includes(getOrderShipmentStatusKey(order));
 }
 
 function isPaid(order: AdminOrder) {
@@ -724,7 +903,7 @@ function SectionHeader({
   );
 }
 
-function DataPill({ label, value, dark = false }: { label: string; value: string; dark?: boolean }) {
+function DataPill({ label, value, dark = false }: { label: string; value: ReactNode; dark?: boolean }) {
   return (
     <div className={`rounded-2xl p-3 ${dark ? "border border-white/10 bg-white/10" : "bg-[#F8F6F3]"}`}>
       <p className={`text-[11px] font-black uppercase tracking-[0.12em] ${dark ? "text-white/45" : "text-[#0F1A26]/40"}`}>{label}</p>
@@ -733,21 +912,74 @@ function DataPill({ label, value, dark = false }: { label: string; value: string
   );
 }
 
-function KeyValueGrid({ data }: { data: Record<string, unknown> }) {
-  const rows = Object.entries(data).filter(([, value]) => value !== undefined && value !== null && value !== "");
+function NestedValuePanel({
+  label,
+  value,
+  dark = false,
+  depth = 0,
+}: {
+  label: string;
+  value: unknown;
+  dark?: boolean;
+  depth?: number;
+}) {
+  if (isEmptyAdminValue(value)) return null;
+
+  if (Array.isArray(value)) {
+    return (
+      <div className={`rounded-2xl p-3 ${dark ? "border border-white/10 bg-white/10" : "bg-[#F8F6F3]"}`}>
+        <p className={`text-[11px] font-black uppercase tracking-[0.12em] ${dark ? "text-white/45" : "text-[#0F1A26]/40"}`}>
+          {formatAdminLabel(label)}
+        </p>
+        <div className="mt-3 space-y-2">
+          {value.map((item, index) => (
+            typeof item === "object" && item
+              ? (
+                <div key={`${label}-${index}`} className={`rounded-xl p-3 ${dark ? "bg-[#0F1A26]/70" : "bg-white"}`}>
+                  <p className={`mb-2 text-[10px] font-black uppercase tracking-[0.12em] ${dark ? "text-white/35" : "text-[#0F1A26]/35"}`}>
+                    Item {index + 1}
+                  </p>
+                  <KeyValueGrid data={getObject(item)} dark={dark} depth={depth + 1} />
+                </div>
+              )
+              : <DataPill key={`${label}-${index}`} label={`Item ${index + 1}`} value={formatAdminValue(item)} dark={dark} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (typeof value === "object" && value) {
+    return (
+      <div className={`rounded-2xl p-3 ${dark ? "border border-white/10 bg-white/10" : "bg-[#F8F6F3]"}`}>
+        <p className={`text-[11px] font-black uppercase tracking-[0.12em] ${dark ? "text-white/45" : "text-[#0F1A26]/40"}`}>
+          {formatAdminLabel(label)}
+        </p>
+        <div className={`mt-3 rounded-xl p-3 ${dark ? "bg-[#0F1A26]/70" : "bg-white"}`}>
+          <KeyValueGrid data={getObject(value)} dark={dark} depth={depth + 1} />
+        </div>
+      </div>
+    );
+  }
+
+  return <DataPill label={formatAdminLabel(label)} value={formatAdminValue(value)} dark={dark} />;
+}
+
+function KeyValueGrid({ data, dark = false, depth = 0 }: { data: Record<string, unknown>; dark?: boolean; depth?: number }) {
+  const rows = Object.entries(data).filter(([, value]) => !isEmptyAdminValue(value));
 
   if (!rows.length) {
-    return <p className="rounded-2xl bg-[#F8F6F3] p-4 text-sm font-bold text-[#0F1A26]/45">No data recorded.</p>;
+    return (
+      <p className={`rounded-2xl p-4 text-sm font-bold ${dark ? "bg-white/10 text-white/45" : "bg-[#F8F6F3] text-[#0F1A26]/45"}`}>
+        No data recorded.
+      </p>
+    );
   }
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
+    <div className={`grid gap-3 ${depth > 0 ? "" : "sm:grid-cols-2"}`}>
       {rows.map(([key, value]) => (
-        <DataPill
-          key={key}
-          label={key.replaceAll("_", " ")}
-          value={formatAdminValue(value)}
-        />
+        <NestedValuePanel key={key} label={key} value={value} dark={dark} depth={depth} />
       ))}
     </div>
   );
@@ -942,13 +1174,32 @@ function OrderDetailsPanel({
             <KeyValueGrid
               data={{
                 tracking_number: getTrackingNumber(order),
-                status: getAramexStatus(order),
-                latest_update: getAramexLatestUpdate(order),
+                dashboard_stage: getOrderShipmentStatusLabel(order),
+                aramex_status: getAramexStatus(order),
+                update_code: getAramexLatestCode(order),
+                update_description: getAramexLatestUpdate(order),
+                update_location: getAramexLatestLocation(order),
+                update_datetime: getString(aramex.latestDate || order["Aramex Latest Date"]),
+                comments: getString(aramex.latestComments),
+                problem_code: getString(aramex.latestProblemCode),
+                estimated_delivery: getString(aramex.estimatedDelivery),
                 synced_at: formatAdminDateTime(getAramexSyncedAt(order)) || getAramexSyncedAt(order),
                 error: getAramexError(order),
                 ...aramex,
               }}
             />
+            {!isEmptyAdminValue(aramex.trackingRaw) && (
+              <details className="mt-4 rounded-2xl bg-[#0F1A26] p-4 text-white">
+                <summary className="cursor-pointer text-sm font-black">Full Aramex tracking response</summary>
+                <div className="mt-3 max-h-[360px] overflow-auto">
+                  {typeof aramex.trackingRaw === "string" ? (
+                    <DataPill label="tracking response" value={aramex.trackingRaw} dark />
+                  ) : (
+                    <KeyValueGrid data={getObject(aramex.trackingRaw)} dark />
+                  )}
+                </div>
+              </details>
+            )}
           </section>
 
           <section className="mt-5 rounded-[1.5rem] border border-[#0F1A26]/10 p-4">
@@ -989,12 +1240,12 @@ function OrderDetailsPanel({
           </section>
 
           <section className="mt-5 rounded-[1.5rem] border border-[#0F1A26]/10 p-4">
-            <h4 className="mb-3 text-lg font-black">Finance extras / raw order payload</h4>
+            <h4 className="mb-3 text-lg font-black">Finance extras / complete order record</h4>
             <div className="grid gap-5 lg:grid-cols-2">
               <KeyValueGrid data={extras} />
-              <pre className="max-h-[360px] overflow-auto rounded-2xl bg-[#0F1A26] p-4 text-xs font-semibold leading-5 text-white/80">
-                {JSON.stringify(order, null, 2)}
-              </pre>
+              <div className="max-h-[420px] overflow-auto rounded-2xl bg-[#0F1A26] p-4">
+                <KeyValueGrid data={order} dark />
+              </div>
             </div>
           </section>
         </div>
@@ -1705,7 +1956,11 @@ export default function AdminDashboardPage() {
     const paymentBuckets = new Map<string, number>();
     const deliveryBuckets = new Map<string, number>();
     const cityBuckets = new Map<string, { label: string; count: number }>();
-    const statusBuckets = new Map<string, number>();
+    const statusBuckets = new Map<string, { label: string; count: number }>();
+
+    SHIPMENT_STATUS_STAGES.forEach((stage) => {
+      statusBuckets.set(stage.key, { label: stage.label, count: 0 });
+    });
 
     visibleOrders.forEach((order) => {
       const payment = getPaymentBucket(order);
@@ -1721,15 +1976,18 @@ export default function AdminDashboardPage() {
       cityRow.count += 1;
       cityBuckets.set(cityKey, cityRow);
 
-      const status = getStatus(order) || "unknown";
-      statusBuckets.set(status, (statusBuckets.get(status) || 0) + 1);
+      const statusLabel = getOrderShipmentStatusLabel(order);
+      const statusKey = getOrderShipmentStatusKey(order);
+      const statusRow = statusBuckets.get(statusKey) || { label: statusLabel, count: 0 };
+      statusRow.count += 1;
+      statusBuckets.set(statusKey, statusRow);
     });
 
     return {
       payments: Array.from(paymentBuckets.entries()).sort((a, b) => b[1] - a[1]),
       deliveries: Array.from(deliveryBuckets.entries()).sort((a, b) => b[1] - a[1]),
       cities: Array.from(cityBuckets.entries()).sort((a, b) => b[1].count - a[1].count),
-      statuses: Array.from(statusBuckets.entries()).sort((a, b) => b[1] - a[1]),
+      statuses: Array.from(statusBuckets.entries()).sort((a, b) => b[1].count - a[1].count),
     };
   }, [visibleOrders]);
 
@@ -1744,16 +2002,39 @@ export default function AdminDashboardPage() {
         if (city !== cityFilter) return false;
       }
 
-      if (statusFilter === "pending_instapay" && !isPendingInstaPay(order)) return false;
-      if (statusFilter === "aramex_missing" && !needsAramex(order)) return false;
-      if (statusFilter === "aramex_failed" && !getAramexError(order)) return false;
-      if (statusFilter === "returned" && !isReturned(order)) return false;
-      if (statusFilter === "confirmed" && !isConfirmed(order)) return false;
-      if (statusFilter.startsWith("raw:") && getStatus(order) !== statusFilter.slice(4)) return false;
+      if (statusFilter !== "all" && getOrderShipmentStatusKey(order) !== statusFilter) return false;
 
       return true;
     });
   }, [cityFilter, deliveryFilter, paymentFilter, statusFilter, visibleOrders]);
+
+  const shipmentStatusBreakdown = useMemo(() => {
+    const rows = new Map<string, { label: string; count: number; value: number }>();
+
+    SHIPMENT_STATUS_STAGES.forEach((stage) => {
+      rows.set(stage.key, { label: stage.label, count: 0, value: 0 });
+    });
+
+    filteredMetricOrders.forEach((order) => {
+      const key = getOrderShipmentStatusKey(order);
+      const row = rows.get(key) || {
+        label: getOrderShipmentStatusLabel(order),
+        count: 0,
+        value: 0,
+      };
+      row.count += 1;
+      row.value += getAmount(order);
+      rows.set(key, row);
+    });
+
+    return Array.from(rows.entries())
+      .map(([key, row]) => ({ key, ...row }))
+      .sort((a, b) => {
+        if (b.count !== a.count) return b.count - a.count;
+        return SHIPMENT_STATUS_STAGES.findIndex((stage) => stage.key === a.key) -
+          SHIPMENT_STATUS_STAGES.findIndex((stage) => stage.key === b.key);
+      });
+  }, [filteredMetricOrders]);
 
   const expenseFilterOptions = useMemo(() => {
     const categories = new Map<string, number>();
@@ -2542,13 +2823,8 @@ export default function AdminDashboardPage() {
                 className="h-11 w-full min-w-0 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-4 text-sm font-black outline-none"
               >
                 <option value="all">All statuses ({visibleOrders.length})</option>
-                <option value="confirmed">Confirmed / paid ({visibleOrders.filter(isConfirmed).length})</option>
-                <option value="returned">Returned / cancelled ({visibleOrders.filter(isReturned).length})</option>
-                <option value="pending_instapay">Pending InstaPay ({visibleOrders.filter(isPendingInstaPay).length})</option>
-                <option value="aramex_missing">Missing tracking ({visibleOrders.filter(needsAramex).length})</option>
-                <option value="aramex_failed">Aramex failed ({visibleOrders.filter((order) => Boolean(getAramexError(order))).length})</option>
-                {orderFilterOptions.statuses.map(([status, count]) => (
-                  <option key={status} value={`raw:${status}`}>{status.replaceAll("_", " ")} ({count})</option>
+                {orderFilterOptions.statuses.map(([statusKey, row]) => (
+                  <option key={statusKey} value={statusKey}>{row.label} ({row.count})</option>
                 ))}
               </select>
               {(paymentFilter !== "all" || deliveryFilter !== "all" || cityFilter !== "all" || statusFilter !== "all") && (
@@ -3776,13 +4052,8 @@ export default function AdminDashboardPage() {
               className="h-12 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-4 text-sm font-black outline-none"
             >
               <option value="all">All statuses ({visibleOrders.length})</option>
-              <option value="confirmed">Confirmed / paid ({visibleOrders.filter(isConfirmed).length})</option>
-              <option value="pending_instapay">Pending InstaPay ({visibleOrders.filter(isPendingInstaPay).length})</option>
-              <option value="aramex_missing">Missing tracking ({visibleOrders.filter(needsAramex).length})</option>
-              <option value="aramex_failed">Aramex failed ({visibleOrders.filter((order) => Boolean(getAramexError(order))).length})</option>
-              <option value="returned">Returned / cancelled ({visibleOrders.filter(isReturned).length})</option>
-              {orderFilterOptions.statuses.map(([status, count]) => (
-                <option key={status} value={`raw:${status}`}>{status.replaceAll("_", " ")} ({count})</option>
+              {orderFilterOptions.statuses.map(([statusKey, row]) => (
+                <option key={statusKey} value={statusKey}>{row.label} ({row.count})</option>
               ))}
             </select>
             <button
@@ -3801,6 +4072,38 @@ export default function AdminDashboardPage() {
               <Truck className={`h-4 w-4 ${aramexSyncing ? "animate-pulse" : ""}`} />
               Refresh Tracking Status
             </button>
+          </div>
+        </section>
+
+        <section className="mt-6 rounded-[2rem] border border-[#0F1A26]/10 bg-white p-5 shadow-sm">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#EEBC3F]">Aramex status labels</p>
+              <h2 className="text-lg font-black">Orders by Aramex timeline label</h2>
+              <p className="mt-1 text-xs font-bold text-[#0F1A26]/45">
+                Counts use the same Aramex-style label shown in the order table and status filter.
+              </p>
+            </div>
+            <p className="text-sm font-black text-[#0F1A26]/50">{filteredMetricOrders.length} orders</p>
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {shipmentStatusBreakdown.length ? shipmentStatusBreakdown.map((row) => (
+              <button
+                key={row.key}
+                onClick={() => setStatusFilter(row.key)}
+                className={`rounded-3xl border p-4 text-left transition hover:-translate-y-0.5 ${
+                  statusFilter === row.key
+                    ? "border-[#EEBC3F] bg-[#FFF8E2]"
+                    : "border-[#0F1A26]/10 bg-[#F8F6F3]"
+                }`}
+              >
+                <p className="text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/40">{row.label}</p>
+                <p className="mt-2 text-3xl font-black">{row.count}</p>
+                <p className="mt-1 text-xs font-bold text-[#0F1A26]/45">{money.format(row.value)}</p>
+              </button>
+            )) : (
+              <p className="rounded-2xl bg-[#F8F6F3] p-4 text-sm font-bold text-[#0F1A26]/45">No statuses in this period.</p>
+            )}
           </div>
         </section>
 
@@ -3848,7 +4151,9 @@ export default function AdminDashboardPage() {
                   const customer = getCustomer(order);
                   const tracking = getTrackingNumber(order);
                   const aramexStatus = getAramexStatus(order);
+                  const aramexCode = getAramexLatestCode(order);
                   const aramexUpdate = getAramexLatestUpdate(order);
+                  const aramexLocation = getAramexLatestLocation(order);
                   const aramexSyncedAt = getAramexSyncedAt(order);
                   const aramexError = getAramexError(order);
                   const orderRef = getOrderRef(order);
@@ -3889,7 +4194,17 @@ export default function AdminDashboardPage() {
                           <>
                             <p className="font-black text-emerald-700">{tracking}</p>
                             {aramexStatus && <p className="mt-1 text-xs font-black text-[#0F1A26]">{aramexStatus}</p>}
+                            {aramexCode && (
+                              <p className="mt-1 text-[11px] font-black uppercase tracking-[0.08em] text-[#0F1A26]/45">
+                                Code: {aramexCode}
+                              </p>
+                            )}
                             {aramexUpdate && <p className="mt-1 max-w-[260px] text-xs font-semibold text-[#0F1A26]/55">{aramexUpdate}</p>}
+                            {aramexLocation && (
+                              <p className="mt-1 max-w-[260px] text-xs font-bold text-[#0F1A26]/45">
+                                Location: {aramexLocation}
+                              </p>
+                            )}
                             {aramexSyncedAt && (
                               <p className="mt-1 text-[11px] font-bold text-[#0F1A26]/35">
                                 Refreshed {formatAdminDateTime(aramexSyncedAt) || aramexSyncedAt}
@@ -3915,7 +4230,8 @@ export default function AdminDashboardPage() {
                         )}
                       </td>
                       <td className="px-5 py-4 align-top">
-                        <p className="font-black">{getStatus(order) || "-"}</p>
+                        <p className="font-black">{getOrderShipmentStatusLabel(order)}</p>
+                        <p className="mt-1 text-xs font-bold text-[#0F1A26]/40">Order: {getStatus(order) || "-"}</p>
                         {isPendingInstaPay(order) && (
                           <p className="mt-1 rounded-full bg-[#EEBC3F]/20 px-2 py-1 text-xs font-black text-[#7A5A00]">
                             Waiting approval

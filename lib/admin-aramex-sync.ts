@@ -71,10 +71,15 @@ function extractTracking(raw: unknown) {
 
   return {
     status,
+    latestCode: findFirstString(latestUpdate, ["UpdateCode", "TrackingStatus", "Status"]),
     latestDescription: findFirstString(latestUpdate, ["UpdateDescription", "Comments", "Status"]),
     latestLocation: findFirstString(latestUpdate, ["UpdateLocation", "Location"]),
     latestDate: findFirstString(latestUpdate, ["UpdateDateTime", "UpdateDate", "Date"]),
+    latestComments: findFirstString(latestUpdate, ["Comments"]),
+    latestProblemCode: findFirstString(latestUpdate, ["ProblemCode"]),
+    waybillNumber: findFirstString(latestUpdate, ["WaybillNumber"]) || findFirstString(firstResult, ["WaybillNumber"]),
     estimatedDelivery: getString(firstResult.EstimatedDeliveryTime),
+    latestUpdate,
     raw,
   };
 }
@@ -166,10 +171,15 @@ export async function syncAramexOrders(options: AramexSyncOptions = {}) {
           ...existingAramex,
           trackingNumber,
           status: tracking.status,
+          latestCode: tracking.latestCode,
           latestDescription: tracking.latestDescription,
           latestLocation: tracking.latestLocation,
           latestDate: tracking.latestDate,
+          latestComments: tracking.latestComments,
+          latestProblemCode: tracking.latestProblemCode,
+          waybillNumber: tracking.waybillNumber,
           estimatedDelivery: tracking.estimatedDelivery,
+          latestUpdateRaw: tracking.latestUpdate,
           syncedAt: new Date().toISOString(),
           trackingRaw: tracking.raw,
           error: "",
