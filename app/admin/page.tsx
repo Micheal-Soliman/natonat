@@ -46,6 +46,7 @@ type OrdersResponse = {
   orders?: AdminOrder[];
   total?: number;
   returned?: number;
+  skipped_empty_rows?: number;
   error?: string;
   details?: unknown;
 };
@@ -139,23 +140,58 @@ type AramexSyncResponse = {
 
 type AdminActionResponse = {
   success?: boolean;
+  order_ref?: string;
+  order?: AdminOrder;
+  trackingNumber?: string;
+  previousTrackingNumber?: string;
   error?: string;
   details?: unknown;
+};
+
+type AdminManualOrderDraft = {
+  productSlug: string;
+  productSize: string;
+  customerName: string;
+  phone: string;
+  email: string;
+  city: string;
+  governorate: string;
+  address: string;
+  notes: string;
+  title: string;
+  quantity: string;
+  unitPrice: string;
+  total: string;
+  paymentMethod: string;
+  paymentStatus: string;
+  deliveryMethod: string;
+  createAramexShipment: boolean;
 };
 
 type AdminTab = "finance" | "orders" | "stock" | "expenses";
 type DatePreset = "all" | "today" | "yesterday" | "7d" | "30d" | "custom";
 
-type AdminStatusAction = {
-  label: string;
-  action: string;
-  status: string;
-  paymentStatus?: string;
-  aramexStatus?: string;
-  aramexError?: string;
-  note: string;
-  tone: string;
-};
+const MANUAL_ORDER_PAYMENT_METHODS = [
+  { value: "custom_bulk", label: "Custom / offline bulk" },
+  { value: "cod", label: "Cash on Delivery" },
+  { value: "paymob_card", label: "Card / Paymob" },
+  { value: "instapay", label: "InstaPay / Wallets" },
+  { value: "bank_transfer", label: "Bank transfer" },
+] as const;
+
+const MANUAL_ORDER_PAYMENT_STATUSES = [
+  { value: "Paid", label: "Paid" },
+  { value: "Cash on Delivery", label: "Cash on Delivery" },
+  { value: "Pending", label: "Pending" },
+  { value: "Pending InstaPay Approval", label: "Pending InstaPay Approval" },
+  { value: "Refunded", label: "Refunded" },
+] as const;
+
+const MANUAL_ORDER_DELIVERY_METHODS = [
+  { value: "custom", label: "Custom / finance only" },
+  { value: "delivery", label: "Delivery / Aramex" },
+  { value: "pickup", label: "Pickup" },
+] as const;
 
 const money = new Intl.NumberFormat("en-EG", {
   style: "currency",
@@ -168,43 +204,6 @@ const cairoDateTime = new Intl.DateTimeFormat("en-EG", {
   timeStyle: "short",
   timeZone: "Africa/Cairo",
 });
-
-const ADMIN_STATUS_ACTIONS: AdminStatusAction[] = [
-  {
-    label: "Mark delivered",
-    action: "mark_delivered",
-    status: "delivered",
-    paymentStatus: "Paid",
-    aramexStatus: "Delivered",
-    aramexError: "",
-    note: "Admin marked this order as delivered.",
-    tone: "bg-emerald-600 text-white",
-  },
-  {
-    label: "Mark returned",
-    action: "mark_returned",
-    status: "returned",
-    aramexStatus: "Returned",
-    note: "Admin marked this order as returned. Finance should deduct this value.",
-    tone: "bg-rose-600 text-white",
-  },
-  {
-    label: "Mark cancelled",
-    action: "mark_cancelled",
-    status: "cancelled",
-    aramexStatus: "Cancelled",
-    note: "Admin marked this order as cancelled. Finance should deduct this value.",
-    tone: "bg-[#0F1A26] text-white",
-  },
-  {
-    label: "Resolve issue",
-    action: "resolve_issue",
-    status: "confirmed",
-    aramexError: "",
-    note: "Admin marked the operational issue as resolved.",
-    tone: "bg-[#EEBC3F] text-[#0F1A26]",
-  },
-];
 
 function getString(value: unknown) {
   if (typeof value === "string") return value;
@@ -408,6 +407,32 @@ function getItemRecordedQuantity(item: Record<string, unknown>) {
   return quantity > 0 ? quantity : 0;
 }
 
+function isBundleParentItem(item: Record<string, unknown>) {
+  return Boolean(item.isBundle || getArray(item.bundleSelections).length > 0);
+}
+
+function isCustomOrder(order: AdminOrder) {
+  const source = getString(order.source || order["Source"]).toLowerCase();
+  const extras = getExtras(order);
+  return source.includes("admin_custom_order") || Boolean(extras.is_custom_order || order.is_custom_order);
+}
+
+function isCustomOrderItem(item: Record<string, unknown>) {
+  return Boolean(item.isCustomOrder || item.is_custom_order || item.custom_order);
+}
+
+function getOrderRecordedPieces(order: AdminOrder) {
+  if (isCustomOrder(order)) return 0;
+
+  const sheetQuantity = getNumber(order["Total Items Quantity"]);
+  if (sheetQuantity > 0) return sheetQuantity;
+
+  return getItems(order).reduce((sum, item) => {
+    if (isBundleParentItem(item) || isCustomOrderItem(item)) return sum;
+    return sum + getItemRecordedQuantity(item);
+  }, 0);
+}
+
 function getItemUnitPrice(item: Record<string, unknown>) {
   return getNumber(
     item.unit_price_egp ??
@@ -454,6 +479,18 @@ function getPaymentStatus(order: AdminOrder) {
 function getTrackingNumber(order: AdminOrder) {
   const aramex = getAramex(order);
   return getString(aramex.trackingNumber || order["Aramex Tracking Number"]);
+}
+
+function getPreviousTrackingNumbers(order: AdminOrder) {
+  const aramex = getAramex(order);
+  return getArray(aramex.previousTrackingNumbers)
+    .map(getString)
+    .filter(Boolean);
+}
+
+function needsOldTrackingCancellation(order: AdminOrder) {
+  const aramex = getAramex(order);
+  return Boolean(aramex.oldTrackingCancelRequired || getPreviousTrackingNumbers(order).length > 0);
 }
 
 function getAramexError(order: AdminOrder) {
@@ -532,12 +569,42 @@ function needsAramex(order: AdminOrder) {
   );
 }
 
+function needsAramexReplacement(order: AdminOrder) {
+  const aramex = getAramex(order);
+  return Boolean(getTrackingNumber(order) && (aramex.needsReplacement || aramex.replacementRequired));
+}
+
+function hasAramexTracking(order: AdminOrder) {
+  return Boolean(getTrackingNumber(order));
+}
+
 function getPaymentBucket(order: AdminOrder) {
   const method = getPaymentMethod(order);
   if (method.includes("card") || method.includes("paymob")) return "card";
   if (method.includes("instapay") || method.includes("wallet")) return "instapay";
   if (method.includes("cod") || method.includes("cash")) return "cod";
   return method || "unknown";
+}
+
+function normalizeInventoryKey(value: unknown) {
+  return getString(value)
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function getInventoryProductKeys(item: AdminInventoryItem) {
+  return [item.slug, item.name, item.id].map(normalizeInventoryKey).filter(Boolean);
+}
+
+function getOrderItemProductKeys(item: Record<string, unknown>) {
+  return [item.slug, item.name, item.title, item.id, item.product_id].map(normalizeInventoryKey).filter(Boolean);
+}
+
+function getOrderItemSizeKey(item: Record<string, unknown>) {
+  const size = normalizeInventoryKey(item.size || item.selectedSize || item.variantSize);
+  return size || "product";
 }
 
 function getSizeRows(item: AdminInventoryItem) {
@@ -562,6 +629,25 @@ function getSizeRows(item: AdminInventoryItem) {
       status: item.sizeStock?.[size]?.status || item.stockStatus || "in_stock",
       quantity: item.sizeStock?.[size]?.quantity ?? item.stockQuantity ?? null,
     }));
+}
+
+function getSizePrice(product: AdminInventoryItem | undefined, size: string) {
+  if (!product) return 0;
+  const sizeKey = size.toLowerCase();
+  const priceRow = product.sizePrices?.[sizeKey];
+  if (priceRow && typeof priceRow === "object" && !Array.isArray(priceRow)) {
+    const price = getNumber((priceRow as Record<string, unknown>).price);
+    if (price > 0) return price;
+  }
+
+  return getNumber(product.price);
+}
+
+function getDefaultProductSize(product: AdminInventoryItem | undefined) {
+  if (!product) return "";
+  const rows = getSizeRows(product);
+  if (rows.length === 1 && rows[0].size === "product") return "";
+  return rows.find((row) => row.status !== "out_of_stock" && row.quantity !== 0)?.size || rows[0]?.size || "";
 }
 
 function isInventoryLow(item: AdminInventoryItem) {
@@ -671,13 +757,13 @@ function OrderDetailsPanel({
   order,
   onClose,
   onApproveInstaPay,
-  onStatusAction,
+  onCreateAramex,
   actionLoadingRef,
 }: {
   order: AdminOrder;
   onClose: () => void;
   onApproveInstaPay: (order: AdminOrder) => void;
-  onStatusAction: (order: AdminOrder, action: AdminStatusAction) => void;
+  onCreateAramex: (order: AdminOrder) => void;
   actionLoadingRef: string;
 }) {
   const customer = getCustomer(order);
@@ -691,6 +777,10 @@ function OrderDetailsPanel({
     .slice()
     .reverse()
     .slice(0, 12);
+  const trackingNumber = getTrackingNumber(order);
+  const canCreateAramex = getDeliveryBucket(order) === "delivery" && !isPendingInstaPay(order) && !trackingNumber;
+  const previousTrackingNumbers = getPreviousTrackingNumbers(order);
+  const oldTrackingCancelRequired = needsOldTrackingCancellation(order);
 
   return (
     <div className="fixed inset-0 z-50 bg-[#0F1A26]/50 p-3 backdrop-blur-sm sm:p-6">
@@ -742,19 +832,48 @@ function OrderDetailsPanel({
                   Every action writes an audit entry and updates finance/status reading.
                 </p>
               </div>
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                {ADMIN_STATUS_ACTIONS.map((action) => (
-                  <button
-                    key={action.action}
-                    onClick={() => onStatusAction(order, action)}
-                    disabled={actionLoadingRef === `status:${orderRef}:${action.action}`}
-                    className={`h-10 rounded-2xl px-3 text-xs font-black transition hover:-translate-y-0.5 disabled:opacity-60 ${action.tone}`}
-                  >
-                    {actionLoadingRef === `status:${orderRef}:${action.action}` ? "Saving..." : action.label}
-                  </button>
-                ))}
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                <button
+                  onClick={() => onCreateAramex(order)}
+                  disabled={!canCreateAramex || actionLoadingRef === `aramex-create:${orderRef}`}
+                  className="h-10 rounded-2xl bg-emerald-600 px-3 text-xs font-black text-white transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {actionLoadingRef === `aramex-create:${orderRef}`
+                    ? "Creating..."
+                    : trackingNumber
+                      ? "Shipment already exists"
+                      : "Create shipment"}
+                </button>
               </div>
             </div>
+          </section>
+
+          <section className="mb-5 rounded-[1.5rem] border border-[#0F1A26]/10 bg-[#F8F6F3] p-4">
+            <h4 className="text-lg font-black">Aramex order cycle</h4>
+            <div className="mt-3 grid gap-3 md:grid-cols-3">
+              <div className="rounded-2xl bg-white p-3">
+                <p className="text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/35">1. Edit</p>
+                <p className="mt-1 text-sm font-bold text-[#0F1A26]/65">Save customer, address, phone, items and totals on the order.</p>
+              </div>
+              <div className="rounded-2xl bg-white p-3">
+                <p className="text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/35">2. Create / replace</p>
+                <p className="mt-1 text-sm font-bold text-[#0F1A26]/65">This is the step that sends the latest saved data to Aramex and returns a tracking number.</p>
+              </div>
+              <div className="rounded-2xl bg-white p-3">
+                <p className="text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/35">3. Refresh status</p>
+                <p className="mt-1 text-sm font-bold text-[#0F1A26]/65">Reads shipment movement from Aramex. It does not edit the shipment.</p>
+              </div>
+            </div>
+            {oldTrackingCancelRequired && (
+              <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm font-bold leading-6 text-amber-900">
+                This order has an old replaced tracking number{previousTrackingNumbers.length ? `: ${previousTrackingNumbers.join(", ")}` : ""}. The current integration created the replacement shipment, but it cannot confirm cancelling the old Aramex shipment automatically. Cancel/check the old tracking in Aramex portal.
+              </div>
+            )}
+            {needsAramexReplacement(order) && (
+              <div className="mt-3 rounded-2xl border border-orange-200 bg-orange-50 p-3 text-sm font-bold leading-6 text-orange-900">
+                This order changed after Aramex tracking was created. Automatic replacement is blocked because the old shipment must be cancelled in Aramex first.
+              </div>
+            )}
           </section>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -889,7 +1008,9 @@ export default function AdminDashboardPage() {
   const [password, setPassword] = useState("");
   const [savedToken, setSavedToken] = useState("");
   const [orders, setOrders] = useState<AdminOrder[]>([]);
+  const [skippedEmptyOrderRows, setSkippedEmptyOrderRows] = useState(0);
   const [inventory, setInventory] = useState<AdminInventoryItem[]>([]);
+  const [aramexCities, setAramexCities] = useState<string[]>([]);
   const [expenses, setExpenses] = useState<AdminExpense[]>([]);
   const [inventoryFetchedAt, setInventoryFetchedAt] = useState("");
   const [expensesFetchedAt, setExpensesFetchedAt] = useState("");
@@ -912,14 +1033,56 @@ export default function AdminDashboardPage() {
   const [datePreset, setDatePreset] = useState<DatePreset>("all");
   const [customDateFrom, setCustomDateFrom] = useState("");
   const [customDateTo, setCustomDateTo] = useState("");
+  const [customDateDraftFrom, setCustomDateDraftFrom] = useState("");
+  const [customDateDraftTo, setCustomDateDraftTo] = useState("");
   const [actionLoadingRef, setActionLoadingRef] = useState("");
   const [ordersPage, setOrdersPage] = useState(1);
   const [ordersPageSize, setOrdersPageSize] = useState(25);
+  const [stockCoverageDays, setStockCoverageDays] = useState(14);
+  const [manualOrderOpen, setManualOrderOpen] = useState(false);
+  const [manualOrderDraft, setManualOrderDraft] = useState<AdminManualOrderDraft>({
+    productSlug: "",
+    productSize: "",
+    customerName: "",
+    phone: "",
+    email: "",
+    city: "",
+    governorate: "",
+    address: "",
+    notes: "",
+    title: "",
+    quantity: "1",
+    unitPrice: "",
+    total: "",
+    paymentMethod: "custom_bulk",
+    paymentStatus: "Paid",
+    deliveryMethod: "custom",
+    createAramexShipment: false,
+  });
 
   useEffect(() => {
     window.localStorage.removeItem("natonat-admin-token");
     const stored = window.localStorage.getItem("natonat-admin-session") || "";
     setSavedToken(stored);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetch("/api/aramex/cities?countryCode=EG", { cache: "force-cache" })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (!cancelled && Array.isArray(data)) {
+          setAramexCities(data.filter((city): city is string => typeof city === "string" && city.trim().length > 0));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setAramexCities([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const loadOrders = async (activeToken = savedToken) => {
@@ -938,6 +1101,7 @@ export default function AdminDashboardPage() {
       }
 
       setOrders(data.orders);
+      setSkippedEmptyOrderRows(data.skipped_empty_rows || 0);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load orders");
     } finally {
@@ -997,6 +1161,33 @@ export default function AdminDashboardPage() {
     void loadExpenses(activeToken);
   };
 
+  const changeDatePreset = (nextPreset: DatePreset) => {
+    setDatePreset(nextPreset);
+    if (nextPreset !== "custom") {
+      setCustomDateFrom("");
+      setCustomDateTo("");
+    } else {
+      setCustomDateDraftFrom(customDateFrom);
+      setCustomDateDraftTo(customDateTo);
+    }
+  };
+
+  const applyCustomDateRange = () => {
+    setDatePreset("custom");
+    setCustomDateFrom(customDateDraftFrom);
+    setCustomDateTo(customDateDraftTo);
+    setOrdersPage(1);
+  };
+
+  const clearCustomDateRange = () => {
+    setDatePreset("all");
+    setCustomDateDraftFrom("");
+    setCustomDateDraftTo("");
+    setCustomDateFrom("");
+    setCustomDateTo("");
+    setOrdersPage(1);
+  };
+
   const loginAndLoad = async () => {
     setLoading(true);
     setError("");
@@ -1028,6 +1219,7 @@ export default function AdminDashboardPage() {
     window.localStorage.removeItem("natonat-admin-session");
     setSavedToken("");
     setOrders([]);
+    setSkippedEmptyOrderRows(0);
     setInventory([]);
     setSelectedOrder(null);
   };
@@ -1052,7 +1244,7 @@ export default function AdminDashboardPage() {
         throw new Error(data.error || "Could not sync Aramex");
       }
 
-      setAramexSyncMessage(`Aramex synced: ${data.synced || 0} updated, ${data.failed || 0} failed.`);
+      setAramexSyncMessage(`Tracking status refreshed: ${data.synced || 0} updated, ${data.failed || 0} failed.`);
       await loadOrders(savedToken);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not sync Aramex");
@@ -1083,7 +1275,7 @@ export default function AdminDashboardPage() {
         throw new Error(data.error || "Could not sync this Aramex order");
       }
 
-      setAramexSyncMessage(`Aramex synced for ${orderRef}: ${data.synced || 0} updated, ${data.failed || 0} failed.`);
+      setAramexSyncMessage(`Tracking status refreshed for ${orderRef}: ${data.synced || 0} updated, ${data.failed || 0} failed.`);
       await loadOrders(savedToken);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not sync this Aramex order");
@@ -1124,41 +1316,150 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const updateOrderStatus = async (order: AdminOrder, statusAction: AdminStatusAction) => {
-    const orderRef = getOrderRef(order);
-    if (!orderRef) return;
+  const updateManualOrderDraft = (key: keyof AdminManualOrderDraft, value: string | boolean) => {
+    setManualOrderDraft((current) => {
+      const next = { ...current, [key]: value };
+      if (key === "createAramexShipment" && value === true) {
+        next.deliveryMethod = "delivery";
+        if (next.paymentMethod === "custom_bulk") {
+          next.paymentMethod = "cod";
+          next.paymentStatus = "Cash on Delivery";
+        }
+      }
+      if (key === "createAramexShipment" && value === false) {
+        next.deliveryMethod = "custom";
+        if (next.paymentMethod === "cod") {
+          next.paymentMethod = "custom_bulk";
+          next.paymentStatus = "Paid";
+        }
+      }
+      if (key === "deliveryMethod") {
+        next.createAramexShipment = value === "delivery";
+      }
+      if (key === "paymentMethod") {
+        if (value === "cod") next.paymentStatus = "Cash on Delivery";
+        if (value === "paymob_card" || value === "instapay" || value === "bank_transfer") next.paymentStatus = "Paid";
+        if (value === "custom_bulk") next.paymentStatus = "Paid";
+      }
+      if (key === "productSlug") {
+        const product = inventory.find((item) => item.slug === String(value));
+        if (product) {
+          const size = getDefaultProductSize(product);
+          const price = getSizePrice(product, size);
+          const quantity = getNumber(next.quantity) || 1;
+          next.productSize = size;
+          next.title = product.name;
+          next.unitPrice = price > 0 ? String(price) : "";
+          next.total = price > 0 ? String(price * quantity) : next.total;
+        } else {
+          next.productSize = "";
+        }
+      }
+      if (key === "productSize") {
+        const product = inventory.find((item) => item.slug === next.productSlug);
+        const price = getSizePrice(product, String(value));
+        const quantity = getNumber(next.quantity) || 1;
+        if (price > 0) {
+          next.unitPrice = String(price);
+          next.total = String(price * quantity);
+        }
+      }
+      if (key === "quantity" || key === "unitPrice") {
+        const quantity = getNumber(key === "quantity" ? value : next.quantity);
+        const unitPrice = getNumber(key === "unitPrice" ? value : next.unitPrice);
+        if (quantity > 0 && unitPrice > 0) {
+          next.total = String(quantity * unitPrice);
+        }
+      }
+      return next;
+    });
+  };
 
-    setActionLoadingRef(`status:${orderRef}:${statusAction.action}`);
+  const createManualCustomOrder = async () => {
+    setActionLoadingRef("manual-order");
     setError("");
 
     try {
-      const res = await fetch("/api/admin/order-status", {
+      const res = await fetch("/api/admin/manual-order", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           ...(savedToken ? { Authorization: `Bearer ${savedToken}` } : {}),
         },
         body: JSON.stringify({
-          orderRef,
-          action: statusAction.action,
-          status: statusAction.status,
-          paymentStatus: statusAction.paymentStatus,
-          aramexStatus: statusAction.aramexStatus,
-          aramexError: statusAction.aramexError,
-          note: statusAction.note,
+          ...manualOrderDraft,
+          quantity: getNumber(manualOrderDraft.quantity),
+          unitPrice: getNumber(manualOrderDraft.unitPrice),
+          total: getNumber(manualOrderDraft.total),
+          createAramexShipment: manualOrderDraft.createAramexShipment,
         }),
       });
       const data = (await res.json()) as AdminActionResponse;
 
       if (!res.ok || !data.success) {
-        throw new Error(data.error || "Could not update order status");
+        throw new Error(formatApiError(data.error, data.details, "Could not create custom order"));
       }
 
-      setAramexSyncMessage(`${statusAction.label} saved for ${orderRef}.`);
+      setAramexSyncMessage(`Custom order added to finance: ${data.order_ref || ""}`);
+      setManualOrderOpen(false);
+      setManualOrderDraft({
+        productSlug: "",
+        productSize: "",
+        customerName: "",
+        phone: "",
+        email: "",
+        city: "",
+        governorate: "",
+        address: "",
+        notes: "",
+        title: "",
+        quantity: "1",
+        unitPrice: "",
+        total: "",
+        paymentMethod: "custom_bulk",
+        paymentStatus: "Paid",
+        deliveryMethod: "custom",
+        createAramexShipment: false,
+      });
+      await loadOrders(savedToken);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not create custom order");
+    } finally {
+      setActionLoadingRef("");
+    }
+  };
+
+  const createAramexShipmentFromOrder = async (order: AdminOrder) => {
+    const orderRef = getOrderRef(order);
+    if (!orderRef) return;
+
+    setActionLoadingRef(`aramex-create:${orderRef}`);
+    setError("");
+
+    try {
+      const res = await fetch("/api/admin/aramex-create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(savedToken ? { Authorization: `Bearer ${savedToken}` } : {}),
+        },
+        body: JSON.stringify({ orderRef }),
+      });
+      const data = (await res.json()) as AdminActionResponse;
+
+      if (!res.ok || !data.success) {
+        throw new Error(formatApiError(data.error, data.details, "Could not create Aramex shipment"));
+      }
+
+      setAramexSyncMessage(
+        data.previousTrackingNumber
+          ? `Replacement shipment created for ${orderRef}. New tracking: ${data.trackingNumber}. Old tracking needs portal cancel/check: ${data.previousTrackingNumber}.`
+          : `Aramex shipment created for ${orderRef}. Tracking: ${data.trackingNumber}.`,
+      );
       setSelectedOrder(null);
       await loadOrders(savedToken);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not update order status");
+      setError(err instanceof Error ? err.message : "Could not create Aramex shipment");
     } finally {
       setActionLoadingRef("");
     }
@@ -1255,7 +1556,12 @@ export default function AdminDashboardPage() {
       ["period", dateRange.label],
       [],
       ["summary"],
-      ["gross_sales", String(stats.grossSales)],
+      ["all_orders_subtotal_shipping_excluded", String(stats.allOrdersSubtotal)],
+      ["all_orders_shipping", String(stats.allOrdersShipping)],
+      ["all_orders_total_shipping_included", String(stats.allOrdersValue)],
+      ["all_orders_discounts", String(stats.allOrdersDiscounts)],
+      ["confirmed_gross_shipping_excluded", String(stats.grossSales)],
+      ["confirmed_total_shipping_included", String(stats.confirmedTotalValue)],
       ["net_revenue_before_expenses", String(stats.netRevenue)],
       ["expenses", String(expenseStats.total)],
       ["net_after_expenses", String(expenseStats.netAfterExpenses)],
@@ -1493,9 +1799,14 @@ export default function AdminDashboardPage() {
   const stats = useMemo(() => {
     const confirmedOrders = filteredMetricOrders.filter(isConfirmed);
     const revenueOrders = confirmedOrders.filter((order) => !isReturned(order));
+    const customOrders = confirmedOrders.filter((order) => !isReturned(order) && isCustomOrder(order));
     const returnedOrders = confirmedOrders.filter(isReturned);
     const unconfirmedOrders = filteredMetricOrders.filter((order) => !isConfirmed(order) && !isReturned(order));
+    const allOrdersSubtotal = filteredMetricOrders.reduce((sum, order) => sum + getSubtotal(order), 0);
+    const allOrdersShipping = filteredMetricOrders.reduce((sum, order) => sum + getShipping(order), 0);
+    const allOrdersDiscounts = filteredMetricOrders.reduce((sum, order) => sum + getDiscount(order), 0);
     const grossSales = confirmedOrders.reduce((sum, order) => sum + getSubtotal(order), 0);
+    const confirmedTotalValue = confirmedOrders.reduce((sum, order) => sum + getAmount(order), 0);
     const collectedRevenue = revenueOrders.reduce((sum, order) => sum + getAmount(order), 0);
     const returnedValue = returnedOrders.reduce((sum, order) => sum + getAmount(order), 0);
     const discounts = confirmedOrders.reduce((sum, order) => sum + getDiscount(order), 0);
@@ -1516,23 +1827,22 @@ export default function AdminDashboardPage() {
     const instapayOrders = filteredMetricOrders.filter((order) => getPaymentBucket(order) === "instapay");
     const aramexFailed = filteredMetricOrders.filter((order) => getAramexError(order));
     const aramexMissing = filteredMetricOrders.filter(needsAramex);
+    const aramexReplacement = filteredMetricOrders.filter(needsAramexReplacement);
+    const aramexWithTracking = filteredMetricOrders.filter(hasAramexTracking);
     const aramexSynced = filteredMetricOrders.filter((order) => getAramexStatus(order));
     const pendingInstaPay = filteredMetricOrders.filter(isPendingInstaPay);
     const deliveredOrders = filteredMetricOrders.filter(isDelivered);
     const pickupOrders = filteredMetricOrders.filter((order) => getDeliveryBucket(order) === "pickup");
     const deliveryOrders = filteredMetricOrders.filter((order) => getDeliveryBucket(order) === "delivery");
     const shippedNotDeliveredOrders = filteredMetricOrders.filter((order) => isInTransit(order) && !isDelivered(order) && !isReturned(order));
-    const totalPieces = revenueOrders.reduce((sum, order) => {
-      const items = getItems(order);
-      return sum + items.reduce((itemSum, item) => itemSum + getItemRecordedQuantity(item), 0);
-    }, 0);
+    const totalPieces = revenueOrders.reduce((sum, order) => sum + getOrderRecordedPieces(order), 0);
     const awaitingPaymentOrders = filteredMetricOrders.filter((order) => !isConfirmed(order) && !isReturned(order));
     const paidOnlineOrders = revenueOrders.filter((order) => ["card", "instapay"].includes(getPaymentBucket(order)));
     const codRevenueOrders = revenueOrders.filter((order) => getPaymentBucket(order) === "cod");
     const paidOnlineValue = paidOnlineOrders.reduce((sum, order) => sum + getAmount(order), 0);
     const codToCollectValue = codRevenueOrders.reduce((sum, order) => sum + getAmount(order), 0);
     const aramexBlockedValue = filteredMetricOrders
-      .filter((order) => getAramexError(order) || needsAramex(order))
+      .filter((order) => getAramexError(order) || needsAramex(order) || needsAramexReplacement(order))
       .reduce((sum, order) => sum + getAmount(order), 0);
     const paymentBreakdown = ["cod", "card", "instapay", "unknown"].map((bucket) => {
       const bucketOrders = confirmedOrders.filter((order) => getPaymentBucket(order) === bucket);
@@ -1549,6 +1859,10 @@ export default function AdminDashboardPage() {
 
     return {
       grossSales,
+      allOrdersSubtotal,
+      allOrdersShipping,
+      allOrdersDiscounts,
+      confirmedTotalValue,
       netRevenue: collectedRevenue,
       returnedValue,
       discounts,
@@ -1574,6 +1888,8 @@ export default function AdminDashboardPage() {
       codToCollectOrders: codRevenueOrders.length,
       codToCollectValue,
       aramexBlockedValue,
+      customOrders: customOrders.length,
+      customOrdersValue: customOrders.reduce((sum, order) => sum + getAmount(order), 0),
       missingTotalOrders: missingTotalOrders.length,
       missingDateOrders: missingDateOrders.length,
       missingCustomerOrders: missingCustomerOrders.length,
@@ -1584,6 +1900,8 @@ export default function AdminDashboardPage() {
       instapayOrders: instapayOrders.length,
       aramexFailed: aramexFailed.length,
       aramexMissing: aramexMissing.length,
+      aramexReplacement: aramexReplacement.length,
+      aramexWithTracking: aramexWithTracking.length,
       aramexSynced: aramexSynced.length,
       pendingInstaPay: pendingInstaPay.length,
       paymentBreakdown,
@@ -1647,6 +1965,101 @@ export default function AdminDashboardPage() {
     };
   }, [inventory]);
 
+  const stockConsumption = useMemo(() => {
+    const revenueOrders = filteredMetricOrders.filter((order) => isConfirmed(order) && !isReturned(order) && !isCustomOrder(order));
+    const orderDates = revenueOrders
+      .map(getOrderDate)
+      .filter((date): date is Date => Boolean(date));
+    const minDate = dateRange.from || (orderDates.length ? new Date(Math.min(...orderDates.map((date) => date.getTime()))) : null);
+    const maxDate = dateRange.to || (orderDates.length ? new Date(Math.max(...orderDates.map((date) => date.getTime()))) : null);
+    const periodDays =
+      minDate && maxDate
+        ? Math.max(1, Math.ceil((maxDate.getTime() - minDate.getTime()) / 86_400_000) + 1)
+        : 30;
+
+    const salesByProduct = new Map<string, number>();
+    const salesByVariant = new Map<string, number>();
+
+    revenueOrders.forEach((order) => {
+      getItems(order).forEach((item) => {
+        if (isBundleParentItem(item)) return;
+
+        const qty = getItemRecordedQuantity(item);
+        if (qty <= 0) return;
+
+        const productKeys = getOrderItemProductKeys(item);
+        const sizeKey = getOrderItemSizeKey(item);
+        productKeys.forEach((productKey) => {
+          salesByProduct.set(productKey, (salesByProduct.get(productKey) || 0) + qty);
+          salesByVariant.set(`${productKey}::${sizeKey}`, (salesByVariant.get(`${productKey}::${sizeKey}`) || 0) + qty);
+        });
+      });
+    });
+
+    const rows = inventory.flatMap((item) => {
+      const productKeys = getInventoryProductKeys(item);
+      const productSold = Math.max(...productKeys.map((key) => salesByProduct.get(key) || 0), 0);
+
+      return getSizeRows(item).map((row) => {
+        const sizeKey = normalizeInventoryKey(row.size) || "product";
+        const variantSold = Math.max(
+          ...productKeys.map((key) => salesByVariant.get(`${key}::${sizeKey}`) || 0),
+          0,
+        );
+        const sold = variantSold || (row.size === "product" ? productSold : 0);
+        const dailyConsumption = sold / periodDays;
+        const currentStock = typeof row.quantity === "number" ? row.quantity : null;
+        const neededForTarget = Math.ceil(dailyConsumption * stockCoverageDays);
+        const restockNeeded = currentStock === null ? 0 : Math.max(0, neededForTarget - currentStock);
+        const coverageDays =
+          currentStock !== null && dailyConsumption > 0
+            ? Math.floor(currentStock / dailyConsumption)
+            : null;
+        const status =
+          currentStock === null
+            ? "untracked"
+            : dailyConsumption <= 0
+              ? "no_recent_sales"
+              : restockNeeded > 0
+                ? "restock_needed"
+                : coverageDays !== null && coverageDays <= stockCoverageDays
+                  ? "watch"
+                  : "healthy";
+
+        return {
+          product: item.name,
+          slug: item.slug,
+          size: row.size,
+          currentStock,
+          sold,
+          dailyConsumption,
+          neededForTarget,
+          restockNeeded,
+          coverageDays,
+          status,
+          stockStatus: row.status,
+        };
+      });
+    });
+
+    const activeRows = rows
+      .filter((row) => row.sold > 0 || row.restockNeeded > 0 || row.status === "untracked")
+      .sort((a, b) => {
+        if (b.restockNeeded !== a.restockNeeded) return b.restockNeeded - a.restockNeeded;
+        if (b.sold !== a.sold) return b.sold - a.sold;
+        return a.product.localeCompare(b.product);
+      });
+
+    return {
+      periodDays,
+      rows: activeRows,
+      totalSold: rows.reduce((sum, row) => sum + row.sold, 0),
+      totalRestockNeeded: rows.reduce((sum, row) => sum + row.restockNeeded, 0),
+      restockRows: rows.filter((row) => row.restockNeeded > 0),
+      untrackedRows: rows.filter((row) => row.currentStock === null && row.sold > 0),
+    };
+  }, [dateRange.from, dateRange.to, filteredMetricOrders, inventory, stockCoverageDays]);
+
   const filteredOrders = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
@@ -1669,7 +2082,7 @@ export default function AdminDashboardPage() {
 
   const operations = useMemo(() => {
     const confirmedOrders = filteredMetricOrders.filter(isConfirmed);
-    const revenueOrders = confirmedOrders.filter((order) => !isReturned(order));
+    const revenueOrders = confirmedOrders.filter((order) => !isReturned(order) && !isCustomOrder(order));
     const productMap = new Map<
       string,
       {
@@ -1693,6 +2106,8 @@ export default function AdminDashboardPage() {
       const orderItems = getItems(order);
 
       orderItems.forEach((item) => {
+        if (isBundleParentItem(item) || isCustomOrderItem(item)) return;
+
         const name = getString(item.name || item.title || item.slug || item.id) || "Unknown product";
         const qty = getItemRecordedQuantity(item);
         const line = getItemLineTotal(item);
@@ -1710,7 +2125,7 @@ export default function AdminDashboardPage() {
     });
 
     const aramexAttention = filteredMetricOrders
-      .filter((order) => getAramexError(order) || needsAramex(order))
+      .filter((order) => getAramexError(order) || needsAramex(order) || needsAramexReplacement(order))
       .slice(0, 12);
     const instapayAttention = filteredMetricOrders.filter(isPendingInstaPay).slice(0, 12);
     const returnsAttention = filteredMetricOrders.filter(isReturned).slice(0, 12);
@@ -1721,7 +2136,7 @@ export default function AdminDashboardPage() {
       { label: "Delivered", orders: filteredMetricOrders.filter(isDelivered).length, value: filteredMetricOrders.filter(isDelivered).reduce((sum, order) => sum + getAmount(order), 0), tone: "bg-emerald-50 text-emerald-700" },
       { label: "In transit", orders: filteredMetricOrders.filter(isInTransit).length, value: filteredMetricOrders.filter(isInTransit).reduce((sum, order) => sum + getAmount(order), 0), tone: "bg-sky-50 text-sky-700" },
       { label: "Returned / cancelled", orders: filteredMetricOrders.filter(isReturned).length, value: filteredMetricOrders.filter(isReturned).reduce((sum, order) => sum + getAmount(order), 0), tone: "bg-rose-50 text-rose-700" },
-      { label: "Missing Aramex", orders: filteredMetricOrders.filter(needsAramex).length, value: filteredMetricOrders.filter(needsAramex).reduce((sum, order) => sum + getAmount(order), 0), tone: "bg-amber-50 text-amber-800" },
+      { label: "Missing tracking in orders", orders: filteredMetricOrders.filter(needsAramex).length, value: filteredMetricOrders.filter(needsAramex).reduce((sum, order) => sum + getAmount(order), 0), tone: "bg-amber-50 text-amber-800" },
       { label: "Aramex failed", orders: filteredMetricOrders.filter((order) => Boolean(getAramexError(order))).length, value: filteredMetricOrders.filter((order) => Boolean(getAramexError(order))).reduce((sum, order) => sum + getAmount(order), 0), tone: "bg-orange-50 text-orange-800" },
     ];
     const notificationRows = [
@@ -2051,7 +2466,7 @@ export default function AdminDashboardPage() {
             <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
               <select
                 value={datePreset}
-                onChange={(event) => setDatePreset(event.target.value as DatePreset)}
+                onChange={(event) => changeDatePreset(event.target.value as DatePreset)}
                 className="h-11 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-4 text-sm font-black outline-none"
               >
                 <option value="all">All time</option>
@@ -2062,19 +2477,33 @@ export default function AdminDashboardPage() {
                 <option value="custom">Custom range</option>
               </select>
               {datePreset === "custom" && (
-                <div className="grid gap-2 sm:grid-cols-2">
+                <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto_auto]">
                   <input
                     type="date"
-                    value={customDateFrom}
-                    onChange={(event) => setCustomDateFrom(event.target.value)}
+                    value={customDateDraftFrom}
+                    onChange={(event) => setCustomDateDraftFrom(event.target.value)}
                     className="h-11 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-4 text-sm font-black outline-none"
                   />
                   <input
                     type="date"
-                    value={customDateTo}
-                    onChange={(event) => setCustomDateTo(event.target.value)}
+                    value={customDateDraftTo}
+                    onChange={(event) => setCustomDateDraftTo(event.target.value)}
                     className="h-11 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-4 text-sm font-black outline-none"
                   />
+                  <button
+                    type="button"
+                    onClick={applyCustomDateRange}
+                    className="h-11 rounded-2xl bg-[#0F1A26] px-4 text-sm font-black text-white transition hover:-translate-y-0.5"
+                  >
+                    Apply
+                  </button>
+                  <button
+                    type="button"
+                    onClick={clearCustomDateRange}
+                    className="h-11 rounded-2xl border border-[#0F1A26]/10 bg-white px-4 text-sm font-black text-[#0F1A26] transition hover:-translate-y-0.5"
+                  >
+                    Clear
+                  </button>
                 </div>
               )}
               <select
@@ -2116,7 +2545,7 @@ export default function AdminDashboardPage() {
                 <option value="confirmed">Confirmed / paid ({visibleOrders.filter(isConfirmed).length})</option>
                 <option value="returned">Returned / cancelled ({visibleOrders.filter(isReturned).length})</option>
                 <option value="pending_instapay">Pending InstaPay ({visibleOrders.filter(isPendingInstaPay).length})</option>
-                <option value="aramex_missing">Missing Aramex ({visibleOrders.filter(needsAramex).length})</option>
+                <option value="aramex_missing">Missing tracking ({visibleOrders.filter(needsAramex).length})</option>
                 <option value="aramex_failed">Aramex failed ({visibleOrders.filter((order) => Boolean(getAramexError(order))).length})</option>
                 {orderFilterOptions.statuses.map(([status, count]) => (
                   <option key={status} value={`raw:${status}`}>{status.replaceAll("_", " ")} ({count})</option>
@@ -2145,8 +2574,176 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <p className="mt-3 text-xs font-bold text-[#0F1A26]/45">
-            Showing {filteredMetricOrders.length} of {visibleOrders.length} orders after filters. All finance and operations cards follow these filters.
+            Showing {filteredMetricOrders.length} of {visibleOrders.length} valid orders after filters.
+            {skippedEmptyOrderRows > 0 ? ` ${skippedEmptyOrderRows} empty sheet rows were ignored.` : ""}
+            {" "}All finance and operations cards follow these filters.
           </p>
+        </section>
+
+        <section className="mt-4 rounded-[2rem] border border-[#0F1A26]/10 bg-white p-4 shadow-sm">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#EEBC3F]">Custom / bulk orders</p>
+              <h2 className="mt-1 text-lg font-black">Add custom or replacement order</h2>
+              <p className="mt-1 text-xs font-bold text-[#0F1A26]/45">
+                Use finance-only for special bulk pricing, or enable Aramex shipment after cancelling the old shipment in Aramex portal.
+              </p>
+            </div>
+            <button
+              onClick={() => setManualOrderOpen((current) => !current)}
+              className="h-11 rounded-2xl bg-[#0F1A26] px-5 text-sm font-black text-white transition hover:-translate-y-0.5"
+            >
+              {manualOrderOpen ? "Close custom order" : "Add custom order"}
+            </button>
+          </div>
+
+          {manualOrderOpen && (
+            <div className="mt-4 rounded-[1.5rem] bg-[#F8F6F3] p-4">
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <label className="text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45 md:col-span-2">
+                  Product
+                  <select
+                    value={manualOrderDraft.productSlug}
+                    onChange={(event) => updateManualOrderDraft("productSlug", event.target.value)}
+                    className="mt-1 h-11 w-full rounded-2xl border border-[#0F1A26]/10 bg-white px-3 text-sm font-bold normal-case tracking-normal outline-none"
+                  >
+                    <option value="">Custom product / special order</option>
+                    {inventory.map((item) => (
+                      <option key={item.slug} value={item.slug} disabled={isInventoryOut(item)}>
+                        {item.name} {item.stockStatus === "out_of_stock" ? "(out of stock)" : ""}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45">
+                  Product size
+                  <select
+                    value={manualOrderDraft.productSize}
+                    onChange={(event) => updateManualOrderDraft("productSize", event.target.value)}
+                    disabled={!manualOrderDraft.productSlug}
+                    className="mt-1 h-11 w-full rounded-2xl border border-[#0F1A26]/10 bg-white px-3 text-sm font-bold normal-case tracking-normal outline-none disabled:bg-[#F8F6F3] disabled:text-[#0F1A26]/35"
+                  >
+                    <option value="">No size / custom</option>
+                    {(inventory.find((item) => item.slug === manualOrderDraft.productSlug)
+                      ? getSizeRows(inventory.find((item) => item.slug === manualOrderDraft.productSlug) as AdminInventoryItem)
+                      : []
+                    ).map((row) => (
+                      <option key={row.size} value={row.size === "product" ? "" : row.size} disabled={row.status === "out_of_stock" || row.quantity === 0}>
+                        {row.size === "product" ? "No size" : row.size}
+                        {typeof row.quantity === "number" ? ` - ${row.quantity} left` : ""}
+                        {row.status === "out_of_stock" ? " (out of stock)" : ""}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {[
+                  ["customerName", "Customer / company"],
+                  ["phone", "Phone"],
+                  ["email", "Email"],
+                  ["governorate", "Governorate"],
+                  ["address", "Address"],
+                  ["title", "Custom order title"],
+                  ["quantity", "Quantity"],
+                  ["unitPrice", "Unit price"],
+                  ["total", "Total EGP"],
+                ].map(([key, label]) => (
+                  <label key={key} className="text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45">
+                    {label}
+                    <input
+                      value={String(manualOrderDraft[key as keyof AdminManualOrderDraft])}
+                      onChange={(event) => updateManualOrderDraft(key as keyof AdminManualOrderDraft, event.target.value)}
+                      className="mt-1 h-11 w-full rounded-2xl border border-[#0F1A26]/10 bg-white px-3 text-sm font-bold normal-case tracking-normal outline-none"
+                    />
+                  </label>
+                ))}
+                <label className="text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45">
+                  City
+                  <select
+                    value={manualOrderDraft.city}
+                    onChange={(event) => updateManualOrderDraft("city", event.target.value)}
+                    className="mt-1 h-11 w-full rounded-2xl border border-[#0F1A26]/10 bg-white px-3 text-sm font-bold normal-case tracking-normal outline-none"
+                  >
+                    <option value="">Select Aramex city</option>
+                    {aramexCities.map((city) => (
+                      <option key={city} value={city}>{city}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45">
+                  Payment method
+                  <select
+                    value={manualOrderDraft.paymentMethod}
+                    onChange={(event) => updateManualOrderDraft("paymentMethod", event.target.value)}
+                    className="mt-1 h-11 w-full rounded-2xl border border-[#0F1A26]/10 bg-white px-3 text-sm font-bold normal-case tracking-normal outline-none"
+                  >
+                    {MANUAL_ORDER_PAYMENT_METHODS.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45">
+                  Payment status
+                  <select
+                    value={manualOrderDraft.paymentStatus}
+                    onChange={(event) => updateManualOrderDraft("paymentStatus", event.target.value)}
+                    className="mt-1 h-11 w-full rounded-2xl border border-[#0F1A26]/10 bg-white px-3 text-sm font-bold normal-case tracking-normal outline-none"
+                  >
+                    {MANUAL_ORDER_PAYMENT_STATUSES.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45">
+                  Delivery method
+                  <select
+                    value={manualOrderDraft.deliveryMethod}
+                    onChange={(event) => updateManualOrderDraft("deliveryMethod", event.target.value)}
+                    className="mt-1 h-11 w-full rounded-2xl border border-[#0F1A26]/10 bg-white px-3 text-sm font-bold normal-case tracking-normal outline-none"
+                  >
+                    {MANUAL_ORDER_DELIVERY_METHODS.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="flex items-center gap-3 rounded-2xl border border-[#0F1A26]/10 bg-white p-3 text-sm font-black text-[#0F1A26] md:col-span-2 xl:col-span-4">
+                  <input
+                    type="checkbox"
+                    checked={manualOrderDraft.createAramexShipment}
+                    onChange={(event) => updateManualOrderDraft("createAramexShipment", event.target.checked)}
+                    className="h-5 w-5 accent-[#EEBC3F]"
+                  />
+                  Create real Aramex shipment for this new order
+                </label>
+                <label className="text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45 md:col-span-2 xl:col-span-4">
+                  Internal note
+                  <input
+                    value={manualOrderDraft.notes}
+                    onChange={(event) => updateManualOrderDraft("notes", event.target.value)}
+                    placeholder="Example: 60 custom covers for company event, special design/pricing."
+                    className="mt-1 h-11 w-full rounded-2xl border border-[#0F1A26]/10 bg-white px-3 text-sm font-bold normal-case tracking-normal outline-none"
+                  />
+                </label>
+              </div>
+              <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-900 sm:flex-row sm:items-center sm:justify-between">
+                <span>
+                  {manualOrderDraft.createAramexShipment
+                    ? "This creates a new dashboard order and a real Aramex shipment. Use it only after the old shipment was cancelled/handled in Aramex portal."
+                    : "This order affects finance totals only. It is excluded from Sanity inventory deduction, stock forecast, and catalog product sales ranking."}
+                </span>
+                <button
+                  onClick={() => void createManualCustomOrder()}
+                  disabled={actionLoadingRef === "manual-order"}
+                  className="h-10 shrink-0 rounded-2xl bg-[#EEBC3F] px-5 text-xs font-black text-[#0F1A26] transition hover:-translate-y-0.5 disabled:opacity-60"
+                >
+                  {actionLoadingRef === "manual-order"
+                    ? "Saving..."
+                    : manualOrderDraft.createAramexShipment
+                      ? "Create order + shipment"
+                      : "Save custom order"}
+                </button>
+              </div>
+            </div>
+          )}
         </section>
 
         {activeTab === "finance" && (
@@ -2170,7 +2767,7 @@ export default function AdminDashboardPage() {
             <SectionHeader
               eyebrow="Finance Control"
               title="Money view with real order-source numbers"
-              description="These cards are calculated from confirmed orders returned by the orders API. Returned or cancelled Aramex statuses are deducted from net revenue, while discounts and shipping are shown separately."
+              description="All-orders totals reconcile with the sheet. Confirmed gross/net only count confirmed or paid orders, so pending/unpaid rows do not inflate the trusted sales view."
             />
             <button
               onClick={exportFinanceReportCsv}
@@ -2183,15 +2780,32 @@ export default function AdminDashboardPage() {
           <div className="mt-4 grid gap-3 rounded-3xl bg-[#F8F6F3] p-4 sm:grid-cols-3">
             <DataPill label="data source" value="Google Sheets orders webhook + in-memory fallback for recent orders" />
             <DataPill label="auto refresh" value="Every 60 seconds while the admin page is open" />
-            <DataPill label="aramex sync" value="Manual Sync Aramex button updates shipment status on stored orders" />
+            <DataPill label="tracking refresh" value="Refresh Tracking Status reads latest movement from Aramex for stored tracking numbers" />
           </div>
         </section>
 
         <section className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard title="Orders" value={String(stats.totalOrders)} subtitle={`${stats.confirmedOrders} confirmed / ${stats.unconfirmedOrders} pending`} icon={ClipboardList} tone="dark" />
-          <StatCard title="Pieces Sold" value={String(stats.totalPieces)} subtitle="Confirmed non-returned order items" icon={PackageCheck} tone="green" />
+          <StatCard title="All Orders Subtotal" value={money.format(stats.allOrdersSubtotal)} subtitle="All loaded orders, shipping excluded" icon={Banknote} tone="gold" />
+          <StatCard title="All Orders Total" value={money.format(stats.allOrdersValue)} subtitle={`${money.format(stats.allOrdersShipping)} shipping included`} icon={CreditCard} tone="dark" />
+          <StatCard title="Confirmed Gross" value={money.format(stats.grossSales)} subtitle={`${stats.confirmedOrders} confirmed orders, shipping excluded`} icon={CheckCircle2} tone="green" />
+        </section>
+
+        <section className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard title="Pieces Sold" value={String(stats.totalPieces)} subtitle="From Total Items Quantity, bundle parents excluded" icon={PackageCheck} tone="green" />
           <StatCard title="Pickup Orders" value={String(stats.pickupOrders)} subtitle={`${stats.deliveryOrders} delivery orders`} icon={Truck} tone="gold" />
           <StatCard title="Shipped Not Delivered" value={String(stats.shippedNotDeliveredOrders)} subtitle={money.format(stats.shippedNotDeliveredValue)} icon={AlertTriangle} tone={stats.shippedNotDeliveredOrders ? "gold" : "green"} />
+          <StatCard title="Pending Difference" value={money.format(stats.allOrdersSubtotal - stats.grossSales)} subtitle="All subtotal minus confirmed gross" icon={AlertTriangle} tone={stats.allOrdersSubtotal - stats.grossSales > 0 ? "gold" : "green"} />
+        </section>
+
+        <section className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard
+            title="Custom / Bulk Orders"
+            value={money.format(stats.customOrdersValue)}
+            subtitle={`${stats.customOrders} finance-only orders, excluded from stock/product ranking`}
+            icon={ReceiptText}
+            tone={stats.customOrders ? "gold" : "dark"}
+          />
         </section>
 
         <section className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -2241,14 +2855,14 @@ export default function AdminDashboardPage() {
         </section>
 
         <section className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <StatCard title="Gross Sales" value={money.format(stats.grossSales)} subtitle={`${stats.totalOrders} total orders`} icon={Banknote} tone="gold" />
+          <StatCard title="Confirmed Gross" value={money.format(stats.grossSales)} subtitle="Confirmed subtotal, shipping excluded" icon={Banknote} tone="gold" />
           <StatCard title="Net Revenue" value={money.format(stats.netRevenue)} subtitle="Confirmed/paid minus returned orders" icon={CheckCircle2} tone="green" />
           <StatCard title="Returned / Cancelled" value={money.format(stats.returnedValue)} subtitle="Auto deducted from revenue view" icon={Undo2} tone="red" />
           <StatCard title="Discounts" value={money.format(stats.discounts)} subtitle={`Shipping collected: ${money.format(stats.shippingCollected)}`} icon={CreditCard} />
         </section>
 
         <section className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <StatCard title="All Orders Value" value={money.format(stats.allOrdersValue)} subtitle="Raw total value for current period" icon={ClipboardList} tone="dark" />
+          <StatCard title="All Orders Value" value={money.format(stats.allOrdersValue)} subtitle="All loaded orders, shipping included" icon={ClipboardList} tone="dark" />
           <StatCard title="Unconfirmed Value" value={money.format(stats.unconfirmedValue)} subtitle={`${stats.unconfirmedOrders} pending/unpaid orders`} icon={AlertTriangle} tone={stats.unconfirmedOrders ? "gold" : "dark"} />
           <StatCard title="Average Order Value" value={money.format(stats.averageOrderValue)} subtitle="Confirmed non-returned orders" icon={BarChart3} tone="dark" />
           <StatCard title="Data Gaps" value={String(stats.missingTotalOrders + stats.missingDateOrders + stats.missingItemsOrders + stats.missingCustomerOrders + stats.missingProductRevenueLines)} subtitle="Missing date/total/items/customer/product price fields" icon={ShieldCheck} tone={stats.missingTotalOrders + stats.missingDateOrders + stats.missingItemsOrders + stats.missingCustomerOrders + stats.missingProductRevenueLines ? "red" : "green"} />
@@ -2258,7 +2872,7 @@ export default function AdminDashboardPage() {
           <StatCard title="COD Orders" value={String(stats.codOrders)} icon={Truck} />
           <StatCard title="Card Orders" value={String(stats.cardOrders)} icon={CreditCard} />
           <StatCard title="InstaPay Orders" value={String(stats.instapayOrders)} subtitle={`${stats.pendingInstaPay} waiting approval`} icon={WalletCards} tone={stats.pendingInstaPay ? "gold" : "dark"} />
-          <StatCard title="Aramex Attention" value={String(stats.aramexFailed + stats.aramexMissing)} subtitle={`${stats.aramexSynced} synced / ${stats.aramexFailed} failed / ${stats.aramexMissing} missing`} icon={AlertTriangle} tone={stats.aramexFailed + stats.aramexMissing ? "red" : "green"} />
+          <StatCard title="Aramex Attention" value={String(stats.aramexFailed + stats.aramexMissing + stats.aramexReplacement)} subtitle={`${stats.aramexWithTracking} with tracking / ${stats.aramexFailed} failed / ${stats.aramexMissing} missing / ${stats.aramexReplacement} need replacement`} icon={AlertTriangle} tone={stats.aramexFailed + stats.aramexMissing + stats.aramexReplacement ? "red" : "green"} />
         </section>
 
         <section className="mt-6 grid gap-4 lg:grid-cols-[1fr_1fr]">
@@ -2266,7 +2880,12 @@ export default function AdminDashboardPage() {
             <h2 className="text-lg font-black">Finance equation</h2>
             <p className="mt-1 text-xs font-bold text-[#0F1A26]/45">How the visible finance numbers are currently calculated.</p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <DataPill label="all orders subtotal" value={money.format(stats.allOrdersSubtotal)} />
+              <DataPill label="all orders shipping" value={money.format(stats.allOrdersShipping)} />
+              <DataPill label="all orders total" value={money.format(stats.allOrdersValue)} />
+              <DataPill label="all orders discounts" value={`-${money.format(stats.allOrdersDiscounts)}`} />
               <DataPill label="confirmed subtotal" value={money.format(stats.grossSales)} />
+              <DataPill label="confirmed total" value={money.format(stats.confirmedTotalValue)} />
               <DataPill label="order/code discounts" value={`-${money.format(stats.orderDiscounts)}`} />
               <DataPill label="payment discounts" value={`-${money.format(stats.paymentDiscounts)}`} />
               <DataPill label="shipping collected" value={money.format(stats.shippingCollected)} />
@@ -2287,6 +2906,7 @@ export default function AdminDashboardPage() {
               <DataPill label="orders missing items" value={String(stats.missingItemsOrders)} />
               <DataPill label="orders missing customer" value={String(stats.missingCustomerOrders)} />
               <DataPill label="item lines missing price" value={String(stats.missingProductRevenueLines)} />
+              <DataPill label="empty sheet rows ignored" value={String(skippedEmptyOrderRows)} />
               <DataPill label="orders included in finance period" value={String(stats.totalOrders)} />
             </div>
           </div>
@@ -2415,6 +3035,9 @@ export default function AdminDashboardPage() {
               <DataPill label="delivered orders" value={String(stats.deliveredOrders)} />
               <DataPill label="pending / unpaid orders" value={String(stats.awaitingPaymentOrders)} />
               <DataPill label="returned or cancelled value" value={money.format(stats.returnedValue)} />
+            </div>
+            <div className="mt-4 rounded-2xl bg-amber-50 p-4 text-xs font-bold leading-5 text-amber-800">
+              Aramex numbers here are order-record based only. Manual gifts, influencer shipments, or shipments created directly in Aramex will not appear unless their tracking number is saved on an order row.
             </div>
           </div>
         </section>
@@ -2685,6 +3308,100 @@ export default function AdminDashboardPage() {
         </section>
 
         <section className="mt-6 overflow-hidden rounded-[2rem] border border-[#0F1A26]/10 bg-white shadow-sm">
+          <div className="flex flex-col gap-4 border-b border-[#0F1A26]/10 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h2 className="text-lg font-black">Stock consumption forecast</h2>
+              <p className="text-xs font-bold text-[#0F1A26]/45">
+                Estimated usage from confirmed non-returned orders in the selected dashboard period.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <span className="text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/40">Coverage target</span>
+              <select
+                value={stockCoverageDays}
+                onChange={(event) => setStockCoverageDays(Number(event.target.value))}
+                className="h-11 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-4 text-sm font-black outline-none"
+              >
+                <option value={7}>Enough for 1 week</option>
+                <option value={14}>Enough for 2 weeks</option>
+                <option value={30}>Enough for 1 month</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid gap-3 p-5 sm:grid-cols-2 xl:grid-cols-4">
+            <DataPill label="sales period used" value={`${stockConsumption.periodDays} days`} />
+            <DataPill label="units consumed" value={String(stockConsumption.totalSold)} />
+            <DataPill label={`needed for ${stockCoverageDays} days`} value={`${stockConsumption.totalRestockNeeded} units`} />
+            <DataPill label="sold but stock untracked" value={String(stockConsumption.untrackedRows.length)} />
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-[#0F1A26]/10 text-left text-sm">
+              <thead className="bg-[#F8F6F3] text-xs uppercase tracking-[0.12em] text-[#0F1A26]/45">
+                <tr>
+                  <th className="px-5 py-3">Product</th>
+                  <th className="px-5 py-3">Size</th>
+                  <th className="px-5 py-3">Sold</th>
+                  <th className="px-5 py-3">Daily use</th>
+                  <th className="px-5 py-3">Current stock</th>
+                  <th className="px-5 py-3">Coverage</th>
+                  <th className="px-5 py-3">Conclusion</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#0F1A26]/8">
+                {stockConsumption.rows.length ? stockConsumption.rows.slice(0, 60).map((row) => {
+                  const isRestock = row.restockNeeded > 0;
+                  const isUntracked = row.currentStock === null;
+                  const conclusion = isUntracked
+                    ? "Add stock quantity in CMS to forecast this item."
+                    : row.dailyConsumption <= 0
+                      ? "No recent consumption in this period."
+                      : isRestock
+                        ? `Add ${row.restockNeeded} units to cover ${stockCoverageDays} days.`
+                        : `Enough for ${row.coverageDays ?? "many"} days.`;
+
+                  return (
+                    <tr key={`${row.slug}-${row.size}`} className={isRestock ? "bg-amber-50/70" : isUntracked ? "bg-rose-50/60" : ""}>
+                      <td className="px-5 py-4 align-top">
+                        <p className="font-black">{row.product}</p>
+                        <p className="text-xs font-semibold text-[#0F1A26]/45">{row.slug}</p>
+                      </td>
+                      <td className="px-5 py-4 align-top font-black">{row.size}</td>
+                      <td className="px-5 py-4 align-top font-bold">{row.sold}</td>
+                      <td className="px-5 py-4 align-top font-bold">{row.dailyConsumption.toFixed(2)} / day</td>
+                      <td className="px-5 py-4 align-top font-bold">
+                        {row.currentStock === null ? "Untracked" : row.currentStock}
+                      </td>
+                      <td className="px-5 py-4 align-top font-bold">
+                        {row.coverageDays === null ? "-" : `${row.coverageDays} days`}
+                      </td>
+                      <td className="max-w-[340px] px-5 py-4 align-top">
+                        <span className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${
+                          isUntracked
+                            ? "bg-rose-100 text-rose-700"
+                            : isRestock
+                              ? "bg-amber-100 text-amber-800"
+                              : "bg-emerald-50 text-emerald-700"
+                        }`}>
+                          {conclusion}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                }) : (
+                  <tr>
+                    <td colSpan={7} className="px-5 py-8 text-center text-sm font-bold text-[#0F1A26]/45">
+                      No consumption data for the selected period.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="mt-6 overflow-hidden rounded-[2rem] border border-[#0F1A26]/10 bg-white shadow-sm">
           <div className="flex items-center justify-between border-b border-[#0F1A26]/10 px-5 py-4">
             <div>
               <h2 className="text-lg font-black">Full stock by product and size</h2>
@@ -2918,7 +3635,7 @@ export default function AdminDashboardPage() {
           <SectionHeader
             eyebrow="Action Center"
             title="Orders that need attention"
-            description="This queue highlights operational risk: InstaPay orders waiting approval, Aramex failures or missing tracking, and returned/cancelled orders that affect finance."
+              description="This queue separates payment approval, shipment creation/replacement, tracking refresh, and returns so the admin knows exactly which action talks to Aramex."
           />
 
           <div className="mt-5 grid gap-4 lg:grid-cols-3">
@@ -2948,7 +3665,7 @@ export default function AdminDashboardPage() {
 
             <div className="rounded-3xl bg-rose-50 p-4">
               <div className="flex items-center justify-between gap-3">
-                <h3 className="font-black text-rose-800">Aramex issues</h3>
+                <h3 className="font-black text-rose-800">Aramex shipment actions</h3>
                 <span className="rounded-full bg-rose-200 px-3 py-1 text-xs font-black text-rose-900">{operations.aramexAttention.length}</span>
               </div>
               <div className="mt-3 space-y-2">
@@ -2956,19 +3673,42 @@ export default function AdminDashboardPage() {
                   <div key={getOrderRef(order)} className="rounded-2xl bg-white p-3 text-sm font-bold shadow-sm">
                     <button onClick={() => setSelectedOrder(order)} className="block w-full text-left">
                       <span className="block font-black">{getOrderRef(order)}</span>
-                      <span className="line-clamp-2 text-[#0F1A26]/50">{getAramexError(order) || "Missing Aramex tracking"}</span>
+                      <span className="line-clamp-2 text-[#0F1A26]/50">
+                        {needsAramexReplacement(order)
+                          ? getString(getAramex(order).replacementReason) || "Order changed after shipment creation. Replace Aramex shipment."
+                          : getAramexError(order) || "Missing tracking on order row"}
+                      </span>
                     </button>
+                    {needsAramex(order) && (
+                      <button
+                        onClick={() => void createAramexShipmentFromOrder(order)}
+                        disabled={actionLoadingRef === `aramex-create:${getOrderRef(order)}`}
+                        className="mt-3 h-9 w-full rounded-xl bg-emerald-600 text-xs font-black text-white transition hover:-translate-y-0.5 disabled:opacity-60"
+                      >
+                        {actionLoadingRef === `aramex-create:${getOrderRef(order)}` ? "Creating..." : "Create shipment"}
+                      </button>
+                    )}
+                    {needsAramexReplacement(order) && (
+                      <p className="mt-3 rounded-xl bg-amber-50 p-2 text-xs font-black leading-5 text-amber-800">
+                        Cancel old tracking in Aramex portal first. Auto replacement is blocked to avoid duplicate shipments.
+                      </p>
+                    )}
                     {(getTrackingNumber(order) || getAramexError(order)) && (
                       <button
                         onClick={() => void syncOneAramex(order)}
                         disabled={actionLoadingRef === `aramex:${getOrderRef(order)}`}
                         className="mt-3 h-9 w-full rounded-xl border border-[#0F1A26]/10 text-xs font-black text-[#0F1A26] transition hover:-translate-y-0.5 disabled:opacity-60"
                       >
-                        {actionLoadingRef === `aramex:${getOrderRef(order)}` ? "Syncing..." : "Sync tracking"}
+                        {actionLoadingRef === `aramex:${getOrderRef(order)}` ? "Refreshing..." : "Refresh tracking status"}
                       </button>
                     )}
+                    {needsOldTrackingCancellation(order) && (
+                      <p className="mt-2 rounded-xl bg-amber-50 p-2 text-xs font-black text-amber-800">
+                        Old tracking needs cancel/check in Aramex portal.
+                      </p>
+                    )}
                   </div>
-                )) : <p className="text-sm font-bold text-rose-800/60">No Aramex issues.</p>}
+                )) : <p className="text-sm font-bold text-rose-800/60">No Aramex shipment actions needed.</p>}
               </div>
             </div>
 
@@ -3038,7 +3778,7 @@ export default function AdminDashboardPage() {
               <option value="all">All statuses ({visibleOrders.length})</option>
               <option value="confirmed">Confirmed / paid ({visibleOrders.filter(isConfirmed).length})</option>
               <option value="pending_instapay">Pending InstaPay ({visibleOrders.filter(isPendingInstaPay).length})</option>
-              <option value="aramex_missing">Missing Aramex ({visibleOrders.filter(needsAramex).length})</option>
+              <option value="aramex_missing">Missing tracking ({visibleOrders.filter(needsAramex).length})</option>
               <option value="aramex_failed">Aramex failed ({visibleOrders.filter((order) => Boolean(getAramexError(order))).length})</option>
               <option value="returned">Returned / cancelled ({visibleOrders.filter(isReturned).length})</option>
               {orderFilterOptions.statuses.map(([status, count]) => (
@@ -3059,7 +3799,7 @@ export default function AdminDashboardPage() {
               className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#EEBC3F] px-5 text-sm font-black text-[#0F1A26] transition hover:-translate-y-0.5 disabled:opacity-60"
             >
               <Truck className={`h-4 w-4 ${aramexSyncing ? "animate-pulse" : ""}`} />
-              Sync Aramex
+              Refresh Tracking Status
             </button>
           </div>
         </section>
@@ -3116,7 +3856,7 @@ export default function AdminDashboardPage() {
                     ? "bg-rose-50/70"
                     : isPendingInstaPay(order)
                       ? "bg-amber-50/80"
-                      : aramexError || needsAramex(order)
+                      : aramexError || needsAramex(order) || needsAramexReplacement(order)
                         ? "bg-orange-50/70"
                         : "";
 
@@ -3152,7 +3892,12 @@ export default function AdminDashboardPage() {
                             {aramexUpdate && <p className="mt-1 max-w-[260px] text-xs font-semibold text-[#0F1A26]/55">{aramexUpdate}</p>}
                             {aramexSyncedAt && (
                               <p className="mt-1 text-[11px] font-bold text-[#0F1A26]/35">
-                                Synced {formatAdminDateTime(aramexSyncedAt) || aramexSyncedAt}
+                                Refreshed {formatAdminDateTime(aramexSyncedAt) || aramexSyncedAt}
+                              </p>
+                            )}
+                            {needsOldTrackingCancellation(order) && (
+                              <p className="mt-1 rounded-xl bg-amber-50 px-2 py-1 text-[11px] font-black text-amber-800">
+                                Old tracking needs portal cancel/check
                               </p>
                             )}
                           </>
@@ -3162,6 +3907,11 @@ export default function AdminDashboardPage() {
                         {aramexError && <p className="mt-1 max-w-[260px] text-xs font-bold text-rose-600">{aramexError}</p>}
                         {needsAramex(order) && !aramexError && (
                           <p className="mt-1 text-xs font-bold text-orange-600">Needs Aramex shipment</p>
+                        )}
+                        {needsAramexReplacement(order) && (
+                          <p className="mt-1 rounded-xl bg-orange-50 px-2 py-1 text-xs font-black text-orange-700">
+                            Needs Aramex replacement
+                          </p>
                         )}
                       </td>
                       <td className="px-5 py-4 align-top">
@@ -3178,6 +3928,21 @@ export default function AdminDashboardPage() {
                         )}
                       </td>
                       <td className="px-5 py-4 align-top">
+                        {needsAramex(order) && (
+                          <button
+                            onClick={() => void createAramexShipmentFromOrder(order)}
+                            disabled={actionLoadingRef === `aramex-create:${orderRef}`}
+                            className="mb-2 inline-flex h-10 items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 text-xs font-black text-white transition hover:-translate-y-0.5 disabled:opacity-60"
+                          >
+                            <Truck className={`h-4 w-4 ${actionLoadingRef === `aramex-create:${orderRef}` ? "animate-pulse" : ""}`} />
+                            {actionLoadingRef === `aramex-create:${orderRef}` ? "Creating..." : "Create shipment"}
+                          </button>
+                        )}
+                        {needsAramexReplacement(order) && (
+                          <p className="mb-2 max-w-[220px] rounded-2xl bg-amber-50 px-3 py-2 text-xs font-black leading-5 text-amber-800">
+                            Cancel old Aramex tracking first. Replacement is blocked.
+                          </p>
+                        )}
                         {(tracking || getAramexError(order)) && (
                           <button
                             onClick={() => void syncOneAramex(order)}
@@ -3185,7 +3950,7 @@ export default function AdminDashboardPage() {
                             className="mb-2 inline-flex h-10 items-center justify-center gap-2 rounded-2xl border border-[#0F1A26]/10 bg-white px-4 text-xs font-black text-[#0F1A26] transition hover:-translate-y-0.5 disabled:opacity-60"
                           >
                             <RefreshCw className={`h-4 w-4 ${actionLoadingRef === `aramex:${orderRef}` ? "animate-spin" : ""}`} />
-                            Sync
+                            Refresh tracking
                           </button>
                         )}
                         <button
@@ -3237,10 +4002,11 @@ export default function AdminDashboardPage() {
       </div>
       {selectedOrder && (
         <OrderDetailsPanel
+          key={`${getOrderRef(selectedOrder)}:${getUpdatedAt(selectedOrder)}`}
           order={selectedOrder}
           onClose={() => setSelectedOrder(null)}
           onApproveInstaPay={(order) => void approveInstaPayOrder(order)}
-          onStatusAction={(order, action) => void updateOrderStatus(order, action)}
+          onCreateAramex={(order) => void createAramexShipmentFromOrder(order)}
           actionLoadingRef={actionLoadingRef}
         />
       )}

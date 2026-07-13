@@ -1,4 +1,9 @@
 import { trackShipment } from "@/lib/aramex";
+import {
+  isOrderDatabaseConfigured,
+  listOrdersFromDatabase,
+  upsertOrderToDatabase,
+} from "@/lib/order-database";
 
 type AdminOrder = Record<string, unknown> & {
   order_ref?: string;
@@ -91,6 +96,23 @@ async function fetchOrders(webhookUrl: string, limit: number) {
 }
 
 async function saveOrder(webhookUrl: string, order: AdminOrder) {
+  let databaseError = "";
+  let databaseStored = false;
+
+  if (isOrderDatabaseConfigured()) {
+    try {
+      await upsertOrderToDatabase(order);
+      databaseStored = true;
+    } catch (error) {
+      databaseError = error instanceof Error ? error.message : String(error);
+    }
+  }
+
+  if (!webhookUrl) {
+    if (databaseStored) return { supabase: "stored", google_sheets: "not_configured" };
+    throw new Error(databaseError || "No order storage is configured");
+  }
+
   const res = await fetch(webhookUrl, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -99,22 +121,30 @@ async function saveOrder(webhookUrl: string, order: AdminOrder) {
   });
   const text = await res.text();
 
-  if (!res.ok) {
-    throw new Error(`Could not save order update: ${text}`);
+  if (!res.ok && !databaseStored) {
+    throw new Error(`Could not save order update: ${text || databaseError}`);
   }
 
-  return text ? JSON.parse(text) : null;
+  return text ? JSON.parse(text) : { supabase: databaseStored ? "stored" : "failed" };
 }
 
 export async function syncAramexOrders(options: AramexSyncOptions = {}) {
   const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL;
-  if (!webhookUrl) {
-    throw new Error("GOOGLE_SHEETS_WEBHOOK_URL is not configured");
+  const databaseConfigured = isOrderDatabaseConfigured();
+  if (!webhookUrl && !databaseConfigured) {
+    throw new Error("No order storage is configured");
   }
 
   const limit = Math.max(1, Math.min(100, Number(options.limit || 50)));
   const requestedRefs = new Set((options.orderRefs || []).map((ref) => String(ref).trim()).filter(Boolean));
-  const orders = await fetchOrders(webhookUrl, Math.max(limit, requestedRefs.size || limit));
+  const databaseOrders = databaseConfigured
+    ? (await listOrdersFromDatabase(Math.max(limit, requestedRefs.size || limit))) as AdminOrder[]
+    : [];
+  const orders = databaseOrders.length
+    ? databaseOrders
+    : webhookUrl
+      ? await fetchOrders(webhookUrl, Math.max(limit, requestedRefs.size || limit))
+      : [];
   const targets = orders
     .filter((order) => requestedRefs.size === 0 || requestedRefs.has(getOrderRef(order)))
     .filter((order) => getTrackingNumber(order))
@@ -146,7 +176,7 @@ export async function syncAramexOrders(options: AramexSyncOptions = {}) {
         },
       };
 
-      await saveOrder(webhookUrl, syncedOrder);
+      await saveOrder(webhookUrl || "", syncedOrder);
       results.push({ orderRef, trackingNumber, status: tracking.status, success: true });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

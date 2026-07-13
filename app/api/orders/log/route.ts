@@ -14,6 +14,11 @@ import {
   ensureReferralRecordForOrder,
   markReferralConversionForOrder,
 } from "@/lib/referrals";
+import {
+  fetchOrderFromDatabase,
+  isOrderDatabaseConfigured,
+  upsertOrderToDatabase,
+} from "@/lib/order-database";
 import type { Product } from "@/lib/products";
 
 type OrderLogBody = Record<string, unknown>;
@@ -157,6 +162,18 @@ function stripInstapayProofAttachment(order: StoredOrder) {
 }
 
 function shouldAdjustInventory(order: StoredOrder) {
+  if (getOrderStatusValue(order.source) === "admin_custom_order") return false;
+
+  const extras = order.extras;
+  if (
+    extras &&
+    typeof extras === "object" &&
+    !Array.isArray(extras) &&
+    (extras as Record<string, unknown>).exclude_from_stock_consumption
+  ) {
+    return false;
+  }
+
   const status = getOrderStatusValue(order.status);
   const paymentStatus = getOrderStatusValue(order.payment_status);
   const paymentMethod = getOrderStatusValue(order.payment_method);
@@ -204,9 +221,6 @@ type BundleOrderItem = {
   originalPrice?: number;
   [key: string]: unknown;
 };
-
-// Simple in-memory store for orders (in production, use a database like Redis, Supabase, etc.)
-const orderStore = new Map<string, OrderLogBody>();
 
 function getProductColor(product: Product | undefined, selectedColor?: string) {
   return (
@@ -376,7 +390,9 @@ export async function GET(req: Request) {
     );
   }
 
-  const order = orderStore.get(order_ref) || await fetchOrderFromGoogleSheets(order_ref);
+  const order =
+    await fetchOrderFromDatabase(order_ref) ||
+    await fetchOrderFromGoogleSheets(order_ref);
   
   if (!order) {
     return NextResponse.json(
@@ -393,10 +409,11 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL;
+  const databaseConfigured = isOrderDatabaseConfigured();
 
-  if (!webhookUrl) {
+  if (!webhookUrl && !databaseConfigured) {
     return NextResponse.json(
-      { error: "GOOGLE_SHEETS_WEBHOOK_URL is not set" },
+      { error: "No order storage is configured. Set Supabase or GOOGLE_SHEETS_WEBHOOK_URL." },
       { status: 500 }
     );
   }
@@ -408,7 +425,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  if (Array.isArray(body.items) && body.items.length > 0) {
+  const skipStockValidation =
+    getOrderStatusValue(body.source) === "admin_custom_order" ||
+    Boolean(
+      body.extras &&
+        typeof body.extras === "object" &&
+        !Array.isArray(body.extras) &&
+        (body.extras as Record<string, unknown>).exclude_from_stock_consumption,
+    );
+
+  if (!skipStockValidation && Array.isArray(body.items) && body.items.length > 0) {
     try {
       const stockValidation = await validateOrderInventory(body.items as OrderItem[]);
       if (!stockValidation.valid) {
@@ -433,11 +459,10 @@ export async function POST(req: Request) {
     body = await enrichOrderItemsFromCms(body);
   }
 
-  // Store in memory for retrieval by webhook
   const orderRef = body.order_ref as string | undefined;
   if (orderRef) {
     const existing =
-      (orderStore.get(orderRef) as StoredOrder | undefined) ||
+      ((await fetchOrderFromDatabase(orderRef)) as StoredOrder | null) ||
       (isInitialCardCheckout
         ? undefined
         : ((await fetchOrderFromGoogleSheets(orderRef)) as StoredOrder | null)) ||
@@ -536,56 +561,77 @@ export async function POST(req: Request) {
     }
 
     const storedOrder = stripInstapayProofAttachment(updatedOrder);
-    orderStore.set(orderRef, storedOrder);
 
     // Forward the ENTIRE updated order to Google Sheets
     body = storedOrder;
-
-    // Clean up old orders after 48 hours (extended to cover weekend payments)
-    setTimeout(() => {
-      orderStore.delete(orderRef);
-    }, 48 * 60 * 60 * 1000);
   }
 
-  const res = await fetch(webhookUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-    cache: "no-store",
-  });
+  let databaseStored = false;
+  let databaseError = "";
 
-  const text = await res.text();
-  let sheetsResponse: unknown = text;
-
-  try {
-    sheetsResponse = JSON.parse(text);
-  } catch {
-    // Keep the raw response for diagnostics.
+  if (orderRef && databaseConfigured) {
+    try {
+      await upsertOrderToDatabase(body as OrderLogBody);
+      databaseStored = true;
+    } catch (error) {
+      databaseError = error instanceof Error ? error.message : String(error);
+      console.error("Failed to write order to Supabase", {
+        order_ref: orderRef,
+        error: databaseError,
+      });
+    }
   }
 
-  if (!res.ok) {
-    return NextResponse.json(
-      { error: "Failed to write to Google Sheets", status: res.status, data: sheetsResponse },
-      { status: 502 }
-    );
+  let sheetsResponse: unknown = null;
+  let sheetsStored = false;
+  let sheetsError = "";
+
+  if (webhookUrl) {
+    const res = await fetch(webhookUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+      cache: "no-store",
+    });
+
+    const text = await res.text();
+    sheetsResponse = text;
+
+    try {
+      sheetsResponse = JSON.parse(text);
+    } catch {
+      // Keep the raw response for diagnostics.
+    }
+
+    sheetsStored =
+      res.ok &&
+      !(
+        sheetsResponse &&
+        typeof sheetsResponse === "object" &&
+        (
+          (sheetsResponse as { success?: boolean }).success === false ||
+          (sheetsResponse as { skipped?: boolean }).skipped === true
+        )
+      );
+
+    if (!sheetsStored) {
+      sheetsError = JSON.stringify({
+        status: res.status,
+        data: sheetsResponse,
+      });
+    }
   }
 
-  if (
-    sheetsResponse &&
-    typeof sheetsResponse === "object" &&
-    (
-      (sheetsResponse as { success?: boolean }).success === false ||
-      (sheetsResponse as { skipped?: boolean }).skipped === true
-    )
-  ) {
+  if (!databaseStored && !sheetsStored) {
     return NextResponse.json(
       {
-        error: "Google Sheets webhook did not store the order",
-        data: sheetsResponse,
+        error: "Failed to store order",
+        database: databaseError || (databaseConfigured ? "Unknown Supabase error" : "not_configured"),
+        sheets: sheetsError || (webhookUrl ? "Unknown Google Sheets error" : "not_configured"),
       },
-      { status: 502 }
+      { status: 502 },
     );
   }
 
@@ -618,7 +664,6 @@ export async function POST(req: Request) {
           },
         };
       }
-      orderStore.set(orderRef, storedOrder);
     }
 
     if (shouldAdjustInventory(storedOrder)) {
@@ -637,7 +682,6 @@ export async function POST(req: Request) {
             updatedAt: new Date().toISOString(),
           },
         };
-        orderStore.set(orderRef, storedOrder);
       } catch (error) {
         console.error("Failed to update referral records", {
           order_ref: orderRef,
@@ -645,7 +689,25 @@ export async function POST(req: Request) {
         });
       }
     }
+
+    try {
+      await upsertOrderToDatabase(storedOrder);
+      databaseStored = true;
+    } catch (error) {
+      console.error("Failed to mirror order to Supabase", {
+        order_ref: orderRef,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
   }
 
-  return NextResponse.json({ ok: true, data: sheetsResponse, order_ref: orderRef });
+  return NextResponse.json({
+    ok: true,
+    data: sheetsResponse,
+    order_ref: orderRef,
+    storage: {
+      supabase: databaseStored ? "stored" : databaseConfigured ? "failed" : "not_configured",
+      google_sheets: sheetsStored ? "stored" : webhookUrl ? "failed" : "not_configured",
+    },
+  });
 }

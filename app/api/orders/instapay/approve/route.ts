@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { fetchOrderFromDatabase } from "@/lib/order-database";
 
 type LoggedOrder = {
   order_ref?: string;
@@ -17,7 +18,10 @@ type LoggedOrder = {
   };
 };
 
-async function fetchOrderFromSheets(orderRef: string) {
+async function fetchOrder(orderRef: string) {
+  const databaseOrder = await fetchOrderFromDatabase(orderRef);
+  if (databaseOrder) return databaseOrder as LoggedOrder;
+
   const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL;
   if (!webhookUrl) return null;
 
@@ -64,7 +68,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Unauthorized approval request" }, { status: 401 });
   }
 
-  const order = await fetchOrderFromSheets(orderRef);
+  const order = await fetchOrder(orderRef);
   if (!order) {
     return NextResponse.json({ error: "Order not found" }, { status: 404 });
   }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isAdminAuthorized } from "@/lib/admin-auth";
 import { syncAramexOrders } from "@/lib/admin-aramex-sync";
+import { isOrderDatabaseConfigured } from "@/lib/order-database";
 
 type TrackBody = {
   limit?: number;
@@ -12,9 +13,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!process.env.GOOGLE_SHEETS_WEBHOOK_URL) {
+  if (!process.env.GOOGLE_SHEETS_WEBHOOK_URL && !isOrderDatabaseConfigured()) {
     return NextResponse.json(
-      { error: "GOOGLE_SHEETS_WEBHOOK_URL is not configured" },
+      { error: "No order storage is configured" },
       { status: 503 },
     );
   }

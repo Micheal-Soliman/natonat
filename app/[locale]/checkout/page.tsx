@@ -1156,7 +1156,68 @@ function CheckoutContent() {
       guid?: string;
     } | null = null;
 
-    // Step 1: Create Aramex shipment FIRST
+    const shippingRuleCOD = getShippingRule({
+      deliveryMethod,
+      subtotal: checkoutSubtotal,
+      city: formData.governorate,
+    });
+
+    // Step 1: Persist the COD order before creating any external shipment.
+    // This avoids an Aramex shipment existing without a matching dashboard order.
+    try {
+      const preLogRes = await fetch("/api/orders/log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          source: "checkout",
+          order_ref: orderRef,
+          locale,
+          payment_method: paymentMethod,
+          status: "created",
+          payment_status: paymentMethod === "cod" ? "Cash on Delivery" : "Pending",
+          amount_egp: confirmedFinalTotal,
+          amount_cents: Math.round(confirmedFinalTotal * 100),
+          shipping_egp: shipping,
+          discount_egp: confirmedCodeDiscountAmount,
+          discount_code: confirmedAppliedDiscountCode?.code || null,
+          discount: confirmedDiscountPayload,
+          payment_discount_egp: confirmedPaymentDiscount,
+          delivery_method: deliveryMethod,
+          aramex: null,
+          customer: {
+            email: formData.email,
+            phone: formData.phone,
+            first_name: formData.firstName,
+            last_name: "",
+            city: formData.city,
+            governorate: formData.governorate,
+            address: formData.address,
+          },
+          items: serializedCheckoutItems,
+          extras: {
+            shipping_rule: shippingRuleCOD,
+            city_key: formData.city,
+            subtotal_egp: checkoutSubtotal,
+            free_shipping_threshold: 1000,
+            discount: confirmedDiscountPayload,
+            payment_discount: confirmedPaymentDiscount > 0 ? confirmedPaymentDiscount : null,
+            payment_discount_percent: confirmedPaymentDiscount > 0 ? getPaymentDiscountPercent(paymentMethod) : null,
+          },
+          created_at: new Date().toISOString(),
+        }),
+      });
+
+      const preLogData = await preLogRes.json().catch(() => null);
+      if (!preLogRes.ok) {
+        throw new Error(preLogData?.error || "Could not save order before shipment");
+      }
+    } catch (error) {
+      setIsSubmitting(false);
+      setSubmitError(error instanceof Error ? error.message : "Could not save order before shipment");
+      return;
+    }
+
+    // Step 2: Create Aramex shipment after storage succeeds
     if (deliveryMethod === "delivery") {
       setAramexStatus("pending");
 
@@ -1215,13 +1276,7 @@ function CheckoutContent() {
       setAramexStatus("skipped");
     }
 
-    // Step 2: Log order ONCE
-    const shippingRuleCOD = getShippingRule({
-      deliveryMethod,
-      subtotal: checkoutSubtotal,
-      city: formData.governorate,
-    });
-
+    // Step 3: Confirm the order and attach Aramex data
     try {
       const logRes = await fetch("/api/orders/log", {
         method: "POST",

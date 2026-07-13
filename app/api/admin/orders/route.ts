@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { isAdminAuthorized } from "@/lib/admin-auth";
+import { listOrdersFromDatabase } from "@/lib/order-database";
 
 type SheetsListResponse = {
   success?: boolean;
@@ -201,8 +202,34 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const requestUrl = new URL(req.url);
+  const limit = requestUrl.searchParams.get("limit") || "500";
+  let databaseOrders: OrderRecord[] = [];
+
+  try {
+    databaseOrders = await listOrdersFromDatabase(Number(limit));
+  } catch (error) {
+    console.error("Could not fetch orders from Supabase", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+
   const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL;
   if (!webhookUrl) {
+    const normalizedDatabaseOrders = databaseOrders.map(normalizeOrder);
+    const orders = normalizedDatabaseOrders.filter(hasMeaningfulOrderData);
+
+    if (orders.length > 0) {
+      return NextResponse.json({
+        success: true,
+        orders,
+        total: orders.length,
+        returned: orders.length,
+        skipped_empty_rows: normalizedDatabaseOrders.length - orders.length,
+        source: "supabase",
+      });
+    }
+
     return NextResponse.json(
       { error: "GOOGLE_SHEETS_WEBHOOK_URL is not configured" },
       { status: 503 },
@@ -210,9 +237,8 @@ export async function GET(req: Request) {
   }
 
   const url = new URL(webhookUrl);
-  const requestUrl = new URL(req.url);
   url.searchParams.set("action", "list");
-  url.searchParams.set("limit", requestUrl.searchParams.get("limit") || "500");
+  url.searchParams.set("limit", limit);
 
   let res: Response;
 
@@ -254,14 +280,40 @@ export async function GET(req: Request) {
     );
   }
 
-  const normalizedOrders = data.orders.map(normalizeOrder);
-  const orders = normalizedOrders.filter(hasMeaningfulOrderData);
+  const normalizedSheetOrders = data.orders.map(normalizeOrder);
+  const normalizedDatabaseOrders = databaseOrders.map(normalizeOrder);
+  const meaningfulOrders = [...normalizedSheetOrders, ...normalizedDatabaseOrders].filter(hasMeaningfulOrderData);
+  const mergedByRef = new Map<string, NormalizedOrder>();
+  const orphanOrders: NormalizedOrder[] = [];
+
+  for (const order of meaningfulOrders) {
+    const orderRef = getString(order.order_ref);
+    if (!orderRef) {
+      orphanOrders.push(order);
+      continue;
+    }
+    mergedByRef.set(orderRef, order);
+  }
+
+  const orders = [...mergedByRef.values(), ...orphanOrders].sort((a, b) => {
+    const dateA = parseDateValue(a.created_at)?.getTime() || 0;
+    const dateB = parseDateValue(b.created_at)?.getTime() || 0;
+    return dateB - dateA;
+  });
 
   return NextResponse.json({
     success: true,
     orders,
-    total: data.total ?? orders.length,
-    returned: data.returned ?? orders.length,
-    skipped_empty_rows: normalizedOrders.length - orders.length,
+    total: orders.length,
+    returned: orders.length,
+    skipped_empty_rows:
+      normalizedSheetOrders.length +
+      normalizedDatabaseOrders.length -
+      meaningfulOrders.length,
+    source: databaseOrders.length > 0 ? "google_sheets_supabase" : "google_sheets",
+    database_rows: databaseOrders.length,
+    sheet_rows: data.orders.length,
+    sheet_total: data.total ?? data.orders.length,
+    sheet_returned: data.returned ?? data.orders.length,
   });
 }
