@@ -19,6 +19,11 @@ import {
   isOrderDatabaseConfigured,
   upsertOrderToDatabase,
 } from "@/lib/order-database";
+import {
+  getMetaClientIp,
+  getMetaCookie,
+  sendMetaConversionEvent,
+} from "@/lib/meta-capi";
 import type { Product } from "@/lib/products";
 
 type OrderLogBody = Record<string, unknown>;
@@ -82,6 +87,15 @@ function hasCheckoutEmailAlreadySent(existing: StoredOrder | undefined) {
 
 function getOrderStatusValue(value: unknown) {
   return typeof value === "string" ? value.toLowerCase() : "";
+}
+
+function getNumberValue(value: unknown) {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim()) {
+    const next = Number(value.replace(/[^\d.-]/g, ""));
+    return Number.isFinite(next) ? next : 0;
+  }
+  return 0;
 }
 
 function shouldSendOrderEmail(order: StoredOrder) {
@@ -183,6 +197,47 @@ function shouldAdjustInventory(order: StoredOrder) {
     paymentMethod === "cod" || paymentStatus === "cash on delivery";
 
   return isConfirmed && (isPaid || isCashOnDelivery);
+}
+
+function shouldSendMetaPurchase(order: StoredOrder) {
+  if (!shouldAdjustInventory(order)) return false;
+
+  const orderRef = typeof order.order_ref === "string" ? order.order_ref : "";
+  return !order.history?.some((entry) => entry.event_key === `meta_purchase:${orderRef}`);
+}
+
+function getOrderAmountEgp(order: StoredOrder) {
+  return (
+    getNumberValue(order.amount_egp) ||
+    getNumberValue(order["Total (EGP)"]) ||
+    getNumberValue(order.amount_cents) / 100 ||
+    getNumberValue(order["Total Cents"]) / 100
+  );
+}
+
+function getMetaPurchaseContents(order: StoredOrder) {
+  const items = Array.isArray(order.items) ? (order.items as OrderItem[]) : [];
+  return items.map((item) => {
+    const quantity = getNumberValue(item.quantity) || 1;
+    const lineTotal = getNumberValue(item.line_total_egp);
+    const itemPrice =
+      getNumberValue(item.unit_price_egp) ||
+      getNumberValue(item.price_egp) ||
+      getNumberValue(item.price) ||
+      (lineTotal > 0 ? lineTotal / quantity : 0);
+
+    return {
+      id: String(item.id || item.slug || item.line_id || item.name || "item"),
+      quantity,
+      item_price: itemPrice,
+    };
+  });
+}
+
+function getOrderCustomer(order: StoredOrder) {
+  return order.customer && typeof order.customer === "object" && !Array.isArray(order.customer)
+    ? (order.customer as Record<string, unknown>)
+    : {};
 }
 
 type OrderItem = {
@@ -558,6 +613,47 @@ export async function POST(req: Request) {
       sendInstapayPendingCustomerEmail(updatedOrder).catch((err) =>
         console.error("Failed to send InstaPay pending customer email:", err)
       );
+    }
+
+    if (shouldSendMetaPurchase(updatedOrder)) {
+      const customer = getOrderCustomer(updatedOrder);
+      const purchaseEventId = `Purchase:${orderRef}`;
+      const purchaseHistoryEntry: OrderHistoryEntry = {
+        status: "meta_purchase_sent",
+        timestamp: new Date().toISOString(),
+        source: "meta_capi",
+        event_key: `meta_purchase:${orderRef}`,
+      };
+
+      updatedOrder = {
+        ...updatedOrder,
+        meta_purchase_sent_at: purchaseHistoryEntry.timestamp,
+        history: [...(updatedOrder.history || history), purchaseHistoryEntry],
+      };
+
+      sendMetaConversionEvent({
+        eventName: "Purchase",
+        eventId: purchaseEventId,
+        eventSourceUrl: req.headers.get("referer") || process.env.NEXT_PUBLIC_APP_URL || undefined,
+        customData: {
+          value: getOrderAmountEgp(updatedOrder),
+          currency: "EGP",
+          order_id: orderRef,
+          transaction_id: getNestedString(updatedOrder.payment, "transaction_id") || orderRef,
+          content_type: "product",
+          content_ids: getMetaPurchaseContents(updatedOrder).map((item) => item.id),
+          contents: getMetaPurchaseContents(updatedOrder),
+          num_items: getMetaPurchaseContents(updatedOrder).reduce((sum, item) => sum + item.quantity, 0),
+        },
+        userData: {
+          email: customer.email,
+          phone: customer.phone,
+          fbp: getMetaCookie(req.headers, "_fbp"),
+          fbc: getMetaCookie(req.headers, "_fbc"),
+        },
+        userAgent: req.headers.get("user-agent"),
+        clientIp: getMetaClientIp(req.headers),
+      }).catch((err) => console.error("Failed to send Meta Purchase CAPI event:", err));
     }
 
     const storedOrder = stripInstapayProofAttachment(updatedOrder);

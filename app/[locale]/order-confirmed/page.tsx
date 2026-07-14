@@ -236,6 +236,7 @@ function OrderConfirmedContent() {
 
         trackMetaPixelEvent("Purchase", {
           ...purchasePayload,
+          event_id: orderRef ? `Purchase:${orderRef}` : undefined,
           value:
             amount && Number.isFinite(amount)
               ? amount
