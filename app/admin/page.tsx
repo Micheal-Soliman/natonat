@@ -20,6 +20,7 @@ import {
   Search,
   Truck,
   Undo2,
+  UserRound,
   WalletCards,
   X,
 } from "lucide-react";
@@ -150,6 +151,7 @@ type AdminActionResponse = {
 };
 
 type AdminManualOrderDraft = {
+  orderKind: "catalog" | "special";
   productSlug: string;
   productSize: string;
   customerName: string;
@@ -159,6 +161,7 @@ type AdminManualOrderDraft = {
   governorate: string;
   address: string;
   notes: string;
+  specialProductBrief: string;
   title: string;
   quantity: string;
   unitPrice: string;
@@ -169,8 +172,82 @@ type AdminManualOrderDraft = {
   createAramexShipment: boolean;
 };
 
-type AdminTab = "finance" | "orders" | "stock" | "expenses";
+type AdminOrderEditItem = {
+  productSlug: string;
+  name: string;
+  size: string;
+  color: string;
+  quantity: string;
+  unitPrice: string;
+  lineTotal: string;
+};
+
+type AdminOrderEditDraft = {
+  status: string;
+  paymentStatus: string;
+  paymentMethod: string;
+  deliveryMethod: string;
+  amountEgp: string;
+  subtotalEgp: string;
+  shippingEgp: string;
+  discountEgp: string;
+  paymentDiscountEgp: string;
+  customerFirstName: string;
+  customerLastName: string;
+  customerEmail: string;
+  customerPhone: string;
+  customerCity: string;
+  customerGovernorate: string;
+  customerAddress: string;
+  aramexTrackingNumber: string;
+  aramexTrackingLink: string;
+  aramexStatus: string;
+  aramexLatestCode: string;
+  aramexLatestUpdate: string;
+  aramexLatestLocation: string;
+  aramexLatestDate: string;
+  aramexError: string;
+  note: string;
+  items: AdminOrderEditItem[];
+};
+
+type AdminTab = "finance" | "orders" | "customers" | "stock" | "expenses";
 type DatePreset = "all" | "today" | "yesterday" | "7d" | "30d" | "custom";
+
+const ADMIN_ORDER_STATUSES = [
+  { value: "created", label: "Created" },
+  { value: "confirmed", label: "Confirmed" },
+  { value: "shipped", label: "Shipped" },
+  { value: "delivered", label: "Delivered" },
+  { value: "cancelled", label: "Cancelled" },
+  { value: "returned", label: "Returned" },
+  { value: "pending_instapay_approval", label: "Pending InstaPay Approval" },
+  { value: "pending", label: "Pending" },
+  { value: "failed", label: "Failed" },
+];
+
+const ADMIN_PAYMENT_STATUSES = [
+  { value: "paid", label: "Paid" },
+  { value: "cash on delivery", label: "Cash on Delivery" },
+  { value: "pending", label: "Pending" },
+  { value: "pending instapay approval", label: "Pending InstaPay Approval" },
+  { value: "refunded", label: "Refunded" },
+  { value: "failed", label: "Failed" },
+];
+
+const ADMIN_PAYMENT_METHODS = [
+  { value: "cod", label: "Cash on Delivery" },
+  { value: "paymob_card", label: "Card / Paymob" },
+  { value: "instapay", label: "InstaPay / Wallets" },
+  { value: "bank_transfer", label: "Bank transfer" },
+  { value: "custom_bulk", label: "Custom / offline bulk" },
+];
+
+const ADMIN_DELIVERY_METHODS = [
+  { value: "delivery", label: "Delivery / Aramex eligible" },
+  { value: "pickup", label: "Pickup" },
+  { value: "custom", label: "Custom / no shipment" },
+];
 
 const MANUAL_ORDER_PAYMENT_METHODS = [
   { value: "custom_bulk", label: "Custom / offline bulk" },
@@ -454,7 +531,10 @@ function isBundleParentItem(item: Record<string, unknown>) {
 function isCustomOrder(order: AdminOrder) {
   const source = getString(order.source || order["Source"]).toLowerCase();
   const extras = getExtras(order);
-  return source.includes("admin_custom_order") || Boolean(extras.is_custom_order || order.is_custom_order);
+  return (
+    source.includes("admin_special_order") ||
+    Boolean(extras.is_custom_order || extras.exclude_from_catalog_product_sales || order.is_custom_order)
+  );
 }
 
 function isCustomOrderItem(item: Record<string, unknown>) {
@@ -773,6 +853,25 @@ function normalizeInventoryKey(value: unknown) {
     .replace(/^-+|-+$/g, "");
 }
 
+function normalizeCustomerPhone(value: unknown) {
+  return getString(value).replace(/[^\d+]/g, "");
+}
+
+function getCustomerDisplayName(customer: Record<string, unknown>) {
+  return [
+    getString(customer.first_name || customer.name),
+    getString(customer.last_name),
+  ].filter(Boolean).join(" ").trim();
+}
+
+function getCustomerKey(order: AdminOrder) {
+  const customer = getCustomer(order);
+  const phone = normalizeCustomerPhone(customer.phone || order["Phone"]);
+  const email = getString(customer.email || order["Email"]).toLowerCase();
+  const name = getCustomerDisplayName(customer).toLowerCase();
+  return phone || email || name || `unknown:${getOrderRef(order)}`;
+}
+
 function getInventoryProductKeys(item: AdminInventoryItem) {
   return [item.slug, item.name, item.id].map(normalizeInventoryKey).filter(Boolean);
 }
@@ -827,6 +926,82 @@ function getDefaultProductSize(product: AdminInventoryItem | undefined) {
   const rows = getSizeRows(product);
   if (rows.length === 1 && rows[0].size === "product") return "";
   return rows.find((row) => row.status !== "out_of_stock" && row.quantity !== 0)?.size || rows[0]?.size || "";
+}
+
+function toEditMoneyValue(value: number) {
+  return value > 0 ? String(Math.round(value * 100) / 100) : "";
+}
+
+function getEditablePaymentMethod(order: AdminOrder) {
+  const method = getPaymentMethod(order);
+  if (method.includes("cash") || method.includes("cod")) return "cod";
+  if (method.includes("paymob") || method.includes("card")) return "paymob_card";
+  if (method.includes("instapay") || method.includes("wallet")) return "instapay";
+  if (method.includes("bank")) return "bank_transfer";
+  if (method.includes("custom")) return "custom_bulk";
+  return "cod";
+}
+
+function getEditableDeliveryMethod(order: AdminOrder) {
+  const method = getDeliveryMethod(order);
+  if (method.includes("pickup")) return "pickup";
+  if (method.includes("custom")) return "custom";
+  return "delivery";
+}
+
+function buildOrderEditDraft(order: AdminOrder): AdminOrderEditDraft {
+  const customer = getCustomer(order);
+  const items = getItems(order);
+  const aramex = getAramex(order);
+
+  return {
+    status: getStatus(order) || "confirmed",
+    paymentStatus: getPaymentStatus(order) || "paid",
+    paymentMethod: getEditablePaymentMethod(order),
+    deliveryMethod: getEditableDeliveryMethod(order),
+    amountEgp: toEditMoneyValue(getAmount(order)),
+    subtotalEgp: toEditMoneyValue(getSubtotal(order)),
+    shippingEgp: toEditMoneyValue(getShipping(order)),
+    discountEgp: toEditMoneyValue(getOrderDiscount(order)),
+    paymentDiscountEgp: toEditMoneyValue(getPaymentDiscount(order)),
+    customerFirstName: getString(customer.first_name || customer.name),
+    customerLastName: getString(customer.last_name),
+    customerEmail: getString(customer.email),
+    customerPhone: getString(customer.phone),
+    customerCity: getString(customer.city),
+    customerGovernorate: getString(customer.governorate),
+    customerAddress: getString(customer.address),
+    aramexTrackingNumber: getTrackingNumber(order),
+    aramexTrackingLink: getString(aramex.trackingLink || order["Aramex Tracking Link"]),
+    aramexStatus: getAramexStatus(order),
+    aramexLatestCode: getAramexLatestCode(order),
+    aramexLatestUpdate: getAramexLatestUpdate(order),
+    aramexLatestLocation: getAramexLatestLocation(order),
+    aramexLatestDate: getString(aramex.latestDate || order["Aramex Latest Date"]),
+    aramexError: getAramexError(order),
+    note: "",
+    items: items.length
+      ? items.map((item) => ({
+          productSlug: getString(item.slug),
+          name: getString(item.name || item.title || item.slug || "Order item"),
+          size: getString(item.size || item.selectedSize || item.variantSize),
+          color: getString(item.color || item.selectedColor || item.variantColor),
+          quantity: String(getItemRecordedQuantity(item) || 1),
+          unitPrice: toEditMoneyValue(getItemUnitPrice(item)),
+          lineTotal: toEditMoneyValue(getItemLineTotal(item)),
+        }))
+      : [
+          {
+            productSlug: "",
+            name: "",
+            size: "",
+            color: "",
+            quantity: "1",
+            unitPrice: "",
+            lineTotal: "",
+          },
+        ],
+  };
 }
 
 function isInventoryLow(item: AdminInventoryItem) {
@@ -987,15 +1162,19 @@ function KeyValueGrid({ data, dark = false, depth = 0 }: { data: Record<string, 
 
 function OrderDetailsPanel({
   order,
+  inventory,
   onClose,
   onApproveInstaPay,
   onCreateAramex,
+  onSaveManualEdit,
   actionLoadingRef,
 }: {
   order: AdminOrder;
+  inventory: AdminInventoryItem[];
   onClose: () => void;
   onApproveInstaPay: (order: AdminOrder) => void;
   onCreateAramex: (order: AdminOrder) => void;
+  onSaveManualEdit: (order: AdminOrder, draft: AdminOrderEditDraft) => void;
   actionLoadingRef: string;
 }) {
   const customer = getCustomer(order);
@@ -1013,6 +1192,68 @@ function OrderDetailsPanel({
   const canCreateAramex = getDeliveryBucket(order) === "delivery" && !isPendingInstaPay(order) && !trackingNumber;
   const previousTrackingNumbers = getPreviousTrackingNumbers(order);
   const oldTrackingCancelRequired = needsOldTrackingCancellation(order);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editDraft, setEditDraft] = useState<AdminOrderEditDraft>(() => buildOrderEditDraft(order));
+
+  const updateEditDraft = (key: keyof AdminOrderEditDraft, value: string) => {
+    setEditDraft((current) => ({ ...current, [key]: value }));
+  };
+
+  const updateEditItem = (index: number, key: keyof AdminOrderEditItem, value: string) => {
+    setEditDraft((current) => {
+      const items = [...current.items];
+      const nextItem = { ...items[index], [key]: value };
+
+      if (key === "productSlug") {
+        const product = inventory.find((item) => item.slug === value);
+        if (product) {
+          const size = getDefaultProductSize(product);
+          const price = getSizePrice(product, size);
+          const quantity = getNumber(nextItem.quantity) || 1;
+          nextItem.name = product.name;
+          nextItem.size = size;
+          nextItem.unitPrice = price > 0 ? String(price) : nextItem.unitPrice;
+          nextItem.lineTotal = price > 0 ? String(price * quantity) : nextItem.lineTotal;
+        }
+      }
+
+      if (key === "size") {
+        const product = inventory.find((item) => item.slug === nextItem.productSlug);
+        const price = getSizePrice(product, value);
+        const quantity = getNumber(nextItem.quantity) || 1;
+        if (price > 0) {
+          nextItem.unitPrice = String(price);
+          nextItem.lineTotal = String(price * quantity);
+        }
+      }
+
+      if (key === "quantity" || key === "unitPrice") {
+        const quantity = getNumber(key === "quantity" ? value : nextItem.quantity);
+        const unitPrice = getNumber(key === "unitPrice" ? value : nextItem.unitPrice);
+        nextItem.lineTotal = quantity > 0 && unitPrice > 0 ? String(quantity * unitPrice) : nextItem.lineTotal;
+      }
+
+      items[index] = nextItem;
+      return { ...current, items };
+    });
+  };
+
+  const addEditItem = () => {
+    setEditDraft((current) => ({
+      ...current,
+      items: [
+        ...current.items,
+        { productSlug: "", name: "", size: "", color: "", quantity: "1", unitPrice: "", lineTotal: "" },
+      ],
+    }));
+  };
+
+  const removeEditItem = (index: number) => {
+    setEditDraft((current) => ({
+      ...current,
+      items: current.items.filter((_, itemIndex) => itemIndex !== index),
+    }));
+  };
 
   return (
     <div className="fixed inset-0 z-50 bg-[#0F1A26]/50 p-3 backdrop-blur-sm sm:p-6">
@@ -1078,6 +1319,326 @@ function OrderDetailsPanel({
                 </button>
               </div>
             </div>
+          </section>
+
+          <section className="mb-5 rounded-[1.5rem] border border-[#0F1A26]/10 bg-[#F8F6F3] p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h4 className="text-lg font-black">Manual order edit</h4>
+                <p className="mt-1 text-xs font-bold leading-5 text-[#0F1A26]/50">
+                  Saves to database and updates dashboard finance. Existing Aramex shipment data is not edited automatically.
+                </p>
+              </div>
+              <button
+                onClick={() => setEditOpen((open) => !open)}
+                className="h-10 rounded-2xl bg-[#0F1A26] px-5 text-xs font-black text-white transition hover:-translate-y-0.5"
+              >
+                {editOpen ? "Close edit" : "Edit order"}
+              </button>
+            </div>
+
+            {editOpen && (
+              <div className="mt-4 space-y-4">
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-900">
+                  Use this when a customer changes product, size, price, or when an order is cancelled/returned. Finance cards read these saved values.
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                  <label className="space-y-1 text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45">
+                    Order status
+                    <select
+                      value={editDraft.status}
+                      onChange={(event) => updateEditDraft("status", event.target.value)}
+                      className="h-11 w-full rounded-2xl border border-[#0F1A26]/10 bg-white px-3 text-sm font-black normal-case tracking-normal text-[#0F1A26]"
+                    >
+                      {ADMIN_ORDER_STATUSES.map((status) => (
+                        <option key={status.value} value={status.value}>{status.label}</option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="space-y-1 text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45">
+                    Payment status
+                    <select
+                      value={editDraft.paymentStatus}
+                      onChange={(event) => updateEditDraft("paymentStatus", event.target.value)}
+                      className="h-11 w-full rounded-2xl border border-[#0F1A26]/10 bg-white px-3 text-sm font-black normal-case tracking-normal text-[#0F1A26]"
+                    >
+                      {ADMIN_PAYMENT_STATUSES.map((status) => (
+                        <option key={status.value} value={status.value}>{status.label}</option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="space-y-1 text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45">
+                    Payment method
+                    <select
+                      value={editDraft.paymentMethod}
+                      onChange={(event) => updateEditDraft("paymentMethod", event.target.value)}
+                      className="h-11 w-full rounded-2xl border border-[#0F1A26]/10 bg-white px-3 text-sm font-black normal-case tracking-normal text-[#0F1A26]"
+                    >
+                      {ADMIN_PAYMENT_METHODS.map((method) => (
+                        <option key={method.value} value={method.value}>{method.label}</option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="space-y-1 text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45">
+                    Delivery
+                    <select
+                      value={editDraft.deliveryMethod}
+                      onChange={(event) => updateEditDraft("deliveryMethod", event.target.value)}
+                      className="h-11 w-full rounded-2xl border border-[#0F1A26]/10 bg-white px-3 text-sm font-black normal-case tracking-normal text-[#0F1A26]"
+                    >
+                      {ADMIN_DELIVERY_METHODS.map((method) => (
+                        <option key={method.value} value={method.value}>{method.label}</option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+                  {[
+                    ["subtotalEgp", "Subtotal"],
+                    ["discountEgp", "Order discount"],
+                    ["paymentDiscountEgp", "Payment discount"],
+                    ["shippingEgp", "Shipping"],
+                    ["amountEgp", "Final total"],
+                  ].map(([key, label]) => (
+                    <label key={key} className="space-y-1 text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45">
+                      {label}
+                      <input
+                        type="number"
+                        min="0"
+                        value={editDraft[key as keyof AdminOrderEditDraft] as string}
+                        onChange={(event) => updateEditDraft(key as keyof AdminOrderEditDraft, event.target.value)}
+                        className="h-11 w-full rounded-2xl border border-[#0F1A26]/10 bg-white px-3 text-sm font-black normal-case tracking-normal text-[#0F1A26]"
+                      />
+                    </label>
+                  ))}
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-2">
+                  {[
+                    ["customerFirstName", "First name"],
+                    ["customerLastName", "Last name"],
+                    ["customerPhone", "Phone"],
+                    ["customerEmail", "Email"],
+                    ["customerCity", "City"],
+                    ["customerGovernorate", "Governorate"],
+                  ].map(([key, label]) => (
+                    <label key={key} className="space-y-1 text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45">
+                      {label}
+                      <input
+                        value={editDraft[key as keyof AdminOrderEditDraft] as string}
+                        onChange={(event) => updateEditDraft(key as keyof AdminOrderEditDraft, event.target.value)}
+                        className="h-11 w-full rounded-2xl border border-[#0F1A26]/10 bg-white px-3 text-sm font-black normal-case tracking-normal text-[#0F1A26]"
+                      />
+                    </label>
+                  ))}
+                  <label className="space-y-1 text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45 md:col-span-2">
+                    Address
+                    <textarea
+                      value={editDraft.customerAddress}
+                      onChange={(event) => updateEditDraft("customerAddress", event.target.value)}
+                      className="min-h-20 w-full rounded-2xl border border-[#0F1A26]/10 bg-white px-3 py-3 text-sm font-black normal-case tracking-normal text-[#0F1A26]"
+                    />
+                  </label>
+                </div>
+
+                <div className="rounded-3xl bg-white p-3">
+                  <div>
+                    <h5 className="text-sm font-black">Tracking / Aramex record</h5>
+                    <p className="mt-1 text-xs font-bold leading-5 text-[#0F1A26]/45">
+                      Use this to record a manual tracking number or correct dashboard tracking fields. It does not call Aramex by itself.
+                    </p>
+                  </div>
+                  <div className="mt-3 grid gap-3 md:grid-cols-2">
+                    {[
+                      ["aramexTrackingNumber", "Tracking number"],
+                      ["aramexTrackingLink", "Tracking link"],
+                      ["aramexStatus", "Aramex status"],
+                      ["aramexLatestCode", "Latest code"],
+                      ["aramexLatestLocation", "Latest location"],
+                      ["aramexLatestDate", "Latest date"],
+                    ].map(([key, label]) => (
+                      <label key={key} className="space-y-1 text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45">
+                        {label}
+                        <input
+                          value={editDraft[key as keyof AdminOrderEditDraft] as string}
+                          onChange={(event) => updateEditDraft(key as keyof AdminOrderEditDraft, event.target.value)}
+                          className="h-11 w-full rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-3 text-sm font-black normal-case tracking-normal text-[#0F1A26]"
+                        />
+                      </label>
+                    ))}
+                    <label className="space-y-1 text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45 md:col-span-2">
+                      Latest update
+                      <textarea
+                        value={editDraft.aramexLatestUpdate}
+                        onChange={(event) => updateEditDraft("aramexLatestUpdate", event.target.value)}
+                        className="min-h-16 w-full rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-3 py-3 text-sm font-black normal-case tracking-normal text-[#0F1A26]"
+                      />
+                    </label>
+                    <label className="space-y-1 text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45 md:col-span-2">
+                      Aramex error / note
+                      <textarea
+                        value={editDraft.aramexError}
+                        onChange={(event) => updateEditDraft("aramexError", event.target.value)}
+                        className="min-h-16 w-full rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-3 py-3 text-sm font-black normal-case tracking-normal text-[#0F1A26]"
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                <div className="rounded-3xl bg-white p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <h5 className="text-sm font-black">Product lines</h5>
+                    <button
+                      type="button"
+                      onClick={addEditItem}
+                      className="h-9 rounded-2xl border border-[#0F1A26]/10 px-4 text-xs font-black transition hover:bg-[#F8F6F3]"
+                    >
+                      Add line
+                    </button>
+                  </div>
+
+                  <div className="mt-3 space-y-3">
+                    {editDraft.items.map((item, index) => {
+                      const product = inventory.find((entry) => entry.slug === item.productSlug);
+                      const matchedProduct = product || inventory.find((entry) => entry.name === item.name);
+                      const sizeRows = matchedProduct ? getSizeRows(matchedProduct) : [];
+
+                      return (
+                        <div key={`${index}-${item.productSlug}-${item.name}`} className="rounded-2xl border border-[#0F1A26]/10 p-3">
+                          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
+                            <label className="space-y-1 text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45 xl:col-span-2">
+                              Catalog product
+                              <select
+                                value={item.productSlug}
+                                onChange={(event) => updateEditItem(index, "productSlug", event.target.value)}
+                                className="h-11 w-full rounded-2xl border border-[#0F1A26]/10 bg-white px-3 text-sm font-black normal-case tracking-normal text-[#0F1A26]"
+                              >
+                                <option value="">Manual product</option>
+                                {inventory.map((productItem) => (
+                                  <option key={productItem.slug} value={productItem.slug}>
+                                    {productItem.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                            <label className="space-y-1 text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45 xl:col-span-2">
+                              Product name
+                              <input
+                                value={item.name}
+                                onChange={(event) => updateEditItem(index, "name", event.target.value)}
+                                className="h-11 w-full rounded-2xl border border-[#0F1A26]/10 bg-white px-3 text-sm font-black normal-case tracking-normal text-[#0F1A26]"
+                              />
+                            </label>
+                            <label className="space-y-1 text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45">
+                              Size
+                              {sizeRows.length > 1 ? (
+                                <select
+                                  value={item.size}
+                                  onChange={(event) => updateEditItem(index, "size", event.target.value)}
+                                  className="h-11 w-full rounded-2xl border border-[#0F1A26]/10 bg-white px-3 text-sm font-black normal-case tracking-normal text-[#0F1A26]"
+                                >
+                                  <option value="">No size</option>
+                                  {sizeRows.map((row) => (
+                                    <option key={row.size} value={row.size}>{row.size}</option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <input
+                                  value={item.size}
+                                  onChange={(event) => updateEditItem(index, "size", event.target.value)}
+                                  className="h-11 w-full rounded-2xl border border-[#0F1A26]/10 bg-white px-3 text-sm font-black normal-case tracking-normal text-[#0F1A26]"
+                                />
+                              )}
+                            </label>
+                            <label className="space-y-1 text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45">
+                              Color
+                              <input
+                                value={item.color}
+                                onChange={(event) => updateEditItem(index, "color", event.target.value)}
+                                className="h-11 w-full rounded-2xl border border-[#0F1A26]/10 bg-white px-3 text-sm font-black normal-case tracking-normal text-[#0F1A26]"
+                              />
+                            </label>
+                            <label className="space-y-1 text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45">
+                              Qty
+                              <input
+                                type="number"
+                                min="1"
+                                value={item.quantity}
+                                onChange={(event) => updateEditItem(index, "quantity", event.target.value)}
+                                className="h-11 w-full rounded-2xl border border-[#0F1A26]/10 bg-white px-3 text-sm font-black normal-case tracking-normal text-[#0F1A26]"
+                              />
+                            </label>
+                            <label className="space-y-1 text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45">
+                              Unit
+                              <input
+                                type="number"
+                                min="0"
+                                value={item.unitPrice}
+                                onChange={(event) => updateEditItem(index, "unitPrice", event.target.value)}
+                                className="h-11 w-full rounded-2xl border border-[#0F1A26]/10 bg-white px-3 text-sm font-black normal-case tracking-normal text-[#0F1A26]"
+                              />
+                            </label>
+                            <label className="space-y-1 text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45">
+                              Line total
+                              <input
+                                type="number"
+                                min="0"
+                                value={item.lineTotal}
+                                onChange={(event) => updateEditItem(index, "lineTotal", event.target.value)}
+                                className="h-11 w-full rounded-2xl border border-[#0F1A26]/10 bg-white px-3 text-sm font-black normal-case tracking-normal text-[#0F1A26]"
+                              />
+                            </label>
+                            <div className="flex items-end">
+                              <button
+                                type="button"
+                                onClick={() => removeEditItem(index)}
+                                disabled={editDraft.items.length <= 1}
+                                className="h-11 w-full rounded-2xl border border-red-200 bg-red-50 px-3 text-xs font-black text-red-700 transition hover:bg-red-100 disabled:opacity-40"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <label className="block space-y-1 text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45">
+                  Admin note
+                  <textarea
+                    value={editDraft.note}
+                    onChange={(event) => updateEditDraft("note", event.target.value)}
+                    placeholder="Example: Customer changed M to L / order returned / manual total correction"
+                    className="min-h-20 w-full rounded-2xl border border-[#0F1A26]/10 bg-white px-3 py-3 text-sm font-black normal-case tracking-normal text-[#0F1A26]"
+                  />
+                </label>
+
+                <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setEditDraft(buildOrderEditDraft(order))}
+                    className="h-11 rounded-2xl border border-[#0F1A26]/10 px-5 text-sm font-black transition hover:bg-white"
+                  >
+                    Reset
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onSaveManualEdit(order, editDraft)}
+                    disabled={actionLoadingRef === `order-edit:${orderRef}`}
+                    className="h-11 rounded-2xl bg-[#EEBC3F] px-6 text-sm font-black text-[#0F1A26] transition hover:-translate-y-0.5 disabled:opacity-60"
+                  >
+                    {actionLoadingRef === `order-edit:${orderRef}` ? "Saving..." : "Save manual edit"}
+                  </button>
+                </div>
+              </div>
+            )}
           </section>
 
           <section className="mb-5 rounded-[1.5rem] border border-[#0F1A26]/10 bg-[#F8F6F3] p-4">
@@ -1292,6 +1853,7 @@ export default function AdminDashboardPage() {
   const [stockCoverageDays, setStockCoverageDays] = useState(14);
   const [manualOrderOpen, setManualOrderOpen] = useState(false);
   const [manualOrderDraft, setManualOrderDraft] = useState<AdminManualOrderDraft>({
+    orderKind: "special",
     productSlug: "",
     productSize: "",
     customerName: "",
@@ -1301,6 +1863,7 @@ export default function AdminDashboardPage() {
     governorate: "",
     address: "",
     notes: "",
+    specialProductBrief: "",
     title: "",
     quantity: "1",
     unitPrice: "",
@@ -1587,6 +2150,16 @@ export default function AdminDashboardPage() {
       if (key === "deliveryMethod") {
         next.createAramexShipment = value === "delivery";
       }
+      if (key === "orderKind") {
+        if (value === "special") {
+          next.productSlug = "";
+          next.productSize = "";
+          if (!next.paymentMethod || next.paymentMethod === "cod") {
+            next.paymentMethod = "custom_bulk";
+            next.paymentStatus = "Paid";
+          }
+        }
+      }
       if (key === "paymentMethod") {
         if (value === "cod") next.paymentStatus = "Cash on Delivery";
         if (value === "paymob_card" || value === "instapay" || value === "bank_transfer") next.paymentStatus = "Paid";
@@ -1639,6 +2212,8 @@ export default function AdminDashboardPage() {
         },
         body: JSON.stringify({
           ...manualOrderDraft,
+          productSlug: manualOrderDraft.orderKind === "catalog" ? manualOrderDraft.productSlug : "",
+          productSize: manualOrderDraft.orderKind === "catalog" ? manualOrderDraft.productSize : "",
           quantity: getNumber(manualOrderDraft.quantity),
           unitPrice: getNumber(manualOrderDraft.unitPrice),
           total: getNumber(manualOrderDraft.total),
@@ -1654,6 +2229,7 @@ export default function AdminDashboardPage() {
       setAramexSyncMessage(`Custom order added to finance: ${data.order_ref || ""}`);
       setManualOrderOpen(false);
       setManualOrderDraft({
+        orderKind: "special",
         productSlug: "",
         productSize: "",
         customerName: "",
@@ -1663,6 +2239,7 @@ export default function AdminDashboardPage() {
         governorate: "",
         address: "",
         notes: "",
+        specialProductBrief: "",
         title: "",
         quantity: "1",
         unitPrice: "",
@@ -1675,6 +2252,82 @@ export default function AdminDashboardPage() {
       await loadOrders(savedToken);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create custom order");
+    } finally {
+      setActionLoadingRef("");
+    }
+  };
+
+  const saveManualOrderEdit = async (order: AdminOrder, draft: AdminOrderEditDraft) => {
+    const orderRef = getOrderRef(order);
+    if (!orderRef) return;
+
+    setActionLoadingRef(`order-edit:${orderRef}`);
+    setError("");
+
+    try {
+      const res = await fetch("/api/admin/order-edit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(savedToken ? { Authorization: `Bearer ${savedToken}` } : {}),
+        },
+        body: JSON.stringify({
+          orderRef,
+          status: draft.status,
+          paymentStatus: draft.paymentStatus,
+          paymentMethod: draft.paymentMethod,
+          deliveryMethod: draft.deliveryMethod,
+          amountEgp: getNumber(draft.amountEgp),
+          subtotalEgp: getNumber(draft.subtotalEgp),
+          shippingEgp: getNumber(draft.shippingEgp),
+          discountEgp: getNumber(draft.discountEgp),
+          paymentDiscountEgp: getNumber(draft.paymentDiscountEgp),
+          customer: {
+            first_name: draft.customerFirstName,
+            last_name: draft.customerLastName,
+            email: draft.customerEmail,
+            phone: draft.customerPhone,
+            city: draft.customerCity,
+            governorate: draft.customerGovernorate,
+            address: draft.customerAddress,
+          },
+          aramex: {
+            trackingNumber: draft.aramexTrackingNumber,
+            trackingLink: draft.aramexTrackingLink,
+            status: draft.aramexStatus,
+            latestCode: draft.aramexLatestCode,
+            latestDescription: draft.aramexLatestUpdate,
+            latestLocation: draft.aramexLatestLocation,
+            latestDate: draft.aramexLatestDate,
+            error: draft.aramexError,
+            manualTrackingUpdatedAt: new Date().toISOString(),
+          },
+          items: draft.items.map((item) => ({
+            slug: item.productSlug,
+            name: item.name,
+            size: item.size,
+            color: item.color,
+            quantity: getNumber(item.quantity) || 1,
+            unit_price_egp: getNumber(item.unitPrice),
+            line_total_egp: getNumber(item.lineTotal),
+            price: getNumber(item.unitPrice),
+          })),
+          note: draft.note,
+        }),
+      });
+      const data = (await res.json()) as AdminActionResponse & { changedFields?: string[]; storage?: Record<string, string> };
+
+      if (!res.ok || !data.success) {
+        throw new Error(formatApiError(data.error, data.details, "Could not save manual order edit"));
+      }
+
+      setAramexSyncMessage(
+        `Order ${orderRef} updated manually. Changed: ${data.changedFields?.length ? data.changedFields.join(", ") : "no fields"}.`,
+      );
+      setSelectedOrder(null);
+      await loadOrders(savedToken);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save manual order edit");
     } finally {
       setActionLoadingRef("");
     }
@@ -2462,6 +3115,116 @@ export default function AdminDashboardPage() {
     };
   }, [filteredMetricOrders]);
 
+  const customers = useMemo(() => {
+    const rows = new Map<
+      string,
+      {
+        key: string;
+        name: string;
+        phone: string;
+        email: string;
+        city: string;
+        governorate: string;
+        address: string;
+        orders: number;
+        confirmedOrders: number;
+        returnedOrders: number;
+        totalValue: number;
+        netValue: number;
+        discounts: number;
+        shipping: number;
+        pieces: number;
+        firstOrderAt: Date | null;
+        lastOrderAt: Date | null;
+        paymentMethods: Set<string>;
+        statuses: Set<string>;
+        products: Map<string, number>;
+        orderRefs: string[];
+        trackingNumbers: string[];
+      }
+    >();
+
+    filteredMetricOrders.forEach((order) => {
+      const customer = getCustomer(order);
+      const key = getCustomerKey(order);
+      const orderDate = getOrderDate(order);
+      const orderRef = getOrderRef(order);
+      const row = rows.get(key) || {
+        key,
+        name: getCustomerDisplayName(customer) || "Unknown customer",
+        phone: normalizeCustomerPhone(customer.phone || order["Phone"]),
+        email: getString(customer.email || order["Email"]),
+        city: getString(customer.city || order["City"]),
+        governorate: getString(customer.governorate || order["Governorate"]),
+        address: getString(customer.address || order["Address"]),
+        orders: 0,
+        confirmedOrders: 0,
+        returnedOrders: 0,
+        totalValue: 0,
+        netValue: 0,
+        discounts: 0,
+        shipping: 0,
+        pieces: 0,
+        firstOrderAt: null,
+        lastOrderAt: null,
+        paymentMethods: new Set<string>(),
+        statuses: new Set<string>(),
+        products: new Map<string, number>(),
+        orderRefs: [],
+        trackingNumbers: [],
+      };
+
+      row.name = row.name === "Unknown customer" ? getCustomerDisplayName(customer) || row.name : row.name;
+      row.phone ||= normalizeCustomerPhone(customer.phone || order["Phone"]);
+      row.email ||= getString(customer.email || order["Email"]);
+      row.city ||= getString(customer.city || order["City"]);
+      row.governorate ||= getString(customer.governorate || order["Governorate"]);
+      row.address ||= getString(customer.address || order["Address"]);
+      row.orders += 1;
+      if (isConfirmed(order)) row.confirmedOrders += 1;
+      if (isReturned(order)) row.returnedOrders += 1;
+      row.totalValue += getAmount(order);
+      if (isConfirmed(order) && !isReturned(order)) row.netValue += getAmount(order);
+      row.discounts += getDiscount(order);
+      row.shipping += getShipping(order);
+      row.pieces += getOrderRecordedPieces(order);
+      if (orderDate && (!row.firstOrderAt || orderDate < row.firstOrderAt)) row.firstOrderAt = orderDate;
+      if (orderDate && (!row.lastOrderAt || orderDate > row.lastOrderAt)) row.lastOrderAt = orderDate;
+      row.paymentMethods.add(getPaymentBucket(order));
+      row.statuses.add(getOrderShipmentStatusLabel(order));
+      if (orderRef) row.orderRefs.push(orderRef);
+      const tracking = getTrackingNumber(order);
+      if (tracking) row.trackingNumbers.push(tracking);
+
+      getItems(order).forEach((item) => {
+        if (isBundleParentItem(item)) return;
+        const name = getString(item.name || item.title || item.slug || item.id);
+        if (!name) return;
+        row.products.set(name, (row.products.get(name) || 0) + (getItemRecordedQuantity(item) || 1));
+      });
+
+      rows.set(key, row);
+    });
+
+    return Array.from(rows.values()).sort((a, b) => {
+      if (b.netValue !== a.netValue) return b.netValue - a.netValue;
+      return b.orders - a.orders;
+    });
+  }, [filteredMetricOrders]);
+
+  const customerStats = useMemo(() => {
+    const totalNet = customers.reduce((sum, customer) => sum + customer.netValue, 0);
+
+    return {
+      total: customers.length,
+      repeat: customers.filter((customer) => customer.orders > 1).length,
+      missingPhone: customers.filter((customer) => !customer.phone).length,
+      missingEmail: customers.filter((customer) => !customer.email).length,
+      averageCustomerValue: customers.length ? totalNet / customers.length : 0,
+      top: customers[0],
+    };
+  }, [customers]);
+
   const financeLedger = useMemo(() => {
     return filteredMetricOrders
       .map((order) => {
@@ -2708,10 +3471,11 @@ export default function AdminDashboardPage() {
         ) : (
           <>
         <section className="mt-6 rounded-[2rem] border border-[#0F1A26]/10 bg-white p-3 shadow-sm">
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
             {([
               { id: "finance", label: "Finance", sub: "Revenue, discounts, returns", icon: BarChart3 },
               { id: "orders", label: "Orders", sub: "Full order lifecycle", icon: ClipboardList },
+              { id: "customers", label: "Customers", sub: "Profiles from orders", icon: UserRound },
               { id: "stock", label: "Stock", sub: "Sanity inventory by size", icon: Boxes },
               { id: "expenses", label: "Expenses", sub: "Costs and net after spend", icon: ReceiptText },
             ] as const).map((tab) => {
@@ -2859,31 +3623,61 @@ export default function AdminDashboardPage() {
         <section className="mt-4 rounded-[2rem] border border-[#0F1A26]/10 bg-white p-4 shadow-sm">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#EEBC3F]">Custom / bulk orders</p>
-              <h2 className="mt-1 text-lg font-black">Add custom or replacement order</h2>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#EEBC3F]">Manual admin orders</p>
+              <h2 className="mt-1 text-lg font-black">Add special product or catalog order</h2>
               <p className="mt-1 text-xs font-bold text-[#0F1A26]/45">
-                Use finance-only for special bulk pricing, or enable Aramex shipment after cancelling the old shipment in Aramex portal.
+                Use Special for made-to-order products, or Catalog when the product exists on the website and should follow stock/product reporting.
               </p>
             </div>
             <button
               onClick={() => setManualOrderOpen((current) => !current)}
               className="h-11 rounded-2xl bg-[#0F1A26] px-5 text-sm font-black text-white transition hover:-translate-y-0.5"
             >
-              {manualOrderOpen ? "Close custom order" : "Add custom order"}
+              {manualOrderOpen ? "Close manual order" : "Add manual order"}
             </button>
           </div>
 
           {manualOrderOpen && (
             <div className="mt-4 rounded-[1.5rem] bg-[#F8F6F3] p-4">
+              <div className="mb-4 grid gap-3 md:grid-cols-2">
+                {[
+                  {
+                    value: "special",
+                    title: "Special custom product",
+                    body: "Made specifically for one customer or company. Not listed on the website, no stock deduction, finance only unless shipment is enabled.",
+                  },
+                  {
+                    value: "catalog",
+                    title: "Website catalog product",
+                    body: "Use this when the order is for an existing product from Sanity/catalog and you want product/size values from the site.",
+                  },
+                ].map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => updateManualOrderDraft("orderKind", option.value)}
+                    className={`rounded-3xl border p-4 text-left transition hover:-translate-y-0.5 ${
+                      manualOrderDraft.orderKind === option.value
+                        ? "border-[#EEBC3F] bg-white shadow-sm"
+                        : "border-[#0F1A26]/10 bg-white/60"
+                    }`}
+                  >
+                    <span className="text-sm font-black text-[#0F1A26]">{option.title}</span>
+                    <span className="mt-2 block text-xs font-bold leading-5 text-[#0F1A26]/50">{option.body}</span>
+                  </button>
+                ))}
+              </div>
+
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                <label className="text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45 md:col-span-2">
+                {manualOrderDraft.orderKind === "catalog" && (
+                  <label className="text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45 md:col-span-2">
                   Product
                   <select
                     value={manualOrderDraft.productSlug}
                     onChange={(event) => updateManualOrderDraft("productSlug", event.target.value)}
                     className="mt-1 h-11 w-full rounded-2xl border border-[#0F1A26]/10 bg-white px-3 text-sm font-bold normal-case tracking-normal outline-none"
                   >
-                    <option value="">Custom product / special order</option>
+                    <option value="">Select website product</option>
                     {inventory.map((item) => (
                       <option key={item.slug} value={item.slug} disabled={isInventoryOut(item)}>
                         {item.name} {item.stockStatus === "out_of_stock" ? "(out of stock)" : ""}
@@ -2891,7 +3685,9 @@ export default function AdminDashboardPage() {
                     ))}
                   </select>
                 </label>
-                <label className="text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45">
+                )}
+                {manualOrderDraft.orderKind === "catalog" && (
+                  <label className="text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45">
                   Product size
                   <select
                     value={manualOrderDraft.productSize}
@@ -2912,13 +3708,14 @@ export default function AdminDashboardPage() {
                     ))}
                   </select>
                 </label>
+                )}
                 {[
                   ["customerName", "Customer / company"],
                   ["phone", "Phone"],
                   ["email", "Email"],
                   ["governorate", "Governorate"],
                   ["address", "Address"],
-                  ["title", "Custom order title"],
+                  ["title", manualOrderDraft.orderKind === "special" ? "Special product name" : "Order title"],
                   ["quantity", "Quantity"],
                   ["unitPrice", "Unit price"],
                   ["total", "Total EGP"],
@@ -2932,6 +3729,17 @@ export default function AdminDashboardPage() {
                     />
                   </label>
                 ))}
+                {manualOrderDraft.orderKind === "special" && (
+                  <label className="text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45 md:col-span-2 xl:col-span-4">
+                    Special product brief
+                    <textarea
+                      value={manualOrderDraft.specialProductBrief}
+                      onChange={(event) => updateManualOrderDraft("specialProductBrief", event.target.value)}
+                      placeholder="Example: 100 custom luggage covers for ABC company, navy color, company logo, special packaging."
+                      className="mt-1 min-h-24 w-full rounded-2xl border border-[#0F1A26]/10 bg-white px-3 py-3 text-sm font-bold normal-case tracking-normal outline-none"
+                    />
+                  </label>
+                )}
                 <label className="text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45">
                   City
                   <select
@@ -3015,7 +3823,7 @@ export default function AdminDashboardPage() {
                     ? "Saving..."
                     : manualOrderDraft.createAramexShipment
                       ? "Create order + shipment"
-                      : "Save custom order"}
+                      : "Save manual order"}
                 </button>
               </div>
             </div>
@@ -3476,6 +4284,147 @@ export default function AdminDashboardPage() {
             </div>
           </div>
         </section>
+          </>
+        )}
+
+        {activeTab === "customers" && (
+          <>
+            <SectionHeader
+              eyebrow="Customer intelligence"
+              title="Customers"
+              description="Customer profiles generated from order history. Uses the same period and filters as the rest of the dashboard."
+            />
+
+            <section className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+              <StatCard title="Customers" value={String(customerStats.total)} subtitle={`${filteredMetricOrders.length} orders in scope`} icon={UserRound} tone="dark" />
+              <StatCard title="Repeat customers" value={String(customerStats.repeat)} subtitle="Placed more than one order" icon={RefreshCw} tone={customerStats.repeat ? "green" : "dark"} />
+              <StatCard title="Avg customer value" value={money.format(customerStats.averageCustomerValue)} subtitle="Confirmed non-returned revenue" icon={Banknote} tone="gold" />
+              <StatCard title="Missing phone" value={String(customerStats.missingPhone)} subtitle="Need cleanup for WhatsApp/CRM" icon={AlertTriangle} tone={customerStats.missingPhone ? "red" : "green"} />
+              <StatCard title="Missing email" value={String(customerStats.missingEmail)} subtitle="Need cleanup for email CRM" icon={AlertTriangle} tone={customerStats.missingEmail ? "gold" : "green"} />
+            </section>
+
+            {customerStats.top && (
+              <section className="mt-6 rounded-[2rem] border border-[#0F1A26]/10 bg-white p-5 shadow-sm">
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-[#EEBC3F]">Top customer</p>
+                <div className="mt-3 grid gap-4 lg:grid-cols-[1.2fr_2fr]">
+                  <div>
+                    <h2 className="text-2xl font-black">{customerStats.top.name}</h2>
+                    <p className="mt-2 text-sm font-bold text-[#0F1A26]/55">
+                      {customerStats.top.phone || "No phone"} · {customerStats.top.email || "No email"}
+                    </p>
+                    <p className="mt-1 text-sm font-bold text-[#0F1A26]/45">
+                      {customerStats.top.city || "No city"} {customerStats.top.governorate ? `· ${customerStats.top.governorate}` : ""}
+                    </p>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-4">
+                    <DataPill label="orders" value={String(customerStats.top.orders)} />
+                    <DataPill label="net value" value={money.format(customerStats.top.netValue)} />
+                    <DataPill label="pieces" value={String(customerStats.top.pieces)} />
+                    <DataPill label="last order" value={customerStats.top.lastOrderAt ? formatAdminDateTime(customerStats.top.lastOrderAt) : "No date"} />
+                  </div>
+                </div>
+              </section>
+            )}
+
+            <section className="mt-6 overflow-hidden rounded-[2rem] border border-[#0F1A26]/10 bg-white shadow-sm">
+              <div className="border-b border-[#0F1A26]/10 px-5 py-4">
+                <h2 className="text-lg font-black">Customer profiles from orders</h2>
+                <p className="text-xs font-bold text-[#0F1A26]/45">
+                  Each row groups orders by phone first, then email, then name. Click an order ref to open full order details.
+                </p>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-[#0F1A26]/10 text-left text-sm">
+                  <thead className="bg-[#F8F6F3] text-xs uppercase tracking-[0.14em] text-[#0F1A26]/45">
+                    <tr>
+                      <th className="px-5 py-3">Customer</th>
+                      <th className="px-5 py-3">Contact</th>
+                      <th className="px-5 py-3">Orders</th>
+                      <th className="px-5 py-3">Finance</th>
+                      <th className="px-5 py-3">Products</th>
+                      <th className="px-5 py-3">Order refs</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#0F1A26]/8">
+                    {customers.length ? customers.map((customer) => {
+                      const productSummary = Array.from(customer.products.entries())
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 3)
+                        .map(([name, qty]) => `${name} x${qty}`)
+                        .join(" · ");
+                      const customerOrders = customer.orderRefs
+                        .map((orderRef) => filteredMetricOrders.find((order) => getOrderRef(order) === orderRef))
+                        .filter((order): order is AdminOrder => Boolean(order));
+
+                      return (
+                        <tr key={customer.key} className="align-top">
+                          <td className="px-5 py-4">
+                            <p className="font-black">{customer.name}</p>
+                            <p className="mt-1 text-xs font-bold text-[#0F1A26]/45">
+                              {customer.city || "No city"} {customer.governorate ? `· ${customer.governorate}` : ""}
+                            </p>
+                            {customer.address && (
+                              <p className="mt-1 max-w-xs text-xs font-semibold leading-5 text-[#0F1A26]/45">{customer.address}</p>
+                            )}
+                          </td>
+                          <td className="px-5 py-4">
+                            <p className="font-bold">{customer.phone || "No phone"}</p>
+                            <p className="mt-1 text-xs font-semibold text-[#0F1A26]/50">{customer.email || "No email"}</p>
+                          </td>
+                          <td className="px-5 py-4">
+                            <p className="font-black">{customer.orders} total</p>
+                            <p className="mt-1 text-xs font-bold text-emerald-700">{customer.confirmedOrders} confirmed</p>
+                            <p className="mt-1 text-xs font-bold text-rose-700">{customer.returnedOrders} returned/cancelled</p>
+                            <p className="mt-1 text-xs font-semibold text-[#0F1A26]/45">
+                              Last: {customer.lastOrderAt ? formatAdminDateTime(customer.lastOrderAt) : "No date"}
+                            </p>
+                          </td>
+                          <td className="px-5 py-4">
+                            <p className="font-black">{money.format(customer.netValue)}</p>
+                            <p className="mt-1 text-xs font-semibold text-[#0F1A26]/50">All value: {money.format(customer.totalValue)}</p>
+                            <p className="mt-1 text-xs font-semibold text-[#0F1A26]/50">Discounts: -{money.format(customer.discounts)}</p>
+                            <p className="mt-1 text-xs font-semibold text-[#0F1A26]/50">Shipping: {money.format(customer.shipping)}</p>
+                          </td>
+                          <td className="px-5 py-4">
+                            <p className="font-black">{customer.pieces} pieces</p>
+                            <p className="mt-1 max-w-xs text-xs font-semibold leading-5 text-[#0F1A26]/50">
+                              {productSummary || "No products recorded"}
+                            </p>
+                            <p className="mt-2 text-xs font-bold text-[#0F1A26]/45">
+                              {[...customer.paymentMethods].join(", ") || "unknown"} · {[...customer.statuses].slice(0, 2).join(", ")}
+                            </p>
+                          </td>
+                          <td className="px-5 py-4">
+                            <div className="flex max-w-sm flex-wrap gap-2">
+                              {customerOrders.slice(0, 6).map((order) => (
+                                <button
+                                  key={getOrderRef(order)}
+                                  onClick={() => setSelectedOrder(order)}
+                                  className="rounded-full bg-[#F8F6F3] px-3 py-1 text-xs font-black text-[#0F1A26] transition hover:bg-[#EEBC3F]"
+                                >
+                                  {getOrderRef(order)}
+                                </button>
+                              ))}
+                            </div>
+                            {customer.trackingNumbers.length > 0 && (
+                              <p className="mt-2 text-xs font-semibold text-[#0F1A26]/45">
+                                Tracking: {customer.trackingNumbers.slice(0, 2).join(", ")}
+                              </p>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    }) : (
+                      <tr>
+                        <td colSpan={6} className="px-5 py-8 text-center text-sm font-bold text-[#0F1A26]/45">
+                          No customers in this period/filter.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </section>
           </>
         )}
 
@@ -4320,9 +5269,11 @@ export default function AdminDashboardPage() {
         <OrderDetailsPanel
           key={`${getOrderRef(selectedOrder)}:${getUpdatedAt(selectedOrder)}`}
           order={selectedOrder}
+          inventory={inventory}
           onClose={() => setSelectedOrder(null)}
           onApproveInstaPay={(order) => void approveInstaPayOrder(order)}
           onCreateAramex={(order) => void createAramexShipmentFromOrder(order)}
+          onSaveManualEdit={(order, draft) => void saveManualOrderEdit(order, draft)}
           actionLoadingRef={actionLoadingRef}
         />
       )}

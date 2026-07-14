@@ -176,8 +176,6 @@ function stripInstapayProofAttachment(order: StoredOrder) {
 }
 
 function shouldAdjustInventory(order: StoredOrder) {
-  if (getOrderStatusValue(order.source) === "admin_custom_order") return false;
-
   const extras = order.extras;
   if (
     extras &&
@@ -200,6 +198,16 @@ function shouldAdjustInventory(order: StoredOrder) {
 }
 
 function shouldSendMetaPurchase(order: StoredOrder) {
+  const extras = order.extras;
+  if (
+    extras &&
+    typeof extras === "object" &&
+    !Array.isArray(extras) &&
+    (extras as Record<string, unknown>).created_from_admin_manual_order
+  ) {
+    return false;
+  }
+
   if (!shouldAdjustInventory(order)) return false;
 
   const orderRef = typeof order.order_ref === "string" ? order.order_ref : "";
@@ -481,7 +489,6 @@ export async function POST(req: Request) {
   }
 
   const skipStockValidation =
-    getOrderStatusValue(body.source) === "admin_custom_order" ||
     Boolean(
       body.extras &&
         typeof body.extras === "object" &&

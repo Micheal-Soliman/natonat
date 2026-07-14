@@ -4,6 +4,7 @@ import { isAdminAuthorized } from "@/lib/admin-auth";
 import { getCatalogProducts } from "@/lib/sanity-products";
 
 type ManualOrderBody = {
+  orderKind?: "catalog" | "special";
   productSlug?: string;
   productSize?: string;
   customerName?: string;
@@ -13,6 +14,7 @@ type ManualOrderBody = {
   governorate?: string;
   address?: string;
   notes?: string;
+  specialProductBrief?: string;
   title?: string;
   quantity?: number;
   unitPrice?: number;
@@ -76,6 +78,7 @@ export async function POST(req: Request) {
   const unitPrice = toNumber(body.unitPrice);
   const total = toNumber(body.total) || quantity * unitPrice;
   const shouldCreateShipment = Boolean(body.createAramexShipment);
+  const orderKind = body.orderKind === "catalog" ? "catalog" : "special";
   const productSlug = String(body.productSlug || "").trim();
   const productSize = String(body.productSize || "").trim();
   const phone = String(body.phone || "").trim();
@@ -111,13 +114,17 @@ export async function POST(req: Request) {
     );
   }
 
-  const catalogProducts = productSlug ? await getCatalogProducts({ live: true }) : [];
-  const selectedProduct = productSlug
+  const catalogProducts = orderKind === "catalog" && productSlug ? await getCatalogProducts({ live: true }) : [];
+  const selectedProduct = orderKind === "catalog" && productSlug
     ? catalogProducts.find((product) => product.slug === productSlug)
     : null;
 
-  if (productSlug && !selectedProduct) {
+  if (orderKind === "catalog" && productSlug && !selectedProduct) {
     return NextResponse.json({ error: "Selected product was not found in catalog" }, { status: 400 });
+  }
+
+  if (orderKind === "catalog" && !productSlug) {
+    return NextResponse.json({ error: "Select a catalog product or switch to Special custom product" }, { status: 400 });
   }
 
   if (selectedProduct) {
@@ -147,14 +154,16 @@ export async function POST(req: Request) {
     unit_price_egp: finalUnitPrice,
     line_total_egp: total,
     price: finalUnitPrice,
-    type: selectedProduct?.type || "custom_order",
+    type: selectedProduct?.type || "special_custom_product",
     isCustomOrder: !selectedProduct,
-    catalog_source: "admin_custom_order",
+    isSpecialProduct: orderKind === "special",
+    special_product_brief: body.specialProductBrief || "",
+    catalog_source: orderKind === "special" ? "admin_special_order" : "admin_catalog_order",
     selected_from_catalog: Boolean(selectedProduct),
   };
 
   const order = {
-    source: "admin_custom_order",
+    source: orderKind === "special" ? "admin_special_order" : "admin_catalog_order",
     order_ref: orderRef,
     status: shouldCreateShipment ? "created" : "confirmed",
     payment_status: requestedPaymentStatus,
@@ -181,6 +190,12 @@ export async function POST(req: Request) {
       exclude_from_stock_consumption: !selectedProduct,
       exclude_from_catalog_product_sales: !selectedProduct,
       custom_order_note: body.notes || "",
+      special_product_brief: body.specialProductBrief || "",
+      manual_order_kind: orderKind,
+      special_product_explanation:
+        orderKind === "special"
+          ? "Special product manufactured for this customer. It does not exist on the website catalog and is excluded from stock/product ranking."
+          : "Catalog product order created manually from admin dashboard.",
       custom_order_quantity: quantity,
       created_from_admin_manual_order: true,
       selected_catalog_product: selectedProduct
@@ -247,7 +262,7 @@ export async function POST(req: Request) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...order,
-        source: "admin_custom_order_aramex_failed",
+        source: orderKind === "special" ? "admin_special_order_aramex_failed" : "admin_catalog_order_aramex_failed",
         status: "confirmed",
         aramex: {
           error: shipmentData?.details || shipmentData?.error || "Aramex shipment failed",
@@ -269,7 +284,7 @@ export async function POST(req: Request) {
 
   const shippedOrder = {
     ...order,
-    source: "admin_custom_order_aramex_created",
+    source: orderKind === "special" ? "admin_special_order_aramex_created" : "admin_catalog_order_aramex_created",
     status: "shipped",
     aramex: {
       trackingNumber: shipmentData.trackingNumber,
