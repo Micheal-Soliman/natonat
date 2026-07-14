@@ -1833,6 +1833,7 @@ export default function AdminDashboardPage() {
   const [aramexSyncMessage, setAramexSyncMessage] = useState("");
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
+  const [customerQuery, setCustomerQuery] = useState("");
   const [paymentFilter, setPaymentFilter] = useState("all");
   const [deliveryFilter, setDeliveryFilter] = useState("all");
   const [cityFilter, setCityFilter] = useState("all");
@@ -2996,19 +2997,52 @@ export default function AdminDashboardPage() {
 
   const filteredOrders = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
+    const normalizedPhoneQuery = normalizeCustomerPhone(query);
 
     return filteredMetricOrders.filter((order) => {
       const customer = getCustomer(order);
+      const aramex = getAramex(order);
+      const extras = getExtras(order);
+      const itemsText = getItems(order)
+        .map((item) => [
+          item.name,
+          item.title,
+          item.slug,
+          item.size,
+          item.color,
+          item.variant,
+        ].map(getString).filter(Boolean).join(" "))
+        .join(" ");
       const searchable = [
         getOrderRef(order),
-        getString(customer.first_name),
-        getString(customer.phone),
+        getCustomerDisplayName(customer),
+        normalizeCustomerPhone(customer.phone || order["Phone"]),
         getString(customer.email),
         getString(customer.city),
+        getString(customer.governorate),
+        getString(customer.address),
+        getString(order["Address"]),
+        getString(order["City"]),
+        getString(order["Governorate"]),
         getTrackingNumber(order),
+        getString(aramex.trackingLink),
+        getString(aramex.status),
+        getString(aramex.latestDescription),
+        getString(aramex.latestLocation),
+        getString(order.source),
+        getPaymentMethod(order),
+        getPaymentStatus(order),
+        getStatus(order),
+        getDeliveryMethod(order),
+        getString(extras.city_key),
+        itemsText,
       ].join(" ").toLowerCase();
 
-      if (normalizedQuery && !searchable.includes(normalizedQuery)) return false;
+      const phoneMatch =
+        normalizedPhoneQuery &&
+        normalizeCustomerPhone(customer.phone || order["Phone"]).includes(normalizedPhoneQuery);
+
+      if (normalizedQuery && !phoneMatch && !searchable.includes(normalizedQuery)) return false;
 
       return true;
     });
@@ -3224,6 +3258,29 @@ export default function AdminDashboardPage() {
       top: customers[0],
     };
   }, [customers]);
+
+  const filteredCustomers = useMemo(() => {
+    const normalizedQuery = customerQuery.trim().toLowerCase();
+    const normalizedPhoneQuery = normalizeCustomerPhone(customerQuery);
+    if (!normalizedQuery && !normalizedPhoneQuery) return customers;
+
+    return customers.filter((customer) => {
+      const text = [
+        customer.name,
+        customer.phone,
+        customer.email,
+        customer.city,
+        customer.governorate,
+        customer.address,
+        customer.orderRefs.join(" "),
+        customer.trackingNumbers.join(" "),
+        Array.from(customer.products.keys()).join(" "),
+      ].join(" ").toLowerCase();
+
+      const phoneMatch = normalizedPhoneQuery && customer.phone.includes(normalizedPhoneQuery);
+      return Boolean(phoneMatch || text.includes(normalizedQuery));
+    });
+  }, [customerQuery, customers]);
 
   const financeLedger = useMemo(() => {
     return filteredMetricOrders
@@ -4328,9 +4385,36 @@ export default function AdminDashboardPage() {
 
             <section className="mt-6 overflow-hidden rounded-[2rem] border border-[#0F1A26]/10 bg-white shadow-sm">
               <div className="border-b border-[#0F1A26]/10 px-5 py-4">
-                <h2 className="text-lg font-black">Customer profiles from orders</h2>
-                <p className="text-xs font-bold text-[#0F1A26]/45">
-                  Each row groups orders by phone first, then email, then name. Click an order ref to open full order details.
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                  <div>
+                    <h2 className="text-lg font-black">Customer profiles from orders</h2>
+                    <p className="text-xs font-bold text-[#0F1A26]/45">
+                      Search by mobile number, customer name, city, area, governorate, address, order ref, or tracking number.
+                    </p>
+                  </div>
+                  <div className="flex w-full flex-col gap-2 sm:flex-row lg:max-w-xl">
+                    <div className="relative flex-1">
+                      <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#0F1A26]/35" />
+                      <input
+                        value={customerQuery}
+                        onChange={(event) => setCustomerQuery(event.target.value)}
+                        placeholder="Search phone, name, city, area..."
+                        className="h-11 w-full rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] ps-11 pe-4 text-sm font-bold outline-none transition focus:border-[#EEBC3F]"
+                      />
+                    </div>
+                    {customerQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setCustomerQuery("")}
+                        className="h-11 rounded-2xl border border-[#0F1A26]/10 bg-white px-4 text-sm font-black text-[#0F1A26] transition hover:bg-[#F8F6F3]"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <p className="mt-3 text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/35">
+                  Showing {filteredCustomers.length} of {customers.length} customers
                 </p>
               </div>
               <div className="overflow-x-auto">
@@ -4346,7 +4430,7 @@ export default function AdminDashboardPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#0F1A26]/8">
-                    {customers.length ? customers.map((customer) => {
+                    {filteredCustomers.length ? filteredCustomers.map((customer) => {
                       const productSummary = Array.from(customer.products.entries())
                         .sort((a, b) => b[1] - a[1])
                         .slice(0, 3)
@@ -4417,7 +4501,7 @@ export default function AdminDashboardPage() {
                     }) : (
                       <tr>
                         <td colSpan={6} className="px-5 py-8 text-center text-sm font-bold text-[#0F1A26]/45">
-                          No customers in this period/filter.
+                          No customers match this search/period/filter.
                         </td>
                       </tr>
                     )}
@@ -4960,7 +5044,10 @@ export default function AdminDashboardPage() {
               <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#0F1A26]/35" />
               <input
                 value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  setOrdersPage(1);
+                }}
                 placeholder="Search order ref, phone, customer, city, tracking..."
                 className="h-12 w-full rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] ps-11 pe-4 text-sm font-bold outline-none focus:border-[#EEBC3F]"
               />
@@ -5021,6 +5108,17 @@ export default function AdminDashboardPage() {
               <Truck className={`h-4 w-4 ${aramexSyncing ? "animate-pulse" : ""}`} />
               Refresh Tracking Status
             </button>
+            {query && (
+              <button
+                onClick={() => {
+                  setQuery("");
+                  setOrdersPage(1);
+                }}
+                className="inline-flex h-12 items-center justify-center rounded-2xl border border-[#0F1A26]/10 px-5 text-sm font-black text-[#0F1A26]/65 transition hover:bg-[#F8F6F3]"
+              >
+                Clear search
+              </button>
+            )}
           </div>
         </section>
 
