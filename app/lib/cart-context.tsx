@@ -15,6 +15,7 @@ import {
   isProductOutOfStock,
   isProductSizeOutOfStock,
 } from "@/lib/product-stock";
+import { isLegacyBundleCartItem } from "@/lib/legacy-bundles";
 
 export interface BundleSelection {
   productId: number;
@@ -92,7 +93,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
       try {
         const saved = localStorage.getItem('cart');
         const parsed = saved ? JSON.parse(saved) : [];
-        return Array.isArray(parsed) ? parsed : [];
+        return Array.isArray(parsed)
+          ? parsed.filter((item) => !isLegacyBundleCartItem(item))
+          : [];
       } catch {
         return [];
       }
@@ -190,6 +193,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     newItem: Omit<CartItem, "quantity"> & { quantity?: number },
     options?: { openCart?: boolean }
   ) => {
+    if (isLegacyBundleCartItem(newItem)) return false;
+
     const qty = newItem.quantity || 1;
     const normalizedNewItem: Omit<CartItem, "quantity"> & { quantity?: number } = {
       ...newItem,
@@ -353,7 +358,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const catalogItems = useMemo(
     () => {
-      const refreshedItems = items.map((item) => {
+      const refreshedItems = items.filter((item) => !isLegacyBundleCartItem(item)).map((item) => {
         const product = products.find((candidate) => candidate.id === item.id);
         if (!product) {
           return {

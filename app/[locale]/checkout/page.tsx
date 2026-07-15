@@ -14,6 +14,7 @@ import { useCart, type CartItem } from "@/app/lib/cart-context";
 import { trackMetaPixelEvent } from "@/lib/meta-pixel";
 import { useCatalogProducts } from "@/app/lib/catalog-context";
 import { useSiteSettings } from "@/app/lib/site-settings-context";
+import { isLegacyBundleCartItem } from "@/lib/legacy-bundles";
 
 const INSTAPAY_PROOF_MAX_BYTES = 5 * 1024 * 1024;
 
@@ -41,6 +42,83 @@ function readFileAsDataUrl(file: File) {
 
 function generateOrderRef() {
   return `NAT-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+}
+
+const CHECKOUT_LOCK_KEY = "natonat-checkout-lock";
+const CHECKOUT_LOCK_TTL_MS = 10 * 60 * 1000;
+const CHECKOUT_PROCESSING_BLOCK_MS = 2 * 60 * 1000;
+
+type CheckoutLock = {
+  signature: string;
+  orderRef: string;
+  createdAt: number;
+  status: "processing" | "submitted";
+  successPath?: string;
+  redirectUrl?: string;
+};
+
+function readCheckoutLock(signature: string): CheckoutLock | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const raw = window.sessionStorage.getItem(CHECKOUT_LOCK_KEY);
+    if (!raw) return null;
+
+    const lock = JSON.parse(raw) as CheckoutLock;
+    if (!lock?.signature || lock.signature !== signature || !lock.orderRef) return null;
+    if (Date.now() - lock.createdAt > CHECKOUT_LOCK_TTL_MS) {
+      window.sessionStorage.removeItem(CHECKOUT_LOCK_KEY);
+      return null;
+    }
+
+    return lock;
+  } catch {
+    return null;
+  }
+}
+
+function writeCheckoutLock(lock: CheckoutLock) {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.sessionStorage.setItem(CHECKOUT_LOCK_KEY, JSON.stringify(lock));
+  } catch {
+    // Checkout must keep working even if session storage is unavailable.
+  }
+}
+
+function clearCheckoutLock(signature: string) {
+  if (typeof window === "undefined") return;
+
+  try {
+    const current = readCheckoutLock(signature);
+    if (current?.signature === signature) {
+      window.sessionStorage.removeItem(CHECKOUT_LOCK_KEY);
+    }
+  } catch {
+    // Ignore storage errors.
+  }
+}
+
+function getExistingAramexPayload(order: unknown) {
+  if (!order || typeof order !== "object") return null;
+
+  const record = order as Record<string, unknown>;
+  const aramex = record.aramex && typeof record.aramex === "object"
+    ? record.aramex as Record<string, unknown>
+    : {};
+  const trackingNumber =
+    (typeof aramex.trackingNumber === "string" && aramex.trackingNumber) ||
+    (typeof record["Aramex Tracking Number"] === "string" && record["Aramex Tracking Number"]) ||
+    "";
+
+  if (!trackingNumber) return null;
+
+  return {
+    trackingNumber,
+    labelUrl: typeof aramex.labelUrl === "string" ? aramex.labelUrl : undefined,
+    guid: typeof aramex.guid === "string" ? aramex.guid : undefined,
+  };
 }
 
 const popularCityNames = [
@@ -532,11 +610,17 @@ function CheckoutContent() {
 
   // Group duplicate items (same id + size + color) and sum quantities
   const checkoutItems = useMemo(() => {
-    const rawCheckoutItems = buyNowItem ? [buyNowItem] : items;
+    const rawCheckoutItems = (buyNowItem ? [buyNowItem] : items).filter(
+      (item) => !isLegacyBundleCartItem(item),
+    );
 
     return rawCheckoutItems.reduce((acc: typeof rawCheckoutItems, item) => {
       const existing = acc.find(
-        (i) => i.id === item.id && i.size === item.size && i.color === item.color
+        (i) =>
+          i.id === item.id &&
+          i.size === item.size &&
+          i.color === item.color &&
+          i.bundleKey === item.bundleKey
       );
 
       if (existing) {
@@ -870,7 +954,65 @@ function CheckoutContent() {
         }
       : null;
 
-    const orderRef = generateOrderRef();
+    const checkoutSignature = JSON.stringify({
+      items: serializedCheckoutItems.map((item) => ({
+        id: item.id,
+        slug: item.slug,
+        quantity: item.quantity,
+        size: item.size,
+        color: item.color,
+        price: item.price_egp,
+        lineTotal: item.line_total_egp,
+      })),
+      customer: {
+        phone: formData.phone.replace(/\D/g, ""),
+        name: formData.firstName.trim().toLowerCase(),
+        city: formData.city,
+        governorate: formData.governorate,
+        address: formData.address.trim().toLowerCase(),
+      },
+      paymentMethod,
+      deliveryMethod,
+      total: confirmedFinalTotal,
+      discountCode: confirmedAppliedDiscountCode?.code || "",
+    });
+    const existingCheckoutLock = readCheckoutLock(checkoutSignature);
+
+    if (
+      existingCheckoutLock?.status === "submitted" &&
+      (existingCheckoutLock.successPath || existingCheckoutLock.redirectUrl)
+    ) {
+      if (existingCheckoutLock.redirectUrl) {
+        window.location.href = existingCheckoutLock.redirectUrl;
+        return;
+      }
+
+      setIsSubmitting(false);
+      router.push(existingCheckoutLock.successPath || "/order-confirmed");
+      return;
+    }
+
+    if (
+      existingCheckoutLock?.status === "processing" &&
+      Date.now() - existingCheckoutLock.createdAt < CHECKOUT_PROCESSING_BLOCK_MS
+    ) {
+      setIsSubmitting(false);
+      setSubmitError(
+        locale === "ar"
+          ? "طلبك بيتسجل بالفعل. استنى لحظات، متعملش الطلب مرة تانية."
+          : "Your order is already being processed. Please wait and do not place it again.",
+      );
+      return;
+    }
+
+    const orderRef = existingCheckoutLock?.orderRef || generateOrderRef();
+    writeCheckoutLock({
+      signature: checkoutSignature,
+      orderRef,
+      createdAt: existingCheckoutLock?.createdAt || Date.now(),
+      status: "processing",
+    });
+
     try {
       window.sessionStorage.setItem(
         `meta-purchase-payload-${orderRef}`,
@@ -999,7 +1141,7 @@ function CheckoutContent() {
           city: formData.governorate,
         });
 
-        const orderLogRes = await fetch("/api/orders/log", {
+        const orderLogRes = await fetch("/api/orders/log?fast=1", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -1052,9 +1194,17 @@ function CheckoutContent() {
         }
 
         const checkoutUrl = `${paymobBaseUrl}/unifiedcheckout/?publicKey=${encodeURIComponent(publicKey)}&clientSecret=${encodeURIComponent(clientSecret)}`;
+        writeCheckoutLock({
+          signature: checkoutSignature,
+          orderRef,
+          createdAt: existingCheckoutLock?.createdAt || Date.now(),
+          status: "submitted",
+          redirectUrl: checkoutUrl,
+        });
         window.location.href = checkoutUrl;
         return;
       } catch (err) {
+        clearCheckoutLock(checkoutSignature);
         setIsSubmitting(false);
         setSubmitError(err instanceof Error ? err.message : "Payment initialization failed");
         return;
@@ -1079,7 +1229,7 @@ function CheckoutContent() {
       });
 
       try {
-        const logRes = await fetch("/api/orders/log", {
+        const logRes = await fetch("/api/orders/log?fast=1", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -1136,6 +1286,7 @@ function CheckoutContent() {
         }
       } catch (error) {
         console.error("Failed to log InstaPay order:", error);
+        clearCheckoutLock(checkoutSignature);
         setIsSubmitting(false);
         setSubmitError(error instanceof Error ? error.message : "Failed to log InstaPay order");
         return;
@@ -1144,7 +1295,15 @@ function CheckoutContent() {
       setIsSubmitting(false);
       clearCart();
       setBuyNowItem(null);
-      router.push(`/order-confirmed?order_ref=${encodeURIComponent(orderRef)}&method=instapay&success=true`);
+      const successPath = `/order-confirmed?order_ref=${encodeURIComponent(orderRef)}&method=instapay&success=true`;
+      writeCheckoutLock({
+        signature: checkoutSignature,
+        orderRef,
+        createdAt: existingCheckoutLock?.createdAt || Date.now(),
+        status: "submitted",
+        successPath,
+      });
+      router.push(successPath);
       return;
     }
 
@@ -1165,7 +1324,7 @@ function CheckoutContent() {
     // Step 1: Persist the COD order before creating any external shipment.
     // This avoids an Aramex shipment existing without a matching dashboard order.
     try {
-      const preLogRes = await fetch("/api/orders/log", {
+      const preLogRes = await fetch("/api/orders/log?fast=1", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1212,6 +1371,7 @@ function CheckoutContent() {
         throw new Error(preLogData?.error || "Could not save order before shipment");
       }
     } catch (error) {
+      clearCheckoutLock(checkoutSignature);
       setIsSubmitting(false);
       setSubmitError(error instanceof Error ? error.message : "Could not save order before shipment");
       return;
@@ -1222,6 +1382,19 @@ function CheckoutContent() {
       setAramexStatus("pending");
 
       try {
+        const existingOrderRes = await fetch(`/api/orders/log?order_ref=${encodeURIComponent(orderRef)}`, {
+          cache: "no-store",
+        }).catch(() => null);
+        const existingOrderData = existingOrderRes?.ok
+          ? await existingOrderRes.json().catch(() => null)
+          : null;
+        const existingAramexPayload = getExistingAramexPayload(existingOrderData?.order);
+
+        if (existingAramexPayload) {
+          setTrackingNumber(existingAramexPayload.trackingNumber);
+          setAramexStatus("success");
+          aramexPayload = existingAramexPayload;
+        } else {
         const shipmentPayload = {
           orderRef,
           customer: {
@@ -1265,9 +1438,11 @@ function CheckoutContent() {
           setAramexError(shipmentData.details || shipmentData.error || "Unknown error");
           throw new Error(shipmentData.details || shipmentData.error || "Aramex shipment failed");
         }
+        }
       } catch (err) {
         setAramexStatus("failed");
         setAramexError(err instanceof Error ? err.message : "Network error");
+        clearCheckoutLock(checkoutSignature);
         setIsSubmitting(false);
         setSubmitError(err instanceof Error ? err.message : "Aramex shipment failed");
         return;
@@ -1278,7 +1453,7 @@ function CheckoutContent() {
 
     // Step 3: Confirm the order and attach Aramex data
     try {
-      const logRes = await fetch("/api/orders/log", {
+      const logRes = await fetch("/api/orders/log?fast=1", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1333,6 +1508,7 @@ function CheckoutContent() {
 
     } catch (error) {
       console.error("Failed to log order to Google Sheets:", error);
+      clearCheckoutLock(checkoutSignature);
       setIsSubmitting(false);
       setSubmitError(error instanceof Error ? error.message : "Failed to log order");
       return;
@@ -1346,6 +1522,13 @@ function CheckoutContent() {
 
     const successPath = `/order-confirmed?order_ref=${encodeURIComponent(orderRef)}&method=${encodeURIComponent(paymentMethod)}&success=true`;
     setPendingSuccessPath(successPath);
+    writeCheckoutLock({
+      signature: checkoutSignature,
+      orderRef,
+      createdAt: existingCheckoutLock?.createdAt || Date.now(),
+      status: "submitted",
+      successPath,
+    });
 
     const shouldShowCheckoutPopup =
       checkoutPopup.enabled &&
@@ -2699,6 +2882,21 @@ function CheckoutContent() {
                 </>
               )}
             </Button>
+          </div>
+        </div>
+      )}
+      {isSubmitting && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-[#0F1A26]/55 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-[28px] border border-white/15 bg-white p-6 text-center shadow-[0_24px_80px_rgba(15,26,38,0.35)]">
+            <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[#EEBC3F]/25 border-t-[#EEBC3F]" />
+            <p className="text-lg font-black text-[#0F1A26]">
+              {locale === "ar" ? "بنثبت طلبك دلوقتي" : "Securing your order"}
+            </p>
+            <p className="mt-2 text-sm font-semibold leading-6 text-[#0F1A26]/65">
+              {locale === "ar"
+                ? "استنى لحظات ومتضغطش تاني. لو الشحن بياخد وقت، الطلب لسه بيتسجل."
+                : "Please wait and do not submit again. Shipping setup may take a few moments."}
+            </p>
           </div>
         </div>
       )}

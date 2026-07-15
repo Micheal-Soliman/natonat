@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import {
   sendOrderEmail,
   sendCustomerConfirmationEmail,
@@ -470,9 +470,119 @@ export async function GET(req: Request) {
   });
 }
 
+async function mirrorOrderToGoogleSheets(webhookUrl: string, body: OrderLogBody) {
+  const res = await fetch(webhookUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+    cache: "no-store",
+  });
+
+  const text = await res.text();
+  let sheetsResponse: unknown = text;
+
+  try {
+    sheetsResponse = JSON.parse(text);
+  } catch {
+    // Keep the raw response for diagnostics.
+  }
+
+  const sheetsStored =
+    res.ok &&
+    !(
+      sheetsResponse &&
+      typeof sheetsResponse === "object" &&
+      (
+        (sheetsResponse as { success?: boolean }).success === false ||
+        (sheetsResponse as { skipped?: boolean }).skipped === true
+      )
+    );
+
+  return {
+    response: sheetsResponse,
+    stored: sheetsStored,
+    error: sheetsStored
+      ? ""
+      : JSON.stringify({
+          status: res.status,
+          data: sheetsResponse,
+        }),
+  };
+}
+
+async function runPostStorageSideEffects(orderRef: string | undefined, body: OrderLogBody) {
+  if (!orderRef) return;
+
+  let storedOrder = body as StoredOrder;
+  if (shouldAdjustInventory(storedOrder) && Array.isArray(storedOrder.items)) {
+    try {
+      const inventoryResult = await adjustInventoryForConfirmedOrder(
+        orderRef,
+        storedOrder.items as OrderItem[],
+      );
+      storedOrder = {
+        ...storedOrder,
+        inventory: {
+          ...inventoryResult,
+          updatedAt: new Date().toISOString(),
+        },
+      };
+    } catch (error) {
+      console.error("Failed to adjust Sanity inventory", {
+        order_ref: orderRef,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      storedOrder = {
+        ...storedOrder,
+        inventory: {
+          status: "failed",
+          reason: error instanceof Error ? error.message : "Inventory update failed",
+          updatedAt: new Date().toISOString(),
+        },
+      };
+    }
+  }
+
+  if (shouldAdjustInventory(storedOrder)) {
+    try {
+      const customerReferral = await ensureReferralRecordForOrder(storedOrder);
+      const referralReward = await markReferralConversionForOrder(storedOrder);
+      storedOrder = {
+        ...storedOrder,
+        referral: {
+          ...(typeof storedOrder.referral === "object" && storedOrder.referral ? storedOrder.referral : {}),
+          customer_code:
+            customerReferral && "code" in customerReferral
+              ? (customerReferral as { code?: string }).code
+              : undefined,
+          reward: referralReward || undefined,
+          updatedAt: new Date().toISOString(),
+        },
+      };
+    } catch (error) {
+      console.error("Failed to update referral records", {
+        order_ref: orderRef,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  try {
+    await upsertOrderToDatabase(storedOrder);
+  } catch (error) {
+    console.error("Failed to mirror order to Supabase", {
+      order_ref: orderRef,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
 export async function POST(req: Request) {
   const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL;
   const databaseConfigured = isOrderDatabaseConfigured();
+  const fastStore = new URL(req.url).searchParams.get("fast") === "1";
 
   if (!webhookUrl && !databaseConfigured) {
     return NextResponse.json(
@@ -555,9 +665,11 @@ export async function POST(req: Request) {
       ? `https://www.aramex.com/eg/ar/track/results?mode=0&ShipmentNumber=${trackingNumber}`
       : "";
 
+    const incomingAramex = (body as StoredOrder).aramex;
     let updatedOrder = {
       ...existing,
       ...body,
+      aramex: incomingAramex == null ? existing?.aramex : incomingAramex,
       history,
       tracking_link: trackingLink
     } as StoredOrder;
@@ -685,46 +797,48 @@ export async function POST(req: Request) {
     }
   }
 
+  if (fastStore && databaseStored) {
+    after(async () => {
+      if (webhookUrl) {
+        try {
+          const result = await mirrorOrderToGoogleSheets(webhookUrl, body);
+          if (!result.stored) {
+            console.error("Fast order Google Sheets mirror failed", {
+              order_ref: orderRef,
+              error: result.error,
+            });
+          }
+        } catch (error) {
+          console.error("Fast order Google Sheets mirror failed", {
+            order_ref: orderRef,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+      }
+
+      await runPostStorageSideEffects(orderRef, body);
+    });
+
+    return NextResponse.json({
+      ok: true,
+      order_ref: orderRef,
+      fast: true,
+      storage: {
+        supabase: "stored",
+        google_sheets: webhookUrl ? "scheduled" : "not_configured",
+      },
+    });
+  }
+
   let sheetsResponse: unknown = null;
   let sheetsStored = false;
   let sheetsError = "";
 
   if (webhookUrl) {
-    const res = await fetch(webhookUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-      cache: "no-store",
-    });
-
-    const text = await res.text();
-    sheetsResponse = text;
-
-    try {
-      sheetsResponse = JSON.parse(text);
-    } catch {
-      // Keep the raw response for diagnostics.
-    }
-
-    sheetsStored =
-      res.ok &&
-      !(
-        sheetsResponse &&
-        typeof sheetsResponse === "object" &&
-        (
-          (sheetsResponse as { success?: boolean }).success === false ||
-          (sheetsResponse as { skipped?: boolean }).skipped === true
-        )
-      );
-
-    if (!sheetsStored) {
-      sheetsError = JSON.stringify({
-        status: res.status,
-        data: sheetsResponse,
-      });
-    }
+    const result = await mirrorOrderToGoogleSheets(webhookUrl, body);
+    sheetsResponse = result.response;
+    sheetsStored = result.stored;
+    sheetsError = result.error;
   }
 
   if (!databaseStored && !sheetsStored) {
