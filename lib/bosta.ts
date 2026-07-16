@@ -426,7 +426,7 @@ export async function createBostaDelivery(input: CreateBostaDeliveryInput): Prom
     .map((item) => `${item.name || "Product"} x${Math.max(1, Number(item.quantity || 1))}`)
     .join(", ")
     .slice(0, 250);
-  const orderType: BostaOrderType = input.cod ? 15 : 10;
+  const orderType: BostaOrderType = 10;
   const payload = {
     type: orderType,
     businessReference: input.orderRef,
