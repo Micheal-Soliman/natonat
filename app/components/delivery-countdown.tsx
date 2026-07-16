@@ -11,7 +11,8 @@ type DeliveryCountdownProps = {
   className?: string;
 };
 
-const CUTOFF_HOUR = 17;
+const CUTOFF_HOUR = 14;
+const CUTOFF_MINUTE = 30;
 const CAIRO_TIME_ZONE = "Africa/Cairo";
 
 type DeliveryState = {
@@ -64,8 +65,9 @@ function zonedTimeToUtcMs(
   month: number,
   day: number,
   hour: number,
+  minute = 0,
 ) {
-  const utcGuess = Date.UTC(year, month - 1, day, hour, 0, 0, 0);
+  const utcGuess = Date.UTC(year, month - 1, day, hour, minute, 0, 0);
   const firstOffset = getTimeZoneOffsetMs(timeZone, new Date(utcGuess));
   const firstUtc = utcGuess - firstOffset;
   const finalOffset = getTimeZoneOffsetMs(timeZone, new Date(firstUtc));
@@ -86,7 +88,9 @@ function addCalendarDays(year: number, month: number, day: number, days: number)
 function getDeliveryState(): DeliveryState {
   const now = new Date();
   const cairoNow = getTimeZoneParts(now, CAIRO_TIME_ZONE);
-  const isBeforeCutoff = cairoNow.hour < CUTOFF_HOUR;
+  const isBeforeCutoff =
+    cairoNow.hour < CUTOFF_HOUR ||
+    (cairoNow.hour === CUTOFF_HOUR && cairoNow.minute < CUTOFF_MINUTE);
   const targetDate = isBeforeCutoff
     ? cairoNow
     : addCalendarDays(cairoNow.year, cairoNow.month, cairoNow.day, 1);
@@ -96,6 +100,7 @@ function getDeliveryState(): DeliveryState {
     targetDate.month,
     targetDate.day,
     CUTOFF_HOUR,
+    CUTOFF_MINUTE,
   );
 
   return {
