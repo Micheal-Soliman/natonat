@@ -225,6 +225,8 @@ export async function POST(req: Request) {
           ? "Replacement shipment was created. Confirm/cancel the previous tracking in Aramex portal because this integration cannot verify shipment cancellation."
           : "",
         trackingNumber: shipmentData.trackingNumber,
+        trackingLink: shipmentData.trackingLink,
+        provider: shipmentData.provider,
         labelUrl: shipmentData.labelUrl,
         guid: shipmentData.guid,
         error: "",

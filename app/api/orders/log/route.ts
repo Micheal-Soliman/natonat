@@ -38,7 +38,11 @@ type StoredOrder = OrderLogBody & {
   status?: string;
   history?: OrderHistoryEntry[];
   aramex?: {
+    provider?: string;
     trackingNumber?: string;
+    trackingLink?: string;
+    labelUrl?: string;
+    guid?: string;
   };
   inventory?: {
     status?: string;
@@ -661,9 +665,15 @@ export async function POST(req: Request) {
     // Add Aramex tracking link if tracking number exists
     const bodyAramex = body.aramex as StoredOrder["aramex"] | undefined;
     const trackingNumber = bodyAramex?.trackingNumber || existing?.aramex?.trackingNumber;
-    const trackingLink = trackingNumber 
-      ? `https://www.aramex.com/eg/ar/track/results?mode=0&ShipmentNumber=${trackingNumber}`
-      : "";
+    const provider = getOrderStatusValue(bodyAramex?.provider || existing?.aramex?.provider);
+    const explicitTrackingLink = getNestedString(bodyAramex, "trackingLink") || getNestedString(existing?.aramex, "trackingLink");
+    const trackingLink = explicitTrackingLink || (
+      trackingNumber
+        ? provider === "bosta"
+          ? `https://bosta.co/tracking-shipments?shipmentNumber=${trackingNumber}`
+          : `https://www.aramex.com/eg/ar/track/results?mode=0&ShipmentNumber=${trackingNumber}`
+        : ""
+    );
 
     const incomingAramex = (body as StoredOrder).aramex;
     let updatedOrder = {

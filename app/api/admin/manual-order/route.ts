@@ -287,7 +287,9 @@ export async function POST(req: Request) {
     source: orderKind === "special" ? "admin_special_order_aramex_created" : "admin_catalog_order_aramex_created",
     status: "shipped",
     aramex: {
+      provider: shipmentData.provider,
       trackingNumber: shipmentData.trackingNumber,
+      trackingLink: shipmentData.trackingLink,
       labelUrl: shipmentData.labelUrl,
       guid: shipmentData.guid,
       status: "Record created",

@@ -172,6 +172,13 @@ type AdminManualOrderDraft = {
   createAramexShipment: boolean;
 };
 
+type BostaPickupDraft = {
+  scheduledDate: string;
+  numberOfParcels: string;
+  packageType: "Normal" | "Light Bulky" | "Heavy Bulky";
+  notes: string;
+};
+
 type AdminOrderEditItem = {
   productSlug: string;
   name: string;
@@ -214,6 +221,12 @@ type AdminOrderEditDraft = {
 type AdminTab = "finance" | "orders" | "customers" | "stock" | "expenses";
 type DatePreset = "all" | "today" | "yesterday" | "7d" | "30d" | "custom";
 
+function getTomorrowInputDate() {
+  const date = new Date();
+  date.setDate(date.getDate() + 1);
+  return date.toISOString().slice(0, 10);
+}
+
 const ADMIN_ORDER_STATUSES = [
   { value: "created", label: "Created" },
   { value: "confirmed", label: "Confirmed" },
@@ -244,7 +257,7 @@ const ADMIN_PAYMENT_METHODS = [
 ];
 
 const ADMIN_DELIVERY_METHODS = [
-  { value: "delivery", label: "Delivery / Aramex eligible" },
+  { value: "delivery", label: "Delivery / courier eligible" },
   { value: "pickup", label: "Pickup" },
   { value: "custom", label: "Custom / no shipment" },
 ];
@@ -267,7 +280,7 @@ const MANUAL_ORDER_PAYMENT_STATUSES = [
 
 const MANUAL_ORDER_DELIVERY_METHODS = [
   { value: "custom", label: "Custom / finance only" },
-  { value: "delivery", label: "Delivery / Aramex" },
+  { value: "delivery", label: "Delivery / courier" },
   { value: "pickup", label: "Pickup" },
 ] as const;
 
@@ -283,8 +296,8 @@ const ARAMEX_TRACKING_STAGES = [
 
 const OPERATIONAL_TRACKING_STAGES = [
   { key: "pending_instapay_approval", label: "Pending InstaPay approval" },
-  { key: "needs_aramex_replacement", label: "Needs Aramex replacement" },
-  { key: "aramex_failed", label: "Aramex failed" },
+  { key: "needs_aramex_replacement", label: "Needs shipment replacement" },
+  { key: "aramex_failed", label: "Shipment failed" },
   { key: "missing_tracking", label: "Missing tracking" },
   { key: "returned_cancelled", label: "Returned / Cancelled" },
   { key: "pickup_order", label: "Pickup order" },
@@ -599,6 +612,11 @@ function getPaymentStatus(order: AdminOrder) {
 function getTrackingNumber(order: AdminOrder) {
   const aramex = getAramex(order);
   return getString(aramex.trackingNumber || order["Aramex Tracking Number"]);
+}
+
+function getShipmentProvider(order: AdminOrder) {
+  const aramex = getAramex(order);
+  return getString(aramex.provider || order["Shipment Provider"]).toLowerCase();
 }
 
 function getPreviousTrackingNumbers(order: AdminOrder) {
@@ -1166,6 +1184,7 @@ function OrderDetailsPanel({
   onClose,
   onApproveInstaPay,
   onCreateAramex,
+  onPrintBostaAwb,
   onSaveManualEdit,
   actionLoadingRef,
 }: {
@@ -1174,6 +1193,7 @@ function OrderDetailsPanel({
   onClose: () => void;
   onApproveInstaPay: (order: AdminOrder) => void;
   onCreateAramex: (order: AdminOrder) => void;
+  onPrintBostaAwb: (order: AdminOrder) => void;
   onSaveManualEdit: (order: AdminOrder, draft: AdminOrderEditDraft) => void;
   actionLoadingRef: string;
 }) {
@@ -1189,6 +1209,7 @@ function OrderDetailsPanel({
     .reverse()
     .slice(0, 12);
   const trackingNumber = getTrackingNumber(order);
+  const isBostaShipment = getShipmentProvider(order) === "bosta";
   const canCreateAramex = getDeliveryBucket(order) === "delivery" && !isPendingInstaPay(order) && !trackingNumber;
   const previousTrackingNumbers = getPreviousTrackingNumbers(order);
   const oldTrackingCancelRequired = needsOldTrackingCancellation(order);
@@ -1283,7 +1304,7 @@ function OrderDetailsPanel({
                 <div>
                   <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-700/70">Waiting payment approval</p>
                   <p className="mt-1 text-sm font-bold text-amber-900">
-                    Approving this order marks payment as paid and creates Aramex shipment if delivery is required.
+                    Approving this order marks payment as paid and creates a courier shipment if delivery is required.
                   </p>
                 </div>
                 <button
@@ -1317,6 +1338,15 @@ function OrderDetailsPanel({
                       ? "Shipment already exists"
                       : "Create shipment"}
                 </button>
+                {isBostaShipment && trackingNumber && (
+                  <button
+                    onClick={() => onPrintBostaAwb(order)}
+                    disabled={actionLoadingRef === `bosta-awb:${orderRef}`}
+                    className="h-10 rounded-2xl bg-[#0F1A26] px-3 text-xs font-black text-white transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {actionLoadingRef === `bosta-awb:${orderRef}` ? "Printing..." : "Print Bosta AWB"}
+                  </button>
+                )}
               </div>
             </div>
           </section>
@@ -1326,7 +1356,7 @@ function OrderDetailsPanel({
               <div>
                 <h4 className="text-lg font-black">Manual order edit</h4>
                 <p className="mt-1 text-xs font-bold leading-5 text-[#0F1A26]/50">
-                  Saves to database and updates dashboard finance. Existing Aramex shipment data is not edited automatically.
+                  Saves to database and updates dashboard finance. Existing courier shipment data is not edited automatically.
                 </p>
               </div>
               <button
@@ -1448,16 +1478,16 @@ function OrderDetailsPanel({
 
                 <div className="rounded-3xl bg-white p-3">
                   <div>
-                    <h5 className="text-sm font-black">Tracking / Aramex record</h5>
+                    <h5 className="text-sm font-black">Tracking / courier record</h5>
                     <p className="mt-1 text-xs font-bold leading-5 text-[#0F1A26]/45">
-                      Use this to record a manual tracking number or correct dashboard tracking fields. It does not call Aramex by itself.
+                      Use this to record a manual tracking number or correct dashboard tracking fields. It does not call the courier by itself.
                     </p>
                   </div>
                   <div className="mt-3 grid gap-3 md:grid-cols-2">
                     {[
                       ["aramexTrackingNumber", "Tracking number"],
                       ["aramexTrackingLink", "Tracking link"],
-                      ["aramexStatus", "Aramex status"],
+                      ["aramexStatus", "Courier status"],
                       ["aramexLatestCode", "Latest code"],
                       ["aramexLatestLocation", "Latest location"],
                       ["aramexLatestDate", "Latest date"],
@@ -1480,7 +1510,7 @@ function OrderDetailsPanel({
                       />
                     </label>
                     <label className="space-y-1 text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45 md:col-span-2">
-                      Aramex error / note
+                      Courier error / note
                       <textarea
                         value={editDraft.aramexError}
                         onChange={(event) => updateEditDraft("aramexError", event.target.value)}
@@ -1642,7 +1672,7 @@ function OrderDetailsPanel({
           </section>
 
           <section className="mb-5 rounded-[1.5rem] border border-[#0F1A26]/10 bg-[#F8F6F3] p-4">
-            <h4 className="text-lg font-black">Aramex order cycle</h4>
+            <h4 className="text-lg font-black">Courier order cycle</h4>
             <div className="mt-3 grid gap-3 md:grid-cols-3">
               <div className="rounded-2xl bg-white p-3">
                 <p className="text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/35">1. Edit</p>
@@ -1650,21 +1680,21 @@ function OrderDetailsPanel({
               </div>
               <div className="rounded-2xl bg-white p-3">
                 <p className="text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/35">2. Create / replace</p>
-                <p className="mt-1 text-sm font-bold text-[#0F1A26]/65">This is the step that sends the latest saved data to Aramex and returns a tracking number.</p>
+                <p className="mt-1 text-sm font-bold text-[#0F1A26]/65">This is the step that sends the latest saved data to the active courier and returns a tracking number.</p>
               </div>
               <div className="rounded-2xl bg-white p-3">
                 <p className="text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/35">3. Refresh status</p>
-                <p className="mt-1 text-sm font-bold text-[#0F1A26]/65">Reads shipment movement from Aramex. It does not edit the shipment.</p>
+                <p className="mt-1 text-sm font-bold text-[#0F1A26]/65">Reads shipment movement from the courier. It does not edit the shipment.</p>
               </div>
             </div>
             {oldTrackingCancelRequired && (
               <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm font-bold leading-6 text-amber-900">
-                This order has an old replaced tracking number{previousTrackingNumbers.length ? `: ${previousTrackingNumbers.join(", ")}` : ""}. The current integration created the replacement shipment, but it cannot confirm cancelling the old Aramex shipment automatically. Cancel/check the old tracking in Aramex portal.
+                This order has an old replaced tracking number{previousTrackingNumbers.length ? `: ${previousTrackingNumbers.join(", ")}` : ""}. The current integration created the replacement shipment, but it cannot confirm cancelling the old shipment automatically. Cancel/check the old tracking in the courier portal.
               </div>
             )}
             {needsAramexReplacement(order) && (
               <div className="mt-3 rounded-2xl border border-orange-200 bg-orange-50 p-3 text-sm font-bold leading-6 text-orange-900">
-                This order changed after Aramex tracking was created. Automatic replacement is blocked because the old shipment must be cancelled in Aramex first.
+                This order changed after tracking was created. Automatic replacement is blocked because the old shipment must be cancelled in the courier portal first.
               </div>
             )}
           </section>
@@ -1731,7 +1761,7 @@ function OrderDetailsPanel({
           </section>
 
           <section className="mt-5 rounded-[1.5rem] border border-[#0F1A26]/10 p-4">
-            <h4 className="mb-3 text-lg font-black">Aramex tracking</h4>
+            <h4 className="mb-3 text-lg font-black">Courier tracking</h4>
             <KeyValueGrid
               data={{
                 tracking_number: getTrackingNumber(order),
@@ -1751,7 +1781,7 @@ function OrderDetailsPanel({
             />
             {!isEmptyAdminValue(aramex.trackingRaw) && (
               <details className="mt-4 rounded-2xl bg-[#0F1A26] p-4 text-white">
-                <summary className="cursor-pointer text-sm font-black">Full Aramex tracking response</summary>
+                <summary className="cursor-pointer text-sm font-black">Full courier tracking response</summary>
                 <div className="mt-3 max-h-[360px] overflow-auto">
                   {typeof aramex.trackingRaw === "string" ? (
                     <DataPill label="tracking response" value={aramex.trackingRaw} dark />
@@ -1873,6 +1903,12 @@ export default function AdminDashboardPage() {
     paymentStatus: "Paid",
     deliveryMethod: "custom",
     createAramexShipment: false,
+  });
+  const [bostaPickupDraft, setBostaPickupDraft] = useState<BostaPickupDraft>({
+    scheduledDate: getTomorrowInputDate(),
+    numberOfParcels: "1",
+    packageType: "Normal",
+    notes: "",
   });
 
   useEffect(() => {
@@ -2126,6 +2162,86 @@ export default function AdminDashboardPage() {
       await loadOrders(savedToken);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not approve InstaPay order");
+    } finally {
+      setActionLoadingRef("");
+    }
+  };
+
+  const createBostaPickupRequest = async () => {
+    setActionLoadingRef("bosta-pickup");
+    setError("");
+
+    try {
+      const res = await fetch("/api/admin/bosta-pickup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(savedToken ? { Authorization: `Bearer ${savedToken}` } : {}),
+        },
+        body: JSON.stringify({
+          scheduledDate: bostaPickupDraft.scheduledDate,
+          numberOfParcels: getNumber(bostaPickupDraft.numberOfParcels) || 1,
+          packageType: bostaPickupDraft.packageType,
+          notes: bostaPickupDraft.notes,
+        }),
+      });
+      const data = (await res.json()) as AdminActionResponse & { message?: string };
+
+      if (!res.ok || !data.success) {
+        throw new Error(formatApiError(data.error, data.details, "Could not create Bosta pickup"));
+      }
+
+      setAramexSyncMessage(data.message || "Bosta pickup request created.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not create Bosta pickup");
+    } finally {
+      setActionLoadingRef("");
+    }
+  };
+
+  const printBostaAwb = async (order: AdminOrder) => {
+    const orderRef = getOrderRef(order);
+    const trackingNumber = getTrackingNumber(order);
+    if (!trackingNumber) return;
+
+    setActionLoadingRef(`bosta-awb:${orderRef}`);
+    setError("");
+
+    try {
+      const res = await fetch("/api/admin/bosta-awb", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(savedToken ? { Authorization: `Bearer ${savedToken}` } : {}),
+        },
+        body: JSON.stringify({
+          trackingNumbers: [trackingNumber],
+          requestedAwbType: "A4",
+          lang: "ar",
+        }),
+      });
+      const data = (await res.json()) as AdminActionResponse & {
+        pdfBase64?: string;
+        message?: string;
+      };
+
+      if (!res.ok || !data.success) {
+        throw new Error(formatApiError(data.error, data.details, "Could not print Bosta AWB"));
+      }
+
+      if (data.pdfBase64) {
+        const byteCharacters = atob(data.pdfBase64);
+        const byteNumbers = Array.from(byteCharacters, (character) => character.charCodeAt(0));
+        const blob = new Blob([new Uint8Array(byteNumbers)], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
+        window.open(url, "_blank", "noopener,noreferrer");
+        window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+        setAramexSyncMessage(`Bosta AWB opened for ${trackingNumber}.`);
+      } else {
+        setAramexSyncMessage(data.message || `Bosta AWB requested for ${trackingNumber}.`);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not print Bosta AWB");
     } finally {
       setActionLoadingRef("");
     }
@@ -3853,7 +3969,7 @@ export default function AdminDashboardPage() {
                     onChange={(event) => updateManualOrderDraft("createAramexShipment", event.target.checked)}
                     className="h-5 w-5 accent-[#EEBC3F]"
                   />
-                  Create real Aramex shipment for this new order
+                  Create real courier shipment for this new order
                 </label>
                 <label className="text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45 md:col-span-2 xl:col-span-4">
                   Internal note
@@ -3868,7 +3984,7 @@ export default function AdminDashboardPage() {
               <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-900 sm:flex-row sm:items-center sm:justify-between">
                 <span>
                   {manualOrderDraft.createAramexShipment
-                    ? "This creates a new dashboard order and a real Aramex shipment. Use it only after the old shipment was cancelled/handled in Aramex portal."
+                    ? "This creates a new dashboard order and a real courier shipment. Use it only after the old shipment was cancelled/handled in the courier portal."
                     : "This order affects finance totals only. It is excluded from Sanity inventory deduction, stock forecast, and catalog product sales ranking."}
                 </span>
                 <button
@@ -3921,7 +4037,7 @@ export default function AdminDashboardPage() {
           <div className="mt-4 grid gap-3 rounded-3xl bg-[#F8F6F3] p-4 sm:grid-cols-3">
             <DataPill label="data source" value="Google Sheets orders webhook + in-memory fallback for recent orders" />
             <DataPill label="auto refresh" value="Every 60 seconds while the admin page is open" />
-            <DataPill label="tracking refresh" value="Refresh Tracking Status reads latest movement from Aramex for stored tracking numbers" />
+            <DataPill label="tracking refresh" value="Refresh Tracking Status reads latest movement from the courier for stored tracking numbers" />
           </div>
         </section>
 
@@ -3989,7 +4105,7 @@ export default function AdminDashboardPage() {
                 COD is shown as expected collection, not guaranteed cash, until delivery and collection are confirmed.
               </p>
               <p>
-                Aramex attention means money or fulfillment can be at risk because tracking is missing, failed, returned, or blocked.
+                Courier attention means money or fulfillment can be at risk because tracking is missing, failed, returned, or blocked.
               </p>
             </div>
           </div>
@@ -4013,7 +4129,7 @@ export default function AdminDashboardPage() {
           <StatCard title="COD Orders" value={String(stats.codOrders)} icon={Truck} />
           <StatCard title="Card Orders" value={String(stats.cardOrders)} icon={CreditCard} />
           <StatCard title="InstaPay Orders" value={String(stats.instapayOrders)} subtitle={`${stats.pendingInstaPay} waiting approval`} icon={WalletCards} tone={stats.pendingInstaPay ? "gold" : "dark"} />
-          <StatCard title="Aramex Attention" value={String(stats.aramexFailed + stats.aramexMissing + stats.aramexReplacement)} subtitle={`${stats.aramexWithTracking} with tracking / ${stats.aramexFailed} failed / ${stats.aramexMissing} missing / ${stats.aramexReplacement} need replacement`} icon={AlertTriangle} tone={stats.aramexFailed + stats.aramexMissing + stats.aramexReplacement ? "red" : "green"} />
+          <StatCard title="Courier Attention" value={String(stats.aramexFailed + stats.aramexMissing + stats.aramexReplacement)} subtitle={`${stats.aramexWithTracking} with tracking / ${stats.aramexFailed} failed / ${stats.aramexMissing} missing / ${stats.aramexReplacement} need replacement`} icon={AlertTriangle} tone={stats.aramexFailed + stats.aramexMissing + stats.aramexReplacement ? "red" : "green"} />
         </section>
 
         <section className="mt-6 grid gap-4 lg:grid-cols-[1fr_1fr]">
@@ -4075,7 +4191,7 @@ export default function AdminDashboardPage() {
           <div className="border-b border-[#0F1A26]/10 px-5 py-4">
             <h2 className="text-lg font-black">Daily close report</h2>
             <p className="text-xs font-bold text-[#0F1A26]/45">
-              Day-by-day finance movement so the admin can reconcile money, orders, discounts, returns, and Aramex issues.
+              Day-by-day finance movement so the admin can reconcile money, orders, discounts, returns, and courier issues.
             </p>
             {stats.missingDateOrders > 0 && (
               <p className="mt-2 rounded-2xl bg-amber-50 px-4 py-2 text-xs font-black text-amber-800">
@@ -4097,7 +4213,7 @@ export default function AdminDashboardPage() {
                   <th className="px-5 py-3">Expenses</th>
                   <th className="px-5 py-3">Net</th>
                   <th className="px-5 py-3">Net after expenses</th>
-                  <th className="px-5 py-3">Aramex issues</th>
+                  <th className="px-5 py-3">Courier issues</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#0F1A26]/8">
@@ -4178,7 +4294,7 @@ export default function AdminDashboardPage() {
               <DataPill label="returned or cancelled value" value={money.format(stats.returnedValue)} />
             </div>
             <div className="mt-4 rounded-2xl bg-amber-50 p-4 text-xs font-bold leading-5 text-amber-800">
-              Aramex numbers here are order-record based only. Manual gifts, influencer shipments, or shipments created directly in Aramex will not appear unless their tracking number is saved on an order row.
+              Courier numbers here are order-record based only. Manual gifts, influencer shipments, or shipments created directly in the courier portal will not appear unless their tracking number is saved on an order row.
             </div>
           </div>
         </section>
@@ -4202,7 +4318,7 @@ export default function AdminDashboardPage() {
             <div className="border-b border-[#0F1A26]/10 px-5 py-4">
               <h2 className="text-lg font-black">Fulfillment finance impact</h2>
               <p className="text-xs font-bold text-[#0F1A26]/45">
-                Aramex state grouped with order value, so returns and shipment issues are visible financially.
+                Courier state grouped with order value, so returns and shipment issues are visible financially.
               </p>
             </div>
             <div className="grid gap-3 p-5 md:grid-cols-2">
@@ -4323,7 +4439,7 @@ export default function AdminDashboardPage() {
           <div className="overflow-hidden rounded-[2rem] border border-[#0F1A26]/10 bg-white shadow-sm">
             <div className="border-b border-[#0F1A26]/10 px-5 py-4">
               <h2 className="text-lg font-black">Top delivery cities</h2>
-              <p className="text-xs font-bold text-[#0F1A26]/45">Useful for ads, shipping focus, and Aramex issue tracking.</p>
+              <p className="text-xs font-bold text-[#0F1A26]/45">Useful for ads, shipping focus, and courier issue tracking.</p>
             </div>
             <div className="divide-y divide-[#0F1A26]/8">
               {operations.topCities.length ? operations.topCities.map((city, index) => (
@@ -4944,10 +5060,10 @@ export default function AdminDashboardPage() {
           <SectionHeader
             eyebrow="Action Center"
             title="Orders that need attention"
-              description="This queue separates payment approval, shipment creation/replacement, tracking refresh, and returns so the admin knows exactly which action talks to Aramex."
+              description="This queue separates payment approval, shipment creation/replacement, tracking refresh, pickup requests, and returns so the admin knows exactly which operation will run."
           />
 
-          <div className="mt-5 grid gap-4 lg:grid-cols-3">
+          <div className="mt-5 grid gap-4 lg:grid-cols-4">
             <div className="rounded-3xl bg-amber-50 p-4">
               <div className="flex items-center justify-between gap-3">
                 <h3 className="font-black text-amber-800">InstaPay approval</h3>
@@ -4974,7 +5090,7 @@ export default function AdminDashboardPage() {
 
             <div className="rounded-3xl bg-rose-50 p-4">
               <div className="flex items-center justify-between gap-3">
-                <h3 className="font-black text-rose-800">Aramex shipment actions</h3>
+                <h3 className="font-black text-rose-800">Courier shipment actions</h3>
                 <span className="rounded-full bg-rose-200 px-3 py-1 text-xs font-black text-rose-900">{operations.aramexAttention.length}</span>
               </div>
               <div className="mt-3 space-y-2">
@@ -4984,7 +5100,7 @@ export default function AdminDashboardPage() {
                       <span className="block font-black">{getOrderRef(order)}</span>
                       <span className="line-clamp-2 text-[#0F1A26]/50">
                         {needsAramexReplacement(order)
-                          ? getString(getAramex(order).replacementReason) || "Order changed after shipment creation. Replace Aramex shipment."
+                          ? getString(getAramex(order).replacementReason) || "Order changed after shipment creation. Replace courier shipment."
                           : getAramexError(order) || "Missing tracking on order row"}
                       </span>
                     </button>
@@ -4999,7 +5115,7 @@ export default function AdminDashboardPage() {
                     )}
                     {needsAramexReplacement(order) && (
                       <p className="mt-3 rounded-xl bg-amber-50 p-2 text-xs font-black leading-5 text-amber-800">
-                        Cancel old tracking in Aramex portal first. Auto replacement is blocked to avoid duplicate shipments.
+                        Cancel old tracking in the courier portal first. Auto replacement is blocked to avoid duplicate shipments.
                       </p>
                     )}
                     {(getTrackingNumber(order) || getAramexError(order)) && (
@@ -5013,11 +5129,11 @@ export default function AdminDashboardPage() {
                     )}
                     {needsOldTrackingCancellation(order) && (
                       <p className="mt-2 rounded-xl bg-amber-50 p-2 text-xs font-black text-amber-800">
-                        Old tracking needs cancel/check in Aramex portal.
+                        Old tracking needs cancel/check in the courier portal.
                       </p>
                     )}
                   </div>
-                )) : <p className="text-sm font-bold text-rose-800/60">No Aramex shipment actions needed.</p>}
+                )) : <p className="text-sm font-bold text-rose-800/60">No courier shipment actions needed.</p>}
               </div>
             </div>
 
@@ -5033,6 +5149,64 @@ export default function AdminDashboardPage() {
                     <span className="text-[#0F1A26]/50">Deducted: {money.format(getAmount(order))}</span>
                   </button>
                 )) : <p className="text-sm font-bold text-[#0F1A26]/45">No returns detected.</p>}
+              </div>
+            </div>
+
+            <div className="rounded-3xl bg-emerald-50 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="font-black text-emerald-900">Bosta pickup</h3>
+                <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-emerald-900">Courier</span>
+              </div>
+              <p className="mt-2 text-xs font-bold leading-5 text-emerald-900/65">
+                Request one pickup for collected parcels. Bosta can reject duplicate pickup requests for the same date/location.
+              </p>
+              <div className="mt-3 grid gap-2">
+                <label className="text-[11px] font-black uppercase tracking-[0.12em] text-emerald-900/55">
+                  Pickup date
+                  <input
+                    type="date"
+                    value={bostaPickupDraft.scheduledDate}
+                    onChange={(event) => setBostaPickupDraft((current) => ({ ...current, scheduledDate: event.target.value }))}
+                    className="mt-1 h-10 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm font-black text-[#0F1A26] outline-none"
+                  />
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="text-[11px] font-black uppercase tracking-[0.12em] text-emerald-900/55">
+                    Parcels
+                    <input
+                      type="number"
+                      min={1}
+                      value={bostaPickupDraft.numberOfParcels}
+                      onChange={(event) => setBostaPickupDraft((current) => ({ ...current, numberOfParcels: event.target.value }))}
+                      className="mt-1 h-10 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm font-black text-[#0F1A26] outline-none"
+                    />
+                  </label>
+                  <label className="text-[11px] font-black uppercase tracking-[0.12em] text-emerald-900/55">
+                    Type
+                    <select
+                      value={bostaPickupDraft.packageType}
+                      onChange={(event) => setBostaPickupDraft((current) => ({ ...current, packageType: event.target.value as BostaPickupDraft["packageType"] }))}
+                      className="mt-1 h-10 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm font-black text-[#0F1A26] outline-none"
+                    >
+                      <option value="Normal">Normal</option>
+                      <option value="Light Bulky">Light Bulky</option>
+                      <option value="Heavy Bulky">Heavy Bulky</option>
+                    </select>
+                  </label>
+                </div>
+                <input
+                  value={bostaPickupDraft.notes}
+                  onChange={(event) => setBostaPickupDraft((current) => ({ ...current, notes: event.target.value }))}
+                  placeholder="Pickup note"
+                  className="h-10 rounded-xl border border-emerald-900/10 bg-white px-3 text-sm font-bold text-[#0F1A26] outline-none"
+                />
+                <button
+                  onClick={() => void createBostaPickupRequest()}
+                  disabled={actionLoadingRef === "bosta-pickup"}
+                  className="mt-1 h-10 rounded-xl bg-emerald-700 text-xs font-black text-white transition hover:-translate-y-0.5 disabled:opacity-60"
+                >
+                  {actionLoadingRef === "bosta-pickup" ? "Requesting..." : "Create Bosta pickup"}
+                </button>
               </div>
             </div>
           </div>
@@ -5125,10 +5299,10 @@ export default function AdminDashboardPage() {
         <section className="mt-6 rounded-[2rem] border border-[#0F1A26]/10 bg-white p-5 shadow-sm">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#EEBC3F]">Aramex status labels</p>
-              <h2 className="text-lg font-black">Orders by Aramex timeline label</h2>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#EEBC3F]">Courier status labels</p>
+              <h2 className="text-lg font-black">Orders by courier timeline label</h2>
               <p className="mt-1 text-xs font-bold text-[#0F1A26]/45">
-                Counts use the same Aramex-style label shown in the order table and status filter.
+                Counts use the same courier label shown in the order table and status filter.
               </p>
             </div>
             <p className="text-sm font-black text-[#0F1A26]/50">{filteredMetricOrders.length} orders</p>
@@ -5188,7 +5362,7 @@ export default function AdminDashboardPage() {
                   <th className="px-5 py-3">Customer</th>
                   <th className="px-5 py-3">Payment</th>
                   <th className="px-5 py-3">Total</th>
-                  <th className="px-5 py-3">Aramex</th>
+                  <th className="px-5 py-3">Courier</th>
                   <th className="px-5 py-3">Status</th>
                   <th className="px-5 py-3">Details</th>
                 </tr>
@@ -5268,11 +5442,11 @@ export default function AdminDashboardPage() {
                         )}
                         {aramexError && <p className="mt-1 max-w-[260px] text-xs font-bold text-rose-600">{aramexError}</p>}
                         {needsAramex(order) && !aramexError && (
-                          <p className="mt-1 text-xs font-bold text-orange-600">Needs Aramex shipment</p>
+                          <p className="mt-1 text-xs font-bold text-orange-600">Needs courier shipment</p>
                         )}
                         {needsAramexReplacement(order) && (
                           <p className="mt-1 rounded-xl bg-orange-50 px-2 py-1 text-xs font-black text-orange-700">
-                            Needs Aramex replacement
+                            Needs shipment replacement
                           </p>
                         )}
                       </td>
@@ -5303,7 +5477,7 @@ export default function AdminDashboardPage() {
                         )}
                         {needsAramexReplacement(order) && (
                           <p className="mb-2 max-w-[220px] rounded-2xl bg-amber-50 px-3 py-2 text-xs font-black leading-5 text-amber-800">
-                            Cancel old Aramex tracking first. Replacement is blocked.
+                            Cancel old courier tracking first. Replacement is blocked.
                           </p>
                         )}
                         {(tracking || getAramexError(order)) && (
@@ -5371,6 +5545,7 @@ export default function AdminDashboardPage() {
           onClose={() => setSelectedOrder(null)}
           onApproveInstaPay={(order) => void approveInstaPayOrder(order)}
           onCreateAramex={(order) => void createAramexShipmentFromOrder(order)}
+          onPrintBostaAwb={(order) => void printBostaAwb(order)}
           onSaveManualEdit={(order, draft) => void saveManualOrderEdit(order, draft)}
           actionLoadingRef={actionLoadingRef}
         />

@@ -768,7 +768,7 @@
     "bundleIncludes": "Bundle includes:",
     "editBundle": "Edit bundle",
     "securePayment": "Secure payment",
-    "aramexShipping": "Aramex shipping",
+    "aramexShipping": "Courier shipping",
     "saved": "You saved",
     "cartItems": "{count, plural, =0 {No items} =1 {1 item} other {# items}}",
     "continueShopping": "Continue Shopping",
@@ -863,9 +863,9 @@
       "securePayment": "Secure checkout. We do not store card details, and online payments are verified before shipping."
     },
     "aramexStatus": {
-      "success": "Aramex Shipment Created",
-      "pending": "Creating Aramex Shipment...",
-      "failed": "Aramex Shipment Failed",
+      "success": "Shipment Created",
+      "pending": "Creating Shipment...",
+      "failed": "Shipment Failed",
       "trackingNumber": "Tracking Number",
       "manualShipment": "Your order is confirmed. We'll create the shipment manually."
     },
@@ -965,7 +965,7 @@
           "accountNumber": "Account Number",
           "instruction": "Please transfer the total amount and use your order number as reference",
           "proofLabel": "Upload payment screenshot",
-          "proofHint": "Your order will wait for admin approval. Aramex is created only after the payment proof is approved.",
+          "proofHint": "Your order will wait for admin approval. Shipping is created only after the payment proof is approved.",
           "proofReady": "Screenshot ready: {file}"
         }
       },
@@ -1028,7 +1028,7 @@
     },
     "messages": {
       "recorded": "Your order was recorded successfully. We will review it and share updates.",
-      "shipmentCreated": "Aramex shipment has been created.",
+      "shipmentCreated": "Shipment has been created.",
       "trackingPending": "Tracking will be shared once the shipment is ready.",
       "cannotConfirm": "This page cannot confirm an order without a valid order record.",
       "moneyDeducted": "If money was deducted, please contact support with your order reference.",

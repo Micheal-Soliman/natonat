@@ -344,7 +344,9 @@ export async function POST(req: Request) {
                 status: "shipped", // Update overall status
                 payment_status: "Paid", // Ensure payment status is updated
                 aramex: {
+                  provider: shipmentData.provider,
                   trackingNumber: shipmentData.trackingNumber,
+                  trackingLink: shipmentData.trackingLink,
                   labelUrl: shipmentData.labelUrl,
                   guid: shipmentData.guid,
                 },

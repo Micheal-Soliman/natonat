@@ -16,7 +16,11 @@ type LoggedOrder = {
   amount_egp?: number;
   amount_cents?: number;
   aramex?: {
+    provider?: string;
     trackingNumber?: string;
+    trackingLink?: string;
+    labelUrl?: string;
+    guid?: string;
   };
 };
 
@@ -124,7 +128,9 @@ export async function POST(req: Request) {
     }
 
     aramexPayload = {
+      provider: shipmentData.provider,
       trackingNumber: shipmentData.trackingNumber,
+      trackingLink: shipmentData.trackingLink,
     };
     nextStatus = "shipped";
   }

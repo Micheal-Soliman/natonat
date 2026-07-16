@@ -1310,7 +1310,9 @@ function CheckoutContent() {
     // --- Delivery Order Flow ---
 
     let aramexPayload: {
+      provider?: string;
       trackingNumber: string;
+      trackingLink?: string;
       labelUrl?: string;
       guid?: string;
     } | null = null;
@@ -1428,7 +1430,9 @@ function CheckoutContent() {
           setAramexStatus("success");
 
           aramexPayload = {
+            provider: shipmentData.provider,
             trackingNumber: shipmentData.trackingNumber,
+            trackingLink: shipmentData.trackingLink,
             labelUrl: shipmentData.labelUrl,
             guid: shipmentData.guid,
           };
