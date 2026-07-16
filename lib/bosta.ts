@@ -446,10 +446,6 @@ export async function createBostaDelivery(input: CreateBostaDeliveryInput): Prom
       },
       packageType: getPackageType(itemCount),
     },
-    goodsInfo: {
-      amount: Math.round(Number(input.totalValue || 0)),
-      currency: "EGP",
-    },
     ...(process.env.BOSTA_WEBHOOK_URL
       ? {
           webhookUrl: process.env.BOSTA_WEBHOOK_URL,
