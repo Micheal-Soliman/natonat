@@ -203,6 +203,10 @@ function getBostaDeliveryLocationId() {
   return process.env.BOSTA_PICKUP_LOCATION_ID || process.env.BOSTA_DELIVERY_LOCATION_ID || undefined;
 }
 
+function shouldAllowOpenPackage() {
+  return process.env.BOSTA_ALLOW_OPEN_PACKAGE === "true";
+}
+
 function getPackageType(itemCount: number) {
   if (itemCount <= 1) return "Small";
   if (itemCount <= 4) return "Medium";
@@ -438,6 +442,7 @@ export async function createBostaDelivery(input: CreateBostaDeliveryInput): Prom
       phone: normalizePhone(input.customer.phone),
       email: input.customer.email || undefined,
     },
+    allowToOpenPackage: shouldAllowOpenPackage(),
     dropOffAddress: await buildDropOffAddress(input.customer),
     specs: {
       packageDetails: {
