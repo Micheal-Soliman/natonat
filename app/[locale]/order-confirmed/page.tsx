@@ -2,13 +2,15 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Link } from "@/i18n/routing";
+import Image from "next/image";
+import { Link, useRouter } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, XCircle, Clock, ShoppingBag, MessageCircle, Truck } from "lucide-react";
+import { CheckCircle, XCircle, Clock, ShoppingBag, MessageCircle, Truck, ShieldCheck, TicketPercent } from "lucide-react";
 import { useCart } from "@/app/lib/cart-context";
+import { useSiteSettings } from "@/app/lib/site-settings-context";
 import { trackMetaPixelEvent } from "@/lib/meta-pixel";
 
 export default function OrderConfirmedPage() {
@@ -37,8 +39,10 @@ function LoadingState() {
 
 function OrderConfirmedContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const t = useTranslations("orderConfirmed");
   const { clearCart, setBuyNowItem } = useCart();
+  const { checkoutPopup } = useSiteSettings();
 
   const orderRef = searchParams.get("order_ref") || "";
   const methodFromUrl = searchParams.get("method") || "";
@@ -102,6 +106,7 @@ function OrderConfirmedContent() {
   const [verificationStatus, setVerificationStatus] =
     useState<VerificationStatus>("checking");
   const [verifiedOrder, setVerifiedOrder] = useState<VerifiedOrder | null>(null);
+  const [isPostPurchaseUpsellDismissed, setIsPostPurchaseUpsellDismissed] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -209,6 +214,9 @@ function OrderConfirmedContent() {
         : null);
   const trackingNumber = verifiedOrder?.aramex?.trackingNumber;
   const orderItems = verifiedOrder?.items || [];
+  const checkoutPopupProduct = checkoutPopup.product;
+  const checkoutPopupImage = checkoutPopup.imageUrl || checkoutPopupProduct?.imageUrl || "/placeholder.svg";
+  const checkoutPopupPrice = Number(checkoutPopupProduct?.price || 0);
   const supportMessage = encodeURIComponent(
     t("messages.supportWhatsapp", { orderRef: orderRef || "" })
   );
@@ -269,6 +277,21 @@ function OrderConfirmedContent() {
     clearCart,
     setBuyNowItem,
   ]);
+
+  const showPostPurchaseUpsell =
+    verificationStatus === "success" &&
+    checkoutPopup.enabled &&
+    Boolean(checkoutPopupProduct?.slug) &&
+    !isPostPurchaseUpsellDismissed;
+
+  const closePostPurchaseUpsell = () => {
+    setIsPostPurchaseUpsellDismissed(true);
+  };
+
+  const goToUpsellProduct = () => {
+    closePostPurchaseUpsell();
+    router.push(checkoutPopupProduct?.slug ? `/product/${checkoutPopupProduct.slug}` : "/shop");
+  };
 
   return (
     <>
@@ -474,6 +497,88 @@ function OrderConfirmedContent() {
           </div>
         </div>
       </main>
+
+      {showPostPurchaseUpsell && checkoutPopupProduct && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-[#0F1A26]/70 px-4 py-6 backdrop-blur-sm">
+          <div className="relative grid w-full max-w-3xl overflow-hidden rounded-[28px] bg-white shadow-2xl sm:grid-cols-[0.9fr_1.1fr]">
+            <div className="relative min-h-[240px] bg-[#0F1A26] p-6">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_28%_20%,rgba(238,188,63,0.22),transparent_36%),radial-gradient(circle_at_72%_82%,rgba(227,24,32,0.24),transparent_34%)]" />
+              <div className="relative mb-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-black text-[#EEBC3F] ring-1 ring-white/15">
+                <TicketPercent className="h-4 w-4" />
+                {checkoutPopup.badge}
+              </div>
+              <div className="relative mx-auto aspect-square max-h-[300px] overflow-hidden rounded-3xl bg-white/10">
+                <Image
+                  src={checkoutPopupImage}
+                  alt={checkoutPopupProduct.name || checkoutPopup.title}
+                  fill
+                  sizes="(min-width: 640px) 320px, 80vw"
+                  className="object-contain p-7"
+                />
+              </div>
+            </div>
+
+            <div className="p-6 sm:p-8">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-[#F1EBE3] px-3 py-1.5 text-xs font-black text-[#0F1A26]">
+                <ShieldCheck className="h-4 w-4 text-green-600" />
+                {checkoutPopup.badge}
+              </div>
+
+              <h2 className="text-2xl font-black leading-tight text-[#0F1A26] sm:text-3xl">
+                {checkoutPopup.title}
+              </h2>
+              <p className="mt-3 text-sm font-semibold leading-6 text-[#0F1A26]/65">
+                {checkoutPopup.description}
+              </p>
+
+              <div className="mt-5 rounded-3xl border border-[#0F1A26]/10 bg-[#F8F6F3] p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.16em] text-[#E31820]">
+                      Product
+                    </p>
+                    <h3 className="mt-1 text-lg font-black text-[#0F1A26]">
+                      {checkoutPopupProduct.name}
+                    </h3>
+                  </div>
+                  {checkoutPopupPrice > 0 && (
+                    <p className="shrink-0 text-2xl font-black text-[#E31820]">
+                      EGP {Math.round(checkoutPopupPrice).toLocaleString("en-US")}
+                    </p>
+                  )}
+                </div>
+
+                <div className="mt-4 flex items-center gap-3 rounded-2xl bg-white px-4 py-3 text-sm font-black text-[#0F1A26]/75">
+                  {checkoutPopup.discountPercent > 0 && (
+                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-green-100 text-base font-black text-green-700">
+                      {checkoutPopup.discountPercent}%
+                    </span>
+                  )}
+                  <span>{checkoutPopup.hint}</span>
+                </div>
+              </div>
+
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                <Button
+                  type="button"
+                  onClick={goToUpsellProduct}
+                  className="h-12 rounded-2xl bg-[#E31820] text-sm font-black text-white shadow-lg shadow-[#E31820]/20 hover:bg-[#C61219]"
+                >
+                  {checkoutPopup.acceptLabel}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={closePostPurchaseUpsell}
+                  className="h-12 rounded-2xl border-[#0F1A26]/20 bg-white text-sm font-black"
+                >
+                  {checkoutPopup.declineLabel}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </>

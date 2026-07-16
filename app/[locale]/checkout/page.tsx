@@ -1534,15 +1534,6 @@ function CheckoutContent() {
       successPath,
     });
 
-    const shouldShowCheckoutPopup =
-      checkoutPopup.enabled &&
-      Boolean(checkoutPopupProduct?.slug);
-
-    if (shouldShowCheckoutPopup) {
-      setShowPackonatUpsell(true);
-      return;
-    }
-
     router.push(successPath);
   };
 
