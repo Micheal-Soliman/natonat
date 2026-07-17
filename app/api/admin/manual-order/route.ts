@@ -311,12 +311,21 @@ export async function POST(req: Request) {
       updated_at: new Date().toISOString(),
     };
 
-    await fetch(`${appOrigin}/api/orders/log`, {
+    const shipmentLogRes = await fetch(`${appOrigin}/api/orders/log`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(shippedOrder),
       cache: "no-store",
     });
+    const shipmentLogData = await shipmentLogRes.json().catch(() => null);
+    if (!shipmentLogRes.ok) {
+      return NextResponse.json({
+        error: "Bosta shipment created, but failed to update dashboard order",
+        order_ref: orderRef,
+        trackingNumber: shipmentData.trackingNumber,
+        details: shipmentLogData,
+      }, { status: 502 });
+    }
 
     return NextResponse.json({
       success: true,

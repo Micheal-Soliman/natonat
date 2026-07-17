@@ -2555,7 +2555,11 @@ export default function AdminDashboardPage() {
         throw new Error(formatApiError(data.error, data.details, "Could not create custom order"));
       }
 
-      setBostaSyncMessage(`Custom order added to finance: ${data.order_ref || ""}`);
+      setBostaSyncMessage(
+        data.trackingNumber
+          ? `Manual order + Bosta shipment created: ${data.order_ref || ""}. Tracking: ${data.trackingNumber}.`
+          : `Manual order saved without shipment: ${data.order_ref || ""}. Turn on "Create real courier shipment" when delivery tracking is needed.`,
+      );
       setManualOrderOpen(false);
       setManualOrderDraft({
         orderKind: "special",
@@ -4483,7 +4487,7 @@ export default function AdminDashboardPage() {
                     onChange={(event) => updateManualOrderDraft("createBostaShipment", event.target.checked)}
                     className="h-5 w-5 accent-[#EEBC3F]"
                   />
-                  Create real courier shipment for this new order
+                  Create Bosta shipment now and return tracking number
                 </label>
                 <label className="text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45 md:col-span-2 xl:col-span-4">
                   Internal note
@@ -4498,8 +4502,8 @@ export default function AdminDashboardPage() {
               <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-900 sm:flex-row sm:items-center sm:justify-between">
                 <span>
                   {manualOrderDraft.createBostaShipment
-                    ? "This creates a new dashboard order and a real Bosta shipment. Use it only when you are sure there is no active duplicate tracking."
-                    : "This order affects finance totals only. It is excluded from Sanity inventory deduction, stock forecast, and catalog product sales ranking."}
+                    ? "This will create the dashboard order plus a real Bosta shipment. The success message must include a tracking number."
+                    : "This saves the order only. No shipment/tracking will be created unless you choose Delivery or tick Create Bosta shipment."}
                 </span>
                 <button
                   onClick={() => void createManualCustomOrder()}
