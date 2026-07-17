@@ -4366,43 +4366,37 @@ export default function AdminDashboardPage() {
           <div className="mt-4 rounded-3xl border border-[#0F1A26]/10 bg-[#0F1A26] p-4 text-white">
             <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-[#EEBC3F]">Product family pieces sold</p>
-                <h3 className="text-xl font-black">Pieces sold after returns</h3>
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-[#EEBC3F]">Pieces summary</p>
+                <h3 className="text-xl font-black">What actually sold after returns</h3>
               </div>
-              <p className="text-xs font-bold text-white/55">All numbers here are confirmed non-returned orders only.</p>
+              <p className="text-xs font-bold text-white/55">Confirmed non-returned orders only. This is the source of truth for pieces.</p>
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-3">
               <div className="rounded-2xl bg-white/10 p-4">
-                <p className="text-xs font-black uppercase tracking-[0.14em] text-white/45">Luggage covers retail</p>
-                <p className="mt-2 text-3xl font-black">{operations.productFamilyPieces.luggageCovers.retail}</p>
-                <p className="mt-1 text-xs font-bold text-white/45">كفرات شنط بعد المرتجعات، بدون special bulk</p>
-                <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-black">
-                  <span className="rounded-xl bg-white/10 px-3 py-2">Bulk {operations.productFamilyPieces.luggageCovers.custom}</span>
-                  <span className="rounded-xl bg-white/10 px-3 py-2">Total {operations.productFamilyPieces.luggageCovers.retail + operations.productFamilyPieces.luggageCovers.custom}</span>
-                </div>
+                <p className="text-xs font-black uppercase tracking-[0.14em] text-white/45">Retail/catalog pieces</p>
+                <p className="mt-2 text-3xl font-black">{stats.totalPieces}</p>
+                <p className="mt-1 text-xs font-bold text-white/45">Website + catalog orders only. Bulk/custom excluded.</p>
               </div>
               <div className="rounded-2xl bg-white/10 p-4">
-                <p className="text-xs font-black uppercase tracking-[0.14em] text-white/45">PackOnat retail</p>
-                <p className="mt-2 text-3xl font-black">{operations.productFamilyPieces.packOnat.retail}</p>
-                <p className="mt-1 text-xs font-bold text-white/45">باكونات بعد المرتجعات، بدون special bulk</p>
-                <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-black">
-                  <span className="rounded-xl bg-white/10 px-3 py-2">Bulk {operations.productFamilyPieces.packOnat.custom}</span>
-                  <span className="rounded-xl bg-white/10 px-3 py-2">Total {operations.productFamilyPieces.packOnat.retail + operations.productFamilyPieces.packOnat.custom}</span>
-                </div>
+                <p className="text-xs font-black uppercase tracking-[0.14em] text-white/45">Bulk/custom pieces</p>
+                <p className="mt-2 text-3xl font-black">{stats.customPieces}</p>
+                <p className="mt-1 text-xs font-bold text-white/45">{stats.customOrders} manual/bulk orders. Separate from retail.</p>
               </div>
               <div className="rounded-2xl bg-white/10 p-4">
-                <p className="text-xs font-black uppercase tracking-[0.14em] text-white/45">Passport Wallet retail</p>
-                <p className="mt-2 text-3xl font-black">{operations.productFamilyPieces.passportWallet.retail}</p>
-                <p className="mt-1 text-xs font-bold text-white/45">باسبور والت بعد المرتجعات، بدون special bulk</p>
-                <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-black">
-                  <span className="rounded-xl bg-white/10 px-3 py-2">Bulk {operations.productFamilyPieces.passportWallet.custom}</span>
-                  <span className="rounded-xl bg-white/10 px-3 py-2">Total {operations.productFamilyPieces.passportWallet.retail + operations.productFamilyPieces.passportWallet.custom}</span>
-                </div>
+                <p className="text-xs font-black uppercase tracking-[0.14em] text-white/45">All pieces</p>
+                <p className="mt-2 text-3xl font-black">{stats.allPieces}</p>
+                <p className="mt-1 text-xs font-bold text-white/45">Retail + bulk/custom after returns.</p>
               </div>
             </div>
-            <p className="mt-4 text-xs font-bold leading-5 text-white/55">
-              الرقم الكبير في كل كارت هو Retail بعد خصم المرتجعات/الإلغاء وبدون special bulk. لو عندك bulk order بـ 150 قطعة هيظهر في Bulk، والـ Total هو Retail + Bulk.
-            </p>
+            <div className="mt-4 rounded-2xl bg-white/10 p-3 text-xs font-bold leading-5 text-white/60">
+              <p className="font-black text-white">Detected retail product families only:</p>
+              <p className="mt-1">
+                Luggage covers {operations.productFamilyPieces.luggageCovers.retail} · PackOnat {operations.productFamilyPieces.packOnat.retail} · Passport Wallet {operations.productFamilyPieces.passportWallet.retail}
+              </p>
+              <p className="mt-1">
+                لو bulk/custom مش متسجل باسم صنف واضح، هيتحسب في Bulk pieces فوق، ومش هنحاول نرميه غلط على كفرات/باكونات/باسبور.
+              </p>
+            </div>
           </div>
         </section>
 
