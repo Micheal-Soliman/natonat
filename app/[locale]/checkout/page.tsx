@@ -100,15 +100,20 @@ function clearCheckoutLock(signature: string) {
   }
 }
 
-function getExistingAramexPayload(order: unknown) {
+function getExistingBostaPayload(order: unknown) {
   if (!order || typeof order !== "object") return null;
 
   const record = order as Record<string, unknown>;
-  const aramex = record.aramex && typeof record.aramex === "object"
-    ? record.aramex as Record<string, unknown>
+  const bosta = record.bosta && typeof record.bosta === "object"
+    ? record.bosta as Record<string, unknown>
+    : record.shipment && typeof record.shipment === "object"
+      ? record.shipment as Record<string, unknown>
+      : record.aramex && typeof record.aramex === "object"
+        ? record.aramex as Record<string, unknown>
     : {};
   const trackingNumber =
-    (typeof aramex.trackingNumber === "string" && aramex.trackingNumber) ||
+    (typeof bosta.trackingNumber === "string" && bosta.trackingNumber) ||
+    (typeof record["Bosta Tracking Number"] === "string" && record["Bosta Tracking Number"]) ||
     (typeof record["Aramex Tracking Number"] === "string" && record["Aramex Tracking Number"]) ||
     "";
 
@@ -116,8 +121,8 @@ function getExistingAramexPayload(order: unknown) {
 
   return {
     trackingNumber,
-    labelUrl: typeof aramex.labelUrl === "string" ? aramex.labelUrl : undefined,
-    guid: typeof aramex.guid === "string" ? aramex.guid : undefined,
+    labelUrl: typeof bosta.labelUrl === "string" ? bosta.labelUrl : undefined,
+    guid: typeof bosta.guid === "string" ? bosta.guid : undefined,
   };
 }
 
@@ -185,7 +190,7 @@ const arabicCityNames: Record<string, string> = {
 
 void arabicCityNames;
 
-const ARAMEX_CITIES_CACHE_KEY = "natonat-aramex-cities-eg-v2";
+const ARAMEX_CITIES_CACHE_KEY = "natonat-bosta-districts-eg-v1";
 const ARAMEX_CITIES_CACHE_TTL = 24 * 60 * 60 * 1000;
 const citySearchAliases: Record<string, string[]> = {
   cairo: ["cairo", "القاهرة", "قاهره", "القاهره", "el qahera", "alqahira"],
@@ -333,7 +338,16 @@ function getShippingRule({
 }
 
 function normalizeCitiesPayload(data: unknown) {
-  return Array.from(new Set(Array.isArray(data) ? data : []))
+  const records = Array.isArray(data)
+    ? data
+    : data && typeof data === "object" && Array.isArray((data as Record<string, unknown>).names)
+      ? (data as Record<string, unknown>).names as unknown[]
+      : data && typeof data === "object" && Array.isArray((data as Record<string, unknown>).districts)
+        ? ((data as Record<string, unknown>).districts as Record<string, unknown>[])
+            .map((district) => district.districtName || district.zoneName || district.cityName || district.city)
+        : [];
+
+  return Array.from(new Set(records))
     .filter((city): city is string => typeof city === "string" && city.trim().length > 0)
     .sort((a, b) => a.localeCompare(b));
 }
@@ -701,7 +715,7 @@ function CheckoutContent() {
       }
 
       try {
-        const res = await fetch("/api/aramex/cities?countryCode=EG", {
+        const res = await fetch("/api/bosta/districts", {
           signal: controller.signal,
         });
 
@@ -714,7 +728,7 @@ function CheckoutContent() {
         }
       } catch (err) {
         if (controller.signal.aborted) return;
-        console.error("Error fetching Aramex cities:", err);
+        console.error("Error fetching Bosta districts:", err);
       } finally {
         if (!controller.signal.aborted) {
           setLoadingCities(false);
@@ -1261,7 +1275,7 @@ function CheckoutContent() {
             discount: confirmedDiscountPayload,
             payment_discount_egp: confirmedPaymentDiscount,
             delivery_method: deliveryMethod,
-            aramex: null,
+            bosta: null,
             customer: {
               email: formData.email,
               phone: formData.phone,
@@ -1328,7 +1342,7 @@ function CheckoutContent() {
 
     // --- Delivery Order Flow ---
 
-    let aramexPayload: {
+    let bostaPayload: {
       provider?: string;
       trackingNumber: string;
       trackingLink?: string;
@@ -1343,7 +1357,7 @@ function CheckoutContent() {
     });
 
     // Step 1: Persist the COD order before creating any external shipment.
-    // This avoids an Aramex shipment existing without a matching dashboard order.
+    // This avoids a Bosta shipment existing without a matching dashboard order.
     try {
       const preLogRes = await fetch("/api/orders/log?fast=1", {
         method: "POST",
@@ -1363,7 +1377,7 @@ function CheckoutContent() {
           discount: confirmedDiscountPayload,
           payment_discount_egp: confirmedPaymentDiscount,
           delivery_method: deliveryMethod,
-          aramex: null,
+          bosta: null,
           customer: {
             email: formData.email,
             phone: formData.phone,
@@ -1398,7 +1412,7 @@ function CheckoutContent() {
       return;
     }
 
-    // Step 2: Create Aramex shipment after storage succeeds
+    // Step 2: Create Bosta shipment after storage succeeds
     if (deliveryMethod === "delivery") {
       setAramexStatus("pending");
 
@@ -1409,12 +1423,12 @@ function CheckoutContent() {
         const existingOrderData = existingOrderRes?.ok
           ? await existingOrderRes.json().catch(() => null)
           : null;
-        const existingAramexPayload = getExistingAramexPayload(existingOrderData?.order);
+        const existingBostaPayload = getExistingBostaPayload(existingOrderData?.order);
 
-        if (existingAramexPayload) {
-          setTrackingNumber(existingAramexPayload.trackingNumber);
+        if (existingBostaPayload) {
+          setTrackingNumber(existingBostaPayload.trackingNumber);
           setAramexStatus("success");
-          aramexPayload = existingAramexPayload;
+          bostaPayload = existingBostaPayload;
         } else {
         const shipmentPayload = {
           orderRef,
@@ -1436,7 +1450,7 @@ function CheckoutContent() {
           codAmount: paymentMethod === "cod" ? confirmedFinalTotal : 0,
         };
 
-        const shipmentRes = await fetch("/api/aramex/shipment", {
+        const shipmentRes = await fetch("/api/bosta/shipment", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(shipmentPayload),
@@ -1448,7 +1462,7 @@ function CheckoutContent() {
           setTrackingNumber(shipmentData.trackingNumber);
           setAramexStatus("success");
 
-          aramexPayload = {
+          bostaPayload = {
             provider: shipmentData.provider,
             trackingNumber: shipmentData.trackingNumber,
             trackingLink: shipmentData.trackingLink,
@@ -1459,7 +1473,7 @@ function CheckoutContent() {
         } else {
           setAramexStatus("failed");
           setAramexError(shipmentData.details || shipmentData.error || "Unknown error");
-          throw new Error(shipmentData.details || shipmentData.error || "Aramex shipment failed");
+          throw new Error(shipmentData.details || shipmentData.error || "Bosta shipment failed");
         }
         }
       } catch (err) {
@@ -1467,14 +1481,14 @@ function CheckoutContent() {
         setAramexError(err instanceof Error ? err.message : "Network error");
         clearCheckoutLock(checkoutSignature);
         setIsSubmitting(false);
-        setSubmitError(err instanceof Error ? err.message : "Aramex shipment failed");
+        setSubmitError(err instanceof Error ? err.message : "Bosta shipment failed");
         return;
       }
     } else {
       setAramexStatus("skipped");
     }
 
-    // Step 3: Confirm the order and attach Aramex data
+    // Step 3: Confirm the order and attach Bosta data
     try {
       const logRes = await fetch("/api/orders/log?fast=1", {
         method: "POST",
@@ -1495,7 +1509,7 @@ function CheckoutContent() {
           payment_discount_egp: confirmedPaymentDiscount,
           delivery_method: deliveryMethod,
 
-          aramex: aramexPayload,
+          bosta: bostaPayload,
 
           customer: {
             email: formData.email,

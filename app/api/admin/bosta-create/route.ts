@@ -6,6 +6,8 @@ import { fetchOrderFromDatabase } from "@/lib/order-database";
 type AdminOrder = Record<string, unknown> & {
   order_ref?: string;
   customer?: Record<string, unknown>;
+  bosta?: Record<string, unknown>;
+  shipment?: Record<string, unknown>;
   aramex?: Record<string, unknown>;
   extras?: Record<string, unknown>;
   items?: unknown[];
@@ -110,6 +112,12 @@ function getOrderItems(order: AdminOrder) {
       const row = getObject(item);
       return {
         name: getString(row.name || row.title || row.slug || "Order item"),
+        title: getString(row.title),
+        slug: getString(row.slug),
+        type: getString(row.type),
+        size: getString(row.size || row.selectedSize || row.variantSize),
+        color: getString(row.color || row.selectedColor || row.variant),
+        variant: getString(row.variant),
         quantity: getNumber(row.quantity || row.qty) || 1,
       };
     })
@@ -134,7 +142,7 @@ export async function POST(req: Request) {
 
   if (!getDeliveryMethod(order).includes("delivery")) {
     return NextResponse.json(
-      { error: "Aramex shipment can only be created for delivery orders" },
+      { error: "Bosta shipment can only be created for delivery orders" },
       { status: 400 },
     );
   }
@@ -153,23 +161,27 @@ export async function POST(req: Request) {
   }
 
   const appOrigin = getAppOrigin(req);
-  const existingAramex = getObject(order.aramex);
-  const previousTrackingNumber = getString(existingAramex.trackingNumber || order["Aramex Tracking Number"]);
+  const existingBosta = getObject(order.bosta || order.shipment || order.aramex);
+  const previousTrackingNumber = getString(
+    existingBosta.trackingNumber ||
+      order["Bosta Tracking Number"] ||
+      order["Aramex Tracking Number"],
+  );
   const recreated = Boolean(previousTrackingNumber);
 
   if (recreated) {
     return NextResponse.json(
       {
-        error: "Existing Aramex shipment must be cancelled before creating a replacement",
+        error: "Existing Bosta shipment already exists",
         details:
-          "This integration does not have a confirmed Aramex cancel-shipment API. Cancel/check the old tracking in Aramex portal first to avoid duplicate active shipments.",
+          "Terminate the old Bosta tracking from the dashboard before creating a replacement to avoid duplicate active shipments.",
         previousTrackingNumber,
       },
       { status: 409 },
     );
   }
 
-  const shipmentRes = await fetch(`${appOrigin}/api/aramex/shipment`, {
+  const shipmentRes = await fetch(`${appOrigin}/api/bosta/shipment`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -187,8 +199,8 @@ export async function POST(req: Request) {
   if (!shipmentRes.ok || !shipmentData?.success) {
     return NextResponse.json(
       {
-        error: "Aramex shipment creation failed",
-        details: shipmentData?.details || shipmentData?.error || "Unknown Aramex error",
+        error: "Bosta shipment creation failed",
+        details: shipmentData?.details || shipmentData?.error || "Unknown Bosta error",
       },
       { status: 502 },
     );
@@ -196,16 +208,16 @@ export async function POST(req: Request) {
 
   const timestamp = new Date().toISOString();
   const previousTrackingNumbers = [
-    ...getArray(existingAramex.previousTrackingNumbers),
+    ...getArray(existingBosta.previousTrackingNumbers),
     ...(previousTrackingNumber ? [previousTrackingNumber] : []),
   ];
   const auditEntry = {
-    action: recreated ? "admin_aramex_replaced" : "admin_aramex_created",
+    action: recreated ? "admin_bosta_replaced" : "admin_bosta_created",
     timestamp,
     source: "admin_dashboard",
     note: recreated
-      ? `Admin created a replacement Aramex shipment. Previous tracking needs portal cancel/check: ${previousTrackingNumber}.`
-      : "Admin created Aramex shipment from saved order data.",
+      ? `Admin created a replacement Bosta shipment after old tracking handling: ${previousTrackingNumber}.`
+      : "Admin created Bosta shipment from saved order data.",
   };
 
   const logRes = await fetch(`${appOrigin}/api/orders/log`, {
@@ -213,16 +225,16 @@ export async function POST(req: Request) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       ...order,
-      source: recreated ? "admin_aramex_replaced" : "admin_aramex_created",
+      source: recreated ? "admin_bosta_replaced" : "admin_bosta_created",
       order_ref: orderRef,
       status: "shipped",
-      aramex: {
-        ...existingAramex,
+      bosta: {
+        ...existingBosta,
         previousTrackingNumbers,
         previousTrackingNumber: previousTrackingNumber || undefined,
         oldTrackingCancelRequired: recreated,
         oldTrackingCancelNote: recreated
-          ? "Replacement shipment was created. Confirm/cancel the previous tracking in Aramex portal because this integration cannot verify shipment cancellation."
+          ? "Replacement shipment was created after old Bosta tracking handling. Refresh status to keep tracking data current."
           : "",
         trackingNumber: shipmentData.trackingNumber,
         trackingLink: shipmentData.trackingLink,
@@ -239,6 +251,11 @@ export async function POST(req: Request) {
         replacementReason: "",
         replacementRequiredFields: [],
       },
+      shipment: {
+        provider: "bosta",
+        trackingNumber: shipmentData.trackingNumber,
+        trackingLink: shipmentData.trackingLink,
+      },
       admin_audit: [...getArray(order.admin_audit), auditEntry],
       updated_at: timestamp,
     }),
@@ -248,7 +265,7 @@ export async function POST(req: Request) {
   const logData = await logRes.json().catch(() => null);
   if (!logRes.ok) {
     return NextResponse.json(
-      { error: "Aramex created, but failed to update order log", details: logData },
+      { error: "Bosta shipment created, but failed to update order log", details: logData },
       { status: 502 },
     );
   }

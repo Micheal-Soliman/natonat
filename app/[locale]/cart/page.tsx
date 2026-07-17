@@ -106,7 +106,7 @@ function CartContent() {
     editBundle: t("editBundle"),
     bundleIncludes: t("bundleIncludes"),
     secure: t("securePayment"),
-    aramex: t("aramexShipping"),
+    courier: t("aramexShipping"),
     saved: t("saved"),
   };
 
@@ -437,7 +437,7 @@ function CartContent() {
                     </div>
                     <div className="flex items-center gap-2 rounded-2xl bg-[#F8F6F3] px-3 py-2 text-xs font-bold text-[#0F1A26]/70">
                       <Truck className="h-4 w-4 text-[#EEBC3F]" />
-                      {labels.aramex}
+                      {labels.courier}
                     </div>
                   </div>
 

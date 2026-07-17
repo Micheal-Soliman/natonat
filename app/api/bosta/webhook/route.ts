@@ -52,8 +52,12 @@ function getTimestamp(value: unknown) {
 }
 
 function getTrackingNumber(order: OrderRecord) {
-  const aramex = getObject(order.aramex);
-  return getString(aramex.trackingNumber || order["Aramex Tracking Number"]);
+  const bosta = getObject(order.bosta || order.shipment || order.aramex);
+  return getString(
+    bosta.trackingNumber ||
+      order["Bosta Tracking Number"] ||
+      order["Aramex Tracking Number"],
+  );
 }
 
 async function findOrder(payload: BostaWebhookPayload) {
@@ -110,7 +114,7 @@ export async function POST(req: Request) {
     }, { status: 404 });
   }
 
-  const currentAramex = getObject(order.aramex);
+  const currentBosta = getObject(order.bosta || order.shipment || order.aramex);
   const history = Array.isArray(order.history) ? order.history : [];
   const status = getOrderStatusFromBostaState(payload.state) || getString(order.status) || "shipped";
   const latestDescription = exceptionLabel
@@ -122,14 +126,15 @@ export async function POST(req: Request) {
     status,
     source: "bosta_webhook",
     updated_at: syncedAt,
-    aramex: {
-      ...currentAramex,
+    bosta: {
+      ...currentBosta,
       provider: "bosta",
-      guid: getString(payload._id) || getString(currentAramex.guid),
-      trackingNumber: trackingNumber || getString(currentAramex.trackingNumber),
+      guid: getString(payload._id) || getString(currentBosta.guid),
+      deliveryId: getString(payload._id) || getString(currentBosta.deliveryId),
+      trackingNumber: trackingNumber || getString(currentBosta.trackingNumber),
       trackingLink: trackingNumber
         ? `https://bosta.co/tracking-shipments?shipmentNumber=${encodeURIComponent(trackingNumber)}`
-        : getString(currentAramex.trackingLink),
+        : getString(currentBosta.trackingLink),
       status: stateLabel,
       latestCode: getString(payload.state),
       latestDescription,
@@ -144,6 +149,12 @@ export async function POST(req: Request) {
       latestUpdateRaw: payload,
       trackingRaw: payload,
       error: "",
+    },
+    shipment: {
+      provider: "bosta",
+      trackingNumber: trackingNumber || getString(currentBosta.trackingNumber),
+      status: stateLabel,
+      syncedAt,
     },
     history: [
       ...history,

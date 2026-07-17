@@ -22,6 +22,7 @@ type ManualOrderBody = {
   paymentMethod?: string;
   paymentStatus?: string;
   deliveryMethod?: string;
+  createBostaShipment?: boolean;
   createAramexShipment?: boolean;
   codAmount?: number;
 };
@@ -77,7 +78,7 @@ export async function POST(req: Request) {
   const quantity = Math.max(1, Math.round(toNumber(body.quantity) || 1));
   const unitPrice = toNumber(body.unitPrice);
   const total = toNumber(body.total) || quantity * unitPrice;
-  const shouldCreateShipment = Boolean(body.createAramexShipment);
+  const shouldCreateShipment = Boolean(body.createBostaShipment || body.createAramexShipment);
   const orderKind = body.orderKind === "catalog" ? "catalog" : "special";
   const productSlug = String(body.productSlug || "").trim();
   const productSize = String(body.productSize || "").trim();
@@ -109,7 +110,7 @@ export async function POST(req: Request) {
 
   if (shouldCreateShipment && (!phone || !city || !address)) {
     return NextResponse.json(
-      { error: "Missing phone, city, or address for Aramex shipment" },
+      { error: "Missing phone, city, or address for Bosta shipment" },
       { status: 400 },
     );
   }
@@ -206,7 +207,7 @@ export async function POST(req: Request) {
             size: productSize || null,
           }
         : null,
-      aramex_created_from_manual_order: shouldCreateShipment,
+      bosta_created_from_manual_order: shouldCreateShipment,
     },
     admin_audit: [
       {
@@ -241,7 +242,7 @@ export async function POST(req: Request) {
     });
   }
 
-  const shipmentRes = await fetch(`${appOrigin}/api/aramex/shipment`, {
+  const shipmentRes = await fetch(`${appOrigin}/api/bosta/shipment`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -262,10 +263,10 @@ export async function POST(req: Request) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...order,
-        source: orderKind === "special" ? "admin_special_order_aramex_failed" : "admin_catalog_order_aramex_failed",
+        source: orderKind === "special" ? "admin_special_order_bosta_failed" : "admin_catalog_order_bosta_failed",
         status: "confirmed",
-        aramex: {
-          error: shipmentData?.details || shipmentData?.error || "Aramex shipment failed",
+        bosta: {
+          error: shipmentData?.details || shipmentData?.error || "Bosta shipment failed",
         },
         updated_at: new Date().toISOString(),
       }),
@@ -274,9 +275,9 @@ export async function POST(req: Request) {
 
     return NextResponse.json(
       {
-        error: "Custom order saved, but Aramex shipment failed",
+        error: "Custom order saved, but Bosta shipment failed",
         order_ref: orderRef,
-        details: shipmentData?.details || shipmentData?.error || "Aramex shipment failed",
+        details: shipmentData?.details || shipmentData?.error || "Bosta shipment failed",
       },
       { status: 502 },
     );
@@ -284,9 +285,9 @@ export async function POST(req: Request) {
 
   const shippedOrder = {
     ...order,
-    source: orderKind === "special" ? "admin_special_order_aramex_created" : "admin_catalog_order_aramex_created",
+    source: orderKind === "special" ? "admin_special_order_bosta_created" : "admin_catalog_order_bosta_created",
     status: "shipped",
-    aramex: {
+    bosta: {
       provider: shipmentData.provider,
       trackingNumber: shipmentData.trackingNumber,
       trackingLink: shipmentData.trackingLink,
@@ -295,6 +296,11 @@ export async function POST(req: Request) {
       status: "Record created",
       adminCreatedAt: new Date().toISOString(),
       error: "",
+    },
+    shipment: {
+      provider: "bosta",
+      trackingNumber: shipmentData.trackingNumber,
+      trackingLink: shipmentData.trackingLink,
     },
     updated_at: new Date().toISOString(),
   };
@@ -310,7 +316,7 @@ export async function POST(req: Request) {
   if (!shipmentLogRes.ok) {
     return NextResponse.json(
       {
-        error: "Aramex shipment created, but failed to update dashboard order",
+        error: "Bosta shipment created, but failed to update dashboard order",
         order_ref: orderRef,
         trackingNumber: shipmentData.trackingNumber,
         details: shipmentLogData,

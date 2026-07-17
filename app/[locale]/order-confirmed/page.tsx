@@ -70,6 +70,16 @@ function OrderConfirmedContent() {
       email?: string;
       phone?: string;
     };
+    bosta?: {
+      trackingNumber?: string;
+      labelUrl?: string;
+      guid?: string;
+    } | null;
+    shipment?: {
+      trackingNumber?: string;
+      labelUrl?: string;
+      guid?: string;
+    } | null;
     aramex?: {
       trackingNumber?: string;
       labelUrl?: string;
@@ -214,7 +224,10 @@ function OrderConfirmedContent() {
       : amountCentsFromUrl
         ? Number(amountCentsFromUrl) / 100
         : null);
-  const trackingNumber = verifiedOrder?.aramex?.trackingNumber;
+  const trackingNumber =
+    verifiedOrder?.bosta?.trackingNumber ||
+    verifiedOrder?.shipment?.trackingNumber ||
+    verifiedOrder?.aramex?.trackingNumber;
   const orderItems = verifiedOrder?.items || [];
   const cardUpsellStorageKey = orderRef ? `post-purchase-card-upsell-${orderRef}` : "";
   const checkoutPopupProduct = checkoutPopup.product;

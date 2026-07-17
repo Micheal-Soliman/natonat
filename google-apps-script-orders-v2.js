@@ -58,14 +58,14 @@ const HEADERS = [
   "Payment Data (JSON)",
   "Discount Data (JSON)",
   "Extras (JSON)",
-  "Aramex Tracking Number",
-  "Aramex Tracking Link",
-  "Aramex GUID",
-  "Aramex Status",
-  "Aramex Latest Update",
-  "Aramex Latest Location",
-  "Aramex Synced At",
-  "Aramex Error",
+  "Bosta Tracking Number",
+  "Bosta Tracking Link",
+  "Bosta Delivery ID",
+  "Bosta Status",
+  "Bosta Latest Update",
+  "Bosta Latest Location",
+  "Bosta Synced At",
+  "Bosta Error",
   "InstaPay Proof Status",
   "InstaPay Proof File",
   "InstaPay Proof Uploaded At",
@@ -85,6 +85,10 @@ const HEADERS = [
 function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents);
+    if (data.action === "delete_order") {
+      return jsonOutput(deleteOrder(data));
+    }
+
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const allOrdersResult = upsertOrderRow(ss, SHEET_NAME, data);
     const codResult = isCodOrder(data) ? upsertOrderRow(ss, COD_SHEET_NAME, data) : null;
@@ -97,6 +101,40 @@ function doPost(e) {
   } catch (error) {
     return jsonOutput({ success: false, error: error.toString() });
   }
+}
+
+function deleteOrder(data) {
+  const tokenCheck = validateOrderDeleteToken(data);
+  if (!tokenCheck.success) return tokenCheck;
+
+  const orderRef = String(data.order_ref || data.orderRef || "").trim();
+  if (!orderRef) {
+    return { success: false, error: "Missing order_ref" };
+  }
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheets = [SHEET_NAME, COD_SHEET_NAME];
+  const deleted = [];
+
+  sheets.forEach((sheetName) => {
+    const sheet = ss.getSheetByName(sheetName);
+    if (!sheet) return;
+
+    ensureHeaders(sheet);
+
+    let row;
+    while ((row = findOrderRow(sheet, { order_ref: orderRef }))) {
+      sheet.deleteRow(row);
+      deleted.push({ sheet: sheetName, row, order_ref: orderRef });
+    }
+  });
+
+  return {
+    success: true,
+    order_ref: orderRef,
+    deleted,
+    deleted_count: deleted.length,
+  };
 }
 
 function doGet(e) {
@@ -311,8 +349,8 @@ function upsertOrderRow(ss, sheetName, data) {
 
   ensureHeaders(sheet);
 
-  const orderRef = data.order_ref || "";
-  const existingRow = orderRef ? findOrderRow(sheet, orderRef) : null;
+  const orderRef = data.order_ref || data.special_reference || data.paymob?.special_reference || "";
+  const existingRow = findOrderRow(sheet, data);
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   const existingRowObject = existingRow
     ? rowToObject(headers, sheet.getRange(existingRow, 1, 1, headers.length).getValues()[0])
@@ -347,6 +385,27 @@ function ensureHeaders(sheet) {
 
   const lastColumn = Math.max(sheet.getLastColumn(), 1);
   const existingHeaders = sheet.getRange(1, 1, 1, lastColumn).getValues()[0];
+
+  const headerRenames = {
+    "Aramex Tracking Number": "Bosta Tracking Number",
+    "Aramex Tracking Link": "Bosta Tracking Link",
+    "Aramex GUID": "Bosta Delivery ID",
+    "Aramex Status": "Bosta Status",
+    "Aramex Latest Update": "Bosta Latest Update",
+    "Aramex Latest Location": "Bosta Latest Location",
+    "Aramex Synced At": "Bosta Synced At",
+    "Aramex Error": "Bosta Error",
+  };
+
+  Object.keys(headerRenames).forEach((oldHeader) => {
+    const index = existingHeaders.indexOf(oldHeader);
+    if (index >= 0) {
+      const newHeader = headerRenames[oldHeader];
+      sheet.getRange(1, index + 1).setValue(newHeader);
+      existingHeaders[index] = newHeader;
+    }
+  });
+
   const missingHeaders = HEADERS.filter((header) => existingHeaders.indexOf(header) === -1);
 
   if (missingHeaders.length === 0) return;
@@ -389,7 +448,7 @@ function buildOrderRowObject(data, existingRowObject) {
   const extras = data.extras || {};
   const paymob = data.paymob || {};
   const payment = data.payment || {};
-  const aramex = data.aramex || {};
+  const bosta = data.bosta || data.shipment || data.aramex || {};
   const discount = data.discount || extras.discount || {};
   const inventory = data.inventory || {};
   const instapayProof = data.instapay_proof || {};
@@ -417,11 +476,12 @@ function buildOrderRowObject(data, existingRowObject) {
     .join("\n");
   const itemsFlatDetails = itemsFlat.map(formatFlatItemDetails).join("\n");
 
-  const trackingNumber = aramex.trackingNumber || "";
+  const trackingNumber = bosta.trackingNumber || bosta.trackingCode || "";
   const trackingLink =
     data.tracking_link ||
+    bosta.trackingLink ||
     (trackingNumber
-      ? `https://www.aramex.com/eg/ar/track/results?mode=0&ShipmentNumber=${trackingNumber}`
+      ? `https://bosta.co/tracking-shipments?shipmentNumber=${encodeURIComponent(trackingNumber)}`
       : "");
   const instapayProofStatus = instapayProof.file_name
     ? status === "pending_instapay_approval"
@@ -480,14 +540,14 @@ function buildOrderRowObject(data, existingRowObject) {
     "Payment Data (JSON)": jsonStringifySafe(payment),
     "Discount Data (JSON)": jsonStringifySafe(discount),
     "Extras (JSON)": jsonStringifySafe(extras),
-    "Aramex Tracking Number": trackingNumber,
-    "Aramex Tracking Link": trackingLink,
-    "Aramex GUID": aramex.guid || "",
-    "Aramex Status": aramex.status || "",
-    "Aramex Latest Update": aramex.latestDescription || aramex.latestDate || "",
-    "Aramex Latest Location": aramex.latestLocation || "",
-    "Aramex Synced At": aramex.syncedAt || "",
-    "Aramex Error": aramex.error || "",
+    "Bosta Tracking Number": trackingNumber,
+    "Bosta Tracking Link": trackingLink,
+    "Bosta Delivery ID": bosta.deliveryId || bosta.guid || bosta._id || "",
+    "Bosta Status": bosta.status || bosta.stateLabel || "",
+    "Bosta Latest Update": bosta.latestDescription || bosta.latestDate || "",
+    "Bosta Latest Location": bosta.latestLocation || "",
+    "Bosta Synced At": bosta.syncedAt || "",
+    "Bosta Error": bosta.error || "",
     "InstaPay Proof Status": instapayProofStatus,
     "InstaPay Proof File": instapayProof.file_name || "",
     "InstaPay Proof Uploaded At": instapayProof.uploaded_at || "",
@@ -608,17 +668,37 @@ function formatFlatItemDetails(row) {
   ].filter(Boolean).join(" | ");
 }
 
-function findOrderRow(sheet, orderRef) {
+function findOrderRow(sheet, dataOrOrderRef) {
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return null;
 
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  const orderRefIndex = headers.indexOf("Order Ref");
-  const orderRefColumn = orderRefIndex >= 0 ? orderRefIndex + 1 : 3;
-  const orderRefs = sheet.getRange(2, orderRefColumn, lastRow - 1, 1).getValues();
+  const values = sheet.getRange(2, 1, lastRow - 1, headers.length).getValues();
+  const data = typeof dataOrOrderRef === "object" && dataOrOrderRef ? dataOrOrderRef : { order_ref: dataOrOrderRef };
+  const identities = [
+    data.order_ref,
+    data.special_reference,
+    data.paymob && data.paymob.special_reference,
+    data.paymob && data.paymob.intention_order_id,
+    data.payment && data.payment.transaction_id,
+    data["Order Ref"],
+    data["Special Reference (Paymob)"],
+    data["Intention Order ID"],
+    data["Paymob Reference"],
+  ].map((value) => String(value || "").trim()).filter(Boolean);
 
-  for (let i = 0; i < orderRefs.length; i++) {
-    if (String(orderRefs[i][0]) === String(orderRef)) {
+  if (!identities.length) return null;
+
+  for (let i = values.length - 1; i >= 0; i--) {
+    const rowObject = rowToObject(headers, values[i]);
+    const rowIdentities = [
+      rowObject["Order Ref"],
+      rowObject["Special Reference (Paymob)"],
+      rowObject["Intention Order ID"],
+      rowObject["Paymob Reference"],
+    ].map((value) => String(value || "").trim()).filter(Boolean);
+
+    if (rowIdentities.some((value) => identities.indexOf(value) !== -1)) {
       return i + 2;
     }
   }
@@ -689,7 +769,7 @@ function collectDateRepairCandidates(params, options) {
       diff_minutes: diffMinutes,
       payment_method: rowObject["Payment Method"] || "",
       status: rowObject["Status"] || "",
-      aramex_synced_at: normalizeDateForOutput(rowObject["Aramex Synced At"]),
+      bosta_synced_at: normalizeDateForOutput(rowObject["Bosta Synced At"] || rowObject["Aramex Synced At"]),
     });
   }
 
@@ -717,6 +797,27 @@ function validateDateRepairToken(params) {
     return {
       success: false,
       error: "Invalid or missing repair_token.",
+      mode: "blocked",
+    };
+  }
+
+  return { success: true };
+}
+
+function validateOrderDeleteToken(params) {
+  const configuredToken = PropertiesService.getScriptProperties().getProperty("ORDER_DELETE_TOKEN");
+  if (!configuredToken) {
+    return {
+      success: false,
+      error: "ORDER_DELETE_TOKEN is not configured in Script Properties.",
+      mode: "blocked",
+    };
+  }
+
+  if (params.delete_token !== configuredToken) {
+    return {
+      success: false,
+      error: "Invalid or missing delete_token.",
       mode: "blocked",
     };
   }

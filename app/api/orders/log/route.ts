@@ -44,6 +44,8 @@ type StoredOrder = OrderLogBody & {
     labelUrl?: string;
     guid?: string;
   };
+  bosta?: StoredOrder["aramex"];
+  shipment?: StoredOrder["aramex"];
   inventory?: {
     status?: string;
     adjustedProducts?: number;
@@ -67,11 +69,11 @@ function getNestedString(value: unknown, key: string) {
 function getOrderEventKey(body: OrderLogBody, status: string) {
   const source = typeof body.source === "string" ? body.source : "manual";
   const payment = body.payment;
-  const aramex = body.aramex;
+  const shipment = body.bosta || body.shipment || body.aramex;
   const transactionId =
     getNestedString(payment, "transaction_id") ||
     getNestedString(payment, "id");
-  const trackingNumber = getNestedString(aramex, "trackingNumber");
+  const trackingNumber = getNestedString(shipment, "trackingNumber");
   return [
     source,
     status,
@@ -116,11 +118,11 @@ function shouldSendOrderEmail(order: StoredOrder) {
     return status === "confirmed" || paymentStatus === "cash on delivery";
   }
 
-  if (source === "paymob_webhook_aramex") {
+  if (source === "paymob_webhook_bosta" || source === "paymob_webhook_aramex") {
     return paymentStatus === "paid";
   }
 
-  if (source === "paymob_webhook_aramex_failed") {
+  if (source === "paymob_webhook_bosta_failed" || source === "paymob_webhook_aramex_failed") {
     return paymentStatus === "paid";
   }
 
@@ -662,24 +664,27 @@ export async function POST(req: Request) {
       ? existingHistory
       : [...existingHistory, historyEntry];
     
-    // Add Aramex tracking link if tracking number exists
-    const bodyAramex = body.aramex as StoredOrder["aramex"] | undefined;
-    const trackingNumber = bodyAramex?.trackingNumber || existing?.aramex?.trackingNumber;
-    const provider = getOrderStatusValue(bodyAramex?.provider || existing?.aramex?.provider);
-    const explicitTrackingLink = getNestedString(bodyAramex, "trackingLink") || getNestedString(existing?.aramex, "trackingLink");
+    // Add Bosta tracking link if tracking number exists
+    const bodyBosta = (body.bosta || body.shipment || body.aramex) as StoredOrder["bosta"] | undefined;
+    const existingBosta = existing?.bosta || existing?.shipment || existing?.aramex;
+    const trackingNumber = bodyBosta?.trackingNumber || existingBosta?.trackingNumber;
+    const provider = getOrderStatusValue(bodyBosta?.provider || existingBosta?.provider || "bosta");
+    const explicitTrackingLink = getNestedString(bodyBosta, "trackingLink") || getNestedString(existingBosta, "trackingLink");
     const trackingLink = explicitTrackingLink || (
       trackingNumber
         ? provider === "bosta"
           ? `https://bosta.co/tracking-shipments?shipmentNumber=${trackingNumber}`
-          : `https://www.aramex.com/eg/ar/track/results?mode=0&ShipmentNumber=${trackingNumber}`
+          : `https://bosta.co/tracking-shipments?shipmentNumber=${trackingNumber}`
         : ""
     );
 
-    const incomingAramex = (body as StoredOrder).aramex;
+    const incomingBosta = ((body as StoredOrder).bosta || (body as StoredOrder).shipment || (body as StoredOrder).aramex) as StoredOrder["bosta"] | undefined;
     let updatedOrder = {
       ...existing,
       ...body,
-      aramex: incomingAramex == null ? existing?.aramex : incomingAramex,
+      bosta: incomingBosta == null ? existingBosta : incomingBosta,
+      shipment: incomingBosta == null ? existingBosta : incomingBosta,
+      aramex: incomingBosta == null ? existing?.aramex : incomingBosta,
       history,
       tracking_link: trackingLink
     } as StoredOrder;

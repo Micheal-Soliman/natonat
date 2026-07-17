@@ -124,10 +124,10 @@ function normalizeOrder(input: unknown) {
   const order = getObject(input);
   const customerFromJson = getObject(order.customer || order["Customer (Full JSON)"]);
   const extras = getObject(order.extras || order["Extras (JSON)"] || order["Extras (Full JSON)"]);
-  const aramexFromJson = getObject(order.aramex);
+  const bostaFromJson = getObject(order.bosta || order.shipment || order.aramex);
   const items = getArray(order.items || order["Items (Full JSON)"] || order["Items"]);
   const createdDate = parseDateValue(order.created_at || order["Created At"] || order.Timestamp);
-  const updatedDate = parseDateValue(order.updated_at || order["Updated At"] || order["Aramex Synced At"]);
+  const updatedDate = parseDateValue(order.updated_at || order["Updated At"] || order["Bosta Synced At"] || order["Aramex Synced At"]);
 
   const customer = {
     ...customerFromJson,
@@ -140,20 +140,22 @@ function normalizeOrder(input: unknown) {
     governorate: firstString(customerFromJson.governorate, order.Governorate),
   };
 
-  const aramex = {
-    ...aramexFromJson,
-    trackingNumber: firstString(aramexFromJson.trackingNumber, order["Aramex Tracking Number"]),
-    trackingLink: firstString(aramexFromJson.trackingLink, order["Aramex Tracking Link"]),
-    guid: firstString(aramexFromJson.guid, order["Aramex GUID"]),
-    status: firstString(aramexFromJson.status, order["Aramex Status"]),
-    latestCode: firstString(aramexFromJson.latestCode, aramexFromJson.updateCode, order["Aramex Update Code"]),
-    latestDescription: firstString(aramexFromJson.latestDescription, order["Aramex Latest Update"]),
-    latestLocation: firstString(aramexFromJson.latestLocation, order["Aramex Latest Location"]),
-    latestDate: firstString(aramexFromJson.latestDate, order["Aramex Latest Date"]),
-    latestComments: firstString(aramexFromJson.latestComments, order["Aramex Latest Comments"]),
-    latestProblemCode: firstString(aramexFromJson.latestProblemCode, order["Aramex Problem Code"]),
-    syncedAt: firstString(aramexFromJson.syncedAt, order["Aramex Synced At"]),
-    error: firstString(aramexFromJson.error, order["Aramex Error"]),
+  const bosta = {
+    ...bostaFromJson,
+    provider: "bosta",
+    trackingNumber: firstString(bostaFromJson.trackingNumber, order["Bosta Tracking Number"], order["Aramex Tracking Number"]),
+    trackingLink: firstString(bostaFromJson.trackingLink, order["Bosta Tracking Link"], order["Aramex Tracking Link"]),
+    guid: firstString(bostaFromJson.guid, bostaFromJson.deliveryId, order["Bosta Delivery ID"], order["Aramex GUID"]),
+    deliveryId: firstString(bostaFromJson.deliveryId, bostaFromJson.guid, order["Bosta Delivery ID"], order["Aramex GUID"]),
+    status: firstString(bostaFromJson.status, order["Bosta Status"], order["Aramex Status"]),
+    latestCode: firstString(bostaFromJson.latestCode, bostaFromJson.updateCode, order["Bosta Update Code"], order["Aramex Update Code"]),
+    latestDescription: firstString(bostaFromJson.latestDescription, order["Bosta Latest Update"], order["Aramex Latest Update"]),
+    latestLocation: firstString(bostaFromJson.latestLocation, order["Bosta Latest Location"], order["Aramex Latest Location"]),
+    latestDate: firstString(bostaFromJson.latestDate, order["Bosta Latest Date"], order["Aramex Latest Date"]),
+    latestComments: firstString(bostaFromJson.latestComments, order["Bosta Latest Comments"], order["Aramex Latest Comments"]),
+    latestProblemCode: firstString(bostaFromJson.latestProblemCode, order["Bosta Problem Code"], order["Aramex Problem Code"]),
+    syncedAt: firstString(bostaFromJson.syncedAt, order["Bosta Synced At"], order["Aramex Synced At"]),
+    error: firstString(bostaFromJson.error, order["Bosta Error"], order["Aramex Error"]),
   };
 
   return {
@@ -161,7 +163,7 @@ function normalizeOrder(input: unknown) {
     order_ref: firstString(order.order_ref, order["Order Ref"]),
     source: firstString(order.source, order.Source),
     created_at: createdDate?.toISOString() || firstString(order.created_at, order["Created At"], order.Timestamp),
-    updated_at: updatedDate?.toISOString() || firstString(order.updated_at, order["Updated At"], order["Aramex Synced At"]),
+    updated_at: updatedDate?.toISOString() || firstString(order.updated_at, order["Updated At"], order["Bosta Synced At"], order["Aramex Synced At"]),
     status: firstString(order.status, order.Status),
     payment_status: firstString(order.payment_status, order["Payment Status"]),
     payment_method: firstString(order.payment_method, order["Payment Method"]),
@@ -182,7 +184,9 @@ function normalizeOrder(input: unknown) {
       city_key: firstString(extras.city_key, order["City Key"]),
     },
     items,
-    aramex,
+    bosta,
+    shipment: bosta,
+    aramex: bosta,
   };
 }
 
@@ -190,12 +194,12 @@ type NormalizedOrder = ReturnType<typeof normalizeOrder>;
 
 function hasMeaningfulOrderData(order: NormalizedOrder) {
   const customer = getObject(order.customer);
-  const aramex = getObject(order.aramex);
+  const bosta = getObject(order.bosta || order.shipment || order.aramex);
 
   return Boolean(
     firstString(order.order_ref, order.source) ||
       firstString(customer.first_name, customer.last_name, customer.phone, customer.email) ||
-      firstString(aramex.trackingNumber) ||
+      firstString(bosta.trackingNumber) ||
       getNumber(order.amount_egp) > 0 ||
       getArray(order.items).length > 0,
   );

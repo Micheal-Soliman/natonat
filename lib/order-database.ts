@@ -37,6 +37,8 @@ type SupabaseOrderRow = {
   items?: unknown[] | null;
   items_flat?: string | null;
   aramex?: OrderRecord | null;
+  bosta?: OrderRecord | null;
+  shipment?: OrderRecord | null;
   extras?: OrderRecord | null;
   payment?: OrderRecord | null;
   referral?: OrderRecord | null;
@@ -157,7 +159,7 @@ export function normalizeOrderForDatabase(order: OrderRecord): SupabaseOrderRow 
 
   const customer = getObject(order.customer || order["Customer (Full JSON)"]);
   const extras = getObject(order.extras || order["Extras (JSON)"] || order["Extras (Full JSON)"]);
-  const aramex = getObject(order.aramex);
+  const bosta = getObject(order.bosta || order.shipment || order.aramex);
 
   return {
     order_ref: orderRef,
@@ -181,14 +183,14 @@ export function normalizeOrderForDatabase(order: OrderRecord): SupabaseOrderRow 
     customer_city: firstString(customer.city, order.City) || null,
     customer_governorate: firstString(customer.governorate, order.Governorate) || null,
     city_key: firstString(extras.city_key, order["City Key"]) || null,
-    aramex_tracking_number: firstString(aramex.trackingNumber, order["Aramex Tracking Number"]) || null,
-    aramex_tracking_link: firstString(aramex.trackingLink, order["Aramex Tracking Link"], order.tracking_link) || null,
-    aramex_guid: firstString(aramex.guid, order["Aramex GUID"]) || null,
-    aramex_status: firstString(aramex.status, order["Aramex Status"]) || null,
-    aramex_latest_update: firstString(aramex.latestDescription, order["Aramex Latest Update"]) || null,
-    aramex_latest_location: firstString(aramex.latestLocation, order["Aramex Latest Location"]) || null,
-    aramex_synced_at: parseDateValue(aramex.syncedAt || order["Aramex Synced At"]) || null,
-    aramex_error: firstString(aramex.error, order["Aramex Error"]) || null,
+    aramex_tracking_number: firstString(bosta.trackingNumber, order["Bosta Tracking Number"], order["Aramex Tracking Number"]) || null,
+    aramex_tracking_link: firstString(bosta.trackingLink, order["Bosta Tracking Link"], order["Aramex Tracking Link"], order.tracking_link) || null,
+    aramex_guid: firstString(bosta.guid, bosta.deliveryId, order["Bosta Delivery ID"], order["Aramex GUID"]) || null,
+    aramex_status: firstString(bosta.status, order["Bosta Status"], order["Aramex Status"]) || null,
+    aramex_latest_update: firstString(bosta.latestDescription, order["Bosta Latest Update"], order["Aramex Latest Update"]) || null,
+    aramex_latest_location: firstString(bosta.latestLocation, order["Bosta Latest Location"], order["Aramex Latest Location"]) || null,
+    aramex_synced_at: parseDateValue(bosta.syncedAt || order["Bosta Synced At"] || order["Aramex Synced At"]) || null,
+    aramex_error: firstString(bosta.error, order["Bosta Error"], order["Aramex Error"]) || null,
     email_sent_at: parseDateValue(order.email_sent_at || order["Email Sent At"]) || null,
     instapay_proof_email_sent_at:
       parseDateValue(order.instapay_proof_email_sent_at || order["InstaPay Admin Email Sent At"]) || null,
@@ -197,7 +199,7 @@ export function normalizeOrderForDatabase(order: OrderRecord): SupabaseOrderRow 
     customer,
     items: getArray(order.items || order["Items (Full JSON)"] || order.Items),
     items_flat: firstString(order.items_flat, order["Items"]) || null,
-    aramex,
+    aramex: bosta,
     extras,
     payment: getObject(order.payment),
     referral: getObject(order.referral),
@@ -208,7 +210,7 @@ export function normalizeOrderForDatabase(order: OrderRecord): SupabaseOrderRow 
       parseDateValue(order.created_at || order["Created At"] || order.Timestamp) ||
       new Date().toISOString(),
     updated_at:
-      parseDateValue(order.updated_at || order["Updated At"] || order["Aramex Synced At"]) ||
+      parseDateValue(order.updated_at || order["Updated At"] || order["Bosta Synced At"] || order["Aramex Synced At"]) ||
       new Date().toISOString(),
   };
 }
@@ -233,7 +235,9 @@ export function databaseRowToOrder(row: SupabaseOrderRow): OrderRecord {
     customer: row.customer || rawPayload.customer,
     items: row.items || rawPayload.items,
     items_flat: row.items_flat || rawPayload.items_flat,
-    aramex: row.aramex || rawPayload.aramex,
+    aramex: row.bosta || row.shipment || row.aramex || rawPayload.bosta || rawPayload.shipment || rawPayload.aramex,
+    bosta: row.bosta || row.shipment || row.aramex || rawPayload.bosta || rawPayload.shipment || rawPayload.aramex,
+    shipment: row.shipment || row.bosta || row.aramex || rawPayload.shipment || rawPayload.bosta || rawPayload.aramex,
     extras: row.extras || rawPayload.extras,
     payment: row.payment || rawPayload.payment,
     referral: row.referral || rawPayload.referral,
@@ -291,6 +295,30 @@ export async function fetchOrderFromDatabase(orderRef: string) {
 
   const rows = (await res.json()) as SupabaseOrderRow[];
   return rows[0] ? databaseRowToOrder(rows[0]) : null;
+}
+
+export async function deleteOrderFromDatabase(orderRef: string) {
+  const config = getSupabaseConfig();
+  if (!config || !orderRef) return { skipped: true };
+
+  const url = new URL(`${config.url}/rest/v1/orders`);
+  url.searchParams.set("order_ref", `eq.${orderRef}`);
+
+  const res = await fetch(url.toString(), {
+    method: "DELETE",
+    headers: {
+      ...getHeaders(config.serviceRoleKey),
+      prefer: "return=minimal",
+    },
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Supabase order delete failed (${res.status}): ${text}`);
+  }
+
+  return { skipped: false };
 }
 
 export async function listOrdersFromDatabase(limit = 500) {

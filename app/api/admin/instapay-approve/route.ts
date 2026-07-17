@@ -15,13 +15,21 @@ type LoggedOrder = {
   }>;
   amount_egp?: number;
   amount_cents?: number;
-  aramex?: {
+  bosta?: {
     provider?: string;
     trackingNumber?: string;
     trackingLink?: string;
     labelUrl?: string;
     guid?: string;
   };
+  shipment?: {
+    provider?: string;
+    trackingNumber?: string;
+    trackingLink?: string;
+    labelUrl?: string;
+    guid?: string;
+  };
+  aramex?: LoggedOrder["bosta"];
 };
 
 type ApproveBody = {
@@ -79,11 +87,11 @@ export async function POST(req: Request) {
   }
 
   const appOrigin = getAppOrigin(req);
-  let aramexPayload: LoggedOrder["aramex"] | null = order.aramex || null;
+  let bostaPayload: LoggedOrder["bosta"] | null = order.bosta || order.shipment || order.aramex || null;
   let nextStatus = "confirmed";
 
-  if (order.delivery_method === "delivery" && order.customer && !order.aramex?.trackingNumber) {
-    const shipmentRes = await fetch(`${appOrigin}/api/aramex/shipment`, {
+  if (order.delivery_method === "delivery" && order.customer && !bostaPayload?.trackingNumber) {
+    const shipmentRes = await fetch(`${appOrigin}/api/bosta/shipment`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -106,12 +114,12 @@ export async function POST(req: Request) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          source: "instapay_admin_approved_aramex_failed",
+          source: "instapay_admin_approved_bosta_failed",
           order_ref: orderRef,
           status: "confirmed",
           payment_status: "Paid",
-          aramex: {
-            error: shipmentData?.details || shipmentData?.error || "Aramex shipment failed",
+          bosta: {
+            error: shipmentData?.details || shipmentData?.error || "Bosta shipment failed",
           },
           updated_at: new Date().toISOString(),
         }),
@@ -120,14 +128,14 @@ export async function POST(req: Request) {
 
       return NextResponse.json(
         {
-          error: "InstaPay approved, but Aramex shipment failed",
-          details: shipmentData?.details || shipmentData?.error || "Aramex shipment failed",
+          error: "InstaPay approved, but Bosta shipment failed",
+          details: shipmentData?.details || shipmentData?.error || "Bosta shipment failed",
         },
         { status: 502 },
       );
     }
 
-    aramexPayload = {
+    bostaPayload = {
       provider: shipmentData.provider,
       trackingNumber: shipmentData.trackingNumber,
       trackingLink: shipmentData.trackingLink,
@@ -143,7 +151,8 @@ export async function POST(req: Request) {
       order_ref: orderRef,
       status: nextStatus,
       payment_status: "Paid",
-      aramex: aramexPayload,
+      bosta: bostaPayload,
+      shipment: bostaPayload ? { provider: "bosta", trackingNumber: bostaPayload.trackingNumber, trackingLink: bostaPayload.trackingLink } : null,
       updated_at: new Date().toISOString(),
     }),
     cache: "no-store",
@@ -161,6 +170,6 @@ export async function POST(req: Request) {
     success: true,
     order_ref: orderRef,
     status: nextStatus,
-    aramex: aramexPayload,
+    bosta: bostaPayload,
   });
 }

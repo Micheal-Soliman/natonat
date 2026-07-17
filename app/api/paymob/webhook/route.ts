@@ -58,6 +58,12 @@ type OrderLogResponse = {
 type LoggedOrder = {
   delivery_method?: string;
   customer?: unknown;
+  bosta?: {
+    trackingNumber?: string;
+  };
+  shipment?: {
+    trackingNumber?: string;
+  };
   aramex?: {
     trackingNumber?: string;
   };
@@ -168,10 +174,19 @@ function getOrderAmountEgp(orderData: LoggedOrder | null, paymentAmountCents: nu
   return paymentAmountCents > 0 ? paymentAmountCents / 100 : 0;
 }
 
-function getAramexItems(orderData: LoggedOrder) {
+function getShipmentItems(orderData: LoggedOrder) {
   return (orderData.items || [])
     .map((item) => ({
       name: item.name || item.productName || "Order item",
+      title: item.title,
+      slug: item.slug,
+      type: item.type,
+      size: item.size,
+      selectedSize: item.selectedSize,
+      variantSize: item.variantSize,
+      color: item.color,
+      selectedColor: item.selectedColor,
+      variant: item.variant,
       quantity: typeof item.quantity === "number" && item.quantity > 0 ? item.quantity : 1,
     }))
     .filter((item) => item.name.trim().length > 0);
@@ -295,7 +310,7 @@ export async function POST(req: Request) {
     }
   }
 
-  // Create Aramex shipment for successful card payments with delivery
+  // Create Bosta shipment for successful card payments with delivery
   if (transaction?.success && paymentDetails.special_reference) {
     try {
       const orderData =
@@ -306,15 +321,20 @@ export async function POST(req: Request) {
       if (orderData) {
         // --- PREVENT DUPLICATES ---
         // Only create shipment if it's a delivery order AND we haven't already created a tracking number for it
-        if (orderData?.delivery_method === "delivery" && orderData?.customer && !orderData?.aramex?.trackingNumber) {
+        const existingTracking =
+          orderData?.bosta?.trackingNumber ||
+          orderData?.shipment?.trackingNumber ||
+          orderData?.aramex?.trackingNumber;
+
+        if (orderData?.delivery_method === "delivery" && orderData?.customer && !existingTracking) {
           if (process.env.NODE_ENV !== "production") {
-            console.log(`[Webhook] Proceeding with Aramex shipment for order: ${paymentDetails.special_reference}`);
+            console.log(`[Webhook] Proceeding with Bosta shipment for order: ${paymentDetails.special_reference}`);
           }
 
-          const shipmentItems = getAramexItems(orderData);
+          const shipmentItems = getShipmentItems(orderData);
           const shipmentTotalValue = getOrderAmountEgp(orderData, paymentDetails.amount_cents);
           
-          const shipmentRes = await fetch(`${appOrigin}/api/aramex/shipment`, {
+          const shipmentRes = await fetch(`${appOrigin}/api/bosta/shipment`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -331,7 +351,7 @@ export async function POST(req: Request) {
           
           if (shipmentData.success) {
             if (process.env.NODE_ENV !== "production") {
-              console.log("[Webhook] Aramex shipment created:", shipmentData.trackingNumber);
+              console.log("[Webhook] Bosta shipment created:", shipmentData.trackingNumber);
             }
             
             // Update order with tracking info
@@ -339,27 +359,32 @@ export async function POST(req: Request) {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                source: "paymob_webhook_aramex",
+                source: "paymob_webhook_bosta",
                 order_ref: paymentDetails.special_reference,
                 status: "shipped", // Update overall status
                 payment_status: "Paid", // Ensure payment status is updated
-                aramex: {
+                bosta: {
                   provider: shipmentData.provider,
                   trackingNumber: shipmentData.trackingNumber,
                   trackingLink: shipmentData.trackingLink,
                   labelUrl: shipmentData.labelUrl,
                   guid: shipmentData.guid,
                 },
+                shipment: {
+                  provider: "bosta",
+                  trackingNumber: shipmentData.trackingNumber,
+                  trackingLink: shipmentData.trackingLink,
+                },
                 payment: paymentDetails,
                 updated_at: new Date().toISOString(),
               }),
             });
           } else {
-            const aramexError =
+            const bostaError =
               shipmentData.details ||
               shipmentData.error ||
-              "Aramex shipment failed";
-            console.error("[Webhook] Failed to create Aramex shipment:", aramexError, {
+              "Bosta shipment failed";
+            console.error("[Webhook] Failed to create Bosta shipment:", bostaError, {
               status: shipmentRes.status,
               order_ref: paymentDetails.special_reference,
               totalValue: shipmentTotalValue,
@@ -369,46 +394,46 @@ export async function POST(req: Request) {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                source: "paymob_webhook_aramex_failed",
+                source: "paymob_webhook_bosta_failed",
                 order_ref: paymentDetails.special_reference,
                 status: "confirmed",
                 payment_status: "Paid",
-                aramex: {
-                  error: aramexError,
+                bosta: {
+                  error: bostaError,
                 },
                 payment: paymentDetails,
                 updated_at: new Date().toISOString(),
               }),
             });
           }
-        } else if (orderData?.aramex?.trackingNumber) {
+        } else if (existingTracking) {
           if (process.env.NODE_ENV !== "production") {
-            console.log(`[Webhook] Shipment already exists for order ${paymentDetails.special_reference}. Skipping Aramex.`);
+            console.log(`[Webhook] Shipment already exists for order ${paymentDetails.special_reference}. Skipping Bosta.`);
           }
         } else {
-          console.error("[Webhook] Cannot create Aramex shipment: order is missing delivery/customer details", {
+          console.error("[Webhook] Cannot create Bosta shipment: order is missing delivery/customer details", {
             order_ref: paymentDetails.special_reference,
             delivery_method: orderData?.delivery_method,
             has_customer: !!orderData?.customer,
           });
         }
       } else {
-        console.error("[Webhook] Cannot create Aramex shipment: order details not found", {
+        console.error("[Webhook] Cannot create Bosta shipment: order details not found", {
           order_ref: paymentDetails.special_reference,
         });
       }
     } catch (err) {
-      console.error("[Webhook] Aramex shipment creation error:", err);
+      console.error("[Webhook] Bosta shipment creation error:", err);
       await fetch(`${appOrigin}/api/orders/log`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          source: "paymob_webhook_aramex_failed",
+          source: "paymob_webhook_bosta_failed",
           order_ref: paymentDetails.special_reference,
           status: "confirmed",
           payment_status: "Paid",
-          aramex: {
-            error: err instanceof Error ? err.message : "Aramex shipment creation error",
+          bosta: {
+            error: err instanceof Error ? err.message : "Bosta shipment creation error",
           },
           payment: paymentDetails,
           updated_at: new Date().toISOString(),

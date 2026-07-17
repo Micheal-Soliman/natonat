@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
@@ -39,6 +39,8 @@ type AdminOrder = Record<string, unknown> & {
   created_at?: string;
   updated_at?: string;
   customer?: Record<string, unknown>;
+  bosta?: Record<string, unknown>;
+  shipment?: Record<string, unknown>;
   aramex?: Record<string, unknown>;
   extras?: Record<string, unknown>;
 };
@@ -67,11 +69,11 @@ function formatApiError(error: string | undefined, details: unknown, fallback: s
     if (response && typeof response === "object") {
       const responseRecord = response as Record<string, unknown>;
       const nestedError = responseRecord.error || responseRecord.message;
-      if (nestedError) return [base, status, String(nestedError)].filter(Boolean).join(" · ");
+      if (nestedError) return [base, status, String(nestedError)].filter(Boolean).join(" - ");
     }
 
-    if (typeof response === "string") return [base, status, response].filter(Boolean).join(" · ");
-    if (status) return `${base} · ${status}`;
+    if (typeof response === "string") return [base, status, response].filter(Boolean).join(" - ");
+    if (status) return `${base} - ${status}`;
   }
 
   return base;
@@ -132,7 +134,7 @@ type ExpensesResponse = {
   error?: string;
 };
 
-type AramexSyncResponse = {
+type BostaSyncResponse = {
   success?: boolean;
   synced?: number;
   failed?: number;
@@ -169,7 +171,7 @@ type AdminManualOrderDraft = {
   paymentMethod: string;
   paymentStatus: string;
   deliveryMethod: string;
-  createAramexShipment: boolean;
+  createBostaShipment: boolean;
 };
 
 type BostaPickupDraft = {
@@ -206,14 +208,14 @@ type AdminOrderEditDraft = {
   customerCity: string;
   customerGovernorate: string;
   customerAddress: string;
-  aramexTrackingNumber: string;
-  aramexTrackingLink: string;
-  aramexStatus: string;
-  aramexLatestCode: string;
-  aramexLatestUpdate: string;
-  aramexLatestLocation: string;
-  aramexLatestDate: string;
-  aramexError: string;
+  BostaTrackingNumber: string;
+  BostaTrackingLink: string;
+  BostaStatus: string;
+  BostaLatestCode: string;
+  BostaLatestUpdate: string;
+  BostaLatestLocation: string;
+  BostaLatestDate: string;
+  BostaError: string;
   note: string;
   items: AdminOrderEditItem[];
 };
@@ -284,27 +286,27 @@ const MANUAL_ORDER_DELIVERY_METHODS = [
   { value: "pickup", label: "Pickup" },
 ] as const;
 
-const ARAMEX_TRACKING_STAGES = [
-  { key: "shipment_created", label: "Shipment Created / إنشاء الشحنة" },
-  { key: "shipment_picked_up", label: "Shipment Picked Up / استلام الشحنة" },
-  { key: "departed_origin", label: "Departed Origin / مغادرة المنشأ" },
-  { key: "in_transit", label: "In Transit / في الطريق" },
-  { key: "arrived_destination", label: "Arrived Destination / الوصول إلى الوجهة" },
-  { key: "out_for_delivery", label: "Out for Delivery / الخروج للتوصيل" },
-  { key: "delivered", label: "Delivered / تم التوصيل" },
+const BOSTA_TRACKING_STAGES = [
+  { key: "shipment_created", label: "Shipment Created" },
+  { key: "shipment_picked_up", label: "Shipment Picked Up" },
+  { key: "departed_origin", label: "Departed Origin" },
+  { key: "in_transit", label: "In Transit" },
+  { key: "arrived_destination", label: "Arrived Destination" },
+  { key: "out_for_delivery", label: "Out for Delivery" },
+  { key: "delivered", label: "Delivered" },
 ] as const;
 
 const OPERATIONAL_TRACKING_STAGES = [
   { key: "pending_instapay_approval", label: "Pending InstaPay approval" },
-  { key: "needs_aramex_replacement", label: "Needs shipment replacement" },
-  { key: "aramex_failed", label: "Shipment failed" },
+  { key: "needs_bosta_replacement", label: "Needs shipment replacement" },
+  { key: "bosta_failed", label: "Shipment failed" },
   { key: "missing_tracking", label: "Missing tracking" },
   { key: "returned_cancelled", label: "Returned / Cancelled" },
   { key: "pickup_order", label: "Pickup order" },
   { key: "unknown", label: "Unknown" },
 ] as const;
 
-const SHIPMENT_STATUS_STAGES = [...ARAMEX_TRACKING_STAGES, ...OPERATIONAL_TRACKING_STAGES] as const;
+const SHIPMENT_STATUS_STAGES = [...BOSTA_TRACKING_STAGES, ...OPERATIONAL_TRACKING_STAGES] as const;
 
 const money = new Intl.NumberFormat("en-EG", {
   style: "currency",
@@ -412,8 +414,8 @@ function getCustomer(order: AdminOrder) {
   return getObject(order.customer || order["Customer (Full JSON)"]);
 }
 
-function getAramex(order: AdminOrder) {
-  return getObject(order.aramex);
+function getBosta(order: AdminOrder) {
+  return getObject(order.bosta || order.shipment || order.aramex);
 }
 
 function getAmount(order: AdminOrder) {
@@ -610,55 +612,55 @@ function getPaymentStatus(order: AdminOrder) {
 }
 
 function getTrackingNumber(order: AdminOrder) {
-  const aramex = getAramex(order);
-  return getString(aramex.trackingNumber || order["Aramex Tracking Number"]);
+  const Bosta = getBosta(order);
+  return getString(Bosta.trackingNumber || order["Bosta Tracking Number"] || order["Aramex Tracking Number"]);
 }
 
 function getShipmentProvider(order: AdminOrder) {
-  const aramex = getAramex(order);
-  return getString(aramex.provider || order["Shipment Provider"]).toLowerCase();
+  const Bosta = getBosta(order);
+  return getString(Bosta.provider || order["Shipment Provider"]).toLowerCase();
 }
 
 function getPreviousTrackingNumbers(order: AdminOrder) {
-  const aramex = getAramex(order);
-  return getArray(aramex.previousTrackingNumbers)
+  const Bosta = getBosta(order);
+  return getArray(Bosta.previousTrackingNumbers)
     .map(getString)
     .filter(Boolean);
 }
 
 function needsOldTrackingCancellation(order: AdminOrder) {
-  const aramex = getAramex(order);
-  return Boolean(aramex.oldTrackingCancelRequired || getPreviousTrackingNumbers(order).length > 0);
+  const Bosta = getBosta(order);
+  return Boolean(Bosta.oldTrackingCancelRequired || getPreviousTrackingNumbers(order).length > 0);
 }
 
-function getAramexError(order: AdminOrder) {
-  const aramex = getAramex(order);
-  return getString(aramex.error || order["Aramex Error"]);
+function getBostaError(order: AdminOrder) {
+  const Bosta = getBosta(order);
+  return getString(Bosta.error || order["Bosta Error"] || order["Aramex Error"]);
 }
 
-function getAramexStatus(order: AdminOrder) {
-  const aramex = getAramex(order);
-  return getString(aramex.status || order["Aramex Status"]);
+function getBostaStatus(order: AdminOrder) {
+  const Bosta = getBosta(order);
+  return getString(Bosta.status || order["Bosta Status"] || order["Aramex Status"]);
 }
 
-function getAramexLatestUpdate(order: AdminOrder) {
-  const aramex = getAramex(order);
-  return getString(aramex.latestDescription || aramex.latestDate || order["Aramex Latest Update"]);
+function getBostaLatestUpdate(order: AdminOrder) {
+  const Bosta = getBosta(order);
+  return getString(Bosta.latestDescription || Bosta.latestDate || order["Bosta Latest Update"] || order["Aramex Latest Update"]);
 }
 
-function getAramexLatestLocation(order: AdminOrder) {
-  const aramex = getAramex(order);
-  return getString(aramex.latestLocation || order["Aramex Latest Location"]);
+function getBostaLatestLocation(order: AdminOrder) {
+  const Bosta = getBosta(order);
+  return getString(Bosta.latestLocation || order["Bosta Latest Location"] || order["Aramex Latest Location"]);
 }
 
-function getAramexLatestCode(order: AdminOrder) {
-  const aramex = getAramex(order);
-  return getString(aramex.latestCode || aramex.updateCode || order["Aramex Update Code"]);
+function getBostaLatestCode(order: AdminOrder) {
+  const Bosta = getBosta(order);
+  return getString(Bosta.latestCode || Bosta.updateCode || order["Bosta Update Code"] || order["Aramex Update Code"]);
 }
 
-function getAramexSyncedAt(order: AdminOrder) {
-  const aramex = getAramex(order);
-  return getString(aramex.syncedAt || order["Aramex Synced At"]);
+function getBostaSyncedAt(order: AdminOrder) {
+  const Bosta = getBosta(order);
+  return getString(Bosta.syncedAt || order["Bosta Synced At"] || order["Aramex Synced At"]);
 }
 
 function getStageLabel(stageKey: string) {
@@ -675,22 +677,22 @@ function getTrackingRawText(value: unknown) {
   }
 }
 
-function getAramexTrackingText(order: AdminOrder) {
-  const aramex = getAramex(order);
+function getBostaTrackingText(order: AdminOrder) {
+  const Bosta = getBosta(order);
   return [
-    getAramexStatus(order),
-    getAramexLatestCode(order),
-    getAramexLatestUpdate(order),
-    getAramexLatestLocation(order),
-    getString(aramex.latestDate),
-    getTrackingRawText(aramex.trackingRaw),
+    getBostaStatus(order),
+    getBostaLatestCode(order),
+    getBostaLatestUpdate(order),
+    getBostaLatestLocation(order),
+    getString(Bosta.latestDate),
+    getTrackingRawText(Bosta.trackingRaw),
   ]
     .join(" ")
     .toLowerCase();
 }
 
 function hasReturnedSignal(order: AdminOrder) {
-  const text = `${getStatus(order)} ${getPaymentStatus(order)} ${getAramexTrackingText(order)}`.toLowerCase();
+  const text = `${getStatus(order)} ${getPaymentStatus(order)} ${getBostaTrackingText(order)}`.toLowerCase();
   return (
     text.includes("return") ||
     text.includes("returned") ||
@@ -702,8 +704,8 @@ function hasReturnedSignal(order: AdminOrder) {
   );
 }
 
-function getAramexTimelineStageKey(order: AdminOrder) {
-  const text = getAramexTrackingText(order);
+function getBostaTimelineStageKey(order: AdminOrder) {
+  const text = getBostaTrackingText(order);
 
   if (!text.trim()) return "";
 
@@ -729,7 +731,8 @@ function getAramexTimelineStageKey(order: AdminOrder) {
     text.includes("arrived at destination") ||
     text.includes("arrived destination") ||
     text.includes("destination facility") ||
-    text.includes("الوصول إلى الوجهة")
+    text.includes("الوصول إلى الوجهة") ||
+    text.includes("وصلت للوجهة")
   ) {
     return "arrived_destination";
   }
@@ -775,12 +778,12 @@ function getAramexTimelineStageKey(order: AdminOrder) {
 
 function getOrderShipmentStatusKey(order: AdminOrder) {
   if (isPendingInstaPay(order)) return "pending_instapay_approval";
-  if (needsAramexReplacement(order)) return "needs_aramex_replacement";
-  if (getAramexError(order)) return "aramex_failed";
+  if (needsBostaReplacement(order)) return "needs_bosta_replacement";
+  if (getBostaError(order)) return "bosta_failed";
   if (hasReturnedSignal(order)) return "returned_cancelled";
-  if (needsAramex(order)) return "missing_tracking";
+  if (needsBosta(order)) return "missing_tracking";
 
-  const timelineStage = getAramexTimelineStageKey(order);
+  const timelineStage = getBostaTimelineStageKey(order);
   if (timelineStage) return timelineStage;
 
   if (getTrackingNumber(order)) return "shipment_created";
@@ -837,7 +840,7 @@ function isPendingInstaPay(order: AdminOrder) {
   return getPaymentMethod(order) === "instapay" && getStatus(order) === "pending_instapay_approval";
 }
 
-function needsAramex(order: AdminOrder) {
+function needsBosta(order: AdminOrder) {
   return (
     getDeliveryBucket(order) === "delivery" &&
     isConfirmed(order) &&
@@ -846,12 +849,12 @@ function needsAramex(order: AdminOrder) {
   );
 }
 
-function needsAramexReplacement(order: AdminOrder) {
-  const aramex = getAramex(order);
-  return Boolean(getTrackingNumber(order) && (aramex.needsReplacement || aramex.replacementRequired));
+function needsBostaReplacement(order: AdminOrder) {
+  const Bosta = getBosta(order);
+  return Boolean(getTrackingNumber(order) && (Bosta.needsReplacement || Bosta.replacementRequired));
 }
 
-function hasAramexTracking(order: AdminOrder) {
+function hasBostaTracking(order: AdminOrder) {
   return Boolean(getTrackingNumber(order));
 }
 
@@ -896,6 +899,49 @@ function getInventoryProductKeys(item: AdminInventoryItem) {
 
 function getOrderItemProductKeys(item: Record<string, unknown>) {
   return [item.slug, item.name, item.title, item.id, item.product_id].map(normalizeInventoryKey).filter(Boolean);
+}
+
+function getOrderItemSearchText(item: Record<string, unknown>) {
+  return [
+    item.name,
+    item.title,
+    item.slug,
+    item.type,
+    item.category,
+    item.productType,
+    item.product_type,
+    item.line_id,
+    item.product_id,
+  ].map(getString).join(" ").toLowerCase();
+}
+
+function isLuggageCoverItem(item: Record<string, unknown>) {
+  const text = getOrderItemSearchText(item);
+  return (
+    text.includes("luggage cover") ||
+    text.includes("luggage-cover") ||
+    text.includes("luggage-covers") ||
+    text.includes("cover")
+  ) && !isPackOnatItem(item) && !isPassportWalletItem(item);
+}
+
+function isPackOnatItem(item: Record<string, unknown>) {
+  const text = getOrderItemSearchText(item);
+  return (
+    text.includes("packonat") ||
+    text.includes("pack onat") ||
+    text.includes("packing folder") ||
+    text.includes("garment folder")
+  );
+}
+
+function isPassportWalletItem(item: Record<string, unknown>) {
+  const text = getOrderItemSearchText(item);
+  return (
+    text.includes("passport wallet") ||
+    text.includes("passport-wallet") ||
+    (text.includes("passport") && text.includes("wallet"))
+  );
 }
 
 function getOrderItemSizeKey(item: Record<string, unknown>) {
@@ -970,7 +1016,7 @@ function getEditableDeliveryMethod(order: AdminOrder) {
 function buildOrderEditDraft(order: AdminOrder): AdminOrderEditDraft {
   const customer = getCustomer(order);
   const items = getItems(order);
-  const aramex = getAramex(order);
+  const Bosta = getBosta(order);
 
   return {
     status: getStatus(order) || "confirmed",
@@ -989,14 +1035,14 @@ function buildOrderEditDraft(order: AdminOrder): AdminOrderEditDraft {
     customerCity: getString(customer.city),
     customerGovernorate: getString(customer.governorate),
     customerAddress: getString(customer.address),
-    aramexTrackingNumber: getTrackingNumber(order),
-    aramexTrackingLink: getString(aramex.trackingLink || order["Aramex Tracking Link"]),
-    aramexStatus: getAramexStatus(order),
-    aramexLatestCode: getAramexLatestCode(order),
-    aramexLatestUpdate: getAramexLatestUpdate(order),
-    aramexLatestLocation: getAramexLatestLocation(order),
-    aramexLatestDate: getString(aramex.latestDate || order["Aramex Latest Date"]),
-    aramexError: getAramexError(order),
+    BostaTrackingNumber: getTrackingNumber(order),
+    BostaTrackingLink: getString(Bosta.trackingLink || order["Bosta Tracking Link"]),
+    BostaStatus: getBostaStatus(order),
+    BostaLatestCode: getBostaLatestCode(order),
+    BostaLatestUpdate: getBostaLatestUpdate(order),
+    BostaLatestLocation: getBostaLatestLocation(order),
+    BostaLatestDate: getString(Bosta.latestDate || order["Bosta Latest Date"]),
+    BostaError: getBostaError(order),
     note: "",
     items: items.length
       ? items.map((item) => ({
@@ -1183,22 +1229,24 @@ function OrderDetailsPanel({
   inventory,
   onClose,
   onApproveInstaPay,
-  onCreateAramex,
+  onCreateBosta,
   onPrintBostaAwb,
   onSaveManualEdit,
+  onDeleteOrder,
   actionLoadingRef,
 }: {
   order: AdminOrder;
   inventory: AdminInventoryItem[];
   onClose: () => void;
   onApproveInstaPay: (order: AdminOrder) => void;
-  onCreateAramex: (order: AdminOrder) => void;
+  onCreateBosta: (order: AdminOrder) => void;
   onPrintBostaAwb: (order: AdminOrder) => void;
   onSaveManualEdit: (order: AdminOrder, draft: AdminOrderEditDraft) => void;
+  onDeleteOrder: (order: AdminOrder) => void;
   actionLoadingRef: string;
 }) {
   const customer = getCustomer(order);
-  const aramex = getAramex(order);
+  const Bosta = getBosta(order);
   const extras = getExtras(order);
   const items = getItems(order);
   const orderRef = getOrderRef(order);
@@ -1210,7 +1258,7 @@ function OrderDetailsPanel({
     .slice(0, 12);
   const trackingNumber = getTrackingNumber(order);
   const isBostaShipment = getShipmentProvider(order) === "bosta";
-  const canCreateAramex = getDeliveryBucket(order) === "delivery" && !isPendingInstaPay(order) && !trackingNumber;
+  const canCreateBosta = getDeliveryBucket(order) === "delivery" && !isPendingInstaPay(order) && !trackingNumber;
   const previousTrackingNumbers = getPreviousTrackingNumbers(order);
   const oldTrackingCancelRequired = needsOldTrackingCancellation(order);
   const [editOpen, setEditOpen] = useState(false);
@@ -1328,11 +1376,11 @@ function OrderDetailsPanel({
               </div>
               <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 <button
-                  onClick={() => onCreateAramex(order)}
-                  disabled={!canCreateAramex || actionLoadingRef === `aramex-create:${orderRef}`}
+                  onClick={() => onCreateBosta(order)}
+                  disabled={!canCreateBosta || actionLoadingRef === `Bosta-create:${orderRef}`}
                   className="h-10 rounded-2xl bg-emerald-600 px-3 text-xs font-black text-white transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {actionLoadingRef === `aramex-create:${orderRef}`
+                  {actionLoadingRef === `Bosta-create:${orderRef}`
                     ? "Creating..."
                     : trackingNumber
                       ? "Shipment already exists"
@@ -1347,6 +1395,13 @@ function OrderDetailsPanel({
                     {actionLoadingRef === `bosta-awb:${orderRef}` ? "Printing..." : "Print Bosta AWB"}
                   </button>
                 )}
+                <button
+                  onClick={() => onDeleteOrder(order)}
+                  disabled={actionLoadingRef === `order-delete:${orderRef}`}
+                  className="h-10 rounded-2xl bg-rose-600 px-3 text-xs font-black text-white transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {actionLoadingRef === `order-delete:${orderRef}` ? "Deleting..." : "Delete order"}
+                </button>
               </div>
             </div>
           </section>
@@ -1356,7 +1411,7 @@ function OrderDetailsPanel({
               <div>
                 <h4 className="text-lg font-black">Manual order edit</h4>
                 <p className="mt-1 text-xs font-bold leading-5 text-[#0F1A26]/50">
-                  Saves to database and updates dashboard finance. Existing courier shipment data is not edited automatically.
+                  Saves to database and updates dashboard finance. If Bosta accepts the change, shipment details update too; otherwise the order is marked for replacement.
                 </p>
               </div>
               <button
@@ -1485,12 +1540,12 @@ function OrderDetailsPanel({
                   </div>
                   <div className="mt-3 grid gap-3 md:grid-cols-2">
                     {[
-                      ["aramexTrackingNumber", "Tracking number"],
-                      ["aramexTrackingLink", "Tracking link"],
-                      ["aramexStatus", "Courier status"],
-                      ["aramexLatestCode", "Latest code"],
-                      ["aramexLatestLocation", "Latest location"],
-                      ["aramexLatestDate", "Latest date"],
+                      ["BostaTrackingNumber", "Tracking number"],
+                      ["BostaTrackingLink", "Tracking link"],
+                      ["BostaStatus", "Courier status"],
+                      ["BostaLatestCode", "Latest code"],
+                      ["BostaLatestLocation", "Latest location"],
+                      ["BostaLatestDate", "Latest date"],
                     ].map(([key, label]) => (
                       <label key={key} className="space-y-1 text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45">
                         {label}
@@ -1504,16 +1559,16 @@ function OrderDetailsPanel({
                     <label className="space-y-1 text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45 md:col-span-2">
                       Latest update
                       <textarea
-                        value={editDraft.aramexLatestUpdate}
-                        onChange={(event) => updateEditDraft("aramexLatestUpdate", event.target.value)}
+                        value={editDraft.BostaLatestUpdate}
+                        onChange={(event) => updateEditDraft("BostaLatestUpdate", event.target.value)}
                         className="min-h-16 w-full rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-3 py-3 text-sm font-black normal-case tracking-normal text-[#0F1A26]"
                       />
                     </label>
                     <label className="space-y-1 text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45 md:col-span-2">
                       Courier error / note
                       <textarea
-                        value={editDraft.aramexError}
-                        onChange={(event) => updateEditDraft("aramexError", event.target.value)}
+                        value={editDraft.BostaError}
+                        onChange={(event) => updateEditDraft("BostaError", event.target.value)}
                         className="min-h-16 w-full rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] px-3 py-3 text-sm font-black normal-case tracking-normal text-[#0F1A26]"
                       />
                     </label>
@@ -1689,12 +1744,12 @@ function OrderDetailsPanel({
             </div>
             {oldTrackingCancelRequired && (
               <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm font-bold leading-6 text-amber-900">
-                This order has an old replaced tracking number{previousTrackingNumbers.length ? `: ${previousTrackingNumbers.join(", ")}` : ""}. The current integration created the replacement shipment, but it cannot confirm cancelling the old shipment automatically. Cancel/check the old tracking in the courier portal.
+                This order has an old replaced tracking number{previousTrackingNumbers.length ? `: ${previousTrackingNumbers.join(", ")}` : ""}. Use the Bosta terminate action for any active old tracking, then refresh status to keep the dashboard clean.
               </div>
             )}
-            {needsAramexReplacement(order) && (
+            {needsBostaReplacement(order) && (
               <div className="mt-3 rounded-2xl border border-orange-200 bg-orange-50 p-3 text-sm font-bold leading-6 text-orange-900">
-                This order changed after tracking was created. Automatic replacement is blocked because the old shipment must be cancelled in the courier portal first.
+                This order changed after tracking was created. Terminate the old Bosta shipment first, then create a new shipment from the latest saved order data.
               </div>
             )}
           </section>
@@ -1766,27 +1821,27 @@ function OrderDetailsPanel({
               data={{
                 tracking_number: getTrackingNumber(order),
                 dashboard_stage: getOrderShipmentStatusLabel(order),
-                aramex_status: getAramexStatus(order),
-                update_code: getAramexLatestCode(order),
-                update_description: getAramexLatestUpdate(order),
-                update_location: getAramexLatestLocation(order),
-                update_datetime: getString(aramex.latestDate || order["Aramex Latest Date"]),
-                comments: getString(aramex.latestComments),
-                problem_code: getString(aramex.latestProblemCode),
-                estimated_delivery: getString(aramex.estimatedDelivery),
-                synced_at: formatAdminDateTime(getAramexSyncedAt(order)) || getAramexSyncedAt(order),
-                error: getAramexError(order),
-                ...aramex,
+                Bosta_status: getBostaStatus(order),
+                update_code: getBostaLatestCode(order),
+                update_description: getBostaLatestUpdate(order),
+                update_location: getBostaLatestLocation(order),
+                update_datetime: getString(Bosta.latestDate || order["Bosta Latest Date"]),
+                comments: getString(Bosta.latestComments),
+                problem_code: getString(Bosta.latestProblemCode),
+                estimated_delivery: getString(Bosta.estimatedDelivery),
+                synced_at: formatAdminDateTime(getBostaSyncedAt(order)) || getBostaSyncedAt(order),
+                error: getBostaError(order),
+                ...Bosta,
               }}
             />
-            {!isEmptyAdminValue(aramex.trackingRaw) && (
+            {!isEmptyAdminValue(Bosta.trackingRaw) && (
               <details className="mt-4 rounded-2xl bg-[#0F1A26] p-4 text-white">
                 <summary className="cursor-pointer text-sm font-black">Full courier tracking response</summary>
                 <div className="mt-3 max-h-[360px] overflow-auto">
-                  {typeof aramex.trackingRaw === "string" ? (
-                    <DataPill label="tracking response" value={aramex.trackingRaw} dark />
+                  {typeof Bosta.trackingRaw === "string" ? (
+                    <DataPill label="tracking response" value={Bosta.trackingRaw} dark />
                   ) : (
-                    <KeyValueGrid data={getObject(aramex.trackingRaw)} dark />
+                    <KeyValueGrid data={getObject(Bosta.trackingRaw)} dark />
                   )}
                 </div>
               </details>
@@ -1852,15 +1907,15 @@ export default function AdminDashboardPage() {
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [skippedEmptyOrderRows, setSkippedEmptyOrderRows] = useState(0);
   const [inventory, setInventory] = useState<AdminInventoryItem[]>([]);
-  const [aramexCities, setAramexCities] = useState<string[]>([]);
+  const [BostaCities, setBostaCities] = useState<string[]>([]);
   const [expenses, setExpenses] = useState<AdminExpense[]>([]);
   const [inventoryFetchedAt, setInventoryFetchedAt] = useState("");
   const [expensesFetchedAt, setExpensesFetchedAt] = useState("");
   const [loading, setLoading] = useState(false);
   const [inventoryLoading, setInventoryLoading] = useState(false);
   const [expensesLoading, setExpensesLoading] = useState(false);
-  const [aramexSyncing, setAramexSyncing] = useState(false);
-  const [aramexSyncMessage, setAramexSyncMessage] = useState("");
+  const [BostaSyncing, setBostaSyncing] = useState(false);
+  const [BostaSyncMessage, setBostaSyncMessage] = useState("");
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [customerQuery, setCustomerQuery] = useState("");
@@ -1902,7 +1957,7 @@ export default function AdminDashboardPage() {
     paymentMethod: "custom_bulk",
     paymentStatus: "Paid",
     deliveryMethod: "custom",
-    createAramexShipment: false,
+    createBostaShipment: false,
   });
   const [bostaPickupDraft, setBostaPickupDraft] = useState<BostaPickupDraft>({
     scheduledDate: getTomorrowInputDate(),
@@ -1920,15 +1975,22 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     let cancelled = false;
 
-    fetch("/api/aramex/cities?countryCode=EG", { cache: "force-cache" })
+    fetch("/api/bosta/districts", { cache: "force-cache" })
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
-        if (!cancelled && Array.isArray(data)) {
-          setAramexCities(data.filter((city): city is string => typeof city === "string" && city.trim().length > 0));
+        const names = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.names)
+            ? data.names
+            : Array.isArray(data?.districts)
+              ? data.districts.map((district: unknown) => getString(getObject(district).name || getObject(district).districtName))
+              : [];
+        if (!cancelled) {
+          setBostaCities(names.filter((city: unknown): city is string => typeof city === "string" && city.trim().length > 0));
         }
       })
       .catch(() => {
-        if (!cancelled) setAramexCities([]);
+        if (!cancelled) setBostaCities([]);
       });
 
     return () => {
@@ -2075,13 +2137,13 @@ export default function AdminDashboardPage() {
     setSelectedOrder(null);
   };
 
-  const syncAramex = async () => {
-    setAramexSyncing(true);
-    setAramexSyncMessage("");
+  const syncBosta = async () => {
+    setBostaSyncing(true);
+    setBostaSyncMessage("");
     setError("");
 
     try {
-      const res = await fetch("/api/admin/aramex-sync", {
+      const res = await fetch("/api/admin/bosta-sync", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -2089,30 +2151,30 @@ export default function AdminDashboardPage() {
         },
         body: JSON.stringify({ limit: 50 }),
       });
-      const data = (await res.json()) as AramexSyncResponse;
+      const data = (await res.json()) as BostaSyncResponse;
 
       if (!res.ok || !data.success) {
-        throw new Error(data.error || "Could not sync Aramex");
+        throw new Error(data.error || "Could not sync Bosta");
       }
 
-      setAramexSyncMessage(`Tracking status refreshed: ${data.synced || 0} updated, ${data.failed || 0} failed.`);
+      setBostaSyncMessage(`Tracking status refreshed: ${data.synced || 0} updated, ${data.failed || 0} failed.`);
       await loadOrders(savedToken);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not sync Aramex");
+      setError(err instanceof Error ? err.message : "Could not sync Bosta");
     } finally {
-      setAramexSyncing(false);
+      setBostaSyncing(false);
     }
   };
 
-  const syncOneAramex = async (order: AdminOrder) => {
+  const syncOneBosta = async (order: AdminOrder) => {
     const orderRef = getOrderRef(order);
     if (!orderRef) return;
 
-    setActionLoadingRef(`aramex:${orderRef}`);
+    setActionLoadingRef(`Bosta:${orderRef}`);
     setError("");
 
     try {
-      const res = await fetch("/api/admin/aramex-sync", {
+      const res = await fetch("/api/admin/bosta-sync", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -2120,16 +2182,16 @@ export default function AdminDashboardPage() {
         },
         body: JSON.stringify({ orderRefs: [orderRef], limit: 1 }),
       });
-      const data = (await res.json()) as AramexSyncResponse;
+      const data = (await res.json()) as BostaSyncResponse;
 
       if (!res.ok || !data.success) {
-        throw new Error(data.error || "Could not sync this Aramex order");
+        throw new Error(data.error || "Could not sync this Bosta order");
       }
 
-      setAramexSyncMessage(`Tracking status refreshed for ${orderRef}: ${data.synced || 0} updated, ${data.failed || 0} failed.`);
+      setBostaSyncMessage(`Tracking status refreshed for ${orderRef}: ${data.synced || 0} updated, ${data.failed || 0} failed.`);
       await loadOrders(savedToken);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not sync this Aramex order");
+      setError(err instanceof Error ? err.message : "Could not sync this Bosta order");
     } finally {
       setActionLoadingRef("");
     }
@@ -2157,7 +2219,7 @@ export default function AdminDashboardPage() {
         throw new Error(data.error || "Could not approve InstaPay order");
       }
 
-      setAramexSyncMessage(`InstaPay approved for ${orderRef}.`);
+      setBostaSyncMessage(`InstaPay approved for ${orderRef}.`);
       setSelectedOrder(null);
       await loadOrders(savedToken);
     } catch (err) {
@@ -2191,7 +2253,7 @@ export default function AdminDashboardPage() {
         throw new Error(formatApiError(data.error, data.details, "Could not create Bosta pickup"));
       }
 
-      setAramexSyncMessage(data.message || "Bosta pickup request created.");
+      setBostaSyncMessage(data.message || "Bosta pickup request created.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create Bosta pickup");
     } finally {
@@ -2236,9 +2298,9 @@ export default function AdminDashboardPage() {
         const url = URL.createObjectURL(blob);
         window.open(url, "_blank", "noopener,noreferrer");
         window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
-        setAramexSyncMessage(`Bosta AWB opened for ${trackingNumber}.`);
+        setBostaSyncMessage(`Bosta AWB opened for ${trackingNumber}.`);
       } else {
-        setAramexSyncMessage(data.message || `Bosta AWB requested for ${trackingNumber}.`);
+        setBostaSyncMessage(data.message || `Bosta AWB requested for ${trackingNumber}.`);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not print Bosta AWB");
@@ -2250,14 +2312,14 @@ export default function AdminDashboardPage() {
   const updateManualOrderDraft = (key: keyof AdminManualOrderDraft, value: string | boolean) => {
     setManualOrderDraft((current) => {
       const next = { ...current, [key]: value };
-      if (key === "createAramexShipment" && value === true) {
+      if (key === "createBostaShipment" && value === true) {
         next.deliveryMethod = "delivery";
         if (next.paymentMethod === "custom_bulk") {
           next.paymentMethod = "cod";
           next.paymentStatus = "Cash on Delivery";
         }
       }
-      if (key === "createAramexShipment" && value === false) {
+      if (key === "createBostaShipment" && value === false) {
         next.deliveryMethod = "custom";
         if (next.paymentMethod === "cod") {
           next.paymentMethod = "custom_bulk";
@@ -2265,7 +2327,7 @@ export default function AdminDashboardPage() {
         }
       }
       if (key === "deliveryMethod") {
-        next.createAramexShipment = value === "delivery";
+        next.createBostaShipment = value === "delivery";
       }
       if (key === "orderKind") {
         if (value === "special") {
@@ -2334,7 +2396,7 @@ export default function AdminDashboardPage() {
           quantity: getNumber(manualOrderDraft.quantity),
           unitPrice: getNumber(manualOrderDraft.unitPrice),
           total: getNumber(manualOrderDraft.total),
-          createAramexShipment: manualOrderDraft.createAramexShipment,
+          createBostaShipment: manualOrderDraft.createBostaShipment,
         }),
       });
       const data = (await res.json()) as AdminActionResponse;
@@ -2343,7 +2405,7 @@ export default function AdminDashboardPage() {
         throw new Error(formatApiError(data.error, data.details, "Could not create custom order"));
       }
 
-      setAramexSyncMessage(`Custom order added to finance: ${data.order_ref || ""}`);
+      setBostaSyncMessage(`Custom order added to finance: ${data.order_ref || ""}`);
       setManualOrderOpen(false);
       setManualOrderDraft({
         orderKind: "special",
@@ -2364,7 +2426,7 @@ export default function AdminDashboardPage() {
         paymentMethod: "custom_bulk",
         paymentStatus: "Paid",
         deliveryMethod: "custom",
-        createAramexShipment: false,
+        createBostaShipment: false,
       });
       await loadOrders(savedToken);
     } catch (err) {
@@ -2408,15 +2470,15 @@ export default function AdminDashboardPage() {
             governorate: draft.customerGovernorate,
             address: draft.customerAddress,
           },
-          aramex: {
-            trackingNumber: draft.aramexTrackingNumber,
-            trackingLink: draft.aramexTrackingLink,
-            status: draft.aramexStatus,
-            latestCode: draft.aramexLatestCode,
-            latestDescription: draft.aramexLatestUpdate,
-            latestLocation: draft.aramexLatestLocation,
-            latestDate: draft.aramexLatestDate,
-            error: draft.aramexError,
+          bosta: {
+            trackingNumber: draft.BostaTrackingNumber,
+            trackingLink: draft.BostaTrackingLink,
+            status: draft.BostaStatus,
+            latestCode: draft.BostaLatestCode,
+            latestDescription: draft.BostaLatestUpdate,
+            latestLocation: draft.BostaLatestLocation,
+            latestDate: draft.BostaLatestDate,
+            error: draft.BostaError,
             manualTrackingUpdatedAt: new Date().toISOString(),
           },
           items: draft.items.map((item) => ({
@@ -2432,14 +2494,23 @@ export default function AdminDashboardPage() {
           note: draft.note,
         }),
       });
-      const data = (await res.json()) as AdminActionResponse & { changedFields?: string[]; storage?: Record<string, string> };
+      const data = (await res.json()) as AdminActionResponse & {
+        changedFields?: string[];
+        storage?: Record<string, string>;
+        bostaUpdate?: { attempted?: boolean; success?: boolean; message?: string; error?: string };
+      };
 
       if (!res.ok || !data.success) {
         throw new Error(formatApiError(data.error, data.details, "Could not save manual order edit"));
       }
 
-      setAramexSyncMessage(
-        `Order ${orderRef} updated manually. Changed: ${data.changedFields?.length ? data.changedFields.join(", ") : "no fields"}.`,
+      const bostaNote = data.bostaUpdate?.attempted
+        ? data.bostaUpdate.success
+          ? ` Bosta updated: ${data.bostaUpdate.message || "done"}.`
+          : ` Bosta update failed; replacement is required: ${data.bostaUpdate.error || "check order"}.`
+        : "";
+      setBostaSyncMessage(
+        `Order ${orderRef} updated manually. Changed: ${data.changedFields?.length ? data.changedFields.join(", ") : "no fields"}.${bostaNote}`,
       );
       setSelectedOrder(null);
       await loadOrders(savedToken);
@@ -2450,15 +2521,15 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const createAramexShipmentFromOrder = async (order: AdminOrder) => {
+  const createBostaShipmentFromOrder = async (order: AdminOrder) => {
     const orderRef = getOrderRef(order);
     if (!orderRef) return;
 
-    setActionLoadingRef(`aramex-create:${orderRef}`);
+    setActionLoadingRef(`Bosta-create:${orderRef}`);
     setError("");
 
     try {
-      const res = await fetch("/api/admin/aramex-create", {
+      const res = await fetch("/api/admin/bosta-create", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -2469,18 +2540,97 @@ export default function AdminDashboardPage() {
       const data = (await res.json()) as AdminActionResponse;
 
       if (!res.ok || !data.success) {
-        throw new Error(formatApiError(data.error, data.details, "Could not create Aramex shipment"));
+        throw new Error(formatApiError(data.error, data.details, "Could not create Bosta shipment"));
       }
 
-      setAramexSyncMessage(
+      setBostaSyncMessage(
         data.previousTrackingNumber
           ? `Replacement shipment created for ${orderRef}. New tracking: ${data.trackingNumber}. Old tracking needs portal cancel/check: ${data.previousTrackingNumber}.`
-          : `Aramex shipment created for ${orderRef}. Tracking: ${data.trackingNumber}.`,
+          : `Bosta shipment created for ${orderRef}. Tracking: ${data.trackingNumber}.`,
       );
       setSelectedOrder(null);
       await loadOrders(savedToken);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not create Aramex shipment");
+      setError(err instanceof Error ? err.message : "Could not create Bosta shipment");
+    } finally {
+      setActionLoadingRef("");
+    }
+  };
+
+  const terminateBostaShipmentForReplacement = async (order: AdminOrder) => {
+    const orderRef = getOrderRef(order);
+    const trackingNumber = getTrackingNumber(order);
+    if (!orderRef || !trackingNumber) return;
+
+    const confirmed = window.confirm(
+      `Terminate Bosta tracking ${trackingNumber}? After this, create a new shipment for the corrected order.`,
+    );
+    if (!confirmed) return;
+
+    setActionLoadingRef(`bosta-terminate:${orderRef}`);
+    setError("");
+
+    try {
+      const res = await fetch("/api/admin/bosta-terminate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(savedToken ? { Authorization: `Bearer ${savedToken}` } : {}),
+        },
+        body: JSON.stringify({ orderRef, trackingNumber }),
+      });
+      const data = (await res.json()) as AdminActionResponse & { message?: string };
+
+      if (!res.ok || !data.success) {
+        throw new Error(formatApiError(data.error, data.details, "Could not terminate Bosta shipment"));
+      }
+
+      setBostaSyncMessage(
+        `${data.message || "Bosta shipment terminated."} You can now create a new shipment for ${orderRef}.`,
+      );
+      await loadOrders(savedToken);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not terminate Bosta shipment");
+    } finally {
+      setActionLoadingRef("");
+    }
+  };
+
+  const deleteOrderEverywhere = async (order: AdminOrder) => {
+    const orderRef = getOrderRef(order);
+    if (!orderRef) return;
+
+    const confirmed = window.confirm(
+      `Delete order ${orderRef} permanently from dashboard, database, and Google Sheets?\n\nThis cannot be undone.`,
+    );
+    if (!confirmed) return;
+
+    setActionLoadingRef(`order-delete:${orderRef}`);
+    setError("");
+
+    try {
+      const res = await fetch("/api/admin/order-delete", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(savedToken ? { Authorization: `Bearer ${savedToken}` } : {}),
+        },
+        body: JSON.stringify({ orderRef }),
+      });
+      const data = (await res.json()) as AdminActionResponse & { storage?: Record<string, string> };
+
+      if (!res.ok || !data.success) {
+        throw new Error(formatApiError(data.error, data.details, "Could not delete order"));
+      }
+
+      setOrders((current) => current.filter((candidate) => getOrderRef(candidate) !== orderRef));
+      setSelectedOrder(null);
+      setBostaSyncMessage(
+        `Order ${orderRef} deleted. Supabase: ${data.storage?.supabase || "-"} - Google Sheets: ${data.storage?.google_sheets || "-"}.`,
+      );
+      await loadOrders(savedToken);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not delete order");
     } finally {
       setActionLoadingRef("");
     }
@@ -2500,9 +2650,9 @@ export default function AdminDashboardPage() {
       "discount_egp",
       "shipping_egp",
       "total_egp",
-      "aramex_tracking",
-      "aramex_status",
-      "aramex_error",
+      "Bosta_tracking",
+      "Bosta_status",
+      "Bosta_error",
     ];
     const rows = filteredOrders.map((order) => {
       const customer = getCustomer(order);
@@ -2520,8 +2670,8 @@ export default function AdminDashboardPage() {
         String(getShipping(order)),
         String(getAmount(order)),
         getTrackingNumber(order),
-        getAramexStatus(order),
-        getAramexError(order),
+        getBostaStatus(order),
+        getBostaError(order),
       ];
     });
 
@@ -2600,7 +2750,7 @@ export default function AdminDashboardPage() {
       ["paid_online_collected", String(stats.paidOnlineValue)],
       [],
       ["daily_close"],
-      ["date", "orders", "confirmed", "gross", "discounts", "shipping", "returns", "expenses", "net", "net_after_expenses", "aramex_issues"],
+      ["date", "orders", "confirmed", "gross", "discounts", "shipping", "returns", "expenses", "net", "net_after_expenses", "Bosta_issues"],
       ...dailyClose.map((day) => [
         day.date,
         String(day.orders),
@@ -2612,7 +2762,7 @@ export default function AdminDashboardPage() {
         String(day.expenses),
         String(day.net),
         String(day.netAfterExpenses),
-        String(day.aramexIssues),
+        String(day.BostaIssues),
       ]),
       [],
       ["payment_breakdown"],
@@ -2876,11 +3026,11 @@ export default function AdminDashboardPage() {
     const cardOrders = filteredMetricOrders.filter((order) => getPaymentBucket(order) === "card");
     const codOrders = filteredMetricOrders.filter((order) => getPaymentBucket(order) === "cod");
     const instapayOrders = filteredMetricOrders.filter((order) => getPaymentBucket(order) === "instapay");
-    const aramexFailed = filteredMetricOrders.filter((order) => getAramexError(order));
-    const aramexMissing = filteredMetricOrders.filter(needsAramex);
-    const aramexReplacement = filteredMetricOrders.filter(needsAramexReplacement);
-    const aramexWithTracking = filteredMetricOrders.filter(hasAramexTracking);
-    const aramexSynced = filteredMetricOrders.filter((order) => getAramexStatus(order));
+    const BostaFailed = filteredMetricOrders.filter((order) => getBostaError(order));
+    const BostaMissing = filteredMetricOrders.filter(needsBosta);
+    const BostaReplacement = filteredMetricOrders.filter(needsBostaReplacement);
+    const BostaWithTracking = filteredMetricOrders.filter(hasBostaTracking);
+    const BostaSynced = filteredMetricOrders.filter((order) => getBostaStatus(order));
     const pendingInstaPay = filteredMetricOrders.filter(isPendingInstaPay);
     const deliveredOrders = filteredMetricOrders.filter(isDelivered);
     const pickupOrders = filteredMetricOrders.filter((order) => getDeliveryBucket(order) === "pickup");
@@ -2892,8 +3042,8 @@ export default function AdminDashboardPage() {
     const codRevenueOrders = revenueOrders.filter((order) => getPaymentBucket(order) === "cod");
     const paidOnlineValue = paidOnlineOrders.reduce((sum, order) => sum + getAmount(order), 0);
     const codToCollectValue = codRevenueOrders.reduce((sum, order) => sum + getAmount(order), 0);
-    const aramexBlockedValue = filteredMetricOrders
-      .filter((order) => getAramexError(order) || needsAramex(order) || needsAramexReplacement(order))
+    const BostaBlockedValue = filteredMetricOrders
+      .filter((order) => getBostaError(order) || needsBosta(order) || needsBostaReplacement(order))
       .reduce((sum, order) => sum + getAmount(order), 0);
     const paymentBreakdown = ["cod", "card", "instapay", "unknown"].map((bucket) => {
       const bucketOrders = confirmedOrders.filter((order) => getPaymentBucket(order) === bucket);
@@ -2938,7 +3088,7 @@ export default function AdminDashboardPage() {
       paidOnlineValue,
       codToCollectOrders: codRevenueOrders.length,
       codToCollectValue,
-      aramexBlockedValue,
+      BostaBlockedValue,
       customOrders: customOrders.length,
       customOrdersValue: customOrders.reduce((sum, order) => sum + getAmount(order), 0),
       missingTotalOrders: missingTotalOrders.length,
@@ -2949,11 +3099,11 @@ export default function AdminDashboardPage() {
       cardOrders: cardOrders.length,
       codOrders: codOrders.length,
       instapayOrders: instapayOrders.length,
-      aramexFailed: aramexFailed.length,
-      aramexMissing: aramexMissing.length,
-      aramexReplacement: aramexReplacement.length,
-      aramexWithTracking: aramexWithTracking.length,
-      aramexSynced: aramexSynced.length,
+      BostaFailed: BostaFailed.length,
+      BostaMissing: BostaMissing.length,
+      BostaReplacement: BostaReplacement.length,
+      BostaWithTracking: BostaWithTracking.length,
+      BostaSynced: BostaSynced.length,
       pendingInstaPay: pendingInstaPay.length,
       paymentBreakdown,
     };
@@ -3117,7 +3267,7 @@ export default function AdminDashboardPage() {
 
     return filteredMetricOrders.filter((order) => {
       const customer = getCustomer(order);
-      const aramex = getAramex(order);
+      const Bosta = getBosta(order);
       const extras = getExtras(order);
       const itemsText = getItems(order)
         .map((item) => [
@@ -3141,10 +3291,10 @@ export default function AdminDashboardPage() {
         getString(order["City"]),
         getString(order["Governorate"]),
         getTrackingNumber(order),
-        getString(aramex.trackingLink),
-        getString(aramex.status),
-        getString(aramex.latestDescription),
-        getString(aramex.latestLocation),
+        getString(Bosta.trackingLink),
+        getString(Bosta.status),
+        getString(Bosta.latestDescription),
+        getString(Bosta.latestLocation),
         getString(order.source),
         getPaymentMethod(order),
         getPaymentStatus(order),
@@ -3177,6 +3327,11 @@ export default function AdminDashboardPage() {
       }
     >();
     const cityMap = new Map<string, { city: string; orders: number; revenue: number }>();
+    const productFamilyPieces = {
+      luggageCovers: 0,
+      packOnat: 0,
+      passportWallet: 0,
+    };
 
     revenueOrders.forEach((order, orderIndex) => {
       const customer = getCustomer(order);
@@ -3192,8 +3347,16 @@ export default function AdminDashboardPage() {
       orderItems.forEach((item) => {
         if (isBundleParentItem(item) || isCustomOrderItem(item)) return;
 
-        const name = getString(item.name || item.title || item.slug || item.id) || "Unknown product";
         const qty = getItemRecordedQuantity(item);
+        if (isPackOnatItem(item)) {
+          productFamilyPieces.packOnat += qty;
+        } else if (isPassportWalletItem(item)) {
+          productFamilyPieces.passportWallet += qty;
+        } else if (isLuggageCoverItem(item)) {
+          productFamilyPieces.luggageCovers += qty;
+        }
+
+        const name = getString(item.name || item.title || item.slug || item.id) || "Unknown product";
         const line = getItemLineTotal(item);
         const row = productMap.get(name) || {
           name,
@@ -3208,8 +3371,8 @@ export default function AdminDashboardPage() {
       });
     });
 
-    const aramexAttention = filteredMetricOrders
-      .filter((order) => getAramexError(order) || needsAramex(order) || needsAramexReplacement(order))
+    const BostaAttention = filteredMetricOrders
+      .filter((order) => getBostaError(order) || needsBosta(order) || needsBostaReplacement(order))
       .slice(0, 12);
     const instapayAttention = filteredMetricOrders.filter(isPendingInstaPay).slice(0, 12);
     const returnsAttention = filteredMetricOrders.filter(isReturned).slice(0, 12);
@@ -3220,8 +3383,8 @@ export default function AdminDashboardPage() {
       { label: "Delivered", orders: filteredMetricOrders.filter(isDelivered).length, value: filteredMetricOrders.filter(isDelivered).reduce((sum, order) => sum + getAmount(order), 0), tone: "bg-emerald-50 text-emerald-700" },
       { label: "In transit", orders: filteredMetricOrders.filter(isInTransit).length, value: filteredMetricOrders.filter(isInTransit).reduce((sum, order) => sum + getAmount(order), 0), tone: "bg-sky-50 text-sky-700" },
       { label: "Returned / cancelled", orders: filteredMetricOrders.filter(isReturned).length, value: filteredMetricOrders.filter(isReturned).reduce((sum, order) => sum + getAmount(order), 0), tone: "bg-rose-50 text-rose-700" },
-      { label: "Missing tracking in orders", orders: filteredMetricOrders.filter(needsAramex).length, value: filteredMetricOrders.filter(needsAramex).reduce((sum, order) => sum + getAmount(order), 0), tone: "bg-amber-50 text-amber-800" },
-      { label: "Aramex failed", orders: filteredMetricOrders.filter((order) => Boolean(getAramexError(order))).length, value: filteredMetricOrders.filter((order) => Boolean(getAramexError(order))).reduce((sum, order) => sum + getAmount(order), 0), tone: "bg-orange-50 text-orange-800" },
+      { label: "Missing tracking in orders", orders: filteredMetricOrders.filter(needsBosta).length, value: filteredMetricOrders.filter(needsBosta).reduce((sum, order) => sum + getAmount(order), 0), tone: "bg-amber-50 text-amber-800" },
+      { label: "Bosta failed", orders: filteredMetricOrders.filter((order) => Boolean(getBostaError(order))).length, value: filteredMetricOrders.filter((order) => Boolean(getBostaError(order))).reduce((sum, order) => sum + getAmount(order), 0), tone: "bg-orange-50 text-orange-800" },
     ];
     const notificationRows = [
       {
@@ -3252,7 +3415,8 @@ export default function AdminDashboardPage() {
         .sort((a, b) => b.revenue - a.revenue)
         .slice(0, 8),
       topCities: Array.from(cityMap.values()).sort((a, b) => b.revenue - a.revenue).slice(0, 8),
-      aramexAttention,
+      productFamilyPieces,
+      BostaAttention,
       instapayAttention,
       returnsAttention,
       fulfillmentRows,
@@ -3261,7 +3425,7 @@ export default function AdminDashboardPage() {
       codDeliveredValue: codDelivered.reduce((sum, order) => sum + getAmount(order), 0),
       codPendingCollectionOrders: codInTransit.length,
       codPendingCollectionValue: codInTransit.reduce((sum, order) => sum + getAmount(order), 0),
-      attentionCount: aramexAttention.length + instapayAttention.length + returnsAttention.length,
+      attentionCount: BostaAttention.length + instapayAttention.length + returnsAttention.length,
     };
   }, [filteredMetricOrders]);
 
@@ -3405,7 +3569,7 @@ export default function AdminDashboardPage() {
         const bucket = getPaymentBucket(order);
         const returned = isReturned(order);
         const confirmed = isConfirmed(order);
-        const aramexIssue = Boolean(getAramexError(order) || needsAramex(order));
+        const BostaIssue = Boolean(getBostaError(order) || needsBosta(order));
 
         let movement = "Not counted yet";
         let explanation = "Order is not confirmed or paid yet.";
@@ -3429,8 +3593,8 @@ export default function AdminDashboardPage() {
           tone = "bg-yellow-100 text-yellow-800";
         }
 
-        if (aramexIssue && !returned) {
-          explanation += " Aramex needs attention before fulfillment is clean.";
+        if (BostaIssue && !returned) {
+          explanation += " Bosta needs attention before fulfillment is clean.";
         }
 
         return {
@@ -3442,7 +3606,7 @@ export default function AdminDashboardPage() {
           explanation,
           tone,
           date: getOrderDate(order)?.getTime() || 0,
-          aramexIssue,
+          BostaIssue,
         };
       })
       .sort((a, b) => b.date - a.date)
@@ -3463,7 +3627,7 @@ export default function AdminDashboardPage() {
         expenses: number;
         net: number;
         netAfterExpenses: number;
-        aramexIssues: number;
+        BostaIssues: number;
       }
     >();
 
@@ -3484,7 +3648,7 @@ export default function AdminDashboardPage() {
           expenses: 0,
           net: 0,
           netAfterExpenses: 0,
-          aramexIssues: 0,
+          BostaIssues: 0,
         };
 
       row.orders += 1;
@@ -3496,7 +3660,7 @@ export default function AdminDashboardPage() {
         row.shipping += getShipping(order);
       }
       if (isConfirmed(order) && !isReturned(order)) row.net += getAmount(order);
-      if (getAramexError(order) || needsAramex(order)) row.aramexIssues += 1;
+      if (getBostaError(order) || needsBosta(order)) row.BostaIssues += 1;
       dayMap.set(key, row);
     });
 
@@ -3517,7 +3681,7 @@ export default function AdminDashboardPage() {
           expenses: 0,
           net: 0,
           netAfterExpenses: 0,
-          aramexIssues: 0,
+          BostaIssues: 0,
         };
 
       row.expenses += getExpenseAmount(expense);
@@ -3536,10 +3700,10 @@ export default function AdminDashboardPage() {
   const financeAlerts = useMemo(() => {
     return [
       {
-        label: "Aramex attention",
-        value: stats.aramexFailed + stats.aramexMissing,
+        label: "Bosta attention",
+        value: stats.BostaFailed + stats.BostaMissing,
         detail: "Orders with failed or missing shipment tracking need admin review.",
-        tone: stats.aramexFailed + stats.aramexMissing ? "bg-rose-50 text-rose-700" : "bg-emerald-50 text-emerald-700",
+        tone: stats.BostaFailed + stats.BostaMissing ? "bg-rose-50 text-rose-700" : "bg-emerald-50 text-emerald-700",
       },
       {
         label: "Pending approvals",
@@ -3548,7 +3712,7 @@ export default function AdminDashboardPage() {
         tone: stats.pendingInstaPay ? "bg-yellow-50 text-yellow-800" : "bg-emerald-50 text-emerald-700",
       },
     ];
-  }, [stats.aramexFailed, stats.aramexMissing, stats.pendingInstaPay]);
+  }, [stats.BostaFailed, stats.BostaMissing, stats.pendingInstaPay]);
 
   const ordersPageCount = Math.max(1, Math.ceil(filteredOrders.length / ordersPageSize));
   const safeOrdersPage = Math.min(ordersPage, ordersPageCount);
@@ -3566,7 +3730,7 @@ export default function AdminDashboardPage() {
               <p className="text-xs font-black uppercase tracking-[0.24em] text-[#EEBC3F]">natOnat Admin</p>
               <h1 className="mt-3 text-3xl font-black sm:text-5xl">Orders & Money Dashboard</h1>
               <p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-white/60">
-                Track sales, payment methods, InstaPay approvals, Aramex shipment gaps, returns, and net revenue from one admin-only view.
+                Track sales, payment methods, InstaPay approvals, Bosta shipment gaps, returns, and net revenue from one admin-only view.
               </p>
             </div>
 
@@ -3627,9 +3791,9 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {aramexSyncMessage && (
+        {BostaSyncMessage && (
           <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold text-emerald-700">
-            {aramexSyncMessage}
+            {BostaSyncMessage}
           </div>
         )}
 
@@ -3638,7 +3802,7 @@ export default function AdminDashboardPage() {
             <p className="text-xs font-black uppercase tracking-[0.2em] text-[#EEBC3F]">Login required</p>
             <h2 className="mt-3 text-2xl font-black">Enter the admin username and password to load the dashboard.</h2>
             <p className="mx-auto mt-2 max-w-xl text-sm font-semibold leading-6 text-[#0F1A26]/55">
-              Orders, finance, Aramex sync, and inventory data are hidden until you sign in.
+              Orders, finance, Bosta sync, and inventory data are hidden until you sign in.
             </p>
           </section>
         ) : (
@@ -3679,7 +3843,7 @@ export default function AdminDashboardPage() {
           <div className="grid gap-4">
             <div className="min-w-0">
               <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0F1A26]/45">Dashboard period</p>
-              <p className="mt-1 text-lg font-black">{dateRange.label} · {visibleOrders.length} orders in view</p>
+              <p className="mt-1 text-lg font-black">{dateRange.label} - {visibleOrders.length} orders in view</p>
             </div>
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-[minmax(150px,0.8fr)_minmax(260px,1.4fr)_minmax(180px,1fr)_minmax(180px,1fr)_minmax(200px,1fr)_minmax(200px,1fr)_auto_auto]">
               <select
@@ -3920,8 +4084,8 @@ export default function AdminDashboardPage() {
                     onChange={(event) => updateManualOrderDraft("city", event.target.value)}
                     className="mt-1 h-11 w-full rounded-2xl border border-[#0F1A26]/10 bg-white px-3 text-sm font-bold normal-case tracking-normal outline-none"
                   >
-                    <option value="">Select Aramex city</option>
-                    {aramexCities.map((city) => (
+                    <option value="">Select Bosta city</option>
+                    {BostaCities.map((city) => (
                       <option key={city} value={city}>{city}</option>
                     ))}
                   </select>
@@ -3965,8 +4129,8 @@ export default function AdminDashboardPage() {
                 <label className="flex items-center gap-3 rounded-2xl border border-[#0F1A26]/10 bg-white p-3 text-sm font-black text-[#0F1A26] md:col-span-2 xl:col-span-4">
                   <input
                     type="checkbox"
-                    checked={manualOrderDraft.createAramexShipment}
-                    onChange={(event) => updateManualOrderDraft("createAramexShipment", event.target.checked)}
+                    checked={manualOrderDraft.createBostaShipment}
+                    onChange={(event) => updateManualOrderDraft("createBostaShipment", event.target.checked)}
                     className="h-5 w-5 accent-[#EEBC3F]"
                   />
                   Create real courier shipment for this new order
@@ -3983,8 +4147,8 @@ export default function AdminDashboardPage() {
               </div>
               <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-900 sm:flex-row sm:items-center sm:justify-between">
                 <span>
-                  {manualOrderDraft.createAramexShipment
-                    ? "This creates a new dashboard order and a real courier shipment. Use it only after the old shipment was cancelled/handled in the courier portal."
+                  {manualOrderDraft.createBostaShipment
+                    ? "This creates a new dashboard order and a real Bosta shipment. Use it only when you are sure there is no active duplicate tracking."
                     : "This order affects finance totals only. It is excluded from Sanity inventory deduction, stock forecast, and catalog product sales ranking."}
                 </span>
                 <button
@@ -3994,7 +4158,7 @@ export default function AdminDashboardPage() {
                 >
                   {actionLoadingRef === "manual-order"
                     ? "Saving..."
-                    : manualOrderDraft.createAramexShipment
+                    : manualOrderDraft.createBostaShipment
                       ? "Create order + shipment"
                       : "Save manual order"}
                 </button>
@@ -4038,6 +4202,32 @@ export default function AdminDashboardPage() {
             <DataPill label="data source" value="Google Sheets orders webhook + in-memory fallback for recent orders" />
             <DataPill label="auto refresh" value="Every 60 seconds while the admin page is open" />
             <DataPill label="tracking refresh" value="Refresh Tracking Status reads latest movement from the courier for stored tracking numbers" />
+          </div>
+          <div className="mt-4 rounded-3xl border border-[#0F1A26]/10 bg-[#0F1A26] p-4 text-white">
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-[#EEBC3F]">Product family pieces sold</p>
+                <h3 className="text-xl font-black">Core product count</h3>
+              </div>
+              <p className="text-xs font-bold text-white/55">Uses the same period/status filters above.</p>
+            </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl bg-white/10 p-4">
+                <p className="text-xs font-black uppercase tracking-[0.14em] text-white/45">Luggage covers</p>
+                <p className="mt-2 text-3xl font-black">{operations.productFamilyPieces.luggageCovers}</p>
+                <p className="mt-1 text-xs font-bold text-white/45">كفرات شنط</p>
+              </div>
+              <div className="rounded-2xl bg-white/10 p-4">
+                <p className="text-xs font-black uppercase tracking-[0.14em] text-white/45">PackOnat</p>
+                <p className="mt-2 text-3xl font-black">{operations.productFamilyPieces.packOnat}</p>
+                <p className="mt-1 text-xs font-bold text-white/45">باكونات</p>
+              </div>
+              <div className="rounded-2xl bg-white/10 p-4">
+                <p className="text-xs font-black uppercase tracking-[0.14em] text-white/45">Passport Wallet</p>
+                <p className="mt-2 text-3xl font-black">{operations.productFamilyPieces.passportWallet}</p>
+                <p className="mt-1 text-xs font-bold text-white/45">باسبور والت</p>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -4089,7 +4279,7 @@ export default function AdminDashboardPage() {
               <DataPill label="cod expected to collect" value={`${money.format(stats.codToCollectValue)} / ${stats.codToCollectOrders} orders`} />
               <DataPill label="pending or unpaid" value={`${money.format(stats.unconfirmedValue)} / ${stats.unconfirmedOrders} orders`} />
               <DataPill label="returned or cancelled" value={`-${money.format(stats.returnedValue)}`} />
-              <DataPill label="blocked by aramex attention" value={`${money.format(stats.aramexBlockedValue)} / ${stats.aramexFailed + stats.aramexMissing} orders`} />
+              <DataPill label="blocked by Bosta attention" value={`${money.format(stats.BostaBlockedValue)} / ${stats.BostaFailed + stats.BostaMissing} orders`} />
               <DataPill label="net revenue currently shown" value={money.format(stats.netRevenue)} />
             </div>
           </div>
@@ -4129,7 +4319,7 @@ export default function AdminDashboardPage() {
           <StatCard title="COD Orders" value={String(stats.codOrders)} icon={Truck} />
           <StatCard title="Card Orders" value={String(stats.cardOrders)} icon={CreditCard} />
           <StatCard title="InstaPay Orders" value={String(stats.instapayOrders)} subtitle={`${stats.pendingInstaPay} waiting approval`} icon={WalletCards} tone={stats.pendingInstaPay ? "gold" : "dark"} />
-          <StatCard title="Courier Attention" value={String(stats.aramexFailed + stats.aramexMissing + stats.aramexReplacement)} subtitle={`${stats.aramexWithTracking} with tracking / ${stats.aramexFailed} failed / ${stats.aramexMissing} missing / ${stats.aramexReplacement} need replacement`} icon={AlertTriangle} tone={stats.aramexFailed + stats.aramexMissing + stats.aramexReplacement ? "red" : "green"} />
+          <StatCard title="Courier Attention" value={String(stats.BostaFailed + stats.BostaMissing + stats.BostaReplacement)} subtitle={`${stats.BostaWithTracking} with tracking / ${stats.BostaFailed} failed / ${stats.BostaMissing} missing / ${stats.BostaReplacement} need replacement`} icon={AlertTriangle} tone={stats.BostaFailed + stats.BostaMissing + stats.BostaReplacement ? "red" : "green"} />
         </section>
 
         <section className="mt-6 grid gap-4 lg:grid-cols-[1fr_1fr]">
@@ -4229,7 +4419,7 @@ export default function AdminDashboardPage() {
                     <td className="px-5 py-4 text-rose-700">-{money.format(day.expenses)}</td>
                     <td className="px-5 py-4 font-black">{money.format(day.net)}</td>
                     <td className="px-5 py-4 font-black">{money.format(day.netAfterExpenses)}</td>
-                    <td className="px-5 py-4 font-black">{day.aramexIssues}</td>
+                    <td className="px-5 py-4 font-black">{day.BostaIssues}</td>
                   </tr>
                 )) : (
                   <tr>
@@ -4294,7 +4484,7 @@ export default function AdminDashboardPage() {
               <DataPill label="returned or cancelled value" value={money.format(stats.returnedValue)} />
             </div>
             <div className="mt-4 rounded-2xl bg-amber-50 p-4 text-xs font-bold leading-5 text-amber-800">
-              Courier numbers here are order-record based only. Manual gifts, influencer shipments, or shipments created directly in the courier portal will not appear unless their tracking number is saved on an order row.
+              Courier numbers here are order-record based only. Manual gifts, influencer shipments, or shipments created directly in Bosta will not appear unless their tracking number is saved on an order row.
             </div>
           </div>
         </section>
@@ -4417,7 +4607,7 @@ export default function AdminDashboardPage() {
                   <div>
                     <p className="font-black">{product.name}</p>
                     <p className="text-xs font-bold text-[#0F1A26]/45">
-                      {product.qty} units · {product.ordersCount} orders
+                      {product.qty} units - {product.ordersCount} orders
                     </p>
                     <p className="mt-1 text-[11px] font-bold leading-5 text-[#0F1A26]/45">
                       Recorded line revenue: {money.format(product.directRevenue)}
@@ -4483,10 +4673,10 @@ export default function AdminDashboardPage() {
                   <div>
                     <h2 className="text-2xl font-black">{customerStats.top.name}</h2>
                     <p className="mt-2 text-sm font-bold text-[#0F1A26]/55">
-                      {customerStats.top.phone || "No phone"} · {customerStats.top.email || "No email"}
+                      {customerStats.top.phone || "No phone"} - {customerStats.top.email || "No email"}
                     </p>
                     <p className="mt-1 text-sm font-bold text-[#0F1A26]/45">
-                      {customerStats.top.city || "No city"} {customerStats.top.governorate ? `· ${customerStats.top.governorate}` : ""}
+                      {customerStats.top.city || "No city"} {customerStats.top.governorate ? `- ${customerStats.top.governorate}` : ""}
                     </p>
                   </div>
                   <div className="grid gap-3 sm:grid-cols-4">
@@ -4551,7 +4741,7 @@ export default function AdminDashboardPage() {
                         .sort((a, b) => b[1] - a[1])
                         .slice(0, 3)
                         .map(([name, qty]) => `${name} x${qty}`)
-                        .join(" · ");
+                        .join(" - ");
                       const customerOrders = customer.orderRefs
                         .map((orderRef) => filteredMetricOrders.find((order) => getOrderRef(order) === orderRef))
                         .filter((order): order is AdminOrder => Boolean(order));
@@ -4561,7 +4751,7 @@ export default function AdminDashboardPage() {
                           <td className="px-5 py-4">
                             <p className="font-black">{customer.name}</p>
                             <p className="mt-1 text-xs font-bold text-[#0F1A26]/45">
-                              {customer.city || "No city"} {customer.governorate ? `· ${customer.governorate}` : ""}
+                              {customer.city || "No city"} {customer.governorate ? `- ${customer.governorate}` : ""}
                             </p>
                             {customer.address && (
                               <p className="mt-1 max-w-xs text-xs font-semibold leading-5 text-[#0F1A26]/45">{customer.address}</p>
@@ -4591,7 +4781,7 @@ export default function AdminDashboardPage() {
                               {productSummary || "No products recorded"}
                             </p>
                             <p className="mt-2 text-xs font-bold text-[#0F1A26]/45">
-                              {[...customer.paymentMethods].join(", ") || "unknown"} · {[...customer.statuses].slice(0, 2).join(", ")}
+                              {[...customer.paymentMethods].join(", ") || "unknown"} - {[...customer.statuses].slice(0, 2).join(", ")}
                             </p>
                           </td>
                           <td className="px-5 py-4">
@@ -5091,45 +5281,49 @@ export default function AdminDashboardPage() {
             <div className="rounded-3xl bg-rose-50 p-4">
               <div className="flex items-center justify-between gap-3">
                 <h3 className="font-black text-rose-800">Courier shipment actions</h3>
-                <span className="rounded-full bg-rose-200 px-3 py-1 text-xs font-black text-rose-900">{operations.aramexAttention.length}</span>
+                <span className="rounded-full bg-rose-200 px-3 py-1 text-xs font-black text-rose-900">{operations.BostaAttention.length}</span>
               </div>
               <div className="mt-3 space-y-2">
-                {operations.aramexAttention.length ? operations.aramexAttention.map((order) => (
+                {operations.BostaAttention.length ? operations.BostaAttention.map((order) => (
                   <div key={getOrderRef(order)} className="rounded-2xl bg-white p-3 text-sm font-bold shadow-sm">
                     <button onClick={() => setSelectedOrder(order)} className="block w-full text-left">
                       <span className="block font-black">{getOrderRef(order)}</span>
                       <span className="line-clamp-2 text-[#0F1A26]/50">
-                        {needsAramexReplacement(order)
-                          ? getString(getAramex(order).replacementReason) || "Order changed after shipment creation. Replace courier shipment."
-                          : getAramexError(order) || "Missing tracking on order row"}
+                        {needsBostaReplacement(order)
+                          ? getString(getBosta(order).replacementReason) || "Order changed after shipment creation. Replace courier shipment."
+                          : getBostaError(order) || "Missing tracking on order row"}
                       </span>
                     </button>
-                    {needsAramex(order) && (
+                    {needsBosta(order) && (
                       <button
-                        onClick={() => void createAramexShipmentFromOrder(order)}
-                        disabled={actionLoadingRef === `aramex-create:${getOrderRef(order)}`}
+                        onClick={() => void createBostaShipmentFromOrder(order)}
+                        disabled={actionLoadingRef === `Bosta-create:${getOrderRef(order)}`}
                         className="mt-3 h-9 w-full rounded-xl bg-emerald-600 text-xs font-black text-white transition hover:-translate-y-0.5 disabled:opacity-60"
                       >
-                        {actionLoadingRef === `aramex-create:${getOrderRef(order)}` ? "Creating..." : "Create shipment"}
+                        {actionLoadingRef === `Bosta-create:${getOrderRef(order)}` ? "Creating..." : "Create shipment"}
                       </button>
                     )}
-                    {needsAramexReplacement(order) && (
-                      <p className="mt-3 rounded-xl bg-amber-50 p-2 text-xs font-black leading-5 text-amber-800">
-                        Cancel old tracking in the courier portal first. Auto replacement is blocked to avoid duplicate shipments.
-                      </p>
-                    )}
-                    {(getTrackingNumber(order) || getAramexError(order)) && (
+                    {needsBostaReplacement(order) && (
                       <button
-                        onClick={() => void syncOneAramex(order)}
-                        disabled={actionLoadingRef === `aramex:${getOrderRef(order)}`}
+                        onClick={() => void terminateBostaShipmentForReplacement(order)}
+                        disabled={actionLoadingRef === `bosta-terminate:${getOrderRef(order)}`}
+                        className="mt-3 h-9 w-full rounded-xl bg-amber-500 text-xs font-black text-[#0F1A26] transition hover:-translate-y-0.5 disabled:opacity-60"
+                      >
+                        {actionLoadingRef === `bosta-terminate:${getOrderRef(order)}` ? "Terminating..." : "Terminate old Bosta shipment"}
+                      </button>
+                    )}
+                    {(getTrackingNumber(order) || getBostaError(order)) && (
+                      <button
+                        onClick={() => void syncOneBosta(order)}
+                        disabled={actionLoadingRef === `Bosta:${getOrderRef(order)}`}
                         className="mt-3 h-9 w-full rounded-xl border border-[#0F1A26]/10 text-xs font-black text-[#0F1A26] transition hover:-translate-y-0.5 disabled:opacity-60"
                       >
-                        {actionLoadingRef === `aramex:${getOrderRef(order)}` ? "Refreshing..." : "Refresh tracking status"}
+                        {actionLoadingRef === `Bosta:${getOrderRef(order)}` ? "Refreshing..." : "Refresh tracking status"}
                       </button>
                     )}
                     {needsOldTrackingCancellation(order) && (
                       <p className="mt-2 rounded-xl bg-amber-50 p-2 text-xs font-black text-amber-800">
-                        Old tracking needs cancel/check in the courier portal.
+                        Old tracking needs Bosta terminate/check before replacement.
                       </p>
                     )}
                   </div>
@@ -5268,18 +5462,18 @@ export default function AdminDashboardPage() {
             </select>
             <button
               onClick={() => refreshAll()}
-              disabled={loading || inventoryLoading || aramexSyncing}
+              disabled={loading || inventoryLoading || BostaSyncing}
               className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#0F1A26] px-5 text-sm font-black text-white transition hover:-translate-y-0.5 disabled:opacity-60"
             >
               <RefreshCw className={`h-4 w-4 ${loading || inventoryLoading ? "animate-spin" : ""}`} />
               Refresh
             </button>
             <button
-              onClick={syncAramex}
-              disabled={loading || aramexSyncing}
+              onClick={syncBosta}
+              disabled={loading || BostaSyncing}
               className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#EEBC3F] px-5 text-sm font-black text-[#0F1A26] transition hover:-translate-y-0.5 disabled:opacity-60"
             >
-              <Truck className={`h-4 w-4 ${aramexSyncing ? "animate-pulse" : ""}`} />
+              <Truck className={`h-4 w-4 ${BostaSyncing ? "animate-pulse" : ""}`} />
               Refresh Tracking Status
             </button>
             {query && (
@@ -5333,7 +5527,7 @@ export default function AdminDashboardPage() {
             <div>
               <h2 className="text-lg font-black">Orders</h2>
               <p className="text-xs font-bold text-[#0F1A26]/45">
-                {filteredOrders.length} visible orders · page {safeOrdersPage} of {ordersPageCount}
+                {filteredOrders.length} visible orders - page {safeOrdersPage} of {ordersPageCount}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -5371,18 +5565,18 @@ export default function AdminDashboardPage() {
                 {paginatedOrders.map((order, index) => {
                   const customer = getCustomer(order);
                   const tracking = getTrackingNumber(order);
-                  const aramexStatus = getAramexStatus(order);
-                  const aramexCode = getAramexLatestCode(order);
-                  const aramexUpdate = getAramexLatestUpdate(order);
-                  const aramexLocation = getAramexLatestLocation(order);
-                  const aramexSyncedAt = getAramexSyncedAt(order);
-                  const aramexError = getAramexError(order);
+                  const BostaStatus = getBostaStatus(order);
+                  const BostaCode = getBostaLatestCode(order);
+                  const BostaUpdate = getBostaLatestUpdate(order);
+                  const BostaLocation = getBostaLatestLocation(order);
+                  const BostaSyncedAt = getBostaSyncedAt(order);
+                  const BostaError = getBostaError(order);
                   const orderRef = getOrderRef(order);
                   const rowTone = isReturned(order)
                     ? "bg-rose-50/70"
                     : isPendingInstaPay(order)
                       ? "bg-amber-50/80"
-                      : aramexError || needsAramex(order) || needsAramexReplacement(order)
+                      : BostaError || needsBosta(order) || needsBostaReplacement(order)
                         ? "bg-orange-50/70"
                         : "";
 
@@ -5414,21 +5608,21 @@ export default function AdminDashboardPage() {
                         {tracking ? (
                           <>
                             <p className="font-black text-emerald-700">{tracking}</p>
-                            {aramexStatus && <p className="mt-1 text-xs font-black text-[#0F1A26]">{aramexStatus}</p>}
-                            {aramexCode && (
+                            {BostaStatus && <p className="mt-1 text-xs font-black text-[#0F1A26]">{BostaStatus}</p>}
+                            {BostaCode && (
                               <p className="mt-1 text-[11px] font-black uppercase tracking-[0.08em] text-[#0F1A26]/45">
-                                Code: {aramexCode}
+                                Code: {BostaCode}
                               </p>
                             )}
-                            {aramexUpdate && <p className="mt-1 max-w-[260px] text-xs font-semibold text-[#0F1A26]/55">{aramexUpdate}</p>}
-                            {aramexLocation && (
+                            {BostaUpdate && <p className="mt-1 max-w-[260px] text-xs font-semibold text-[#0F1A26]/55">{BostaUpdate}</p>}
+                            {BostaLocation && (
                               <p className="mt-1 max-w-[260px] text-xs font-bold text-[#0F1A26]/45">
-                                Location: {aramexLocation}
+                                Location: {BostaLocation}
                               </p>
                             )}
-                            {aramexSyncedAt && (
+                            {BostaSyncedAt && (
                               <p className="mt-1 text-[11px] font-bold text-[#0F1A26]/35">
-                                Refreshed {formatAdminDateTime(aramexSyncedAt) || aramexSyncedAt}
+                                Refreshed {formatAdminDateTime(BostaSyncedAt) || BostaSyncedAt}
                               </p>
                             )}
                             {needsOldTrackingCancellation(order) && (
@@ -5440,11 +5634,11 @@ export default function AdminDashboardPage() {
                         ) : (
                           <p className="font-bold text-[#0F1A26]/40">No tracking</p>
                         )}
-                        {aramexError && <p className="mt-1 max-w-[260px] text-xs font-bold text-rose-600">{aramexError}</p>}
-                        {needsAramex(order) && !aramexError && (
+                        {BostaError && <p className="mt-1 max-w-[260px] text-xs font-bold text-rose-600">{BostaError}</p>}
+                        {needsBosta(order) && !BostaError && (
                           <p className="mt-1 text-xs font-bold text-orange-600">Needs courier shipment</p>
                         )}
-                        {needsAramexReplacement(order) && (
+                        {needsBostaReplacement(order) && (
                           <p className="mt-1 rounded-xl bg-orange-50 px-2 py-1 text-xs font-black text-orange-700">
                             Needs shipment replacement
                           </p>
@@ -5465,28 +5659,33 @@ export default function AdminDashboardPage() {
                         )}
                       </td>
                       <td className="px-5 py-4 align-top">
-                        {needsAramex(order) && (
+                        {needsBosta(order) && (
                           <button
-                            onClick={() => void createAramexShipmentFromOrder(order)}
-                            disabled={actionLoadingRef === `aramex-create:${orderRef}`}
+                            onClick={() => void createBostaShipmentFromOrder(order)}
+                            disabled={actionLoadingRef === `Bosta-create:${orderRef}`}
                             className="mb-2 inline-flex h-10 items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 text-xs font-black text-white transition hover:-translate-y-0.5 disabled:opacity-60"
                           >
-                            <Truck className={`h-4 w-4 ${actionLoadingRef === `aramex-create:${orderRef}` ? "animate-pulse" : ""}`} />
-                            {actionLoadingRef === `aramex-create:${orderRef}` ? "Creating..." : "Create shipment"}
+                            <Truck className={`h-4 w-4 ${actionLoadingRef === `Bosta-create:${orderRef}` ? "animate-pulse" : ""}`} />
+                            {actionLoadingRef === `Bosta-create:${orderRef}` ? "Creating..." : "Create shipment"}
                           </button>
                         )}
-                        {needsAramexReplacement(order) && (
-                          <p className="mb-2 max-w-[220px] rounded-2xl bg-amber-50 px-3 py-2 text-xs font-black leading-5 text-amber-800">
-                            Cancel old courier tracking first. Replacement is blocked.
-                          </p>
-                        )}
-                        {(tracking || getAramexError(order)) && (
+                        {needsBostaReplacement(order) && (
                           <button
-                            onClick={() => void syncOneAramex(order)}
-                            disabled={actionLoadingRef === `aramex:${orderRef}`}
+                            onClick={() => void terminateBostaShipmentForReplacement(order)}
+                            disabled={actionLoadingRef === `bosta-terminate:${orderRef}`}
+                            className="mb-2 inline-flex h-10 items-center justify-center gap-2 rounded-2xl bg-amber-500 px-4 text-xs font-black text-[#0F1A26] transition hover:-translate-y-0.5 disabled:opacity-60"
+                          >
+                            <PackageX className={`h-4 w-4 ${actionLoadingRef === `bosta-terminate:${orderRef}` ? "animate-pulse" : ""}`} />
+                            {actionLoadingRef === `bosta-terminate:${orderRef}` ? "Terminating..." : "Terminate old shipment"}
+                          </button>
+                        )}
+                        {(tracking || getBostaError(order)) && (
+                          <button
+                            onClick={() => void syncOneBosta(order)}
+                            disabled={actionLoadingRef === `Bosta:${orderRef}`}
                             className="mb-2 inline-flex h-10 items-center justify-center gap-2 rounded-2xl border border-[#0F1A26]/10 bg-white px-4 text-xs font-black text-[#0F1A26] transition hover:-translate-y-0.5 disabled:opacity-60"
                           >
-                            <RefreshCw className={`h-4 w-4 ${actionLoadingRef === `aramex:${orderRef}` ? "animate-spin" : ""}`} />
+                            <RefreshCw className={`h-4 w-4 ${actionLoadingRef === `Bosta:${orderRef}` ? "animate-spin" : ""}`} />
                             Refresh tracking
                           </button>
                         )}
@@ -5544,12 +5743,14 @@ export default function AdminDashboardPage() {
           inventory={inventory}
           onClose={() => setSelectedOrder(null)}
           onApproveInstaPay={(order) => void approveInstaPayOrder(order)}
-          onCreateAramex={(order) => void createAramexShipmentFromOrder(order)}
+          onCreateBosta={(order) => void createBostaShipmentFromOrder(order)}
           onPrintBostaAwb={(order) => void printBostaAwb(order)}
           onSaveManualEdit={(order, draft) => void saveManualOrderEdit(order, draft)}
+          onDeleteOrder={(order) => void deleteOrderEverywhere(order)}
           actionLoadingRef={actionLoadingRef}
         />
       )}
     </main>
   );
 }
+

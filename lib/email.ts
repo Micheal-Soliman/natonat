@@ -62,6 +62,12 @@ type OrderEmailData = {
     payment_discount?: number;
     payment_discount_percent?: number;
   };
+  bosta?: {
+    trackingNumber?: string;
+  };
+  shipment?: {
+    trackingNumber?: string;
+  };
   aramex?: {
     trackingNumber?: string;
   };
@@ -228,7 +234,7 @@ export async function sendOrderEmail(orderData: OrderEmailData) {
         </div>
 
         <div style="margin-top: 10px; font-size: 12px; color: #777; text-align: center; border-top: 1px solid #eee; padding-top: 10px;">
-          <p>Aramex Tracking Number: ${orderData.aramex?.trackingNumber || 'N/A'}</p>
+          <p>Bosta Tracking Number: ${orderData.bosta?.trackingNumber || orderData.shipment?.trackingNumber || orderData.aramex?.trackingNumber || 'N/A'}</p>
           <p>Order Logged At: ${orderData.created_at || 'N/A'}</p>
         </div>
 
@@ -279,7 +285,7 @@ export async function sendInstapayApprovalEmail(orderData: OrderEmailData) {
     ? `
         <p style="margin-top: 18px;">
           <a href="${approvalUrl}" style="display:inline-block;background:#EEBC3F;color:#0F1A26;text-decoration:none;font-weight:bold;padding:12px 16px;border-radius:999px;">
-            Approve InstaPay and create Aramex shipment
+            Approve InstaPay and create Bosta shipment
           </a>
         </p>
       `
@@ -296,7 +302,7 @@ export async function sendInstapayApprovalEmail(orderData: OrderEmailData) {
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 14px;">
         <h2 style="color: #0F1A26; text-align: center;">InstaPay Order Waiting for Approval</h2>
-        <p style="text-align:center;color:#666;">Do not create Aramex until this payment proof is approved.</p>
+        <p style="text-align:center;color:#666;">Do not create Bosta shipment until this payment proof is approved.</p>
 
         <div style="background:#F8F6F3;border-radius:12px;padding:14px;margin:18px 0;">
           <p><strong>Order Reference:</strong> ${escapeHtml(orderData.order_ref)}</p>
@@ -388,7 +394,7 @@ export async function sendInstapayPendingCustomerEmail(orderData: OrderEmailData
         <div style="margin-top: 20px; text-align: right;">${totalsHtml}</div>
 
         <p style="margin-top: 18px; padding: 12px; background: #fff8e1; border-radius: 10px; color: #7a5a00;">
-          Aramex shipping will be created only after payment approval. You will receive another email when the order is confirmed.
+          Bosta shipping will be created only after payment approval. You will receive another email when the order is confirmed.
         </p>
       </div>
     `,
@@ -448,7 +454,7 @@ export async function sendCustomerConfirmationEmail(orderData: OrderEmailData) {
         </div>
 
         <div style="margin-top: 10px; font-size: 12px; color: #777; text-align: center; border-top: 1px solid #eee; padding-top: 10px;">
-          <p>Tracking Number: ${orderData.aramex?.trackingNumber || 'N/A'}</p>
+          <p>Tracking Number: ${orderData.bosta?.trackingNumber || orderData.shipment?.trackingNumber || orderData.aramex?.trackingNumber || 'N/A'}</p>
           <p>Order Logged At: ${orderData.created_at || 'N/A'}</p>
         </div>
 

@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
 
-import { syncAramexOrders } from "@/lib/admin-aramex-sync";
-
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -22,20 +20,13 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Unauthorized cron request" }, { status: 401 });
   }
 
-  try {
-    const url = new URL(req.url);
-    const limit = Number(url.searchParams.get("limit") || 75);
-    const result = await syncAramexOrders({ limit });
-
-    return NextResponse.json({
-      success: true,
-      source: "cron_aramex_sync",
-      syncedAt: new Date().toISOString(),
-      ...result,
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error("[Cron Aramex Sync] Failed", error);
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
-  }
+  return NextResponse.json({
+    success: true,
+    source: "cron_bosta_sync_disabled",
+    syncedAt: new Date().toISOString(),
+    synced: 0,
+    failed: 0,
+    skipped: true,
+    message: "Bosta tracking updates are handled by the Bosta webhook. Legacy courier cron sync is disabled.",
+  });
 }

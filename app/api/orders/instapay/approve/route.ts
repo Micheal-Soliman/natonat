@@ -9,17 +9,34 @@ type LoggedOrder = {
   customer?: unknown;
   items?: Array<{
     name?: string;
+    title?: string;
+    slug?: string;
+    type?: string;
+    size?: string;
+    selectedSize?: string;
+    variantSize?: string;
+    color?: string;
+    selectedColor?: string;
+    variant?: string;
     quantity?: number;
   }>;
   amount_egp?: number;
   amount_cents?: number;
-  aramex?: {
+  bosta?: {
     provider?: string;
     trackingNumber?: string;
     trackingLink?: string;
     labelUrl?: string;
     guid?: string;
   };
+  shipment?: {
+    provider?: string;
+    trackingNumber?: string;
+    trackingLink?: string;
+    labelUrl?: string;
+    guid?: string;
+  };
+  aramex?: LoggedOrder["bosta"];
 };
 
 async function fetchOrder(orderRef: string) {
@@ -78,11 +95,11 @@ export async function GET(req: Request) {
   }
 
   const appOrigin = getAppOrigin(req);
-  let aramexPayload: LoggedOrder["aramex"] | null = order.aramex || null;
+  let bostaPayload: LoggedOrder["bosta"] | null = order.bosta || order.shipment || order.aramex || null;
   let nextStatus = order.delivery_method === "delivery" ? "confirmed" : "confirmed";
 
-  if (order.delivery_method === "delivery" && order.customer && !order.aramex?.trackingNumber) {
-    const shipmentRes = await fetch(`${appOrigin}/api/aramex/shipment`, {
+  if (order.delivery_method === "delivery" && order.customer && !bostaPayload?.trackingNumber) {
+    const shipmentRes = await fetch(`${appOrigin}/api/bosta/shipment`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -90,6 +107,15 @@ export async function GET(req: Request) {
         customer: order.customer,
         items: (order.items || []).map((item) => ({
           name: item.name || "Order item",
+          title: item.title,
+          slug: item.slug,
+          type: item.type,
+          size: item.size,
+          selectedSize: item.selectedSize,
+          variantSize: item.variantSize,
+          color: item.color,
+          selectedColor: item.selectedColor,
+          variant: item.variant,
           quantity: item.quantity || 1,
         })),
         totalValue: order.amount_egp || Math.round((order.amount_cents || 0) / 100),
@@ -109,8 +135,8 @@ export async function GET(req: Request) {
           order_ref: orderRef,
           status: "confirmed",
           payment_status: "Paid",
-          aramex: {
-            error: shipmentData?.details || shipmentData?.error || "Aramex shipment failed",
+          bosta: {
+            error: shipmentData?.details || shipmentData?.error || "Bosta shipment failed",
           },
           updated_at: new Date().toISOString(),
         }),
@@ -119,14 +145,14 @@ export async function GET(req: Request) {
 
       return NextResponse.json(
         {
-          error: "InstaPay approved, but Aramex shipment failed",
-          details: shipmentData?.details || shipmentData?.error || "Aramex shipment failed",
+          error: "InstaPay approved, but Bosta shipment failed",
+          details: shipmentData?.details || shipmentData?.error || "Bosta shipment failed",
         },
         { status: 502 }
       );
     }
 
-    aramexPayload = {
+    bostaPayload = {
       provider: shipmentData.provider,
       trackingNumber: shipmentData.trackingNumber,
       trackingLink: shipmentData.trackingLink,
@@ -142,7 +168,8 @@ export async function GET(req: Request) {
       order_ref: orderRef,
       status: nextStatus,
       payment_status: "Paid",
-      aramex: aramexPayload,
+      bosta: bostaPayload,
+      shipment: bostaPayload ? { provider: "bosta", trackingNumber: bostaPayload.trackingNumber, trackingLink: bostaPayload.trackingLink } : null,
       updated_at: new Date().toISOString(),
     }),
     cache: "no-store",
@@ -160,6 +187,6 @@ export async function GET(req: Request) {
     success: true,
     order_ref: orderRef,
     status: nextStatus,
-    aramex: aramexPayload,
+    bosta: bostaPayload,
   });
 }

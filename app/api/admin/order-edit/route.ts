@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { isAdminAuthorized } from "@/lib/admin-auth";
 import { fetchOrderFromDatabase, isOrderDatabaseConfigured, upsertOrderToDatabase } from "@/lib/order-database";
+import { updateBostaDelivery } from "@/lib/bosta";
 
 type OrderRecord = Record<string, unknown>;
 
@@ -34,6 +35,7 @@ type OrderEditBody = {
   discountEgp?: number;
   paymentDiscountEgp?: number;
   customer?: OrderRecord;
+  bosta?: OrderRecord;
   aramex?: OrderRecord;
   items?: EditableItem[];
 };
@@ -141,12 +143,13 @@ function sanitizeCustomer(input: unknown) {
   );
 }
 
-function sanitizeAramex(input: unknown) {
-  const aramex = getObject(input);
+function sanitizeBosta(input: unknown) {
+  const bosta = getObject(input);
   const allowedKeys = [
     "trackingNumber",
     "trackingLink",
     "guid",
+    "deliveryId",
     "status",
     "latestCode",
     "latestDescription",
@@ -161,7 +164,7 @@ function sanitizeAramex(input: unknown) {
 
   return Object.fromEntries(
     allowedKeys
-      .map((key) => [key, getString(aramex[key])])
+      .map((key) => [key, getString(bosta[key])])
       .filter(([, value]) => Boolean(value)),
   );
 }
@@ -207,8 +210,25 @@ function getExtras(order: OrderRecord) {
   return getObject(order.extras || order["Extras (Full JSON)"] || order["Extras (JSON)"]);
 }
 
-function getAramex(order: OrderRecord) {
-  return getObject(order.aramex);
+function getBosta(order: OrderRecord) {
+  return getObject(order.bosta || order.shipment || order.aramex);
+}
+
+function getTrackingNumber(order: OrderRecord) {
+  const bosta = getBosta(order);
+  return getString(bosta.trackingNumber || order["Bosta Tracking Number"] || order["Aramex Tracking Number"]);
+}
+
+function isCodPayment(order: OrderRecord) {
+  const paymentMethod = getString(order.payment_method || order["Payment Method"]).toLowerCase();
+  const paymentStatus = getString(order.payment_status || order["Payment Status"]).toLowerCase();
+  return paymentMethod.includes("cod") || paymentMethod.includes("cash") || paymentStatus.includes("cash on delivery");
+}
+
+function shouldUpdateBostaDelivery(changedFields: string[]) {
+  return changedFields.some((field) =>
+    ["customer", "amount_egp", "payment_method", "payment_status", "bosta"].includes(field),
+  );
 }
 
 async function fetchOrderFromSheets(orderRef: string) {
@@ -267,7 +287,7 @@ function changedFieldNames(before: OrderRecord, after: OrderRecord) {
     "discount_egp",
     "payment_discount_egp",
     "customer",
-    "aramex",
+    "bosta",
     "items",
   ];
 
@@ -279,7 +299,7 @@ function applyManualEdit(existing: OrderRecord, body: OrderEditBody) {
   const currentExtras = getExtras(existing);
   const currentCustomer = getCustomer(existing);
   const currentItems = getItems(existing);
-  const currentAramex = getAramex(existing);
+  const currentBosta = getBosta(existing);
   const updated: OrderRecord = {
     ...existing,
     order_ref: getOrderRef(existing),
@@ -287,7 +307,9 @@ function applyManualEdit(existing: OrderRecord, body: OrderEditBody) {
     customer: currentCustomer,
     items: currentItems,
     extras: currentExtras,
-    aramex: currentAramex,
+    bosta: currentBosta,
+    shipment: currentBosta,
+    aramex: currentBosta,
     updated_at: timestamp,
   };
 
@@ -345,13 +367,15 @@ function applyManualEdit(existing: OrderRecord, body: OrderEditBody) {
     };
   }
 
-  if (body.aramex !== undefined) {
-    const sanitizedAramex = sanitizeAramex(body.aramex);
-    updated.aramex = {
-      ...currentAramex,
-      ...sanitizedAramex,
+  if (body.bosta !== undefined || body.aramex !== undefined) {
+    const sanitizedBosta = sanitizeBosta(body.bosta || body.aramex);
+    updated.bosta = {
+      ...currentBosta,
+      ...sanitizedBosta,
       manuallyEditedAt: timestamp,
     };
+    updated.shipment = updated.bosta;
+    updated.aramex = updated.bosta;
   }
 
   if (body.items !== undefined) {
@@ -375,11 +399,11 @@ function applyManualEdit(existing: OrderRecord, body: OrderEditBody) {
     finance_affects_dashboard: changedFields.some((field) =>
       ["status", "payment_status", "amount_egp", "subtotal_egp", "shipping_egp", "discount_egp", "payment_discount_egp", "items"].includes(field),
     ),
-    aramex_note: changedFields.includes("aramex")
-      ? "Admin manually edited the stored tracking fields. This records tracking data in the dashboard but does not call Aramex."
-      : getString(currentAramex.trackingNumber)
-        ? "This manual edit updates database/dashboard only. Existing Aramex shipment details are not edited automatically."
-        : "No Aramex tracking exists. Creating a shipment later will use the saved order data.",
+    bosta_note: changedFields.includes("bosta")
+      ? "Admin manually edited the stored Bosta tracking fields. This records tracking data in the dashboard but does not call Bosta."
+      : getString(currentBosta.trackingNumber)
+        ? "This manual edit saves to the dashboard and attempts to update Bosta when address, phone, city, or COD changed. If Bosta rejects the update, the order is marked for replacement."
+        : "No Bosta tracking exists. Creating a shipment later will use the saved order data.",
   };
 
   updated.admin_audit = [...getArray(existing.admin_audit), auditEntry];
@@ -421,6 +445,61 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, order_ref: orderRef, order: updated, changedFields });
   }
 
+  let bostaUpdate:
+    | { attempted: false }
+    | { attempted: true; success: boolean; message?: string; error?: string } = { attempted: false };
+
+  const trackingNumber = getTrackingNumber(updated);
+  if (trackingNumber && shouldUpdateBostaDelivery(changedFields)) {
+    const currentBosta = getBosta(updated);
+    const customer = getCustomer(updated);
+    const updateResult = await updateBostaDelivery({
+      trackingNumber,
+      customer: {
+        first_name: getString(customer.first_name || customer.name) || "Customer",
+        last_name: getString(customer.last_name),
+        phone: getString(customer.phone),
+        address: getString(customer.address),
+        city: getString(customer.city),
+        governorate: getString(customer.governorate),
+        districtId: getString(customer.districtId || currentBosta.districtId),
+        districtName: getString(customer.districtName || customer.city),
+        cityId: getString(customer.cityId || currentBosta.cityId),
+        zoneId: getString(customer.zoneId || currentBosta.zoneId),
+      },
+      cod: isCodPayment(updated) ? getNumber(updated.amount_egp || updated["Total (EGP)"]) : 0,
+    });
+
+    const timestamp = new Date().toISOString();
+    if (updateResult.success) {
+      updated.bosta = {
+        ...currentBosta,
+        provider: "bosta",
+        trackingNumber,
+        deliveryId: updateResult.deliveryId || getString(currentBosta.deliveryId || currentBosta.guid),
+        shipmentUpdatedAt: timestamp,
+        shipmentUpdateMessage: updateResult.message || "Bosta delivery updated",
+        error: "",
+      };
+      bostaUpdate = { attempted: true, success: true, message: updateResult.message };
+    } else {
+      updated.bosta = {
+        ...currentBosta,
+        provider: "bosta",
+        trackingNumber,
+        needsReplacement: true,
+        replacementRequired: true,
+        replacementReason: updateResult.error || "Bosta rejected delivery update. Terminate old shipment before creating a replacement.",
+        shipmentUpdateFailedAt: timestamp,
+        error: updateResult.error || "Bosta delivery update failed",
+      };
+      bostaUpdate = { attempted: true, success: false, error: updateResult.error };
+    }
+
+    updated.shipment = updated.bosta;
+    updated.aramex = updated.bosta;
+  }
+
   let databaseStored = false;
   let databaseError = "";
   if (isOrderDatabaseConfigured()) {
@@ -451,6 +530,7 @@ export async function POST(req: Request) {
     order_ref: orderRef,
     order: updated,
     changedFields,
+    bostaUpdate,
     storage: {
       supabase: databaseStored ? "stored" : isOrderDatabaseConfigured() ? "failed" : "not_configured",
       google_sheets: sheetsStored ? "stored" : sheetsResult.skipped ? "not_configured" : "failed",
