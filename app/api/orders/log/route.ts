@@ -723,9 +723,20 @@ export async function POST(req: Request) {
         history: [...history, emailHistoryEntry],
       };
 
-      // Don't await to avoid blocking the response
-      sendOrderEmail(updatedOrder).catch(err => console.error("Failed to send order email:", err));
-      sendCustomerConfirmationEmail(updatedOrder).catch(err => console.error("Failed to send customer confirmation email:", err));
+      after(async () => {
+        const [adminEmailResult, customerEmailResult] = await Promise.allSettled([
+          sendOrderEmail(updatedOrder),
+          sendCustomerConfirmationEmail(updatedOrder),
+        ]);
+
+        if (adminEmailResult.status === "rejected") {
+          console.error("Failed to send order email:", adminEmailResult.reason);
+        }
+
+        if (customerEmailResult.status === "rejected") {
+          console.error("Failed to send customer confirmation email:", customerEmailResult.reason);
+        }
+      });
     }
 
     if (shouldSendInstapayApprovalEmail(updatedOrder)) {
@@ -742,9 +753,13 @@ export async function POST(req: Request) {
         history: [...(updatedOrder.history || history), instapayEmailHistoryEntry],
       };
 
-      sendInstapayApprovalEmail(updatedOrder).catch((err) =>
-        console.error("Failed to send InstaPay approval email:", err)
-      );
+      after(async () => {
+        try {
+          await sendInstapayApprovalEmail(updatedOrder);
+        } catch (err) {
+          console.error("Failed to send InstaPay approval email:", err);
+        }
+      });
     }
 
     if (shouldSendInstapayPendingCustomerEmail(updatedOrder)) {
@@ -761,9 +776,13 @@ export async function POST(req: Request) {
         history: [...(updatedOrder.history || history), instapayCustomerHistoryEntry],
       };
 
-      sendInstapayPendingCustomerEmail(updatedOrder).catch((err) =>
-        console.error("Failed to send InstaPay pending customer email:", err)
-      );
+      after(async () => {
+        try {
+          await sendInstapayPendingCustomerEmail(updatedOrder);
+        } catch (err) {
+          console.error("Failed to send InstaPay pending customer email:", err);
+        }
+      });
     }
 
     if (shouldSendMetaPurchase(updatedOrder)) {
@@ -782,29 +801,41 @@ export async function POST(req: Request) {
         history: [...(updatedOrder.history || history), purchaseHistoryEntry],
       };
 
-      sendMetaConversionEvent({
-        eventName: "Purchase",
-        eventId: purchaseEventId,
-        eventSourceUrl: req.headers.get("referer") || process.env.NEXT_PUBLIC_APP_URL || undefined,
-        customData: {
-          value: getOrderAmountEgp(updatedOrder),
-          currency: "EGP",
-          order_id: orderRef,
-          transaction_id: getNestedString(updatedOrder.payment, "transaction_id") || orderRef,
-          content_type: "product",
-          content_ids: getMetaPurchaseContents(updatedOrder).map((item) => item.id),
-          contents: getMetaPurchaseContents(updatedOrder),
-          num_items: getMetaPurchaseContents(updatedOrder).reduce((sum, item) => sum + item.quantity, 0),
-        },
-        userData: {
-          email: customer.email,
-          phone: customer.phone,
-          fbp: getMetaCookie(req.headers, "_fbp"),
-          fbc: getMetaCookie(req.headers, "_fbc"),
-        },
-        userAgent: req.headers.get("user-agent"),
-        clientIp: getMetaClientIp(req.headers),
-      }).catch((err) => console.error("Failed to send Meta Purchase CAPI event:", err));
+      const referer = req.headers.get("referer") || process.env.NEXT_PUBLIC_APP_URL || undefined;
+      const userAgent = req.headers.get("user-agent");
+      const clientIp = getMetaClientIp(req.headers);
+      const fbp = getMetaCookie(req.headers, "_fbp");
+      const fbc = getMetaCookie(req.headers, "_fbc");
+
+      after(async () => {
+        try {
+          await sendMetaConversionEvent({
+            eventName: "Purchase",
+            eventId: purchaseEventId,
+            eventSourceUrl: referer,
+            customData: {
+              value: getOrderAmountEgp(updatedOrder),
+              currency: "EGP",
+              order_id: orderRef,
+              transaction_id: getNestedString(updatedOrder.payment, "transaction_id") || orderRef,
+              content_type: "product",
+              content_ids: getMetaPurchaseContents(updatedOrder).map((item) => item.id),
+              contents: getMetaPurchaseContents(updatedOrder),
+              num_items: getMetaPurchaseContents(updatedOrder).reduce((sum, item) => sum + item.quantity, 0),
+            },
+            userData: {
+              email: customer.email,
+              phone: customer.phone,
+              fbp,
+              fbc,
+            },
+            userAgent,
+            clientIp,
+          });
+        } catch (err) {
+          console.error("Failed to send Meta Purchase CAPI event:", err);
+        }
+      });
     }
 
     const storedOrder = stripInstapayProofAttachment(updatedOrder);

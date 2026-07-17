@@ -695,7 +695,7 @@ function CheckoutContent() {
     city: "",
     phone: "",
   });
-  const [aramexCities, setAramexCities] = useState<string[]>([]);
+  const [aramexCities, setAramexCities] = useState<string[]>(popularCityNames);
   const [loadingCities, setLoadingCities] = useState(false);
   const [citySearch, setCitySearch] = useState("");
   const [cityListOpen, setCityListOpen] = useState(false);
@@ -723,12 +723,15 @@ function CheckoutContent() {
           const data = await res.json();
           const uniqueCities = normalizeCitiesPayload(data);
 
-          writeCachedAramexCities(uniqueCities);
-          setAramexCities(uniqueCities);
+          if (uniqueCities.length > 0) {
+            writeCachedAramexCities(uniqueCities);
+            setAramexCities(uniqueCities);
+          }
         }
       } catch (err) {
         if (controller.signal.aborted) return;
         console.error("Error fetching Bosta districts:", err);
+        setAramexCities((current) => (current.length > 0 ? current : popularCityNames));
       } finally {
         if (!controller.signal.aborted) {
           setLoadingCities(false);
@@ -783,7 +786,16 @@ function CheckoutContent() {
   };
 
   const validateCitySearch = () => {
-    if (deliveryMethod !== "delivery" || loadingCities) return;
+    if (deliveryMethod !== "delivery") return;
+
+    if (loadingCities || aramexCities.length === 0) {
+      const typedCity = citySearch.trim();
+      if (typedCity) {
+        setFormData((current) => ({ ...current, city: typedCity }));
+        setFieldErrors((current) => ({ ...current, city: "" }));
+      }
+      return;
+    }
 
     const exactCity = findExactAramexCity(aramexCities, citySearch);
 
@@ -803,10 +815,10 @@ function CheckoutContent() {
   useEffect(() => {
     if (!formData.city || aramexCities.length === 0) return;
     const exactCity = findExactAramexCity(aramexCities, formData.city);
-    if (exactCity) return;
+    if (!exactCity || exactCity === formData.city) return;
 
-    setFormData((current) => ({ ...current, city: "" }));
-    setCitySearch("");
+    setFormData((current) => ({ ...current, city: exactCity }));
+    setCitySearch(exactCity);
   }, [aramexCities, formData.city]);
 
   const [paymentMethod, setPaymentMethod] = useState("cod");
@@ -906,7 +918,7 @@ function CheckoutContent() {
     if (deliveryMethod === "delivery") {
       if (!formData.address.trim()) nextErrors.address = requiredMessage;
       if (!formData.governorate) nextErrors.governorate = requiredMessage;
-      if (!selectedAramexCity) {
+      if (!selectedAramexCity && !formData.city.trim()) {
         nextErrors.city = invalidCityMessage;
       }
     }
@@ -1344,10 +1356,12 @@ function CheckoutContent() {
 
     let bostaPayload: {
       provider?: string;
-      trackingNumber: string;
+      trackingNumber?: string;
       trackingLink?: string;
       labelUrl?: string;
       guid?: string;
+      status?: string;
+      error?: string;
     } | null = null;
 
     const shippingRuleCOD = getShippingRule({
@@ -1450,11 +1464,15 @@ function CheckoutContent() {
           codAmount: paymentMethod === "cod" ? confirmedFinalTotal : 0,
         };
 
+        const shipmentAbort = new AbortController();
+        const shipmentTimeout = window.setTimeout(() => shipmentAbort.abort(), 20000);
         const shipmentRes = await fetch("/api/bosta/shipment", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(shipmentPayload),
+          signal: shipmentAbort.signal,
         });
+        window.clearTimeout(shipmentTimeout);
 
         const shipmentData = await shipmentRes.json();
 
@@ -1473,16 +1491,22 @@ function CheckoutContent() {
         } else {
           setAramexStatus("failed");
           setAramexError(shipmentData.details || shipmentData.error || "Unknown error");
-          throw new Error(shipmentData.details || shipmentData.error || "Bosta shipment failed");
+          bostaPayload = {
+            provider: shipmentData.provider || "bosta",
+            status: "failed",
+            error: shipmentData.details || shipmentData.error || "Bosta shipment failed",
+          };
         }
         }
       } catch (err) {
         setAramexStatus("failed");
-        setAramexError(err instanceof Error ? err.message : "Network error");
-        clearCheckoutLock(checkoutSignature);
-        setIsSubmitting(false);
-        setSubmitError(err instanceof Error ? err.message : "Bosta shipment failed");
-        return;
+        const shipmentError = err instanceof Error ? err.message : "Network error";
+        setAramexError(shipmentError);
+        bostaPayload = {
+          provider: "bosta",
+          status: "failed",
+          error: shipmentError,
+        };
       }
     } else {
       setAramexStatus("skipped");
@@ -2238,7 +2262,7 @@ function CheckoutContent() {
                               setCitySearch(value);
                               setFormData((current) => ({
                                 ...current,
-                                city: exactCity || "",
+                                city: exactCity || value.trim(),
                               }));
                               setFieldErrors((current) => ({ ...current, city: "" }));
                               setCityListOpen(true);
@@ -2251,7 +2275,7 @@ function CheckoutContent() {
                               if (e.key === "Escape") setCityListOpen(false);
                             }}
                             className={`${getInputClass("city", inputIconClass)} pr-11 disabled:opacity-50`}
-                            disabled={loadingCities}
+                            disabled={false}
                             placeholder={
                               loadingCities
                                 ? t("form.shipping.loadingCities")
