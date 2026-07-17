@@ -303,7 +303,8 @@ const OPERATIONAL_TRACKING_STAGES = [
   { key: "missing_tracking", label: "Missing tracking" },
   { key: "returned_cancelled", label: "Returned / Cancelled" },
   { key: "pickup_order", label: "Pickup order" },
-  { key: "unknown", label: "Unknown" },
+  { key: "custom_finance_order", label: "Custom / finance only" },
+  { key: "needs_review", label: "Needs review" },
 ] as const;
 
 const SHIPMENT_STATUS_STAGES = [...BOSTA_TRACKING_STAGES, ...OPERATIONAL_TRACKING_STAGES] as const;
@@ -804,8 +805,9 @@ function getOrderShipmentStatusKey(order: AdminOrder) {
 
   if (getTrackingNumber(order)) return "shipment_created";
   if (getDeliveryBucket(order) === "pickup") return "pickup_order";
+  if (isCustomOrder(order) || getDeliveryBucket(order) === "custom") return "custom_finance_order";
 
-  return "unknown";
+  return "needs_review";
 }
 
 function getOrderShipmentStatusLabel(order: AdminOrder) {
@@ -2972,6 +2974,9 @@ export default function AdminDashboardPage() {
       });
   }, [filteredMetricOrders]);
 
+  const shipmentStatusTotal = shipmentStatusBreakdown.reduce((sum, row) => sum + row.count, 0);
+  const shipmentStatusDifference = filteredMetricOrders.length - shipmentStatusTotal;
+
   const expenseFilterOptions = useMemo(() => {
     const categories = new Map<string, number>();
     const paymentMethods = new Map<string, number>();
@@ -4760,7 +4765,7 @@ export default function AdminDashboardPage() {
                         value={customerQuery}
                         onChange={(event) => setCustomerQuery(event.target.value)}
                         placeholder="Search phone, name, city, area..."
-                        className="h-11 w-full rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] ps-11 pe-4 text-sm font-bold outline-none transition focus:border-[#EEBC3F]"
+                        className="h-11 w-full rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] ps-11 pe-4 text-sm font-bold text-[#0F1A26] caret-[#EE1B25] outline-none transition placeholder:text-[#0F1A26]/35 focus:border-[#EEBC3F]"
                       />
                     </div>
                     {customerQuery && (
@@ -5160,7 +5165,7 @@ export default function AdminDashboardPage() {
                 value={expenseQuery}
                 onChange={(event) => setExpenseQuery(event.target.value)}
                 placeholder="Search title, vendor, order ref, notes..."
-                className="h-11 w-full rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] ps-11 pe-4 text-sm font-bold outline-none focus:border-[#EEBC3F]"
+                className="h-11 w-full rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] ps-11 pe-4 text-sm font-bold text-[#0F1A26] caret-[#EE1B25] outline-none placeholder:text-[#0F1A26]/35 focus:border-[#EEBC3F]"
               />
             </div>
             <select
@@ -5472,7 +5477,7 @@ export default function AdminDashboardPage() {
                   setOrdersPage(1);
                 }}
                 placeholder="Search order ref, phone, customer, city, tracking..."
-                className="h-12 w-full rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] ps-11 pe-4 text-sm font-bold outline-none focus:border-[#EEBC3F]"
+                className="h-12 w-full rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] ps-11 pe-4 text-sm font-bold text-[#0F1A26] caret-[#EE1B25] outline-none placeholder:text-[#0F1A26]/35 focus:border-[#EEBC3F]"
               />
             </div>
             <select
@@ -5551,15 +5556,26 @@ export default function AdminDashboardPage() {
               <p className="text-xs font-black uppercase tracking-[0.18em] text-[#EEBC3F]">Courier status labels</p>
               <h2 className="text-lg font-black">Orders by courier timeline label</h2>
               <p className="mt-1 text-xs font-bold text-[#0F1A26]/45">
-                Counts use the same courier label shown in the order table and status filter.
+                Counts use the same period, payment, delivery, city, status, and search filters currently selected.
               </p>
             </div>
-            <p className="text-sm font-black text-[#0F1A26]/50">{filteredMetricOrders.length} orders</p>
+            <div className="rounded-2xl bg-[#F8F6F3] px-4 py-3 text-right">
+              <p className="text-xs font-black uppercase tracking-[0.14em] text-[#0F1A26]/35">reconciliation</p>
+              <p className="text-sm font-black text-[#0F1A26]">
+                Cards total {shipmentStatusTotal} / Filtered orders {filteredMetricOrders.length}
+              </p>
+              <p className={`text-xs font-black ${shipmentStatusDifference === 0 ? "text-emerald-700" : "text-rose-700"}`}>
+                {shipmentStatusDifference === 0
+                  ? "All filtered orders are classified"
+                  : `${shipmentStatusDifference} orders need classification review`}
+              </p>
+            </div>
           </div>
-          <div className="mt-4 grid gap-3 rounded-3xl bg-[#F8F6F3] p-4 text-xs font-bold text-[#0F1A26]/60 md:grid-cols-3">
+          <div className="mt-4 grid gap-3 rounded-3xl bg-[#F8F6F3] p-4 text-xs font-bold text-[#0F1A26]/60 md:grid-cols-4">
             <p><span className="font-black text-emerald-700">Delivered</span> = بوسطة/التتبع بيقول إن العميل استلم.</p>
             <p><span className="font-black text-rose-700">Returned / Cancelled</span> = مرتجع أو ملغي، وبيتخصم من revenue.</p>
             <p><span className="font-black text-amber-700">Shipment Created</span> = الشحنة اتعملها tracking، لكنها لسه مش Delivered ومش Returned.</p>
+            <p><span className="font-black text-[#0F1A26]">Custom / finance only</span> = أوردر متسجل ماليًا ومش مطلوب له شحنة.</p>
           </div>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {shipmentStatusBreakdown.length ? shipmentStatusBreakdown.map((row) => (
