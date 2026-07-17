@@ -144,6 +144,36 @@ const popularCityNames = [
 
 const CITY_DROPDOWN_LIMIT = 60;
 
+const fallbackCitiesByGovernorate: Record<string, string[]> = {
+  Cairo: ["Cairo", "New Cairo", "Nasr City", "Maadi", "Heliopolis", "Zamalek", "Downtown", "Ain Shams", "El Rehab", "Mokattam", "Shorouk", "Madinaty"],
+  Giza: ["Giza", "Dokki", "Mohandeseen", "Agouza", "Imbaba", "Haram", "Faisal", "Sheikh Zayed City", "October City", "Hadayek October"],
+  Alexandria: ["Alexandria", "Agami", "Sidi Gaber", "Smouha", "Gleem", "Miami", "Stanley", "Borg El Arab"],
+  Dakahlia: ["Mansoura", "Talkha", "Mit Ghamr", "Aga", "Sinbillawin", "Belqas"],
+  "Red Sea": ["Hurghada", "El Gouna", "Safaga", "Quseir", "Marsa Alam"],
+  Beheira: ["Damanhour", "Kafr El Dawwar", "Rashid", "Edku", "Abu Hummus"],
+  Fayoum: ["Fayoum", "Tamiya", "Sinnuris", "Ibshaway", "Youssef El Seddik"],
+  Gharbia: ["Tanta", "El Mahalla El Kubra", "Kafr El Zayat", "Zefta", "Samanoud"],
+  Ismailia: ["Ismailia", "Fayed", "Qantara", "Tell El Kebir"],
+  Menofia: ["Shebin El Kom", "Menouf", "Ashmoun", "Sadat City", "Quesna"],
+  Minya: ["Minya", "New Minya", "Mallawi", "Samalut", "Beni Mazar"],
+  Qaliubiya: ["Banha", "Shubra El Kheima", "Qalyub", "Obour", "Khanka", "Tukh"],
+  "New Valley": ["Kharga", "Dakhla", "Farafra", "Paris"],
+  Suez: ["Suez", "Ataqah", "Faisal"],
+  Aswan: ["Aswan", "Kom Ombo", "Edfu", "Daraw"],
+  Assiut: ["Assiut", "New Assiut", "Dairut", "Manfalut", "Abnoub"],
+  "Beni Suef": ["Beni Suef", "New Beni Suef", "Wasta", "Nasser", "Ihnasia"],
+  "Port Said": ["Port Said", "Port Fouad"],
+  Damietta: ["Damietta", "New Damietta", "Ras El Bar", "Faraskur"],
+  Sharkia: ["Zagazig", "10th of Ramadan", "Belbeis", "Minya El Qamh", "Abu Hammad"],
+  "South Sinai": ["Sharm El Sheikh", "Dahab", "Nuweiba", "Taba", "Ras Sudr"],
+  "Kafr El Sheikh": ["Kafr El Sheikh", "Desouk", "Baltim", "Sidi Salem", "Qallin"],
+  Matrouh: ["Marsa Matrouh", "El Alamein", "Sidi Abdelrahman", "Siwa"],
+  Luxor: ["Luxor", "Esna", "Armant", "New Tiba"],
+  Qena: ["Qena", "Nag Hammadi", "Qus", "Dishna"],
+  "North Sinai": ["Arish", "Sheikh Zuweid", "Rafah", "Bir El Abd"],
+  Sohag: ["Sohag", "New Sohag City", "Akhmim", "Tahta", "Girga", "Tama"],
+};
+
 const egyptGovernorates = [
   { value: "Cairo", ar: "القاهرة", en: "Cairo" },
   { value: "Giza", ar: "الجيزة", en: "Giza" },
@@ -350,8 +380,12 @@ function getStringField(record: Record<string, unknown>, key: string) {
   return typeof value === "string" && value.trim() ? value.trim() : "";
 }
 
-function getFallbackCityOptions(): CheckoutCityOption[] {
-  return popularCityNames.map((name) => ({ name }));
+function getFallbackCityOptions(governorate?: string): CheckoutCityOption[] {
+  const fallbackNames = governorate && fallbackCitiesByGovernorate[governorate]
+    ? fallbackCitiesByGovernorate[governorate]
+    : popularCityNames;
+
+  return fallbackNames.map((name) => ({ name, governorate }));
 }
 
 function normalizeCityOptionsPayload(data: unknown) {
@@ -411,11 +445,13 @@ function normalizeCityOptionsPayload(data: unknown) {
       }
     });
 
-    names.forEach((value) => {
-      if (typeof value === "string" && value.trim()) {
-        options.push({ name: value.trim() });
-      }
-    });
+    if (districts.length === 0 && cities.length === 0) {
+      names.forEach((value) => {
+        if (typeof value === "string" && value.trim()) {
+          options.push({ name: value.trim() });
+        }
+      });
+    }
   }
 
   const unique = new Map<string, CheckoutCityOption>();
@@ -832,7 +868,7 @@ function CheckoutContent() {
       return optionGovernorate === selectedGovernorate || optionGovernorate.includes(selectedGovernorate);
     });
 
-    return filtered.length > 0 ? filtered : cityOptions;
+    return filtered.length > 0 ? filtered : getFallbackCityOptions(formData.governorate);
   }, [cityOptions, formData.governorate]);
 
   const aramexCities = useMemo(
