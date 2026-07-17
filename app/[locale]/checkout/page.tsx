@@ -1579,10 +1579,39 @@ function CheckoutContent() {
     router.push(pendingSuccessPath || "/order-confirmed?success=true");
   }, [pendingSuccessPath, router]);
 
-  const goToPackonatProduct = useCallback(() => {
+  const acceptPackonatUpsell = useCallback(() => {
     setShowPackonatUpsell(false);
-    router.push(checkoutPopupProduct?.slug ? `/product/${checkoutPopupProduct.slug}` : "/shop");
-  }, [checkoutPopupProduct?.slug, router]);
+    if (!checkoutPopupProduct) {
+      router.push(pendingSuccessPath || "/order-confirmed?success=true");
+      return;
+    }
+
+    const popupColor = checkoutPopupProduct.colors?.[0];
+    addToCart({
+      id: Number(checkoutPopupProduct.legacyId || Date.now()),
+      name: checkoutPopupProduct.name || checkoutPopup.title || "PackOnat",
+      slug: checkoutPopupProduct.slug || "packonat",
+      type: checkoutPopupProduct.type || "packonat",
+      price: Number(checkoutPopupProduct.price || checkoutPopupPrice || 0),
+      basePrice: Number(checkoutPopupProduct.price || checkoutPopupPrice || 0),
+      originalPrice: checkoutPopupProduct.originalPrice,
+      quantity: 1,
+      image: popupColor?.imageUrl || checkoutPopupProduct.imageUrl || checkoutPopupImage,
+      color: popupColor?.name,
+      size: checkoutPopupProduct.size || undefined,
+    }, { openCart: false });
+    setBuyNowItem(null);
+    router.push("/checkout");
+  }, [
+    addToCart,
+    checkoutPopup.title,
+    checkoutPopupImage,
+    checkoutPopupPrice,
+    checkoutPopupProduct,
+    pendingSuccessPath,
+    router,
+    setBuyNowItem,
+  ]);
 
   // Shipping: 75 EGP for Cairo, Giza & Alexandria, 100 EGP for other cities, free for orders > 1000, pickup = 0
   const shipping = useMemo(() => {
@@ -2995,7 +3024,7 @@ function CheckoutContent() {
               <div className="sticky bottom-0 -mx-5 mt-4 grid gap-2 bg-white/95 px-5 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_28px_rgba(15,26,38,0.08)] backdrop-blur sm:static sm:mx-0 sm:mt-6 sm:grid-cols-2 sm:bg-transparent sm:p-0 sm:shadow-none sm:backdrop-blur-0">
                 <Button
                   type="button"
-                  onClick={goToPackonatProduct}
+                  onClick={acceptPackonatUpsell}
                   className="h-12 rounded-2xl bg-[#E31820] text-sm font-black text-white shadow-lg shadow-[#E31820]/20 hover:bg-[#C61219]"
                 >
                   {checkoutPopup.acceptLabel}
