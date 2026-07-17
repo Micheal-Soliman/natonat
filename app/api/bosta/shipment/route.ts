@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createBostaDelivery } from "@/lib/bosta";
+import { createBostaDelivery, getBostaConfigDiagnostics } from "@/lib/bosta";
 
 export async function POST(req: Request) {
   try {
@@ -38,6 +38,7 @@ export async function POST(req: Request) {
         {
           error: "Bosta shipment creation failed",
           details: result.error || "Unknown Bosta error",
+          diagnostics: getBostaConfigDiagnostics(),
           raw: result.raw,
         },
         { status: 400 },
@@ -59,6 +60,7 @@ export async function POST(req: Request) {
       {
         error: "Failed to create Bosta shipment",
         details: error instanceof Error ? error.message : "Unknown error",
+        diagnostics: getBostaConfigDiagnostics(),
       },
       { status: 500 },
     );

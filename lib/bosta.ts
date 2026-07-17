@@ -374,7 +374,17 @@ function getBostaBaseUrl() {
 }
 
 function getBostaApiKey() {
-  const key = process.env.BOSTA_API_KEY;
+  const rawKey =
+    process.env.BOSTA_API_KEY ||
+    process.env.BOSTA_TOKEN ||
+    process.env.BOSTA_ACCESS_TOKEN ||
+    "";
+  const key = rawKey
+    .trim()
+    .replace(/^["']|["']$/g, "")
+    .replace(/^authorization:\s*/i, "")
+    .replace(/^token:\s*/i, "")
+    .trim();
   if (!key) {
     throw new Error("BOSTA_API_KEY is not configured");
   }
@@ -383,7 +393,34 @@ function getBostaApiKey() {
 
 function getBostaAuthorizationHeader() {
   const key = getBostaApiKey();
-  return key.toLowerCase().startsWith("bearer ") ? key : `Bearer ${key}`;
+  const token = key.replace(/^bearer\s+/i, "").trim();
+  return `Bearer ${token}`;
+}
+
+export function getBostaConfigDiagnostics() {
+  const rawKey =
+    process.env.BOSTA_API_KEY ||
+    process.env.BOSTA_TOKEN ||
+    process.env.BOSTA_ACCESS_TOKEN ||
+    "";
+  const cleanedKey = rawKey
+    .trim()
+    .replace(/^["']|["']$/g, "")
+    .replace(/^authorization:\s*/i, "")
+    .replace(/^token:\s*/i, "")
+    .replace(/^bearer\s+/i, "")
+    .trim();
+
+  return {
+    baseUrl: getBostaBaseUrl(),
+    hasApiKey: cleanedKey.length > 0,
+    apiKeyLength: cleanedKey.length,
+    apiKeyPreview: cleanedKey ? `${cleanedKey.slice(0, 4)}...${cleanedKey.slice(-4)}` : "",
+    hadWhitespaceOrWrapper: rawKey !== cleanedKey,
+    hasPickupLocationId: Boolean(getBostaDeliveryLocationId()),
+    hasDefaultDistrictId: Boolean(process.env.BOSTA_DEFAULT_DISTRICT_ID),
+    hasDefaultCityId: Boolean(process.env.BOSTA_DEFAULT_CITY_ID),
+  };
 }
 
 function getBostaBusinessLocationId() {
