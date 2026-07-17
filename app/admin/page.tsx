@@ -548,9 +548,17 @@ function isBundleParentItem(item: Record<string, unknown>) {
 function isCustomOrder(order: AdminOrder) {
   const source = getString(order.source || order["Source"]).toLowerCase();
   const extras = getExtras(order);
+  const paymentMethod = getPaymentMethod(order);
   return (
     source.includes("admin_special_order") ||
-    Boolean(extras.is_custom_order || extras.exclude_from_catalog_product_sales || order.is_custom_order)
+    source.includes("admin_catalog_order") ||
+    paymentMethod.includes("custom") ||
+    Boolean(
+      extras.is_custom_order ||
+        extras.exclude_from_catalog_product_sales ||
+        extras.created_from_admin_manual_order ||
+        order.is_custom_order,
+    )
   );
 }
 
