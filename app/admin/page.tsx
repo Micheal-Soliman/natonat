@@ -895,7 +895,21 @@ function hasBostaTracking(order: AdminOrder) {
 }
 
 function getPaymentBucket(order: AdminOrder) {
+  if (isCustomOrder(order)) return "custom_bulk";
+
   const method = getPaymentMethod(order);
+  const source = getString(order.source || order["Source"]).toLowerCase();
+  const extras = getExtras(order);
+
+  if (
+    method.includes("custom") ||
+    source.includes("admin_catalog_order") ||
+    source.includes("admin_special_order") ||
+    extras.created_from_admin_manual_order
+  ) {
+    return "custom_bulk";
+  }
+
   if (method.includes("card") || method.includes("paymob")) return "card";
   if (method.includes("instapay") || method.includes("wallet")) return "instapay";
   if (method.includes("cod") || method.includes("cash")) return "cod";
@@ -2675,39 +2689,114 @@ export default function AdminDashboardPage() {
   const exportOrdersCsv = () => {
     const headers = [
       "order_ref",
+      "source",
       "created_at",
-      "customer",
+      "updated_at",
+      "order_status",
+      "payment_status",
+      "payment_method",
+      "delivery_method",
+      "courier_label",
+      "customer_first_name",
+      "customer_last_name",
+      "customer_name",
+      "email",
       "phone",
       "city",
-      "payment_method",
-      "payment_status",
-      "status",
+      "governorate",
+      "address",
+      "city_key",
+      "items_flat",
+      "items_json",
+      "total_items_quantity",
+      "retail_pieces",
+      "bulk_pieces",
       "subtotal_egp",
+      "order_discount_egp",
+      "payment_discount_egp",
       "discount_egp",
       "shipping_egp",
       "total_egp",
-      "Bosta_tracking",
-      "Bosta_status",
-      "Bosta_error",
+      "amount_cents",
+      "is_confirmed",
+      "is_returned_or_cancelled",
+      "is_delivered",
+      "is_custom_bulk",
+      "bosta_tracking_number",
+      "bosta_tracking_link",
+      "bosta_delivery_id",
+      "bosta_status",
+      "bosta_latest_code",
+      "bosta_latest_update",
+      "bosta_latest_location",
+      "bosta_latest_date",
+      "bosta_synced_at",
+      "bosta_error",
+      "customer_email_sent_at",
+      "instapay_approval_email_sent_at",
+      "instapay_pending_customer_email_sent_at",
+      "admin_audit_json",
+      "extras_json",
+      "raw_order_json",
     ];
     const rows = filteredOrders.map((order) => {
       const customer = getCustomer(order);
+      const bosta = getBosta(order);
+      const extras = getExtras(order);
+      const items = getItems(order);
+      const firstName = getString(customer.first_name || customer.name);
+      const lastName = getString(customer.last_name);
       return [
         getOrderRef(order),
+        getString(order.source || order["Source"]),
         getCreatedAt(order),
-        getString(customer.first_name || customer.name),
-        getString(customer.phone),
-        getString(customer.city),
-        getPaymentMethod(order),
-        getPaymentStatus(order),
+        getUpdatedAt(order),
         getStatus(order),
+        getPaymentStatus(order),
+        getPaymentMethod(order),
+        getDeliveryMethod(order),
+        getOrderShipmentStatusLabel(order),
+        firstName,
+        lastName,
+        [firstName, lastName].filter(Boolean).join(" "),
+        getString(customer.email || order["Email"]),
+        getString(customer.phone || order["Phone"]),
+        getString(customer.city || order["City"]),
+        getString(customer.governorate || order["Governorate"]),
+        getString(customer.address || order["Address"]),
+        getString(extras.city_key || order["City Key"]),
+        getString(order.items_flat || order["Items"]),
+        JSON.stringify(items),
+        String(getNumber(order["Total Items Quantity"]) || items.reduce((sum, item) => sum + getItemRecordedQuantity(item), 0)),
+        String(getOrderRecordedPieces(order)),
+        String(getOrderCustomPieces(order)),
         String(getSubtotal(order)),
+        String(getOrderDiscount(order)),
+        String(getPaymentDiscount(order)),
         String(getDiscount(order)),
         String(getShipping(order)),
         String(getAmount(order)),
+        String(getNumber(order.amount_cents || order["Total Cents"])),
+        isConfirmed(order) ? "yes" : "no",
+        isReturned(order) ? "yes" : "no",
+        isDelivered(order) ? "yes" : "no",
+        isCustomOrder(order) ? "yes" : "no",
         getTrackingNumber(order),
+        getString(bosta.trackingLink || order["Bosta Tracking Link"]),
+        getString(bosta.deliveryId || bosta.guid || order["Bosta Delivery ID"]),
         getBostaStatus(order),
+        getBostaLatestCode(order),
+        getBostaLatestUpdate(order),
+        getBostaLatestLocation(order),
+        getString(bosta.latestDate || order["Bosta Latest Date"]),
+        getBostaSyncedAt(order),
         getBostaError(order),
+        getCustomerEmailSentAt(order),
+        getInstaPayApprovalEmailSentAt(order),
+        getInstaPayPendingCustomerEmailSentAt(order),
+        JSON.stringify(getArray(order.admin_audit)),
+        JSON.stringify(extras),
+        JSON.stringify(order),
       ];
     });
 
@@ -2775,7 +2864,9 @@ export default function AdminDashboardPage() {
       ["orders_count", String(stats.totalOrders)],
       ["pickup_orders", String(stats.pickupOrders)],
       ["delivery_orders", String(stats.deliveryOrders)],
-      ["pieces_sold", String(stats.totalPieces)],
+      ["retail_pieces_after_returns_excluding_special_bulk", String(stats.totalPieces)],
+      ["special_bulk_pieces_after_returns", String(stats.customPieces)],
+      ["all_pieces_after_returns", String(stats.allPieces)],
       ["returned_cancelled_orders", String(stats.returnedOrders)],
       ["returned_cancelled_value", String(stats.returnedValue)],
       ["shipped_not_delivered_orders", String(stats.shippedNotDeliveredOrders)],
@@ -4268,41 +4359,41 @@ export default function AdminDashboardPage() {
             <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-[#EEBC3F]">Product family pieces sold</p>
-                <h3 className="text-xl font-black">Retail vs custom pieces</h3>
+                <h3 className="text-xl font-black">Pieces sold after returns</h3>
               </div>
-              <p className="text-xs font-bold text-white/55">Retail excludes special custom/bulk orders. Custom is shown separately.</p>
+              <p className="text-xs font-bold text-white/55">All numbers here are confirmed non-returned orders only.</p>
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-3">
               <div className="rounded-2xl bg-white/10 p-4">
-                <p className="text-xs font-black uppercase tracking-[0.14em] text-white/45">Luggage covers</p>
+                <p className="text-xs font-black uppercase tracking-[0.14em] text-white/45">Luggage covers retail</p>
                 <p className="mt-2 text-3xl font-black">{operations.productFamilyPieces.luggageCovers.retail}</p>
-                <p className="mt-1 text-xs font-bold text-white/45">كفرات شنط</p>
+                <p className="mt-1 text-xs font-bold text-white/45">كفرات شنط بعد المرتجعات، بدون special bulk</p>
                 <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-black">
-                  <span className="rounded-xl bg-white/10 px-3 py-2">Custom {operations.productFamilyPieces.luggageCovers.custom}</span>
+                  <span className="rounded-xl bg-white/10 px-3 py-2">Bulk {operations.productFamilyPieces.luggageCovers.custom}</span>
                   <span className="rounded-xl bg-white/10 px-3 py-2">Total {operations.productFamilyPieces.luggageCovers.retail + operations.productFamilyPieces.luggageCovers.custom}</span>
                 </div>
               </div>
               <div className="rounded-2xl bg-white/10 p-4">
-                <p className="text-xs font-black uppercase tracking-[0.14em] text-white/45">PackOnat</p>
+                <p className="text-xs font-black uppercase tracking-[0.14em] text-white/45">PackOnat retail</p>
                 <p className="mt-2 text-3xl font-black">{operations.productFamilyPieces.packOnat.retail}</p>
-                <p className="mt-1 text-xs font-bold text-white/45">باكونات</p>
+                <p className="mt-1 text-xs font-bold text-white/45">باكونات بعد المرتجعات، بدون special bulk</p>
                 <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-black">
-                  <span className="rounded-xl bg-white/10 px-3 py-2">Custom {operations.productFamilyPieces.packOnat.custom}</span>
+                  <span className="rounded-xl bg-white/10 px-3 py-2">Bulk {operations.productFamilyPieces.packOnat.custom}</span>
                   <span className="rounded-xl bg-white/10 px-3 py-2">Total {operations.productFamilyPieces.packOnat.retail + operations.productFamilyPieces.packOnat.custom}</span>
                 </div>
               </div>
               <div className="rounded-2xl bg-white/10 p-4">
-                <p className="text-xs font-black uppercase tracking-[0.14em] text-white/45">Passport Wallet</p>
+                <p className="text-xs font-black uppercase tracking-[0.14em] text-white/45">Passport Wallet retail</p>
                 <p className="mt-2 text-3xl font-black">{operations.productFamilyPieces.passportWallet.retail}</p>
-                <p className="mt-1 text-xs font-bold text-white/45">باسبور والت</p>
+                <p className="mt-1 text-xs font-bold text-white/45">باسبور والت بعد المرتجعات، بدون special bulk</p>
                 <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-black">
-                  <span className="rounded-xl bg-white/10 px-3 py-2">Custom {operations.productFamilyPieces.passportWallet.custom}</span>
+                  <span className="rounded-xl bg-white/10 px-3 py-2">Bulk {operations.productFamilyPieces.passportWallet.custom}</span>
                   <span className="rounded-xl bg-white/10 px-3 py-2">Total {operations.productFamilyPieces.passportWallet.retail + operations.productFamilyPieces.passportWallet.custom}</span>
                 </div>
               </div>
             </div>
             <p className="mt-4 text-xs font-bold leading-5 text-white/55">
-              الرقم الكبير هو Retail/catalog فقط. لو أضفت special custom order بـ 200 قطعة هتظهر في Custom، ومش هتزود رقم Retail.
+              الرقم الكبير في كل كارت هو Retail بعد خصم المرتجعات/الإلغاء وبدون special bulk. لو عندك bulk order بـ 150 قطعة هيظهر في Bulk، والـ Total هو Retail + Bulk.
             </p>
           </div>
         </section>
@@ -4315,9 +4406,9 @@ export default function AdminDashboardPage() {
         </section>
 
         <section className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <StatCard title="Retail Pieces" value={String(stats.totalPieces)} subtitle="Website + admin catalog only, special custom excluded" icon={PackageCheck} tone="green" />
-          <StatCard title="Custom/Bulk Pieces" value={String(stats.customPieces)} subtitle={`${stats.customOrders} special custom orders, separate from retail`} icon={ReceiptText} tone={stats.customPieces ? "gold" : "dark"} />
-          <StatCard title="All Pieces" value={String(stats.allPieces)} subtitle="Retail + special custom/bulk pieces" icon={PackageCheck} tone="dark" />
+          <StatCard title="Retail Pieces After Returns" value={String(stats.totalPieces)} subtitle="Confirmed non-returned catalog pieces only, bulk excluded" icon={PackageCheck} tone="green" />
+          <StatCard title="Bulk Pieces After Returns" value={String(stats.customPieces)} subtitle={`${stats.customOrders} special bulk/custom orders, separate from retail`} icon={ReceiptText} tone={stats.customPieces ? "gold" : "dark"} />
+          <StatCard title="All Pieces After Returns" value={String(stats.allPieces)} subtitle="Retail + special bulk/custom pieces" icon={PackageCheck} tone="dark" />
           <StatCard title="Pickup Orders" value={String(stats.pickupOrders)} subtitle={`${stats.deliveryOrders} delivery orders`} icon={Truck} tone="gold" />
         </section>
 
