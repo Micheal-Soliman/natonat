@@ -860,6 +860,25 @@ async function buildDropOffAddress(customer: BostaCustomer) {
   };
 }
 
+function getBostaAddressDiagnostics(address: Record<string, unknown>, customer: BostaCustomer) {
+  return {
+    city: String(address.city || ""),
+    cityId: String(address.cityId || customer.cityId || ""),
+    districtId: String(address.districtId || ""),
+    districtName: String(address.districtName || customer.districtName || ""),
+    zoneId: String(address.zoneId || customer.zoneId || ""),
+    firstLineLength: String(address.firstLine || customer.address || "").length,
+    customerCity: customer.city || "",
+    customerGovernorate: customer.governorate || "",
+  };
+}
+
+function formatBostaDiagnosticsParts(parts: Record<string, unknown>) {
+  return Object.entries(parts)
+    .map(([key, value]) => `${key}=${String(value || "") || "empty"}`)
+    .join(", ");
+}
+
 export async function createBostaDelivery(input: CreateBostaDeliveryInput): Promise<CreateBostaDeliveryResult> {
   const itemCount = input.items.reduce((sum, item) => sum + Math.max(1, Number(item.quantity || 1)), 0);
   const description = input.items
@@ -867,6 +886,7 @@ export async function createBostaDelivery(input: CreateBostaDeliveryInput): Prom
     .join(", ")
     .slice(0, 250);
   const orderType: BostaOrderType = 10;
+  const dropOffAddress = await buildDropOffAddress(input.customer);
   const payload = {
     type: orderType,
     businessReference: input.orderRef,
@@ -879,7 +899,7 @@ export async function createBostaDelivery(input: CreateBostaDeliveryInput): Prom
       email: input.customer.email || undefined,
     },
     allowToOpenPackage: shouldAllowOpenPackage(),
-    dropOffAddress: await buildDropOffAddress(input.customer),
+    dropOffAddress,
     specs: {
       packageDetails: {
         description,
@@ -918,11 +938,21 @@ export async function createBostaDelivery(input: CreateBostaDeliveryInput): Prom
   }
 
   if (!response.ok) {
+    const diagnostics = getBostaConfigDiagnostics();
+    const addressDiagnostics = getBostaAddressDiagnostics(dropOffAddress, input.customer);
     return {
       success: false,
       provider: "bosta",
       raw: data,
-      error: `Bosta delivery error: ${response.status} - ${typeof data === "string" ? data : JSON.stringify(data)}`,
+      error: [
+        `Bosta delivery error: ${response.status} - ${typeof data === "string" ? data : JSON.stringify(data)}`,
+        `Diagnostics: baseUrl=${diagnostics.baseUrl}`,
+        `hasApiKey=${diagnostics.hasApiKey}`,
+        `apiKeyLength=${diagnostics.apiKeyLength}`,
+        `apiKeyPreview=${diagnostics.apiKeyPreview || "empty"}`,
+        `hadWhitespaceOrWrapper=${diagnostics.hadWhitespaceOrWrapper}`,
+        `address={${formatBostaDiagnosticsParts(addressDiagnostics)}}`,
+      ].join(" | "),
     };
   }
 
