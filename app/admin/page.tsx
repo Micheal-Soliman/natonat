@@ -299,6 +299,7 @@ const BOSTA_TRACKING_STAGES = [
 const OPERATIONAL_TRACKING_STAGES = [
   { key: "pending_instapay_approval", label: "Pending InstaPay approval" },
   { key: "needs_bosta_replacement", label: "Needs shipment replacement" },
+  { key: "bosta_exception", label: "Bosta exception" },
   { key: "bosta_failed", label: "Shipment failed" },
   { key: "missing_tracking", label: "Missing tracking" },
   { key: "returned_cancelled", label: "Returned / Cancelled" },
@@ -675,6 +676,12 @@ function getBostaLatestCode(order: AdminOrder) {
   return getString(Bosta.latestCode || Bosta.updateCode || order["Bosta Update Code"] || order["Aramex Update Code"]);
 }
 
+function getBostaLatestCodeNumber(order: AdminOrder) {
+  const rawCode = getBostaLatestCode(order);
+  const code = Number(rawCode);
+  return Number.isFinite(code) ? code : null;
+}
+
 function getBostaSyncedAt(order: AdminOrder) {
   const Bosta = getBosta(order);
   return getString(Bosta.syncedAt || order["Bosta Synced At"] || order["Aramex Synced At"]);
@@ -722,6 +729,17 @@ function hasReturnedSignal(order: AdminOrder) {
 }
 
 function getBostaTimelineStageKey(order: AdminOrder) {
+  const code = getBostaLatestCodeNumber(order);
+  if (code !== null) {
+    if (code === 45) return "delivered";
+    if (code === 46 || code === 49 || code === 60) return "returned_cancelled";
+    if (code === 48 || code === 100 || code === 101) return "bosta_failed";
+    if (code === 47 || code === 102 || code === 103 || code === 105) return "bosta_exception";
+    if (code === 30) return "in_transit";
+    if ([21, 22, 23, 24, 40, 41].includes(code)) return "shipment_picked_up";
+    if ([10, 11, 20].includes(code)) return "shipment_created";
+  }
+
   const text = getBostaTrackingText(order);
 
   if (!text.trim()) return "";
