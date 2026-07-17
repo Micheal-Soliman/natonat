@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 
 import { isAdminAuthorized } from "@/lib/admin-auth";
-import { fetchOrderFromDatabase, isOrderDatabaseConfigured, upsertOrderToDatabase } from "@/lib/order-database";
+import {
+  fetchOrderFromDatabaseIncludingDeleted,
+  isDeletedOrderRecord,
+  isOrderDatabaseConfigured,
+  upsertOrderToDatabase,
+} from "@/lib/order-database";
 import { updateBostaDelivery } from "@/lib/bosta";
 
 type OrderRecord = Record<string, unknown>;
@@ -246,7 +251,9 @@ async function fetchOrderFromSheets(orderRef: string) {
 }
 
 async function fetchExistingOrder(orderRef: string) {
-  return ((await fetchOrderFromDatabase(orderRef)) as OrderRecord | null) || fetchOrderFromSheets(orderRef);
+  const databaseOrder = (await fetchOrderFromDatabaseIncludingDeleted(orderRef)) as OrderRecord | null;
+  if (isDeletedOrderRecord(databaseOrder)) return null;
+  return databaseOrder || fetchOrderFromSheets(orderRef);
 }
 
 async function mirrorOrderToSheets(order: OrderRecord) {

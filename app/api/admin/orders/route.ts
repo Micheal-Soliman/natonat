@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { isAdminAuthorized } from "@/lib/admin-auth";
-import { listOrdersFromDatabase } from "@/lib/order-database";
+import { isDeletedOrderRecord, listOrdersFromDatabase } from "@/lib/order-database";
 
 type SheetsListResponse = {
   success?: boolean;
@@ -192,6 +192,10 @@ function normalizeOrder(input: unknown) {
 
 type NormalizedOrder = ReturnType<typeof normalizeOrder>;
 
+function isDeletedOrder(order: NormalizedOrder) {
+  return isDeletedOrderRecord(order);
+}
+
 function hasMeaningfulOrderData(order: NormalizedOrder) {
   const customer = getObject(order.customer);
   const bosta = getObject(order.bosta || order.shipment || order.aramex);
@@ -225,7 +229,9 @@ export async function GET(req: Request) {
   const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL;
   if (!webhookUrl) {
     const normalizedDatabaseOrders = databaseOrders.map(normalizeOrder);
-    const orders = normalizedDatabaseOrders.filter(hasMeaningfulOrderData);
+    const orders = normalizedDatabaseOrders
+      .filter((order) => !isDeletedOrder(order))
+      .filter(hasMeaningfulOrderData);
 
     if (orders.length > 0) {
       return NextResponse.json({
@@ -290,7 +296,19 @@ export async function GET(req: Request) {
 
   const normalizedSheetOrders = data.orders.map(normalizeOrder);
   const normalizedDatabaseOrders = databaseOrders.map(normalizeOrder);
-  const meaningfulOrders = [...normalizedSheetOrders, ...normalizedDatabaseOrders].filter(hasMeaningfulOrderData);
+  const deletedOrderRefs = new Set(
+    normalizedDatabaseOrders
+      .filter(isDeletedOrder)
+      .map((order) => getString(order.order_ref))
+      .filter(Boolean),
+  );
+  const meaningfulSheetOrders = normalizedSheetOrders
+    .filter((order) => !deletedOrderRefs.has(getString(order.order_ref)))
+    .filter(hasMeaningfulOrderData);
+  const meaningfulDatabaseOrders = normalizedDatabaseOrders
+    .filter((order) => !isDeletedOrder(order))
+    .filter(hasMeaningfulOrderData);
+  const meaningfulOrders = [...meaningfulSheetOrders, ...meaningfulDatabaseOrders];
   const mergedByRef = new Map<string, NormalizedOrder>();
   const orphanOrders: NormalizedOrder[] = [];
 
@@ -317,7 +335,8 @@ export async function GET(req: Request) {
     skipped_empty_rows:
       normalizedSheetOrders.length +
       normalizedDatabaseOrders.length -
-      meaningfulOrders.length,
+      meaningfulOrders.length -
+      deletedOrderRefs.size,
     source: databaseOrders.length > 0 ? "google_sheets_supabase" : "google_sheets",
     database_rows: databaseOrders.length,
     sheet_rows: data.orders.length,

@@ -568,6 +568,22 @@ function getOrderRecordedPieces(order: AdminOrder) {
   }, 0);
 }
 
+function getOrderCustomPieces(order: AdminOrder) {
+  if (!isCustomOrder(order)) return 0;
+
+  const extras = getExtras(order);
+  const customQuantity = getNumber(extras.custom_order_quantity);
+  if (customQuantity > 0) return customQuantity;
+
+  const sheetQuantity = getNumber(order["Total Items Quantity"]);
+  if (sheetQuantity > 0) return sheetQuantity;
+
+  return getItems(order).reduce((sum, item) => {
+    if (isBundleParentItem(item)) return sum;
+    return sum + getItemRecordedQuantity(item);
+  }, 0);
+}
+
 function getItemUnitPrice(item: Record<string, unknown>) {
   return getNumber(
     item.unit_price_egp ??
@@ -3037,6 +3053,7 @@ export default function AdminDashboardPage() {
     const deliveryOrders = filteredMetricOrders.filter((order) => getDeliveryBucket(order) === "delivery");
     const shippedNotDeliveredOrders = filteredMetricOrders.filter((order) => isInTransit(order) && !isDelivered(order) && !isReturned(order));
     const totalPieces = revenueOrders.reduce((sum, order) => sum + getOrderRecordedPieces(order), 0);
+    const customPieces = customOrders.reduce((sum, order) => sum + getOrderCustomPieces(order), 0);
     const awaitingPaymentOrders = filteredMetricOrders.filter((order) => !isConfirmed(order) && !isReturned(order));
     const paidOnlineOrders = revenueOrders.filter((order) => ["card", "instapay"].includes(getPaymentBucket(order)));
     const codRevenueOrders = revenueOrders.filter((order) => getPaymentBucket(order) === "cod");
@@ -3082,6 +3099,8 @@ export default function AdminDashboardPage() {
       shippedNotDeliveredOrders: shippedNotDeliveredOrders.length,
       shippedNotDeliveredValue: shippedNotDeliveredOrders.reduce((sum, order) => sum + getAmount(order), 0),
       totalPieces,
+      customPieces,
+      allPieces: totalPieces + customPieces,
       awaitingPaymentOrders: awaitingPaymentOrders.length,
       averageOrderValue: revenueOrders.length ? collectedRevenue / revenueOrders.length : 0,
       paidOnlineOrders: paidOnlineOrders.length,
@@ -3328,10 +3347,11 @@ export default function AdminDashboardPage() {
     >();
     const cityMap = new Map<string, { city: string; orders: number; revenue: number }>();
     const productFamilyPieces = {
-      luggageCovers: 0,
-      packOnat: 0,
-      passportWallet: 0,
+      luggageCovers: { retail: 0, custom: 0 },
+      packOnat: { retail: 0, custom: 0 },
+      passportWallet: { retail: 0, custom: 0 },
     };
+    const customRevenueOrders = confirmedOrders.filter((order) => !isReturned(order) && isCustomOrder(order));
 
     revenueOrders.forEach((order, orderIndex) => {
       const customer = getCustomer(order);
@@ -3349,11 +3369,11 @@ export default function AdminDashboardPage() {
 
         const qty = getItemRecordedQuantity(item);
         if (isPackOnatItem(item)) {
-          productFamilyPieces.packOnat += qty;
+          productFamilyPieces.packOnat.retail += qty;
         } else if (isPassportWalletItem(item)) {
-          productFamilyPieces.passportWallet += qty;
+          productFamilyPieces.passportWallet.retail += qty;
         } else if (isLuggageCoverItem(item)) {
-          productFamilyPieces.luggageCovers += qty;
+          productFamilyPieces.luggageCovers.retail += qty;
         }
 
         const name = getString(item.name || item.title || item.slug || item.id) || "Unknown product";
@@ -3368,6 +3388,24 @@ export default function AdminDashboardPage() {
         row.orders.add(orderRef);
         row.directRevenue += line;
         productMap.set(name, row);
+      });
+    });
+
+    customRevenueOrders.forEach((order) => {
+      const orderItems = getItems(order);
+      orderItems.forEach((item) => {
+        if (isBundleParentItem(item)) return;
+
+        const qty = getItemRecordedQuantity(item) || getOrderCustomPieces(order);
+        if (qty <= 0) return;
+
+        if (isPackOnatItem(item)) {
+          productFamilyPieces.packOnat.custom += qty;
+        } else if (isPassportWalletItem(item)) {
+          productFamilyPieces.passportWallet.custom += qty;
+        } else if (isLuggageCoverItem(item)) {
+          productFamilyPieces.luggageCovers.custom += qty;
+        }
       });
     });
 
@@ -4207,27 +4245,42 @@ export default function AdminDashboardPage() {
             <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-[#EEBC3F]">Product family pieces sold</p>
-                <h3 className="text-xl font-black">Core product count</h3>
+                <h3 className="text-xl font-black">Retail vs custom pieces</h3>
               </div>
-              <p className="text-xs font-bold text-white/55">Uses the same period/status filters above.</p>
+              <p className="text-xs font-bold text-white/55">Retail excludes special custom/bulk orders. Custom is shown separately.</p>
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-3">
               <div className="rounded-2xl bg-white/10 p-4">
                 <p className="text-xs font-black uppercase tracking-[0.14em] text-white/45">Luggage covers</p>
-                <p className="mt-2 text-3xl font-black">{operations.productFamilyPieces.luggageCovers}</p>
+                <p className="mt-2 text-3xl font-black">{operations.productFamilyPieces.luggageCovers.retail}</p>
                 <p className="mt-1 text-xs font-bold text-white/45">كفرات شنط</p>
+                <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-black">
+                  <span className="rounded-xl bg-white/10 px-3 py-2">Custom {operations.productFamilyPieces.luggageCovers.custom}</span>
+                  <span className="rounded-xl bg-white/10 px-3 py-2">Total {operations.productFamilyPieces.luggageCovers.retail + operations.productFamilyPieces.luggageCovers.custom}</span>
+                </div>
               </div>
               <div className="rounded-2xl bg-white/10 p-4">
                 <p className="text-xs font-black uppercase tracking-[0.14em] text-white/45">PackOnat</p>
-                <p className="mt-2 text-3xl font-black">{operations.productFamilyPieces.packOnat}</p>
+                <p className="mt-2 text-3xl font-black">{operations.productFamilyPieces.packOnat.retail}</p>
                 <p className="mt-1 text-xs font-bold text-white/45">باكونات</p>
+                <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-black">
+                  <span className="rounded-xl bg-white/10 px-3 py-2">Custom {operations.productFamilyPieces.packOnat.custom}</span>
+                  <span className="rounded-xl bg-white/10 px-3 py-2">Total {operations.productFamilyPieces.packOnat.retail + operations.productFamilyPieces.packOnat.custom}</span>
+                </div>
               </div>
               <div className="rounded-2xl bg-white/10 p-4">
                 <p className="text-xs font-black uppercase tracking-[0.14em] text-white/45">Passport Wallet</p>
-                <p className="mt-2 text-3xl font-black">{operations.productFamilyPieces.passportWallet}</p>
+                <p className="mt-2 text-3xl font-black">{operations.productFamilyPieces.passportWallet.retail}</p>
                 <p className="mt-1 text-xs font-bold text-white/45">باسبور والت</p>
+                <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-black">
+                  <span className="rounded-xl bg-white/10 px-3 py-2">Custom {operations.productFamilyPieces.passportWallet.custom}</span>
+                  <span className="rounded-xl bg-white/10 px-3 py-2">Total {operations.productFamilyPieces.passportWallet.retail + operations.productFamilyPieces.passportWallet.custom}</span>
+                </div>
               </div>
             </div>
+            <p className="mt-4 text-xs font-bold leading-5 text-white/55">
+              الرقم الكبير هو Retail/catalog فقط. لو أضفت special custom order بـ 200 قطعة هتظهر في Custom، ومش هتزود رقم Retail.
+            </p>
           </div>
         </section>
 
@@ -4239,17 +4292,19 @@ export default function AdminDashboardPage() {
         </section>
 
         <section className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <StatCard title="Pieces Sold" value={String(stats.totalPieces)} subtitle="From Total Items Quantity, bundle parents excluded" icon={PackageCheck} tone="green" />
+          <StatCard title="Retail Pieces" value={String(stats.totalPieces)} subtitle="Website + admin catalog only, special custom excluded" icon={PackageCheck} tone="green" />
+          <StatCard title="Custom/Bulk Pieces" value={String(stats.customPieces)} subtitle={`${stats.customOrders} special custom orders, separate from retail`} icon={ReceiptText} tone={stats.customPieces ? "gold" : "dark"} />
+          <StatCard title="All Pieces" value={String(stats.allPieces)} subtitle="Retail + special custom/bulk pieces" icon={PackageCheck} tone="dark" />
           <StatCard title="Pickup Orders" value={String(stats.pickupOrders)} subtitle={`${stats.deliveryOrders} delivery orders`} icon={Truck} tone="gold" />
-          <StatCard title="Shipped Not Delivered" value={String(stats.shippedNotDeliveredOrders)} subtitle={money.format(stats.shippedNotDeliveredValue)} icon={AlertTriangle} tone={stats.shippedNotDeliveredOrders ? "gold" : "green"} />
-          <StatCard title="Pending Difference" value={money.format(stats.allOrdersSubtotal - stats.grossSales)} subtitle="All subtotal minus confirmed gross" icon={AlertTriangle} tone={stats.allOrdersSubtotal - stats.grossSales > 0 ? "gold" : "green"} />
         </section>
 
         <section className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard title="Shipped Not Delivered" value={String(stats.shippedNotDeliveredOrders)} subtitle={money.format(stats.shippedNotDeliveredValue)} icon={AlertTriangle} tone={stats.shippedNotDeliveredOrders ? "gold" : "green"} />
+          <StatCard title="Pending Difference" value={money.format(stats.allOrdersSubtotal - stats.grossSales)} subtitle="All subtotal minus confirmed gross" icon={AlertTriangle} tone={stats.allOrdersSubtotal - stats.grossSales > 0 ? "gold" : "green"} />
           <StatCard
-            title="Custom / Bulk Orders"
+            title="Special Custom Orders"
             value={money.format(stats.customOrdersValue)}
-            subtitle={`${stats.customOrders} finance-only orders, excluded from stock/product ranking`}
+            subtitle={`${stats.customOrders} orders / ${stats.customPieces} pieces, excluded from retail stock/product ranking`}
             icon={ReceiptText}
             tone={stats.customOrders ? "gold" : "dark"}
           />
@@ -5500,6 +5555,11 @@ export default function AdminDashboardPage() {
               </p>
             </div>
             <p className="text-sm font-black text-[#0F1A26]/50">{filteredMetricOrders.length} orders</p>
+          </div>
+          <div className="mt-4 grid gap-3 rounded-3xl bg-[#F8F6F3] p-4 text-xs font-bold text-[#0F1A26]/60 md:grid-cols-3">
+            <p><span className="font-black text-emerald-700">Delivered</span> = بوسطة/التتبع بيقول إن العميل استلم.</p>
+            <p><span className="font-black text-rose-700">Returned / Cancelled</span> = مرتجع أو ملغي، وبيتخصم من revenue.</p>
+            <p><span className="font-black text-amber-700">Shipment Created</span> = الشحنة اتعملها tracking، لكنها لسه مش Delivered ومش Returned.</p>
           </div>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {shipmentStatusBreakdown.length ? shipmentStatusBreakdown.map((row) => (

@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 
 import { isAdminAuthorized } from "@/lib/admin-auth";
-import { fetchOrderFromDatabase, listOrdersFromDatabase } from "@/lib/order-database";
+import {
+  fetchOrderFromDatabaseIncludingDeleted,
+  isDeletedOrderRecord,
+  listOrdersFromDatabase,
+} from "@/lib/order-database";
 import {
   getBostaExceptionLabel,
   getBostaStateLabel,
@@ -77,7 +81,8 @@ async function fetchOrdersForSync(orderRefs: string[], limit: number) {
   if (orderRefs.length) {
     const orders = await Promise.all(
       orderRefs.map(async (orderRef) => {
-        const databaseOrder = await fetchOrderFromDatabase(orderRef);
+        const databaseOrder = await fetchOrderFromDatabaseIncludingDeleted(orderRef);
+        if (isDeletedOrderRecord(databaseOrder)) return null;
         if (databaseOrder) return databaseOrder as OrderRecord;
 
         const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL;
@@ -98,11 +103,17 @@ async function fetchOrdersForSync(orderRefs: string[], limit: number) {
 
   const databaseOrders = await listOrdersFromDatabase(limit).catch(() => []);
   const sheetOrders = await fetchSheetOrders(limit);
+  const deletedOrderRefs = new Set(
+    databaseOrders
+      .filter((order) => isDeletedOrderRecord(order))
+      .map(getOrderRef)
+      .filter(Boolean),
+  );
   const byRef = new Map<string, OrderRecord>();
 
-  for (const order of [...sheetOrders, ...databaseOrders]) {
+  for (const order of [...sheetOrders, ...databaseOrders.filter((order) => !isDeletedOrderRecord(order))]) {
     const orderRef = getOrderRef(order);
-    if (orderRef) byRef.set(orderRef, order);
+    if (orderRef && !deletedOrderRefs.has(orderRef)) byRef.set(orderRef, order);
   }
 
   return [...byRef.values()].slice(0, limit);

@@ -15,7 +15,8 @@ import {
   markReferralConversionForOrder,
 } from "@/lib/referrals";
 import {
-  fetchOrderFromDatabase,
+  fetchOrderFromDatabaseIncludingDeleted,
+  isDeletedOrderRecord,
   isOrderDatabaseConfigured,
   upsertOrderToDatabase,
 } from "@/lib/order-database";
@@ -459,9 +460,15 @@ export async function GET(req: Request) {
     );
   }
 
-  const order =
-    await fetchOrderFromDatabase(order_ref) ||
-    await fetchOrderFromGoogleSheets(order_ref);
+  const databaseOrder = await fetchOrderFromDatabaseIncludingDeleted(order_ref);
+  if (isDeletedOrderRecord(databaseOrder)) {
+    return NextResponse.json(
+      { error: "Order not found" },
+      { status: 404 }
+    );
+  }
+
+  const order = databaseOrder || await fetchOrderFromGoogleSheets(order_ref);
   
   if (!order) {
     return NextResponse.json(
@@ -639,8 +646,18 @@ export async function POST(req: Request) {
 
   const orderRef = body.order_ref as string | undefined;
   if (orderRef) {
+    const databaseExisting = (await fetchOrderFromDatabaseIncludingDeleted(orderRef)) as StoredOrder | null;
+    if (isDeletedOrderRecord(databaseExisting)) {
+      return NextResponse.json({
+        success: true,
+        skipped: true,
+        reason: "order_deleted",
+        order_ref: orderRef,
+      });
+    }
+
     const existing =
-      ((await fetchOrderFromDatabase(orderRef)) as StoredOrder | null) ||
+      databaseExisting ||
       (isInitialCardCheckout
         ? undefined
         : ((await fetchOrderFromGoogleSheets(orderRef)) as StoredOrder | null)) ||

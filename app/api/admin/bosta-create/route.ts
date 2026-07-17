@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { isAdminAuthorized } from "@/lib/admin-auth";
-import { fetchOrderFromDatabase } from "@/lib/order-database";
+import { fetchOrderFromDatabaseIncludingDeleted, isDeletedOrderRecord } from "@/lib/order-database";
 
 type AdminOrder = Record<string, unknown> & {
   order_ref?: string;
@@ -63,7 +63,8 @@ function getArray(value: unknown): unknown[] {
 }
 
 async function fetchOrder(orderRef: string) {
-  const databaseOrder = await fetchOrderFromDatabase(orderRef);
+  const databaseOrder = await fetchOrderFromDatabaseIncludingDeleted(orderRef);
+  if (isDeletedOrderRecord(databaseOrder)) return null;
   if (databaseOrder) return databaseOrder as AdminOrder;
 
   const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL;

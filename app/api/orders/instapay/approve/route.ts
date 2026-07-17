@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { fetchOrderFromDatabase } from "@/lib/order-database";
+import { fetchOrderFromDatabaseIncludingDeleted, isDeletedOrderRecord } from "@/lib/order-database";
 
 type LoggedOrder = {
   order_ref?: string;
@@ -40,7 +40,8 @@ type LoggedOrder = {
 };
 
 async function fetchOrder(orderRef: string) {
-  const databaseOrder = await fetchOrderFromDatabase(orderRef);
+  const databaseOrder = await fetchOrderFromDatabaseIncludingDeleted(orderRef);
+  if (isDeletedOrderRecord(databaseOrder)) return null;
   if (databaseOrder) return databaseOrder as LoggedOrder;
 
   const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL;

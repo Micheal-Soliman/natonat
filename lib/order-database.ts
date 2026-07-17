@@ -153,6 +153,24 @@ export function isOrderDatabaseConfigured() {
   return Boolean(getSupabaseConfig());
 }
 
+export function isDeletedOrderRecord(order: OrderRecord | null | undefined) {
+  if (!order) return false;
+
+  const extras = getObject(order.extras);
+  const rawPayload = getObject(order.raw_payload);
+  const rawExtras = getObject(rawPayload.extras);
+  const status = firstString(order.status, rawPayload.status).toLowerCase();
+  const source = firstString(order.source, rawPayload.source).toLowerCase();
+
+  return Boolean(
+    status === "deleted" ||
+      source === "admin_order_deleted" ||
+      extras.deleted === true ||
+      rawExtras.deleted === true ||
+      firstString(order.deleted_at, rawPayload.deleted_at),
+  );
+}
+
 export function normalizeOrderForDatabase(order: OrderRecord): SupabaseOrderRow | null {
   const orderRef = firstString(order.order_ref, order["Order Ref"]);
   if (!orderRef) return null;
@@ -276,7 +294,7 @@ export async function upsertOrderToDatabase(order: OrderRecord) {
   return { skipped: false };
 }
 
-export async function fetchOrderFromDatabase(orderRef: string) {
+export async function fetchOrderFromDatabaseIncludingDeleted(orderRef: string) {
   const config = getSupabaseConfig();
   if (!config || !orderRef) return null;
 
@@ -295,6 +313,11 @@ export async function fetchOrderFromDatabase(orderRef: string) {
 
   const rows = (await res.json()) as SupabaseOrderRow[];
   return rows[0] ? databaseRowToOrder(rows[0]) : null;
+}
+
+export async function fetchOrderFromDatabase(orderRef: string) {
+  const order = await fetchOrderFromDatabaseIncludingDeleted(orderRef);
+  return isDeletedOrderRecord(order) ? null : order;
 }
 
 export async function deleteOrderFromDatabase(orderRef: string) {
@@ -316,6 +339,55 @@ export async function deleteOrderFromDatabase(orderRef: string) {
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new Error(`Supabase order delete failed (${res.status}): ${text}`);
+  }
+
+  return { skipped: false };
+}
+
+export async function markOrderDeletedInDatabase(orderRef: string) {
+  const config = getSupabaseConfig();
+  if (!config || !orderRef) return { skipped: true };
+
+  const timestamp = new Date().toISOString();
+  const row = normalizeOrderForDatabase({
+    order_ref: orderRef,
+    source: "admin_order_deleted",
+    status: "deleted",
+    payment_status: "deleted",
+    extras: {
+      deleted: true,
+      deleted_at: timestamp,
+      deleted_by: "admin_dashboard",
+      delete_note: "Suppress this order from dashboard and block stale Google Sheets copies from reappearing.",
+    },
+    history: [
+      {
+        action: "admin_order_deleted",
+        status: "deleted",
+        timestamp,
+        source: "admin_dashboard",
+      },
+    ],
+    deleted_at: timestamp,
+    updated_at: timestamp,
+    created_at: timestamp,
+  });
+
+  if (!row) return { skipped: true };
+
+  const res = await fetch(`${config.url}/rest/v1/orders?on_conflict=order_ref`, {
+    method: "POST",
+    headers: {
+      ...getHeaders(config.serviceRoleKey),
+      prefer: "resolution=merge-duplicates,return=minimal",
+    },
+    body: JSON.stringify(row),
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Supabase order delete marker failed (${res.status}): ${text}`);
   }
 
   return { skipped: false };

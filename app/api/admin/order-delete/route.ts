@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { isAdminAuthorized } from "@/lib/admin-auth";
-import { deleteOrderFromDatabase, isOrderDatabaseConfigured } from "@/lib/order-database";
+import { isOrderDatabaseConfigured, markOrderDeletedInDatabase } from "@/lib/order-database";
 
 type DeleteBody = {
   orderRef?: string;
@@ -60,7 +60,7 @@ export async function POST(req: Request) {
   let databaseError = "";
   if (isOrderDatabaseConfigured()) {
     try {
-      await deleteOrderFromDatabase(orderRef);
+      await markOrderDeletedInDatabase(orderRef);
       databaseDeleted = true;
     } catch (error) {
       databaseError = error instanceof Error ? error.message : String(error);
@@ -93,7 +93,7 @@ export async function POST(req: Request) {
     success: true,
     order_ref: orderRef,
     storage: {
-      supabase: databaseDeleted ? "deleted" : isOrderDatabaseConfigured() ? "failed" : "not_configured",
+      supabase: databaseDeleted ? "deleted_marker_saved" : isOrderDatabaseConfigured() ? "failed" : "not_configured",
       google_sheets: sheetsDeleted ? "deleted" : sheetsError || "not_configured_or_missing_token",
     },
     details: {

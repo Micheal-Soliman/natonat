@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { isAdminAuthorized } from "@/lib/admin-auth";
-import { fetchOrderFromDatabase } from "@/lib/order-database";
+import { fetchOrderFromDatabaseIncludingDeleted, isDeletedOrderRecord } from "@/lib/order-database";
 import { terminateBostaDelivery } from "@/lib/bosta";
 
 type OrderRecord = Record<string, unknown>;
@@ -53,7 +53,8 @@ function getAppOrigin(req: Request) {
 }
 
 async function fetchOrder(orderRef: string) {
-  const databaseOrder = await fetchOrderFromDatabase(orderRef);
+  const databaseOrder = await fetchOrderFromDatabaseIncludingDeleted(orderRef);
+  if (isDeletedOrderRecord(databaseOrder)) return null;
   if (databaseOrder) return databaseOrder as OrderRecord;
 
   const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL;
