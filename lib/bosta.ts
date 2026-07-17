@@ -397,6 +397,17 @@ function getBostaAuthorizationHeader() {
   return `Bearer ${token}`;
 }
 
+function getBostaAuthHeaderAttempts(): Array<{ label: string; headers: Record<string, string> }> {
+  const key = getBostaApiKey();
+  const token = key.replace(/^bearer\s+/i, "").trim();
+  return [
+    { label: "authorization_bearer", headers: { Authorization: `Bearer ${token}` } },
+    { label: "authorization_raw", headers: { Authorization: token } },
+    { label: "authorization_token", headers: { Authorization: `Token ${token}` } },
+    { label: "x_api_key", headers: { "x-api-key": token } },
+  ];
+}
+
 export function getBostaConfigDiagnostics() {
   const rawKey =
     process.env.BOSTA_API_KEY ||
@@ -918,23 +929,43 @@ export async function createBostaDelivery(input: CreateBostaDeliveryInput): Prom
     notes: `${input.orderRef}${description ? ` | ${description}` : ""}`.slice(0, 250),
   };
 
-  const response = await fetch(`${getBostaBaseUrl()}/deliveries?apiVersion=1`, {
-    method: "POST",
-    headers: {
-      Authorization: getBostaAuthorizationHeader(),
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify(payload),
-    signal: AbortSignal.timeout(45000),
-  });
+  const authAttempts = getBostaAuthHeaderAttempts();
+  let response: Response | null = null;
+  let text = "";
+  let data: unknown = {};
+  const attemptedAuthLabels: string[] = [];
 
-  const text = await response.text();
-  let data: unknown = text;
-  try {
-    data = text ? JSON.parse(text) : {};
-  } catch {
-    // Keep text for diagnostics.
+  for (const attempt of authAttempts) {
+    attemptedAuthLabels.push(attempt.label);
+    response = await fetch(`${getBostaBaseUrl()}/deliveries?apiVersion=1`, {
+      method: "POST",
+      headers: {
+        ...attempt.headers,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(45000),
+    });
+
+    text = await response.text();
+    data = text;
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch {
+      // Keep text for diagnostics.
+    }
+
+    if (response.ok || (response.status !== 401 && response.status !== 403)) break;
+  }
+
+  if (!response) {
+    return {
+      success: false,
+      provider: "bosta",
+      raw: null,
+      error: "Bosta delivery error: request was not sent",
+    };
   }
 
   if (!response.ok) {
@@ -951,6 +982,7 @@ export async function createBostaDelivery(input: CreateBostaDeliveryInput): Prom
         `apiKeyLength=${diagnostics.apiKeyLength}`,
         `apiKeyPreview=${diagnostics.apiKeyPreview || "empty"}`,
         `hadWhitespaceOrWrapper=${diagnostics.hadWhitespaceOrWrapper}`,
+        `authAttempts=${attemptedAuthLabels.join(">")}`,
         `address={${formatBostaDiagnosticsParts(addressDiagnostics)}}`,
       ].join(" | "),
     };
