@@ -174,6 +174,17 @@ type AdminManualOrderDraft = {
   createBostaShipment: boolean;
 };
 
+type AdminManualOrderItemDraft = {
+  orderKind: "catalog" | "special";
+  productSlug: string;
+  productSize: string;
+  title: string;
+  quantity: string;
+  unitPrice: string;
+  total: string;
+  specialProductBrief: string;
+};
+
 type BostaPickupDraft = {
   scheduledDate: string;
   numberOfParcels: string;
@@ -2017,6 +2028,18 @@ export default function AdminDashboardPage() {
     deliveryMethod: "custom",
     createBostaShipment: false,
   });
+  const [manualOrderItems, setManualOrderItems] = useState<AdminManualOrderItemDraft[]>([
+    {
+      orderKind: "special",
+      productSlug: "",
+      productSize: "",
+      title: "",
+      quantity: "1",
+      unitPrice: "",
+      total: "",
+      specialProductBrief: "",
+    },
+  ]);
   const [bostaPickupDraft, setBostaPickupDraft] = useState<BostaPickupDraft>({
     scheduledDate: getTomorrowInputDate(),
     numberOfParcels: "1",
@@ -2436,11 +2459,79 @@ export default function AdminDashboardPage() {
     });
   };
 
+  const updateManualOrderItem = (index: number, key: keyof AdminManualOrderItemDraft, value: string) => {
+    setManualOrderItems((current) => current.map((item, itemIndex) => {
+      if (itemIndex !== index) return item;
+      const next = { ...item, [key]: value };
+
+      if (key === "orderKind" && value === "special") {
+        next.productSlug = "";
+        next.productSize = "";
+      }
+
+      if (key === "productSlug") {
+        const product = inventory.find((entry) => entry.slug === value);
+        if (product) {
+          const size = getDefaultProductSize(product);
+          const price = getSizePrice(product, size);
+          const quantity = getNumber(next.quantity) || 1;
+          next.orderKind = "catalog";
+          next.productSize = size;
+          next.title = product.name;
+          next.unitPrice = price > 0 ? String(price) : next.unitPrice;
+          next.total = price > 0 ? String(price * quantity) : next.total;
+        } else {
+          next.productSize = "";
+        }
+      }
+
+      if (key === "productSize") {
+        const product = inventory.find((entry) => entry.slug === next.productSlug);
+        const price = getSizePrice(product, value);
+        const quantity = getNumber(next.quantity) || 1;
+        if (price > 0) {
+          next.unitPrice = String(price);
+          next.total = String(price * quantity);
+        }
+      }
+
+      if (key === "quantity" || key === "unitPrice") {
+        const quantity = getNumber(key === "quantity" ? value : next.quantity);
+        const unitPrice = getNumber(key === "unitPrice" ? value : next.unitPrice);
+        next.total = quantity > 0 && unitPrice > 0 ? String(quantity * unitPrice) : next.total;
+      }
+
+      return next;
+    }));
+  };
+
+  const addManualOrderItem = () => {
+    setManualOrderItems((current) => [
+      ...current,
+      { orderKind: "special", productSlug: "", productSize: "", title: "", quantity: "1", unitPrice: "", total: "", specialProductBrief: "" },
+    ]);
+  };
+
+  const removeManualOrderItem = (index: number) => {
+    setManualOrderItems((current) => current.length <= 1 ? current : current.filter((_, itemIndex) => itemIndex !== index));
+  };
+
   const createManualCustomOrder = async () => {
     setActionLoadingRef("manual-order");
     setError("");
 
     try {
+      const manualItemsPayload = manualOrderItems.map((item) => ({
+        orderKind: item.orderKind,
+        productSlug: item.orderKind === "catalog" ? item.productSlug : "",
+        productSize: item.orderKind === "catalog" ? item.productSize : "",
+        title: item.title,
+        quantity: getNumber(item.quantity),
+        unitPrice: getNumber(item.unitPrice),
+        total: getNumber(item.total),
+        specialProductBrief: item.specialProductBrief,
+      }));
+      const manualItemsTotal = manualItemsPayload.reduce((sum, item) => sum + item.total, 0);
       const res = await fetch("/api/admin/manual-order", {
         method: "POST",
         headers: {
@@ -2453,7 +2544,8 @@ export default function AdminDashboardPage() {
           productSize: manualOrderDraft.orderKind === "catalog" ? manualOrderDraft.productSize : "",
           quantity: getNumber(manualOrderDraft.quantity),
           unitPrice: getNumber(manualOrderDraft.unitPrice),
-          total: getNumber(manualOrderDraft.total),
+          total: manualItemsTotal || getNumber(manualOrderDraft.total),
+          items: manualItemsPayload,
           createBostaShipment: manualOrderDraft.createBostaShipment,
         }),
       });
@@ -2486,6 +2578,9 @@ export default function AdminDashboardPage() {
         deliveryMethod: "custom",
         createBostaShipment: false,
       });
+      setManualOrderItems([
+        { orderKind: "special", productSlug: "", productSize: "", title: "", quantity: "1", unitPrice: "", total: "", specialProductBrief: "" },
+      ]);
       await loadOrders(savedToken);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create custom order");
@@ -4165,8 +4260,107 @@ export default function AdminDashboardPage() {
                 ))}
               </div>
 
+              <div className="rounded-3xl border border-[#0F1A26]/10 bg-white p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-black text-[#0F1A26]">Order items</h3>
+                    <p className="text-xs font-bold text-[#0F1A26]/45">Add one or more products in the same manual order.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addManualOrderItem}
+                    className="h-9 rounded-2xl bg-[#EEBC3F] px-4 text-xs font-black text-[#0F1A26]"
+                  >
+                    Add item
+                  </button>
+                </div>
+                <div className="mt-4 space-y-3">
+                  {manualOrderItems.map((item, index) => {
+                    const product = inventory.find((entry) => entry.slug === item.productSlug);
+                    return (
+                      <div key={index} className="grid gap-3 rounded-2xl border border-[#0F1A26]/10 bg-[#F8F6F3] p-3 md:grid-cols-2 xl:grid-cols-6">
+                        <label className="text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45">
+                          Type
+                          <select
+                            value={item.orderKind}
+                            onChange={(event) => updateManualOrderItem(index, "orderKind", event.target.value)}
+                            className="mt-1 h-10 w-full rounded-xl border border-[#0F1A26]/10 bg-white px-3 text-xs font-bold normal-case tracking-normal outline-none"
+                          >
+                            <option value="special">Special</option>
+                            <option value="catalog">Catalog</option>
+                          </select>
+                        </label>
+                        {item.orderKind === "catalog" ? (
+                          <label className="text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45 xl:col-span-2">
+                            Product
+                            <select
+                              value={item.productSlug}
+                              onChange={(event) => updateManualOrderItem(index, "productSlug", event.target.value)}
+                              className="mt-1 h-10 w-full rounded-xl border border-[#0F1A26]/10 bg-white px-3 text-xs font-bold normal-case tracking-normal outline-none"
+                            >
+                              <option value="">Select website product</option>
+                              {inventory.map((entry) => (
+                                <option key={entry.slug} value={entry.slug} disabled={isInventoryOut(entry)}>
+                                  {entry.name} {entry.stockStatus === "out_of_stock" ? "(out of stock)" : ""}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        ) : (
+                          <label className="text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45 xl:col-span-2">
+                            Product name
+                            <input
+                              value={item.title}
+                              onChange={(event) => updateManualOrderItem(index, "title", event.target.value)}
+                              className="mt-1 h-10 w-full rounded-xl border border-[#0F1A26]/10 bg-white px-3 text-xs font-bold normal-case tracking-normal outline-none"
+                            />
+                          </label>
+                        )}
+                        <label className="text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45">
+                          Size
+                          <select
+                            value={item.productSize}
+                            onChange={(event) => updateManualOrderItem(index, "productSize", event.target.value)}
+                            disabled={item.orderKind !== "catalog" || !item.productSlug}
+                            className="mt-1 h-10 w-full rounded-xl border border-[#0F1A26]/10 bg-white px-3 text-xs font-bold normal-case tracking-normal outline-none disabled:bg-white/50"
+                          >
+                            <option value="">No size</option>
+                            {(product ? getSizeRows(product) : []).map((row) => (
+                              <option key={row.size} value={row.size === "product" ? "" : row.size} disabled={row.status === "out_of_stock" || row.quantity === 0}>
+                                {row.size === "product" ? "No size" : row.size}
+                                {typeof row.quantity === "number" ? ` - ${row.quantity} left` : ""}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        {(["quantity", "unitPrice", "total"] as const).map((field) => (
+                          <label key={field} className="text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45">
+                            {field === "unitPrice" ? "Unit price" : field === "total" ? "Line total" : "Qty"}
+                            <input
+                              value={item[field]}
+                              onChange={(event) => updateManualOrderItem(index, field, event.target.value)}
+                              className="mt-1 h-10 w-full rounded-xl border border-[#0F1A26]/10 bg-white px-3 text-xs font-bold normal-case tracking-normal outline-none"
+                            />
+                          </label>
+                        ))}
+                        <div className="flex items-end">
+                          <button
+                            type="button"
+                            onClick={() => removeManualOrderItem(index)}
+                            disabled={manualOrderItems.length <= 1}
+                            className="h-10 rounded-xl border border-rose-200 bg-white px-3 text-xs font-black text-rose-700 disabled:opacity-40"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                {manualOrderDraft.orderKind === "catalog" && (
+                {false && manualOrderDraft.orderKind === "catalog" && (
                   <label className="text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45 md:col-span-2">
                   Product
                   <select
@@ -4183,7 +4377,7 @@ export default function AdminDashboardPage() {
                   </select>
                 </label>
                 )}
-                {manualOrderDraft.orderKind === "catalog" && (
+                {false && manualOrderDraft.orderKind === "catalog" && (
                   <label className="text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45">
                   Product size
                   <select
@@ -4212,10 +4406,6 @@ export default function AdminDashboardPage() {
                   ["email", "Email"],
                   ["governorate", "Governorate"],
                   ["address", "Address"],
-                  ["title", manualOrderDraft.orderKind === "special" ? "Special product name" : "Order title"],
-                  ["quantity", "Quantity"],
-                  ["unitPrice", "Unit price"],
-                  ["total", "Total EGP"],
                 ].map(([key, label]) => (
                   <label key={key} className="text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45">
                     {label}
@@ -4226,7 +4416,7 @@ export default function AdminDashboardPage() {
                     />
                   </label>
                 ))}
-                {manualOrderDraft.orderKind === "special" && (
+                {false && manualOrderDraft.orderKind === "special" && (
                   <label className="text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45 md:col-span-2 xl:col-span-4">
                     Special product brief
                     <textarea
