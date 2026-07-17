@@ -142,6 +142,8 @@ const popularCityNames = [
   "Port Said",
 ];
 
+const CITY_DROPDOWN_LIMIT = 60;
+
 const egyptGovernorates = [
   { value: "Cairo", ar: "القاهرة", en: "Cairo" },
   { value: "Giza", ar: "الجيزة", en: "Giza" },
@@ -190,7 +192,7 @@ const arabicCityNames: Record<string, string> = {
 
 void arabicCityNames;
 
-const ARAMEX_CITIES_CACHE_KEY = "natonat-bosta-districts-eg-v1";
+const ARAMEX_CITIES_CACHE_KEY = "natonat-bosta-district-options-eg-v2";
 const ARAMEX_CITIES_CACHE_TTL = 24 * 60 * 60 * 1000;
 const citySearchAliases: Record<string, string[]> = {
   cairo: ["cairo", "القاهرة", "قاهره", "القاهره", "el qahera", "alqahira"],
@@ -337,19 +339,95 @@ function getShippingRule({
     : "other_governorates_100";
 }
 
-function normalizeCitiesPayload(data: unknown) {
-  const records = Array.isArray(data)
-    ? data
-    : data && typeof data === "object" && Array.isArray((data as Record<string, unknown>).names)
-      ? (data as Record<string, unknown>).names as unknown[]
-      : data && typeof data === "object" && Array.isArray((data as Record<string, unknown>).districts)
-        ? ((data as Record<string, unknown>).districts as Record<string, unknown>[])
-            .map((district) => district.districtName || district.zoneName || district.cityName || district.city)
-        : [];
+type CheckoutCityOption = {
+  name: string;
+  governorate?: string;
+  aliases?: string[];
+};
 
-  return Array.from(new Set(records))
-    .filter((city): city is string => typeof city === "string" && city.trim().length > 0)
-    .sort((a, b) => a.localeCompare(b));
+function getStringField(record: Record<string, unknown>, key: string) {
+  const value = record[key];
+  return typeof value === "string" && value.trim() ? value.trim() : "";
+}
+
+function getFallbackCityOptions(): CheckoutCityOption[] {
+  return popularCityNames.map((name) => ({ name }));
+}
+
+function normalizeCityOptionsPayload(data: unknown) {
+  const options: CheckoutCityOption[] = [];
+
+  if (Array.isArray(data)) {
+    data.forEach((value) => {
+      if (typeof value === "string" && value.trim()) {
+        options.push({ name: value.trim() });
+      }
+    });
+  } else if (data && typeof data === "object") {
+    const payload = data as Record<string, unknown>;
+    const districts = Array.isArray(payload.districts) ? payload.districts : [];
+    const cities = Array.isArray(payload.cities) ? payload.cities : [];
+    const names = Array.isArray(payload.names) ? payload.names : [];
+
+    districts.forEach((value) => {
+      if (!value || typeof value !== "object") return;
+      const district = value as Record<string, unknown>;
+      const name =
+        getStringField(district, "districtOtherName") ||
+        getStringField(district, "districtName") ||
+        getStringField(district, "zoneOtherName") ||
+        getStringField(district, "zoneName");
+      const governorate =
+        getStringField(district, "cityName") ||
+        getStringField(district, "city") ||
+        getStringField(district, "cityOtherName");
+
+      if (name) {
+        options.push({
+          name,
+          governorate,
+          aliases: [
+            getStringField(district, "districtName"),
+            getStringField(district, "districtOtherName"),
+            getStringField(district, "zoneName"),
+            getStringField(district, "zoneOtherName"),
+          ].filter(Boolean),
+        });
+      }
+    });
+
+    cities.forEach((value) => {
+      if (!value || typeof value !== "object") return;
+      const city = value as Record<string, unknown>;
+      const name = getStringField(city, "nameAr") || getStringField(city, "name") || getStringField(city, "alias");
+      const governorate = getStringField(city, "name") || getStringField(city, "alias") || name;
+
+      if (name) {
+        options.push({
+          name,
+          governorate,
+          aliases: [getStringField(city, "name"), getStringField(city, "nameAr"), getStringField(city, "alias")].filter(Boolean),
+        });
+      }
+    });
+
+    names.forEach((value) => {
+      if (typeof value === "string" && value.trim()) {
+        options.push({ name: value.trim() });
+      }
+    });
+  }
+
+  const unique = new Map<string, CheckoutCityOption>();
+  options.forEach((option) => {
+    const key = `${normalizeCitySearch(option.governorate || "")}::${normalizeCitySearch(option.name)}`;
+    if (!option.name || unique.has(key)) return;
+    unique.set(key, option);
+  });
+
+  return Array.from(unique.values()).sort((a, b) =>
+    `${a.governorate || ""} ${a.name}`.localeCompare(`${b.governorate || ""} ${b.name}`, "ar")
+  );
 }
 
 function readCachedAramexCities() {
@@ -359,6 +437,7 @@ function readCachedAramexCities() {
 
     const parsed = JSON.parse(raw) as {
       cachedAt?: number;
+      options?: unknown;
       cities?: unknown;
     };
 
@@ -369,20 +448,20 @@ function readCachedAramexCities() {
       return null;
     }
 
-    const cities = normalizeCitiesPayload(parsed.cities);
-    return cities.length > 0 ? cities : null;
+    const options = normalizeCityOptionsPayload(parsed.options || parsed.cities);
+    return options.length > 0 ? options : null;
   } catch {
     return null;
   }
 }
 
-function writeCachedAramexCities(cities: string[]) {
+function writeCachedAramexCities(options: CheckoutCityOption[]) {
   try {
     window.localStorage.setItem(
       ARAMEX_CITIES_CACHE_KEY,
       JSON.stringify({
         cachedAt: Date.now(),
-        cities,
+        options,
       })
     );
   } catch {
@@ -695,7 +774,7 @@ function CheckoutContent() {
     city: "",
     phone: "",
   });
-  const [aramexCities, setAramexCities] = useState<string[]>(popularCityNames);
+  const [cityOptions, setCityOptions] = useState<CheckoutCityOption[]>(getFallbackCityOptions());
   const [loadingCities, setLoadingCities] = useState(false);
   const [citySearch, setCitySearch] = useState("");
   const [cityListOpen, setCityListOpen] = useState(false);
@@ -706,7 +785,7 @@ function CheckoutContent() {
     const controller = new AbortController();
 
     if (cachedCities) {
-      setAramexCities(cachedCities);
+      setCityOptions(cachedCities);
     }
 
     async function getCities() {
@@ -715,23 +794,23 @@ function CheckoutContent() {
       }
 
       try {
-        const res = await fetch("/api/bosta/districts", {
+          const res = await fetch("/api/bosta/districts", {
           signal: controller.signal,
         });
 
         if (res.ok) {
           const data = await res.json();
-          const uniqueCities = normalizeCitiesPayload(data);
+          const options = normalizeCityOptionsPayload(data);
 
-          if (uniqueCities.length > 0) {
-            writeCachedAramexCities(uniqueCities);
-            setAramexCities(uniqueCities);
+          if (options.length > 0) {
+            writeCachedAramexCities(options);
+            setCityOptions(options);
           }
         }
       } catch (err) {
         if (controller.signal.aborted) return;
         console.error("Error fetching Bosta districts:", err);
-        setAramexCities((current) => (current.length > 0 ? current : popularCityNames));
+        setCityOptions((current) => (current.length > 0 ? current : getFallbackCityOptions()));
       } finally {
         if (!controller.signal.aborted) {
           setLoadingCities(false);
@@ -744,34 +823,64 @@ function CheckoutContent() {
     return () => controller.abort();
   }, []);
 
-  const filteredCities = useMemo(() => {
-    const query = normalizeCitySearch(citySearch);
+  const scopedCityOptions = useMemo(() => {
+    const selectedGovernorate = normalizeCitySearch(formData.governorate);
+    if (!selectedGovernorate) return cityOptions;
+
+    const filtered = cityOptions.filter((option) => {
+      const optionGovernorate = normalizeCitySearch(option.governorate || "");
+      return optionGovernorate === selectedGovernorate || optionGovernorate.includes(selectedGovernorate);
+    });
+
+    return filtered.length > 0 ? filtered : cityOptions;
+  }, [cityOptions, formData.governorate]);
+
+  const aramexCities = useMemo(
+    () => Array.from(new Set(scopedCityOptions.map((option) => option.name).filter(Boolean))),
+    [scopedCityOptions]
+  );
+
+  const citySearchIndex = useMemo(() => {
     const popularCities = popularCityNames
-      .map((name) => aramexCities.find((city) => normalizeCitySearch(city) === normalizeCitySearch(name)))
+      .map((name) => scopedCityOptions.find((option) => normalizeCitySearch(option.name) === normalizeCitySearch(name))?.name)
       .filter(Boolean) as string[];
     const uniquePopularCities = Array.from(new Set(popularCities));
+    const uniqueNames = Array.from(new Set([...uniquePopularCities, ...scopedCityOptions.map((option) => option.name)]));
+
+    return uniqueNames.map((city) => ({
+      city,
+      isPopular: uniquePopularCities.includes(city),
+      terms: [
+        ...getCitySearchTerms(city),
+        ...scopedCityOptions
+          .filter((option) => option.name === city)
+          .flatMap((option) => option.aliases || [])
+          .map(normalizeCitySearch),
+      ],
+    }));
+  }, [scopedCityOptions]);
+
+  const filteredCities = useMemo(() => {
+    const query = normalizeCitySearch(citySearch);
 
     if (!query) {
-      return [
-        ...uniquePopularCities,
-        ...aramexCities.filter((city) => !uniquePopularCities.includes(city)),
-      ];
+      return citySearchIndex
+        .map((entry) => entry.city)
+        .slice(0, CITY_DROPDOWN_LIMIT);
     }
 
-    return aramexCities
-      .filter((city) => getCitySearchTerms(city).some((term) => term.includes(query)))
+    return citySearchIndex
+      .filter((entry) => entry.terms.some((term) => term.includes(query)))
       .sort((a, b) => {
-        const aTerms = getCitySearchTerms(a);
-        const bTerms = getCitySearchTerms(b);
-        const aStartsWith = aTerms.some((term) => term.startsWith(query));
-        const bStartsWith = bTerms.some((term) => term.startsWith(query));
-        const aPopular = uniquePopularCities.includes(a);
-        const bPopular = uniquePopularCities.includes(b);
+        const aStartsWith = a.terms.some((term) => term.startsWith(query));
+        const bStartsWith = b.terms.some((term) => term.startsWith(query));
         if (aStartsWith !== bStartsWith) return aStartsWith ? -1 : 1;
-        if (aPopular !== bPopular) return aPopular ? -1 : 1;
-        return a.localeCompare(b);
-      });
-  }, [aramexCities, citySearch]);
+        if (a.isPopular !== b.isPopular) return a.isPopular ? -1 : 1;
+        return a.city.localeCompare(b.city);
+      })
+      .map((entry) => entry.city)
+      .slice(0, CITY_DROPDOWN_LIMIT);
+  }, [citySearchIndex, citySearch]);
 
   const selectedAramexCity = useMemo(
     () => findExactAramexCity(aramexCities, formData.city),
@@ -2343,6 +2452,7 @@ function CheckoutContent() {
                             onChange={(e) => {
                               setFormData({ ...formData, governorate: e.target.value, city: "" });
                               setCitySearch("");
+                              setCityListOpen(false);
                               setFieldErrors((current) => ({ ...current, governorate: "", city: "" }));
                             }}
                             className={`${getInputClass("governorate", inputIconClass)} appearance-none pr-11`}
