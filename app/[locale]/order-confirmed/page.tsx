@@ -85,6 +85,7 @@ function OrderConfirmedContent() {
       size?: string;
       color?: string;
       image?: string;
+      slug?: string;
       isBundle?: boolean;
       bundleSelections?: {
         productName?: string;
@@ -106,7 +107,8 @@ function OrderConfirmedContent() {
   const [verificationStatus, setVerificationStatus] =
     useState<VerificationStatus>("checking");
   const [verifiedOrder, setVerifiedOrder] = useState<VerifiedOrder | null>(null);
-  const [isPostPurchaseUpsellDismissed, setIsPostPurchaseUpsellDismissed] = useState(false);
+  const [isCardUpsellReady, setIsCardUpsellReady] = useState(false);
+  const [isCardUpsellDismissed, setIsCardUpsellDismissed] = useState(true);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -214,13 +216,59 @@ function OrderConfirmedContent() {
         : null);
   const trackingNumber = verifiedOrder?.aramex?.trackingNumber;
   const orderItems = verifiedOrder?.items || [];
+  const cardUpsellStorageKey = orderRef ? `post-purchase-card-upsell-${orderRef}` : "";
   const checkoutPopupProduct = checkoutPopup.product;
   const checkoutPopupImage = checkoutPopup.imageUrl || checkoutPopupProduct?.imageUrl || "/placeholder.svg";
   const checkoutPopupPrice = Number(checkoutPopupProduct?.price || 0);
+  const normalizedMethod = String(method || "").toLowerCase();
+  const isCardSuccess = isSuccess && (normalizedMethod.includes("card") || normalizedMethod.includes("paymob"));
+  const orderAlreadyHasPopupProduct = Boolean(
+    checkoutPopupProduct?.slug &&
+      orderItems.some((item) => String(item.slug || "").toLowerCase() === checkoutPopupProduct.slug?.toLowerCase()),
+  );
+  const showCardPostPurchaseUpsell =
+    isCardSuccess &&
+    isCardUpsellReady &&
+    checkoutPopup.enabled &&
+    Boolean(checkoutPopupProduct?.slug) &&
+    !orderAlreadyHasPopupProduct &&
+    !isCardUpsellDismissed;
   const supportMessage = encodeURIComponent(
     t("messages.supportWhatsapp", { orderRef: orderRef || "" })
   );
   const supportHref = `https://wa.me/201070004227?text=${supportMessage}`;
+
+  useEffect(() => {
+    if (!cardUpsellStorageKey) {
+      setIsCardUpsellReady(true);
+      setIsCardUpsellDismissed(false);
+      return;
+    }
+
+    try {
+      setIsCardUpsellDismissed(window.sessionStorage.getItem(cardUpsellStorageKey) === "1");
+    } catch {
+      setIsCardUpsellDismissed(false);
+    } finally {
+      setIsCardUpsellReady(true);
+    }
+  }, [cardUpsellStorageKey]);
+
+  const closeCardUpsell = () => {
+    if (cardUpsellStorageKey) {
+      try {
+        window.sessionStorage.setItem(cardUpsellStorageKey, "1");
+      } catch {
+        // Ignore storage errors; closing the popup should still work.
+      }
+    }
+    setIsCardUpsellDismissed(true);
+  };
+
+  const goToUpsellProduct = () => {
+    closeCardUpsell();
+    router.push(checkoutPopupProduct?.slug ? `/product/${checkoutPopupProduct.slug}` : "/shop");
+  };
 
   useEffect(() => {
     if (verificationStatus === "success") {
@@ -277,21 +325,6 @@ function OrderConfirmedContent() {
     clearCart,
     setBuyNowItem,
   ]);
-
-  const showPostPurchaseUpsell =
-    verificationStatus === "success" &&
-    checkoutPopup.enabled &&
-    Boolean(checkoutPopupProduct?.slug) &&
-    !isPostPurchaseUpsellDismissed;
-
-  const closePostPurchaseUpsell = () => {
-    setIsPostPurchaseUpsellDismissed(true);
-  };
-
-  const goToUpsellProduct = () => {
-    closePostPurchaseUpsell();
-    router.push(checkoutPopupProduct?.slug ? `/product/${checkoutPopupProduct.slug}` : "/shop");
-  };
 
   return (
     <>
@@ -498,57 +531,57 @@ function OrderConfirmedContent() {
         </div>
       </main>
 
-      {showPostPurchaseUpsell && checkoutPopupProduct && (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-[#0F1A26]/70 px-4 py-6 backdrop-blur-sm">
-          <div className="relative grid w-full max-w-3xl overflow-hidden rounded-[28px] bg-white shadow-2xl sm:grid-cols-[0.9fr_1.1fr]">
-            <div className="relative min-h-[240px] bg-[#0F1A26] p-6">
+      {showCardPostPurchaseUpsell && checkoutPopupProduct && (
+        <div className="fixed inset-0 z-[90] flex min-h-dvh items-center justify-center overflow-y-auto bg-[#0F1A26]/70 px-3 py-[max(12px,env(safe-area-inset-top))] backdrop-blur-sm sm:px-4 sm:py-6">
+          <div className="relative grid max-h-[calc(100dvh-24px)] w-full max-w-3xl overflow-y-auto rounded-[24px] bg-white shadow-2xl sm:max-h-[calc(100dvh-48px)] sm:grid-cols-[0.9fr_1.1fr] sm:overflow-hidden sm:rounded-[28px]">
+            <div className="relative h-[210px] bg-[#0F1A26] p-4 sm:h-auto sm:min-h-[240px] sm:p-6">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_28%_20%,rgba(238,188,63,0.22),transparent_36%),radial-gradient(circle_at_72%_82%,rgba(227,24,32,0.24),transparent_34%)]" />
-              <div className="relative mb-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-black text-[#EEBC3F] ring-1 ring-white/15">
+              <div className="relative mb-3 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-black text-[#EEBC3F] ring-1 ring-white/15 sm:mb-4">
                 <TicketPercent className="h-4 w-4" />
                 {checkoutPopup.badge}
               </div>
-              <div className="relative mx-auto aspect-square max-h-[300px] overflow-hidden rounded-3xl bg-white/10">
+              <div className="relative mx-auto h-[150px] w-full max-w-[210px] overflow-hidden rounded-3xl bg-white/10 sm:aspect-square sm:h-auto sm:max-h-[300px] sm:max-w-none">
                 <Image
                   src={checkoutPopupImage}
                   alt={checkoutPopupProduct.name || checkoutPopup.title}
                   fill
                   sizes="(min-width: 640px) 320px, 80vw"
-                  className="object-contain p-7"
+                  className="object-contain p-4 sm:p-7"
                 />
               </div>
             </div>
 
-            <div className="p-6 sm:p-8">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-[#F1EBE3] px-3 py-1.5 text-xs font-black text-[#0F1A26]">
+            <div className="p-5 pb-0 sm:p-8">
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[#F1EBE3] px-3 py-1.5 text-xs font-black text-[#0F1A26] sm:mb-4">
                 <ShieldCheck className="h-4 w-4 text-green-600" />
                 {checkoutPopup.badge}
               </div>
 
-              <h2 className="text-2xl font-black leading-tight text-[#0F1A26] sm:text-3xl">
+              <h2 className="text-xl font-black leading-tight text-[#0F1A26] sm:text-3xl">
                 {checkoutPopup.title}
               </h2>
-              <p className="mt-3 text-sm font-semibold leading-6 text-[#0F1A26]/65">
+              <p className="mt-2 text-sm font-semibold leading-6 text-[#0F1A26]/65 sm:mt-3">
                 {checkoutPopup.description}
               </p>
 
-              <div className="mt-5 rounded-3xl border border-[#0F1A26]/10 bg-[#F8F6F3] p-4">
+              <div className="mt-4 rounded-3xl border border-[#0F1A26]/10 bg-[#F8F6F3] p-3 sm:mt-5 sm:p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="text-xs font-black uppercase tracking-[0.16em] text-[#E31820]">
                       Product
                     </p>
-                    <h3 className="mt-1 text-lg font-black text-[#0F1A26]">
+                    <h3 className="mt-1 text-base font-black text-[#0F1A26] sm:text-lg">
                       {checkoutPopupProduct.name}
                     </h3>
                   </div>
                   {checkoutPopupPrice > 0 && (
-                    <p className="shrink-0 text-2xl font-black text-[#E31820]">
+                    <p className="shrink-0 text-xl font-black text-[#E31820] sm:text-2xl">
                       EGP {Math.round(checkoutPopupPrice).toLocaleString("en-US")}
                     </p>
                   )}
                 </div>
 
-                <div className="mt-4 flex items-center gap-3 rounded-2xl bg-white px-4 py-3 text-sm font-black text-[#0F1A26]/75">
+                <div className="mt-3 flex items-center gap-3 rounded-2xl bg-white px-3 py-3 text-sm font-black text-[#0F1A26]/75 sm:mt-4 sm:px-4">
                   {checkoutPopup.discountPercent > 0 && (
                     <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-green-100 text-base font-black text-green-700">
                       {checkoutPopup.discountPercent}%
@@ -558,7 +591,7 @@ function OrderConfirmedContent() {
                 </div>
               </div>
 
-              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <div className="sticky bottom-0 -mx-5 mt-4 grid gap-2 bg-white/95 px-5 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_28px_rgba(15,26,38,0.08)] backdrop-blur sm:static sm:mx-0 sm:mt-6 sm:grid-cols-2 sm:bg-transparent sm:p-0 sm:shadow-none sm:backdrop-blur-0">
                 <Button
                   type="button"
                   onClick={goToUpsellProduct}
@@ -569,7 +602,7 @@ function OrderConfirmedContent() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={closePostPurchaseUpsell}
+                  onClick={closeCardUpsell}
                   className="h-12 rounded-2xl border-[#0F1A26]/20 bg-white text-sm font-black"
                 >
                   {checkoutPopup.declineLabel}
