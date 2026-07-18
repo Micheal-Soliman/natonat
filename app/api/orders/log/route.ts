@@ -89,7 +89,11 @@ function getOrderEventKey(body: OrderLogBody, status: string) {
 function hasCheckoutEmailAlreadySent(existing: StoredOrder | undefined) {
   return Boolean(
     existing?.email_sent_at ||
-      existing?.history?.some((entry) => entry.source === "email_notification")
+      existing?.email_queued_at ||
+      existing?.history?.some((entry) =>
+        entry.source === "email_notification" ||
+        entry.source === "email_notification_queued"
+      )
   );
 }
 
@@ -804,6 +808,18 @@ export async function POST(req: Request) {
     // Card orders are first stored as created/Pending before Paymob redirects;
     // their email waits for a successful Paymob webhook.
     if (shouldSendOrderEmail(updatedOrder) && !hasCheckoutEmailAlreadySent(existing)) {
+      const emailQueuedAt = new Date().toISOString();
+      const emailQueuedHistoryEntry: OrderHistoryEntry = {
+        status: "email_queued",
+        timestamp: emailQueuedAt,
+        source: "email_notification_queued",
+        event_key: `email_notification_queued:${orderRef}`,
+      };
+      updatedOrder = {
+        ...updatedOrder,
+        email_queued_at: emailQueuedAt,
+        history: [...(updatedOrder.history || history), emailQueuedHistoryEntry],
+      };
       const emailOrderSnapshot = updatedOrder;
       const appOrigin = new URL(req.url).origin;
       after(async () => {
@@ -841,6 +857,7 @@ export async function POST(req: Request) {
             body: JSON.stringify({
               source: "email_notification_failed",
               order_ref: orderRef,
+              email_queued_at: "",
               email_error: emailError,
               updated_at: new Date().toISOString(),
             }),
@@ -866,6 +883,7 @@ export async function POST(req: Request) {
             source: "email_notification",
             order_ref: orderRef,
             email_sent_at: emailSentAt,
+            email_queued_at: "",
             email_error: "",
             history: [...(emailOrderSnapshot.history || history), emailHistoryEntry],
             updated_at: emailSentAt,

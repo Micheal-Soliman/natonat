@@ -233,14 +233,13 @@ function OrderConfirmedContent() {
   const checkoutPopupProduct = checkoutPopup.product;
   const checkoutPopupImage = checkoutPopup.imageUrl || checkoutPopupProduct?.imageUrl || "/placeholder.svg";
   const checkoutPopupPrice = Number(checkoutPopupProduct?.price || 0);
-  const normalizedMethod = String(method || "").toLowerCase();
-  const isCardSuccess = isSuccess && (normalizedMethod.includes("card") || normalizedMethod.includes("paymob"));
+  const isConfirmedSuccess = isSuccess && verificationStatus === "success";
   const orderAlreadyHasPopupProduct = Boolean(
     checkoutPopupProduct?.slug &&
       orderItems.some((item) => String(item.slug || "").toLowerCase() === checkoutPopupProduct.slug?.toLowerCase()),
   );
   const showCardPostPurchaseUpsell =
-    isCardSuccess &&
+    isConfirmedSuccess &&
     isCardUpsellReady &&
     checkoutPopup.enabled &&
     Boolean(checkoutPopupProduct?.slug) &&

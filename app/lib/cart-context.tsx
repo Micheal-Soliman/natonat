@@ -82,14 +82,43 @@ interface CartContextType {
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
+const CART_STORAGE_KEY = "cart";
+const BUY_NOW_STORAGE_KEY = "natonat-buy-now-item";
+
+function readStoredCartItems() {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const saved = window.localStorage.getItem(CART_STORAGE_KEY);
+    const parsed = saved ? JSON.parse(saved) : [];
+    return Array.isArray(parsed)
+      ? parsed.filter((item) => !isLegacyBundleCartItem(item))
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function readStoredBuyNowItem() {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const saved = window.sessionStorage.getItem(BUY_NOW_STORAGE_KEY);
+    const parsed = saved ? JSON.parse(saved) : null;
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) && !isLegacyBundleCartItem(parsed)
+      ? parsed as CartItem
+      : null;
+  } catch {
+    return null;
+  }
+}
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const products = useCatalogProducts();
   const quantityDiscountSettings = useQuantityDiscountSettings();
   const stockT = useTranslations("stock");
   const { showToast } = useToast();
-  const [items, setItems] = useState<CartItem[]>([]);
-  const [hasLoadedStoredCart, setHasLoadedStoredCart] = useState(false);
+  const [items, setItems] = useState<CartItem[]>(readStoredCartItems);
   const [isOpen, setIsOpen] = useState(false);
 
   const openCart = useCallback(() => setIsOpen(true), []);
@@ -169,29 +198,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     try {
-      const saved = window.localStorage.getItem("cart");
-      const parsed = saved ? JSON.parse(saved) : [];
-      setItems(
-        Array.isArray(parsed)
-          ? parsed.filter((item) => !isLegacyBundleCartItem(item))
-          : [],
-      );
-    } catch {
-      setItems([]);
-    } finally {
-      setHasLoadedStoredCart(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!hasLoadedStoredCart) return;
-
-    try {
-      window.localStorage.setItem("cart", JSON.stringify(items));
+      window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
     } catch {
       // Ignore storage quota/privacy errors; cart still works for the session.
     }
-  }, [hasLoadedStoredCart, items]);
+  }, [items]);
 
   const addToCart = useCallback((
     newItem: Omit<CartItem, "quantity"> & { quantity?: number },
@@ -330,7 +341,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems([]);
   }, []);
 
-  const [buyNowItem, setBuyNowItemState] = useState<CartItem | null>(null);
+  const [buyNowItem, setBuyNowItemState] = useState<CartItem | null>(readStoredBuyNowItem);
+
+  useEffect(() => {
+    try {
+      if (buyNowItem) {
+        window.sessionStorage.setItem(BUY_NOW_STORAGE_KEY, JSON.stringify(buyNowItem));
+      } else {
+        window.sessionStorage.removeItem(BUY_NOW_STORAGE_KEY);
+      }
+    } catch {
+      // Ignore storage quota/privacy errors; buy-now still works for this render.
+    }
+  }, [buyNowItem]);
+
   const setBuyNowItem = useCallback(
     (item: CartItem | null) => {
       if (!item || isCartItemUnavailable(item)) {
