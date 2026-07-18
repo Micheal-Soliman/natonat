@@ -693,11 +693,11 @@ export default function CheckoutPage() {
 function CheckoutContent() {
   const t = useTranslations('checkout');
   const products = useCatalogProducts();
-  const { checkoutPopup, paymentDiscounts } = useSiteSettings();
+  const { paymentDiscounts } = useSiteSettings();
   const locale = useLocale();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { items, addToCart, subtotal, discount: cartDiscount, originalSubtotal, appliedDiscounts, clearCart, buyNowItem, setBuyNowItem } = useCart();
+  const { items, addToCart, appliedDiscounts, clearCart, buyNowItem, setBuyNowItem } = useCart();
   const checkoutTracked = useRef(false);
   const autoAppliedDiscountRef = useRef("");
   const getPaymentDiscountPercent = useCallback(
@@ -713,7 +713,7 @@ function CheckoutContent() {
 
   // Group duplicate items (same id + size + color) and sum quantities
   const checkoutItems = useMemo(() => {
-    const rawCheckoutItems = (buyNowItem ? [buyNowItem] : items).filter(
+    const rawCheckoutItems = (buyNowItem ? [buyNowItem, ...items] : items).filter(
       (item) => !isLegacyBundleCartItem(item),
     );
 
@@ -736,13 +736,21 @@ function CheckoutContent() {
     }, []);
   }, [buyNowItem, items]);
 
-  const checkoutSubtotal = buyNowItem
-    ? (buyNowItem.price || 0) * (buyNowItem.quantity || 1)
-    : subtotal;
+  const checkoutSubtotal = checkoutItems.reduce(
+    (sum, item) => sum + (item.price || 0) * (item.quantity || 1),
+    0,
+  );
+  const checkoutOriginalSubtotal = checkoutItems.reduce(
+    (sum, item) => sum + (item.originalPrice || item.price || 0) * (item.quantity || 1),
+    0,
+  );
+  const checkoutCartDiscount = Math.max(0, checkoutOriginalSubtotal - checkoutSubtotal);
+  const checkoutAppliedDiscounts = buyNowItem
+    ? checkoutCartDiscount > 0
+      ? appliedDiscounts
+      : []
+    : appliedDiscounts;
   const checkoutItemCount = checkoutItems.reduce((sum, item) => sum + item.quantity, 0);
-  const checkoutPopupProduct = checkoutPopup.product;
-  const checkoutPopupImage = checkoutPopup.imageUrl || checkoutPopupProduct?.imageUrl || "/placeholder.svg";
-  const checkoutPopupPrice = Number(checkoutPopupProduct?.price || 0);
   const serializedCheckoutItems = useMemo(
     () => checkoutItems.map((item) => serializeOrderItem(item, products)),
     [checkoutItems, products]
@@ -773,7 +781,6 @@ function CheckoutContent() {
       image: checkoutPackOnatColor?.image || checkoutPackOnat.image,
       color: checkoutPackOnatColor?.name,
     }, { openCart: false });
-    setBuyNowItem(null);
   };
 
   const [formData, setFormData] = useState({
@@ -950,8 +957,6 @@ function CheckoutContent() {
   const [aramexStatus, setAramexStatus] = useState<"idle" | "pending" | "success" | "failed" | "skipped">("idle");
   const [aramexError] = useState<string>("");
   const [submitError, setSubmitError] = useState<string>("");
-  const [pendingSuccessPath, setPendingSuccessPath] = useState("");
-  const [showPackonatUpsell, setShowPackonatUpsell] = useState(false);
   const [discountCodeInput, setDiscountCodeInput] = useState("");
   const [appliedDiscountCode, setAppliedDiscountCode] = useState<AppliedDiscountCode | null>(null);
   const [discountCodeStatus, setDiscountCodeStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
@@ -986,20 +991,6 @@ function CheckoutContent() {
 
     return () => observer.disconnect();
   }, [showCheckoutActions]);
-
-  const shouldShowPostOrderUpsell = useCallback(
-    (method: string) => {
-      if (!checkoutPopup.enabled || !checkoutPopupProduct?.slug) return false;
-      if (method === "card") return false;
-
-      return !checkoutItems.some((item) => {
-        const itemSlug = String(item.slug || "").toLowerCase();
-        const popupSlug = String(checkoutPopupProduct.slug || "").toLowerCase();
-        return itemSlug === popupSlug;
-      });
-    },
-    [checkoutItems, checkoutPopup.enabled, checkoutPopupProduct?.slug],
-  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1462,12 +1453,7 @@ function CheckoutContent() {
         status: "submitted",
         successPath,
       });
-      setPendingSuccessPath(successPath);
-      if (shouldShowPostOrderUpsell(paymentMethod)) {
-        setShowPackonatUpsell(true);
-      } else {
-        router.push(successPath);
-      }
+      router.push(successPath);
       return;
     }
 
@@ -1622,7 +1608,6 @@ function CheckoutContent() {
     setBuyNowItem(null);
 
     const successPath = `/order-confirmed?order_ref=${encodeURIComponent(orderRef)}&method=${encodeURIComponent(paymentMethod)}&success=true`;
-    setPendingSuccessPath(successPath);
     writeCheckoutLock({
       signature: checkoutSignature,
       orderRef,
@@ -1630,34 +1615,8 @@ function CheckoutContent() {
       status: "submitted",
       successPath,
     });
-
-    if (shouldShowPostOrderUpsell(paymentMethod)) {
-      setShowPackonatUpsell(true);
-    } else {
-      router.push(successPath);
-    }
+    router.push(successPath);
   };
-
-  const continueToSuccessPage = useCallback(() => {
-    setShowPackonatUpsell(false);
-    router.push(pendingSuccessPath || "/order-confirmed?success=true");
-  }, [pendingSuccessPath, router]);
-
-  const acceptPackonatUpsell = useCallback(() => {
-    setShowPackonatUpsell(false);
-    if (!checkoutPopupProduct) {
-      router.push(pendingSuccessPath || "/order-confirmed?success=true");
-      return;
-    }
-
-    setBuyNowItem(null);
-    router.push(checkoutPopupProduct.slug ? `/product/${checkoutPopupProduct.slug}` : "/shop");
-  }, [
-    checkoutPopupProduct,
-    pendingSuccessPath,
-    router,
-    setBuyNowItem,
-  ]);
 
   // Shipping: 75 EGP for Cairo, Giza & Alexandria, 100 EGP for other cities, free for orders > 1000, pickup = 0
   const shipping = useMemo(() => {
@@ -1718,8 +1677,8 @@ function CheckoutContent() {
     : finalTotal;
   const hasAppliedDiscountCode = Boolean(appliedDiscountCode && codeDiscountAmount > 0);
   const displayedDiscountAmount = hasAppliedDiscountCode
-    ? cartDiscount + codeDiscountAmount + paymentDiscount
-    : cartDiscount;
+    ? checkoutCartDiscount + codeDiscountAmount + paymentDiscount
+    : checkoutCartDiscount;
   const displayedDiscountLabel = hasAppliedDiscountCode && appliedDiscountCode
     ? `${t("summary.discount")} (${appliedDiscountCode.code})`
     : t("summary.discount");
@@ -2805,7 +2764,7 @@ function CheckoutContent() {
                   <div className="flex justify-between text-sm">
                     <span className="text-[#0F1A26]/60">{t('summary.subtotal')}</span>
                     <span className="text-[#0F1A26] font-medium">
-                      EGP {mounted ? (buyNowItem ? checkoutSubtotal : originalSubtotal) : "--"}
+                      EGP {mounted ? checkoutOriginalSubtotal : "--"}
                     </span>
                   </div>
                   {mounted && displayedDiscountAmount > 0 && (
@@ -2816,7 +2775,7 @@ function CheckoutContent() {
                       </div>
                       {!hasAppliedDiscountCode && (
                         <div className="flex flex-col gap-0.5">
-                        {appliedDiscounts.map((desc, i) => (
+                        {checkoutAppliedDiscounts.map((desc, i) => (
                           <span key={i} className="text-[10px] text-green-600/70 italic text-right block">
                             • {desc}
                           </span>
@@ -3005,87 +2964,6 @@ function CheckoutContent() {
                 ? "استنى لحظات ومتضغطش تاني. لو الشحن بياخد وقت، الطلب لسه بيتسجل."
                 : "Please wait and do not submit again. Shipping setup may take a few moments."}
             </p>
-          </div>
-        </div>
-      )}
-      {showPackonatUpsell && checkoutPopupProduct && (
-        <div className="fixed inset-0 z-[80] flex min-h-dvh items-center justify-center overflow-y-auto bg-[#0F1A26]/70 px-3 py-[max(12px,env(safe-area-inset-top))] backdrop-blur-sm sm:px-4 sm:py-6">
-          <div className="relative grid max-h-[calc(100dvh-24px)] w-full max-w-3xl overflow-y-auto rounded-[24px] bg-white shadow-2xl sm:max-h-[calc(100dvh-48px)] sm:grid-cols-[0.9fr_1.1fr] sm:overflow-hidden sm:rounded-[28px]">
-            <div className="relative h-[210px] bg-[#0F1A26] p-4 sm:h-auto sm:min-h-[240px] sm:p-6">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_28%_20%,rgba(238,188,63,0.22),transparent_36%),radial-gradient(circle_at_72%_82%,rgba(227,24,32,0.24),transparent_34%)]" />
-              <div className="relative mb-3 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-black text-[#EEBC3F] ring-1 ring-white/15 sm:mb-4">
-                <TicketPercent className="h-4 w-4" />
-                {checkoutPopup.badge}
-              </div>
-              <div className="relative mx-auto h-[150px] w-full max-w-[210px] overflow-hidden rounded-3xl bg-white/10 sm:aspect-square sm:h-auto sm:max-h-[300px] sm:max-w-none">
-                <Image
-                  src={checkoutPopupImage}
-                  alt={checkoutPopupProduct.name || checkoutPopup.title}
-                  fill
-                  sizes="(min-width: 640px) 320px, 80vw"
-                  className="object-contain p-4 sm:p-7"
-                />
-              </div>
-            </div>
-
-            <div className="p-5 pb-0 sm:p-8" dir={locale === "ar" ? "rtl" : "ltr"}>
-              <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[#F1EBE3] px-3 py-1.5 text-xs font-black text-[#0F1A26] sm:mb-4">
-                <ShieldCheck className="h-4 w-4 text-green-600" />
-                {"\u0642\u0628\u0644 \u0635\u0641\u062d\u0629 \u062a\u0623\u0643\u064a\u062f \u0627\u0644\u0637\u0644\u0628"}
-              </div>
-
-              <h2 className="text-xl font-black leading-tight text-[#0F1A26] sm:text-3xl">
-                {checkoutPopup.title}
-              </h2>
-              <p className="mt-2 text-sm font-semibold leading-6 text-[#0F1A26]/65 sm:mt-3">
-                {checkoutPopup.description}
-              </p>
-
-              <div className="mt-4 rounded-3xl border border-[#0F1A26]/10 bg-[#F8F6F3] p-3 sm:mt-5 sm:p-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-xs font-black uppercase tracking-[0.16em] text-[#E31820]">
-                      {"\u0633\u0639\u0631 \u0627\u0644\u0645\u0646\u062a\u062c"}
-                    </p>
-                    <h3 className="mt-1 text-base font-black text-[#0F1A26] sm:text-lg">
-                      {checkoutPopupProduct.name}
-                    </h3>
-                  </div>
-                  <p className="shrink-0 text-xl font-black text-[#E31820] sm:text-2xl">
-                    EGP {Math.round(checkoutPopupPrice).toLocaleString("en-US")}
-                  </p>
-                </div>
-
-                <div className="mt-3 flex items-center gap-3 rounded-2xl bg-white px-3 py-3 text-sm font-black text-[#0F1A26]/75 sm:mt-4 sm:px-4">
-                  {checkoutPopup.discountPercent > 0 && (
-                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-green-100 text-base font-black text-green-700">
-                      {checkoutPopup.discountPercent}%
-                    </span>
-                  )}
-                  <span>
-                    {checkoutPopup.hint}
-                  </span>
-                </div>
-              </div>
-
-              <div className="sticky bottom-0 -mx-5 mt-4 grid gap-2 bg-white/95 px-5 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_28px_rgba(15,26,38,0.08)] backdrop-blur sm:static sm:mx-0 sm:mt-6 sm:grid-cols-2 sm:bg-transparent sm:p-0 sm:shadow-none sm:backdrop-blur-0">
-                <Button
-                  type="button"
-                  onClick={acceptPackonatUpsell}
-                  className="h-12 rounded-2xl bg-[#E31820] text-sm font-black text-white shadow-lg shadow-[#E31820]/20 hover:bg-[#C61219]"
-                >
-                  {checkoutPopup.acceptLabel}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={continueToSuccessPage}
-                  className="h-12 rounded-2xl border-[#0F1A26]/20 bg-white text-sm font-black"
-                >
-                  {checkoutPopup.declineLabel}
-                </Button>
-              </div>
-            </div>
           </div>
         </div>
       )}
