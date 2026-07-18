@@ -88,20 +88,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const quantityDiscountSettings = useQuantityDiscountSettings();
   const stockT = useTranslations("stock");
   const { showToast } = useToast();
-  const [items, setItems] = useState<CartItem[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem('cart');
-        const parsed = saved ? JSON.parse(saved) : [];
-        return Array.isArray(parsed)
-          ? parsed.filter((item) => !isLegacyBundleCartItem(item))
-          : [];
-      } catch {
-        return [];
-      }
-    }
-    return [];
-  });
+  const [items, setItems] = useState<CartItem[]>([]);
+  const [hasLoadedStoredCart, setHasLoadedStoredCart] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
   const openCart = useCallback(() => setIsOpen(true), []);
@@ -180,14 +168,30 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [getCartItemMaxQuantity, isCartItemUnavailable, showToast, stockT]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem('cart', JSON.stringify(items));
-      } catch {
-        // Ignore storage quota/privacy errors; cart still works for the session.
-      }
+    try {
+      const saved = window.localStorage.getItem("cart");
+      const parsed = saved ? JSON.parse(saved) : [];
+      setItems(
+        Array.isArray(parsed)
+          ? parsed.filter((item) => !isLegacyBundleCartItem(item))
+          : [],
+      );
+    } catch {
+      setItems([]);
+    } finally {
+      setHasLoadedStoredCart(true);
     }
-  }, [items]);
+  }, []);
+
+  useEffect(() => {
+    if (!hasLoadedStoredCart) return;
+
+    try {
+      window.localStorage.setItem("cart", JSON.stringify(items));
+    } catch {
+      // Ignore storage quota/privacy errors; cart still works for the session.
+    }
+  }, [hasLoadedStoredCart, items]);
 
   const addToCart = useCallback((
     newItem: Omit<CartItem, "quantity"> & { quantity?: number },
