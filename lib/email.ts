@@ -192,7 +192,7 @@ function renderTotalsHtml(orderData: OrderEmailData) {
 }
 
 export async function sendOrderEmail(orderData: OrderEmailData) {
-  const adminEmail = 'natonateg@gmail.com';
+  const adminEmail = process.env.ORDER_ADMIN_EMAIL || process.env.ADMIN_EMAIL || 'natonateg@gmail.com';
   const itemsHtml = (orderData.items || []).map(renderItemHtml).join('');
   const totalsHtml = renderTotalsHtml(orderData);
 
@@ -412,6 +412,9 @@ export async function sendInstapayPendingCustomerEmail(orderData: OrderEmailData
 
 export async function sendCustomerConfirmationEmail(orderData: OrderEmailData) {
   const customerEmail = orderData.customer?.email;
+  if (!customerEmail) {
+    return { success: false, error: "Missing customer email" };
+  }
   const itemsHtml = (orderData.items || []).map(renderItemHtml).join('');
   const totalsHtml = renderTotalsHtml(orderData);
 

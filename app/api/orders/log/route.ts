@@ -25,6 +25,7 @@ import {
   getMetaCookie,
   sendMetaConversionEvent,
 } from "@/lib/meta-capi";
+import { createBostaDelivery } from "@/lib/bosta";
 import type { Product } from "@/lib/products";
 
 type OrderLogBody = Record<string, unknown>;
@@ -219,6 +220,96 @@ function shouldSendMetaPurchase(order: StoredOrder) {
 
   const orderRef = typeof order.order_ref === "string" ? order.order_ref : "";
   return !order.history?.some((entry) => entry.event_key === `meta_purchase:${orderRef}`);
+}
+
+function isSideEffectOnlySource(source: unknown) {
+  const value = getOrderStatusValue(source);
+  return value === "email_notification" || value === "email_notification_failed";
+}
+
+function getShipmentTracking(order: StoredOrder) {
+  const shipment = order.bosta || order.shipment || order.aramex;
+  return (
+    getNestedString(shipment, "trackingNumber") ||
+    getNestedString(order, "Bosta Tracking Number") ||
+    getNestedString(order, "Aramex Tracking Number")
+  );
+}
+
+function shouldCreateBostaFromOrderLog(order: StoredOrder) {
+  const source = getOrderStatusValue(order.source);
+  const status = getOrderStatusValue(order.status);
+  const deliveryMethod = getOrderStatusValue(order.delivery_method);
+
+  return (
+    source === "checkout" &&
+    deliveryMethod === "delivery" &&
+    (status === "confirmed" || status === "shipped") &&
+    !getShipmentTracking(order)
+  );
+}
+
+async function attachBostaShipmentIfNeeded(order: StoredOrder) {
+  if (!shouldCreateBostaFromOrderLog(order)) return order;
+  const customer = order.customer;
+  const items = order.items;
+  if (!customer || typeof customer !== "object" || Array.isArray(customer) || !Array.isArray(items) || !items.length) {
+    return {
+      ...order,
+      bosta: {
+        provider: "bosta",
+        status: "failed",
+        error: "Bosta shipment skipped: missing customer or items",
+      },
+    } as StoredOrder;
+  }
+
+  const paymentMethod = getOrderStatusValue(order.payment_method);
+  const paymentStatus = getOrderStatusValue(order.payment_status);
+  const isCod = paymentMethod.includes("cod") || paymentStatus.includes("cash on delivery");
+  const totalValue = getOrderAmountEgp(order);
+
+  const result = await createBostaDelivery({
+    orderRef: String(order.order_ref || ""),
+    customer: customer as Parameters<typeof createBostaDelivery>[0]["customer"],
+    items: (items as Array<Record<string, unknown>>).map((item) => ({
+      name: getNestedString(item, "name") || getNestedString(item, "productName") || "Order item",
+      title: getNestedString(item, "title"),
+      slug: getNestedString(item, "slug"),
+      type: getNestedString(item, "type"),
+      size: getNestedString(item, "size"),
+      color: getNestedString(item, "color"),
+      quantity: Number(item.quantity || item.qty || 1) || 1,
+    })),
+    totalValue,
+    cod: isCod,
+    codAmount: isCod ? totalValue : 0,
+  });
+
+  const bosta = result.success
+    ? {
+        provider: "bosta",
+        trackingNumber: result.trackingNumber,
+        trackingLink: result.trackingLink,
+        labelUrl: result.labelUrl,
+        guid: result.guid,
+        status: "Record created",
+        error: "",
+      }
+    : {
+        provider: "bosta",
+        status: "failed",
+        error: result.error || "Bosta shipment failed",
+      };
+
+  return {
+    ...order,
+    status: result.success ? "shipped" : order.status,
+    bosta,
+    shipment: bosta,
+    aramex: bosta,
+    tracking_link: result.trackingLink || order.tracking_link,
+  } as StoredOrder;
 }
 
 function getOrderAmountEgp(order: StoredOrder) {
@@ -612,6 +703,7 @@ export async function POST(req: Request) {
   }
 
   const skipStockValidation =
+    isSideEffectOnlySource(body.source) ||
     Boolean(
       body.extras &&
         typeof body.extras === "object" &&
@@ -706,36 +798,82 @@ export async function POST(req: Request) {
       tracking_link: trackingLink
     } as StoredOrder;
 
+    updatedOrder = await attachBostaShipmentIfNeeded(updatedOrder);
+
     // Send email notification only after the order is genuinely confirmable.
     // Card orders are first stored as created/Pending before Paymob redirects;
     // their email waits for a successful Paymob webhook.
     if (shouldSendOrderEmail(updatedOrder) && !hasCheckoutEmailAlreadySent(existing)) {
-      const emailHistoryEntry: OrderHistoryEntry = {
-        status: "email_sent",
-        timestamp: new Date().toISOString(),
-        source: "email_notification",
-        event_key: `email_notification:${orderRef}`,
-      };
-
-      updatedOrder = {
-        ...updatedOrder,
-        email_sent_at: emailHistoryEntry.timestamp,
-        history: [...history, emailHistoryEntry],
-      };
-
+      const emailOrderSnapshot = updatedOrder;
+      const appOrigin = new URL(req.url).origin;
       after(async () => {
         const [adminEmailResult, customerEmailResult] = await Promise.allSettled([
-          sendOrderEmail(updatedOrder),
-          sendCustomerConfirmationEmail(updatedOrder),
+          sendOrderEmail(emailOrderSnapshot),
+          sendCustomerConfirmationEmail(emailOrderSnapshot),
         ]);
 
-        if (adminEmailResult.status === "rejected") {
-          console.error("Failed to send order email:", adminEmailResult.reason);
+        const adminEmailOk =
+          adminEmailResult.status === "fulfilled" &&
+          Boolean((adminEmailResult.value as { success?: boolean } | undefined)?.success);
+        const customerEmail = (emailOrderSnapshot.customer as { email?: string } | undefined)?.email;
+        const customerEmailOk =
+          !customerEmail ||
+          (
+            customerEmailResult.status === "fulfilled" &&
+            Boolean((customerEmailResult.value as { success?: boolean } | undefined)?.success)
+          );
+
+        if (!adminEmailOk || !customerEmailOk) {
+          const emailError = {
+            admin:
+              adminEmailResult.status === "rejected"
+                ? String(adminEmailResult.reason)
+                : (adminEmailResult.value as { error?: unknown } | undefined)?.error || "",
+            customer:
+              customerEmailResult.status === "rejected"
+                ? String(customerEmailResult.reason)
+                : (customerEmailResult.value as { error?: unknown } | undefined)?.error || "",
+          };
+          console.error("Order email delivery failed:", { order_ref: orderRef, emailError });
+          await fetch(`${appOrigin}/api/orders/log`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              source: "email_notification_failed",
+              order_ref: orderRef,
+              email_error: emailError,
+              updated_at: new Date().toISOString(),
+            }),
+            cache: "no-store",
+          }).catch((error) => {
+            console.error("Failed to store order email error:", error);
+          });
+          return;
         }
 
-        if (customerEmailResult.status === "rejected") {
-          console.error("Failed to send customer confirmation email:", customerEmailResult.reason);
-        }
+        const emailSentAt = new Date().toISOString();
+        const emailHistoryEntry: OrderHistoryEntry = {
+          status: "email_sent",
+          timestamp: emailSentAt,
+          source: "email_notification",
+          event_key: `email_notification:${orderRef}`,
+        };
+
+        await fetch(`${appOrigin}/api/orders/log`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            source: "email_notification",
+            order_ref: orderRef,
+            email_sent_at: emailSentAt,
+            email_error: "",
+            history: [...(emailOrderSnapshot.history || history), emailHistoryEntry],
+            updated_at: emailSentAt,
+          }),
+          cache: "no-store",
+        }).catch((error) => {
+          console.error("Failed to store order email success:", error);
+        });
       });
     }
 
@@ -917,7 +1055,7 @@ export async function POST(req: Request) {
 
   if (orderRef) {
     let storedOrder = body as StoredOrder;
-    if (shouldAdjustInventory(storedOrder) && Array.isArray(storedOrder.items)) {
+    if (!isSideEffectOnlySource(storedOrder.source) && shouldAdjustInventory(storedOrder) && Array.isArray(storedOrder.items)) {
       try {
         const inventoryResult = await adjustInventoryForConfirmedOrder(
           orderRef,
@@ -946,7 +1084,7 @@ export async function POST(req: Request) {
       }
     }
 
-    if (shouldAdjustInventory(storedOrder)) {
+    if (!isSideEffectOnlySource(storedOrder.source) && shouldAdjustInventory(storedOrder)) {
       try {
         const customerReferral = await ensureReferralRecordForOrder(storedOrder);
         const referralReward = await markReferralConversionForOrder(storedOrder);

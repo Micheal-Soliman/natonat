@@ -100,32 +100,6 @@ function clearCheckoutLock(signature: string) {
   }
 }
 
-function getExistingBostaPayload(order: unknown) {
-  if (!order || typeof order !== "object") return null;
-
-  const record = order as Record<string, unknown>;
-  const bosta = record.bosta && typeof record.bosta === "object"
-    ? record.bosta as Record<string, unknown>
-    : record.shipment && typeof record.shipment === "object"
-      ? record.shipment as Record<string, unknown>
-      : record.aramex && typeof record.aramex === "object"
-        ? record.aramex as Record<string, unknown>
-    : {};
-  const trackingNumber =
-    (typeof bosta.trackingNumber === "string" && bosta.trackingNumber) ||
-    (typeof record["Bosta Tracking Number"] === "string" && record["Bosta Tracking Number"]) ||
-    (typeof record["Aramex Tracking Number"] === "string" && record["Aramex Tracking Number"]) ||
-    "";
-
-  if (!trackingNumber) return null;
-
-  return {
-    trackingNumber,
-    labelUrl: typeof bosta.labelUrl === "string" ? bosta.labelUrl : undefined,
-    guid: typeof bosta.guid === "string" ? bosta.guid : undefined,
-  };
-}
-
 const popularCityNames = [
   "Cairo",
   "New Cairo",
@@ -972,9 +946,9 @@ function CheckoutContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess] = useState(false);
   const [orderId] = useState<string>("");
-  const [trackingNumber, setTrackingNumber] = useState<string>("");
+  const [trackingNumber] = useState<string>("");
   const [aramexStatus, setAramexStatus] = useState<"idle" | "pending" | "success" | "failed" | "skipped">("idle");
-  const [aramexError, setAramexError] = useState<string>("");
+  const [aramexError] = useState<string>("");
   const [submitError, setSubmitError] = useState<string>("");
   const [pendingSuccessPath, setPendingSuccessPath] = useState("");
   const [showPackonatUpsell, setShowPackonatUpsell] = useState(false);
@@ -1499,7 +1473,7 @@ function CheckoutContent() {
 
     // --- Delivery Order Flow ---
 
-    let bostaPayload: {
+    const bostaPayload: {
       provider?: string;
       trackingNumber?: string;
       trackingLink?: string;
@@ -1571,88 +1545,9 @@ function CheckoutContent() {
       return;
     }
 
-    // Step 2: Create Bosta shipment after storage succeeds
+    // Step 2: Bosta shipment is created server-side by /api/orders/log after confirmation.
     if (deliveryMethod === "delivery") {
       setAramexStatus("pending");
-
-      try {
-        const existingOrderRes = await fetch(`/api/orders/log?order_ref=${encodeURIComponent(orderRef)}`, {
-          cache: "no-store",
-        }).catch(() => null);
-        const existingOrderData = existingOrderRes?.ok
-          ? await existingOrderRes.json().catch(() => null)
-          : null;
-        const existingBostaPayload = getExistingBostaPayload(existingOrderData?.order);
-
-        if (existingBostaPayload) {
-          setTrackingNumber(existingBostaPayload.trackingNumber);
-          setAramexStatus("success");
-          bostaPayload = existingBostaPayload;
-        } else {
-        const shipmentPayload = {
-          orderRef,
-          customer: {
-            first_name: formData.firstName,
-            last_name: "",
-            phone: formData.phone,
-            email: formData.email,
-            address: formData.address,
-            governorate: formData.governorate,
-            city: formData.city,
-          },
-          items: checkoutItems.map((item) => ({
-            name: item.name,
-            quantity: item.quantity,
-          })),
-          totalValue: confirmedFinalTotal,
-          cod: paymentMethod === "cod",
-          codAmount: paymentMethod === "cod" ? confirmedFinalTotal : 0,
-        };
-
-        const shipmentAbort = new AbortController();
-        const shipmentTimeout = window.setTimeout(() => shipmentAbort.abort(), 20000);
-        const shipmentRes = await fetch("/api/bosta/shipment", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(shipmentPayload),
-          signal: shipmentAbort.signal,
-        });
-        window.clearTimeout(shipmentTimeout);
-
-        const shipmentData = await shipmentRes.json();
-
-        if (shipmentData.success) {
-          setTrackingNumber(shipmentData.trackingNumber);
-          setAramexStatus("success");
-
-          bostaPayload = {
-            provider: shipmentData.provider,
-            trackingNumber: shipmentData.trackingNumber,
-            trackingLink: shipmentData.trackingLink,
-            labelUrl: shipmentData.labelUrl,
-            guid: shipmentData.guid,
-          };
-
-        } else {
-          setAramexStatus("failed");
-          setAramexError(shipmentData.details || shipmentData.error || "Unknown error");
-          bostaPayload = {
-            provider: shipmentData.provider || "bosta",
-            status: "failed",
-            error: shipmentData.details || shipmentData.error || "Bosta shipment failed",
-          };
-        }
-        }
-      } catch (err) {
-        setAramexStatus("failed");
-        const shipmentError = err instanceof Error ? err.message : "Network error";
-        setAramexError(shipmentError);
-        bostaPayload = {
-          provider: "bosta",
-          status: "failed",
-          error: shipmentError,
-        };
-      }
     } else {
       setAramexStatus("skipped");
     }
@@ -1755,27 +1650,9 @@ function CheckoutContent() {
       return;
     }
 
-    const popupColor = checkoutPopupProduct.colors?.[0];
-    addToCart({
-      id: Number(checkoutPopupProduct.legacyId || Date.now()),
-      name: checkoutPopupProduct.name || checkoutPopup.title || "PackOnat",
-      slug: checkoutPopupProduct.slug || "packonat",
-      type: checkoutPopupProduct.type || "packonat",
-      price: Number(checkoutPopupProduct.price || checkoutPopupPrice || 0),
-      basePrice: Number(checkoutPopupProduct.price || checkoutPopupPrice || 0),
-      originalPrice: checkoutPopupProduct.originalPrice,
-      quantity: 1,
-      image: popupColor?.imageUrl || checkoutPopupProduct.imageUrl || checkoutPopupImage,
-      color: popupColor?.name,
-      size: checkoutPopupProduct.size || undefined,
-    }, { openCart: false });
     setBuyNowItem(null);
-    router.push("/checkout");
+    router.push(checkoutPopupProduct.slug ? `/product/${checkoutPopupProduct.slug}` : "/shop");
   }, [
-    addToCart,
-    checkoutPopup.title,
-    checkoutPopupImage,
-    checkoutPopupPrice,
     checkoutPopupProduct,
     pendingSuccessPath,
     router,

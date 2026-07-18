@@ -102,7 +102,10 @@ export async function GET(req: Request) {
   if (order.delivery_method === "delivery" && order.customer && !bostaPayload?.trackingNumber) {
     const shipmentRes = await fetch(`${appOrigin}/api/bosta/shipment`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-internal-api-secret": process.env.BOSTA_INTERNAL_API_SECRET || "",
+      },
       body: JSON.stringify({
         orderRef,
         customer: order.customer,

@@ -11,7 +11,7 @@ type OrderRecord = Record<string, unknown>;
 type BostaWebhookPayload = {
   _id?: string;
   trackingNumber?: string | number;
-  state?: string | number;
+  state?: string | number | { code?: string | number; value?: string };
   type?: string;
   cod?: number;
   timeStamp?: number;
@@ -21,6 +21,7 @@ type BostaWebhookPayload = {
   exceptionCode?: string | number;
   businessReference?: string;
   numberOfAttempts?: number;
+  data?: BostaWebhookPayload;
 };
 
 function getString(value: unknown) {
@@ -60,6 +61,24 @@ function getTrackingNumber(order: OrderRecord) {
   );
 }
 
+function getWebhookPayload(payload: BostaWebhookPayload): BostaWebhookPayload {
+  return payload.data && typeof payload.data === "object" ? payload.data : payload;
+}
+
+function getStateCode(payload: BostaWebhookPayload) {
+  const state = payload.state;
+  if (state && typeof state === "object") return getString(state.code);
+  return getString(state);
+}
+
+function getStateLabel(payload: BostaWebhookPayload) {
+  const state = payload.state;
+  if (state && typeof state === "object") {
+    return getString(state.value) || getBostaStateLabel(state.code);
+  }
+  return getBostaStateLabel(state);
+}
+
 async function findOrder(payload: BostaWebhookPayload) {
   const orderRef = getString(payload.businessReference);
   if (orderRef) {
@@ -94,13 +113,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: false, error: "Invalid Bosta webhook secret" }, { status: 401 });
   }
 
-  const payload = await req.json().catch(() => null) as BostaWebhookPayload | null;
-  if (!payload || typeof payload !== "object") {
+  const rawPayload = await req.json().catch(() => null) as BostaWebhookPayload | null;
+  if (!rawPayload || typeof rawPayload !== "object") {
     return NextResponse.json({ success: false, error: "Invalid Bosta webhook payload" }, { status: 400 });
   }
+  const payload = getWebhookPayload(rawPayload);
 
   const trackingNumber = getString(payload.trackingNumber);
-  const stateLabel = getBostaStateLabel(payload.state);
+  const stateCode = getStateCode(payload);
+  const stateLabel = getStateLabel(payload);
   const exceptionLabel = payload.exceptionReason || getBostaExceptionLabel(payload.exceptionCode);
   const syncedAt = getTimestamp(payload.timeStamp);
   const order = await findOrder(payload);
@@ -116,7 +137,7 @@ export async function POST(req: Request) {
 
   const currentBosta = getObject(order.bosta || order.shipment || order.aramex);
   const history = Array.isArray(order.history) ? order.history : [];
-  const status = getOrderStatusFromBostaState(payload.state) || getString(order.status) || "shipped";
+  const status = getOrderStatusFromBostaState(stateCode) || getString(order.status) || "shipped";
   const latestDescription = exceptionLabel
     ? `${stateLabel}: ${exceptionLabel}`
     : stateLabel;
@@ -136,7 +157,7 @@ export async function POST(req: Request) {
         ? `https://bosta.co/tracking-shipments?shipmentNumber=${encodeURIComponent(trackingNumber)}`
         : getString(currentBosta.trackingLink),
       status: stateLabel,
-      latestCode: getString(payload.state),
+      latestCode: stateCode,
       latestDescription,
       latestDate: syncedAt,
       latestComments: exceptionLabel,
@@ -162,7 +183,7 @@ export async function POST(req: Request) {
         status,
         timestamp: new Date().toISOString(),
         source: "bosta_webhook",
-        event_key: `bosta_webhook:${trackingNumber || payload.businessReference || payload._id}:${payload.state}:${syncedAt}`,
+        event_key: `bosta_webhook:${trackingNumber || payload.businessReference || payload._id}:${stateCode}:${syncedAt}`,
       },
     ],
   };
@@ -173,7 +194,7 @@ export async function POST(req: Request) {
     success: true,
     order_ref: getString(updatedOrder.order_ref),
     trackingNumber,
-    state: payload.state,
+    state: stateCode,
     stateLabel,
     status,
   });

@@ -896,6 +896,38 @@ export async function createBostaDelivery(input: CreateBostaDeliveryInput): Prom
     .map(formatBostaShipmentItem)
     .join(", ")
     .slice(0, 250);
+
+  try {
+    const existingDelivery = await searchBostaDeliveries({ businessReference: input.orderRef });
+    const isReusableDelivery = (delivery: BostaDeliverySearchRecord) => {
+      const state = delivery.state && typeof delivery.state === "object" ? delivery.state.code : delivery.state;
+      const code = typeof state === "number" ? state : Number(state);
+      return ![48, 49, 100, 101].includes(code);
+    };
+    const existing = existingDelivery.deliveries.find(
+      (delivery) => delivery.businessReference === input.orderRef && isReusableDelivery(delivery),
+    ) || existingDelivery.deliveries.find(isReusableDelivery);
+    if (existingDelivery.success && existing) {
+      const trackingNumber = getBostaTrackingNumber(existing);
+      const deliveryId = getBostaDeliveryId(existing);
+      if (trackingNumber || deliveryId) {
+        return {
+          success: true,
+          provider: "bosta",
+          trackingNumber: trackingNumber || deliveryId,
+          trackingLink: trackingNumber ? `https://bosta.co/tracking-shipments?shipmentNumber=${encodeURIComponent(trackingNumber)}` : undefined,
+          guid: deliveryId || undefined,
+          raw: existing,
+        };
+      }
+    }
+  } catch (error) {
+    console.error("Bosta duplicate check failed before create", {
+      order_ref: input.orderRef,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+
   const orderType: BostaOrderType = 10;
   const dropOffAddress = await buildDropOffAddress(input.customer);
   const payload = {

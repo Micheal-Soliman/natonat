@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
+import { useLocale } from "next-intl";
 import { Link } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
 import { Navigation } from "@/app/sections/navigation";
@@ -9,8 +10,6 @@ import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle, Clock } from "lucide-react";
 import { useCart } from "@/app/lib/cart-context";
-
-const EXTERNAL_SUCCESS_URL = "https://www.natonat.com/";
 
 export default function PaymentReturnPage() {
   return (
@@ -39,6 +38,7 @@ function PaymentLoading() {
 function PaymentReturnContent() {
   const searchParams = useSearchParams();
   const t = useTranslations("paymentReturn");
+  const locale = useLocale();
   const { clearCart, setBuyNowItem } = useCart();
 
   const success = searchParams.get("success");
@@ -55,16 +55,16 @@ function PaymentReturnContent() {
     clearCart();
     setBuyNowItem(null);
 
-    const redirectUrl = `${EXTERNAL_SUCCESS_URL}?order_ref=${encodeURIComponent(
+    const redirectUrl = `/${locale}/order-confirmed?order_ref=${encodeURIComponent(
       orderRef
-    )}&transaction_id=${encodeURIComponent(transactionId)}`;
+    )}&method=card&success=true&id=${encodeURIComponent(transactionId)}`;
 
     const timer = window.setTimeout(() => {
       window.location.replace(redirectUrl);
     }, 1200);
 
     return () => window.clearTimeout(timer);
-  }, [isSuccess, orderRef, transactionId, clearCart, setBuyNowItem]);
+  }, [isSuccess, locale, orderRef, transactionId, clearCart, setBuyNowItem]);
 
   return (
     <>
