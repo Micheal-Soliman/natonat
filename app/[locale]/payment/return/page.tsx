@@ -57,7 +57,7 @@ function PaymentReturnContent() {
 
     const redirectUrl = `/${locale}/order-confirmed?order_ref=${encodeURIComponent(
       orderRef
-    )}&method=card&success=true&id=${encodeURIComponent(transactionId)}`;
+    )}&method=card&success=true&show_offer=1&id=${encodeURIComponent(transactionId)}`;
 
     const timer = window.setTimeout(() => {
       window.location.replace(redirectUrl);

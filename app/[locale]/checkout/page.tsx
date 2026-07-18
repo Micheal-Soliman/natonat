@@ -100,6 +100,17 @@ function clearCheckoutLock(signature: string) {
   }
 }
 
+function clearSavedRescueDiscountCode() {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.sessionStorage.removeItem("natonat-saved-discount-code");
+    window.localStorage.removeItem("natonat-saved-discount-code");
+  } catch {
+    // Ignore storage errors.
+  }
+}
+
 const popularCityNames = [
   "Cairo",
   "New Cairo",
@@ -957,6 +968,7 @@ function CheckoutContent() {
   const [aramexStatus, setAramexStatus] = useState<"idle" | "pending" | "success" | "failed" | "skipped">("idle");
   const [aramexError] = useState<string>("");
   const [submitError, setSubmitError] = useState<string>("");
+  const [isRedirectingToConfirmation, setIsRedirectingToConfirmation] = useState(false);
   const [discountCodeInput, setDiscountCodeInput] = useState("");
   const [appliedDiscountCode, setAppliedDiscountCode] = useState<AppliedDiscountCode | null>(null);
   const [discountCodeStatus, setDiscountCodeStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
@@ -1443,9 +1455,11 @@ function CheckoutContent() {
       }
 
       setIsSubmitting(false);
+      setIsRedirectingToConfirmation(true);
       clearCart();
       setBuyNowItem(null);
-      const successPath = `/order-confirmed?order_ref=${encodeURIComponent(orderRef)}&method=instapay&success=true`;
+      clearSavedRescueDiscountCode();
+      const successPath = `/order-confirmed?order_ref=${encodeURIComponent(orderRef)}&method=instapay&success=true&show_offer=1`;
       writeCheckoutLock({
         signature: checkoutSignature,
         orderRef,
@@ -1604,10 +1618,12 @@ function CheckoutContent() {
 
     // Step 3: Redirect to Order Confirmed page for tracking
     setIsSubmitting(false);
+    setIsRedirectingToConfirmation(true);
     clearCart();
     setBuyNowItem(null);
+    clearSavedRescueDiscountCode();
 
-    const successPath = `/order-confirmed?order_ref=${encodeURIComponent(orderRef)}&method=${encodeURIComponent(paymentMethod)}&success=true`;
+    const successPath = `/order-confirmed?order_ref=${encodeURIComponent(orderRef)}&method=${encodeURIComponent(paymentMethod)}&success=true&show_offer=1`;
     writeCheckoutLock({
       signature: checkoutSignature,
       orderRef,
@@ -1786,7 +1802,10 @@ function CheckoutContent() {
   useEffect(() => {
     let savedCode = "";
     try {
-      savedCode = window.localStorage.getItem("natonat-saved-discount-code") || "";
+      savedCode =
+        window.sessionStorage.getItem("natonat-saved-discount-code") ||
+        window.localStorage.getItem("natonat-saved-discount-code") ||
+        "";
     } catch {
       savedCode = "";
     }
@@ -1912,7 +1931,27 @@ function CheckoutContent() {
     );
   }
 
-  if (mounted && !hasCheckoutItems) {
+  if (isRedirectingToConfirmation) {
+    return (
+      <>
+        <Navigation />
+        <main className="min-h-screen bg-[#F1EBE3] px-4 py-32">
+          <div className="mx-auto max-w-md rounded-3xl border border-[#0F1A26]/5 bg-white p-8 text-center shadow-lg">
+            <div className="mx-auto mb-5 h-12 w-12 animate-spin rounded-full border-4 border-[#EEBC3F]/25 border-t-[#EEBC3F]" />
+            <h1 className="mb-2 text-2xl font-black text-[#0F1A26]">
+              {locale === "ar" ? "جارى تأكيد طلبك" : "Confirming your order"}
+            </h1>
+            <p className="text-sm font-semibold leading-6 text-[#0F1A26]/60">
+              {locale === "ar" ? "ثواني وهيتم تحويلك لصفحة تأكيد الطلب." : "One moment, we are opening your order confirmation."}
+            </p>
+          </div>
+        </main>
+        <Footer />
+      </>
+    );
+  }
+
+  if (mounted && !hasCheckoutItems && !isRedirectingToConfirmation) {
     return (
       <>
         <Navigation />

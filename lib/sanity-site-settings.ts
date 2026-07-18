@@ -376,8 +376,7 @@ function mergeConversionRescue(
     ...fallbackConversionRescue,
     ...conversionRescue,
     enabled: Boolean(
-      conversionRescue?.enabled &&
-        (Number(conversionRescue.discountPercent) > 0 || conversionRescue.discountCode),
+      conversionRescue?.enabled && Number(conversionRescue.discountPercent) > 0,
     ),
     delaySeconds,
     dismissDays,
@@ -390,7 +389,7 @@ function mergeConversionRescue(
       1,
       Math.min(168, Number(conversionRescue?.codeValidityHours) || fallbackConversionRescue.codeValidityHours),
     ),
-    discountCode: conversionRescue?.discountCode?.trim().toUpperCase() || "",
+    discountCode: "",
     targetPath: conversionRescue?.targetPath?.trim() || fallbackConversionRescue.targetPath,
   };
 }

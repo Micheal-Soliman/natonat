@@ -37,6 +37,15 @@ function LoadingState() {
   );
 }
 
+function clearSavedRescueDiscountCode() {
+  try {
+    window.sessionStorage.removeItem("natonat-saved-discount-code");
+    window.localStorage.removeItem("natonat-saved-discount-code");
+  } catch {
+    // Ignore storage errors.
+  }
+}
+
 function OrderConfirmedContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -48,6 +57,7 @@ function OrderConfirmedContent() {
   const methodFromUrl = searchParams.get("method") || "";
   const transactionIdFromUrl = searchParams.get("id") || "";
   const amountCentsFromUrl = searchParams.get("amount_cents") || "";
+  const shouldShowOfferFromUrl = searchParams.get("show_offer") === "1";
 
   type VerificationStatus =
     | "checking"
@@ -129,7 +139,7 @@ function OrderConfirmedContent() {
         return;
       }
 
-      const maxAttempts = methodFromUrl === "card" ? 6 : 1;
+      const maxAttempts = methodFromUrl === "card" || shouldShowOfferFromUrl ? 6 : 1;
       let orderWasFound = false;
 
       for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -205,7 +215,7 @@ function OrderConfirmedContent() {
 
     verifyOrder();
     return () => controller.abort();
-  }, [methodFromUrl, orderRef]);
+  }, [methodFromUrl, orderRef, shouldShowOfferFromUrl]);
 
   const isSuccess = verificationStatus === "success";
   const isPending =
@@ -244,7 +254,7 @@ function OrderConfirmedContent() {
     checkoutPopup.enabled &&
     Boolean(checkoutPopupProduct?.slug) &&
     !orderAlreadyHasPopupProduct &&
-    !isCardUpsellDismissed;
+    (shouldShowOfferFromUrl || !isCardUpsellDismissed);
   const supportMessage = encodeURIComponent(
     t("messages.supportWhatsapp", { orderRef: orderRef || "" })
   );
@@ -258,13 +268,17 @@ function OrderConfirmedContent() {
     }
 
     try {
-      setIsCardUpsellDismissed(window.sessionStorage.getItem(cardUpsellStorageKey) === "1");
+      setIsCardUpsellDismissed(
+        shouldShowOfferFromUrl
+          ? false
+          : window.sessionStorage.getItem(cardUpsellStorageKey) === "1",
+      );
     } catch {
       setIsCardUpsellDismissed(false);
     } finally {
       setIsCardUpsellReady(true);
     }
-  }, [cardUpsellStorageKey]);
+  }, [cardUpsellStorageKey, shouldShowOfferFromUrl]);
 
   const closeCardUpsell = () => {
     if (cardUpsellStorageKey) {
@@ -326,6 +340,7 @@ function OrderConfirmedContent() {
 
       clearCart();
       setBuyNowItem(null);
+      clearSavedRescueDiscountCode();
     }
   }, [
     verificationStatus,

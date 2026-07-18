@@ -53,6 +53,15 @@ function setStoredValue(key: string, value: string) {
   }
 }
 
+function setSessionValue(key: string, value: string) {
+  try {
+    window.sessionStorage.setItem(key, value);
+    window.localStorage.removeItem(key);
+  } catch {
+    // Storage is a convenience only; never block the shopping flow.
+  }
+}
+
 function getDismissUntil(storageKey: string) {
   return getStoredNumber(`${storagePrefix}:${storageKey}:dismissUntil`);
 }
@@ -88,7 +97,7 @@ function getStorageKey(settings: ConversionRescueSettings) {
 function isReady(settings?: ConversionRescueSettings | null) {
   return Boolean(
     settings?.enabled &&
-      (settings.discountPercent > 0 || settings.discountCode) &&
+      settings.discountPercent > 0 &&
       settings.discountLabel &&
       settings.eyebrow &&
       settings.title &&
@@ -158,10 +167,6 @@ export function DynamicConversionRescuePopup() {
       nextCode = "";
     }
 
-    if (!nextCode && settings.discountCode) {
-      nextCode = settings.discountCode;
-    }
-
     if (!nextCode) return;
 
     setOfferCode(nextCode);
@@ -206,7 +211,7 @@ export function DynamicConversionRescuePopup() {
   const saveCode = async () => {
     if (!settings || !offerCode) return;
 
-    setStoredValue("natonat-saved-discount-code", offerCode);
+    setSessionValue("natonat-saved-discount-code", offerCode);
 
     try {
       await navigator.clipboard.writeText(offerCode);

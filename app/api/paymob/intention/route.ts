@@ -148,8 +148,8 @@ export async function POST(req: Request) {
     (origin
       ? `${origin}/${locale}/order-confirmed${
           orderRef
-            ? `?order_ref=${encodeURIComponent(orderRef)}&method=card`
-            : "?method=card"
+            ? `?order_ref=${encodeURIComponent(orderRef)}&method=card&show_offer=1`
+            : "?method=card&show_offer=1"
         }`
       : undefined);
 

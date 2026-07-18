@@ -8,12 +8,15 @@ export const conversionRescueSettings = defineType({
     defineField({
       name: "enabled",
       title: "Enable popup",
+      description: "Shows a timed rescue popup for visitors who browse without buying.",
       type: "boolean",
       initialValue: false,
     }),
     defineField({
       name: "delaySeconds",
       title: "Show after seconds",
+      description:
+        "Recommended: 30 seconds. The popup is not shown on checkout, cart, order confirmation, or Studio pages.",
       type: "number",
       initialValue: 30,
       validation: (Rule) => Rule.min(10).max(300),
@@ -21,35 +24,39 @@ export const conversionRescueSettings = defineType({
     defineField({
       name: "dismissDays",
       title: "Hide after close for days",
+      description: "How long to hide the popup after the visitor closes it.",
       type: "number",
       initialValue: 7,
       validation: (Rule) => Rule.min(1).max(60),
     }),
     defineField({
       name: "discountCode",
-      title: "Legacy fixed discount code",
-      description: "Optional fallback only. Random signed codes are generated from the percentage below.",
+      title: "Deprecated fallback code",
+      description:
+        "Hidden legacy fallback. Normal popup codes are generated randomly, signed, time-limited, and bound to the visitor browser.",
       type: "string",
+      hidden: true,
     }),
     defineField({
       name: "discountPercent",
-      title: "Random code discount percent",
-      description: "The percentage used when generating a unique popup code.",
+      title: "Discount percent",
+      description:
+        "CMS controls the percentage. The website generates a new random, signed, browser-bound code for each visitor.",
       type: "number",
       initialValue: 5,
       validation: (Rule) => Rule.required().min(1).max(90),
     }),
     defineField({
       name: "codePrefix",
-      title: "Random code prefix",
-      description: "Short prefix before the random code, for example NAT.",
+      title: "Code prefix",
+      description: "Short brand prefix before the random code, for example NAT.",
       type: "string",
       initialValue: "NAT",
     }),
     defineField({
       name: "codeValidityHours",
-      title: "Random code validity hours",
-      description: "How long each generated code stays valid.",
+      title: "Code validity hours",
+      description: "How long each generated code stays valid. Recommended: 24 hours.",
       type: "number",
       initialValue: 24,
       validation: (Rule) => Rule.required().min(1).max(168),
@@ -57,8 +64,9 @@ export const conversionRescueSettings = defineType({
     defineField({
       name: "discountLabel",
       title: "Discount label",
-      description: "Example: 5% OFF or EGP 100 OFF.",
+      description: "Shown on the popup badge. Example: 5% OFF.",
       type: "string",
+      initialValue: "5% OFF",
       validation: (Rule) => Rule.required(),
     }),
     defineField({
