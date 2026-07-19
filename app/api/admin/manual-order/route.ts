@@ -88,18 +88,27 @@ export async function POST(req: Request) {
   const quantity = Math.max(1, Math.round(toNumber(body.quantity) || 1));
   const unitPrice = toNumber(body.unitPrice);
   const total = toNumber(body.total) || quantity * unitPrice;
-  const shouldCreateShipment = Boolean(body.createBostaShipment || body.createAramexShipment);
   const orderKind = body.orderKind === "catalog" ? "catalog" : "special";
+  const requestedPaymentMethod = String(
+    body.paymentMethod ||
+      ((body.createBostaShipment || body.createAramexShipment) && orderKind === "catalog" ? "cod" : "custom_bulk"),
+  );
+  const isDashboardOnlyManualOrder =
+    requestedPaymentMethod === "custom_bulk" ||
+    orderKind === "special";
+  const shouldCreateShipment =
+    Boolean(body.createBostaShipment || body.createAramexShipment) &&
+    !isDashboardOnlyManualOrder;
   const productSlug = String(body.productSlug || "").trim();
   const productSize = String(body.productSize || "").trim();
   const phone = String(body.phone || "").trim();
   const city = String(body.city || "").trim();
   const address = String(body.address || "").trim();
-  const requestedPaymentMethod = String(body.paymentMethod || (shouldCreateShipment ? "cod" : "custom_bulk"));
   const requestedPaymentStatus = String(body.paymentStatus || "Paid");
   const requestedDeliveryMethod = String(body.deliveryMethod || (shouldCreateShipment ? "delivery" : "custom"));
+  const hasManualItems = Array.isArray(body.items) && body.items.length > 0;
 
-  if (!title || total <= 0) {
+  if (!hasManualItems && (!title || total <= 0)) {
     return NextResponse.json(
       { error: "Missing custom order title or total" },
       { status: 400 },
@@ -118,16 +127,34 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid delivery method" }, { status: 400 });
   }
 
-  if (shouldCreateShipment && (!phone || !city || !address)) {
+  if (shouldCreateShipment && !hasManualItems && (!phone || !city || !address)) {
     return NextResponse.json(
       { error: "Missing phone, city, or address for Bosta shipment" },
       { status: 400 },
     );
   }
 
-  if (Array.isArray(body.items) && body.items.length > 0) {
+  if (hasManualItems) {
     const catalogProducts = await getCatalogProducts({ live: true });
-    const builtItems = body.items.map((input, index) => {
+    let builtItems: Array<{
+      id?: number;
+      slug?: string;
+      name: string;
+      size?: string;
+      quantity: number;
+      unit_price_egp: number;
+      line_total_egp: number;
+      price: number;
+      type: string;
+      isCustomOrder: boolean;
+      isSpecialProduct: boolean;
+      special_product_brief: string;
+      catalog_source: string;
+      selected_from_catalog: boolean;
+    }>;
+
+    try {
+      builtItems = body.items!.map((input, index) => {
       const itemKind = input.orderKind === "catalog" ? "catalog" : input.orderKind === "special" ? "special" : orderKind;
       const itemTitle = String(input.title || "").trim();
       const itemSlug = String(input.productSlug || "").trim();
@@ -170,12 +197,26 @@ export async function POST(req: Request) {
         catalog_source: itemKind === "special" ? "admin_special_order" : "admin_catalog_order",
         selected_from_catalog: Boolean(selectedProduct),
       };
-    });
+      });
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : "Invalid manual order items" },
+        { status: 400 },
+      );
+    }
 
     const multiTotal = toNumber(body.total) || builtItems.reduce((sum, item) => sum + item.line_total_egp, 0);
     const multiQuantity = builtItems.reduce((sum, item) => sum + item.quantity, 0);
     const hasSpecial = builtItems.some((item) => item.isSpecialProduct || item.isCustomOrder);
     const hasCatalog = builtItems.some((item) => item.selected_from_catalog);
+    const canCreateShipmentForManualItems = shouldCreateShipment && !hasSpecial;
+    const isDashboardOnlyBulkOrder = hasSpecial || requestedPaymentMethod === "custom_bulk";
+    if (canCreateShipmentForManualItems && (!phone || !city || !address)) {
+      return NextResponse.json(
+        { error: "Missing phone, city, or address for Bosta shipment" },
+        { status: 400 },
+      );
+    }
     const source = hasSpecial ? (hasCatalog ? "admin_mixed_manual_order" : "admin_special_order") : "admin_catalog_order";
     const timestamp = new Date().toISOString();
     const orderRef = `CUSTOM-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
@@ -185,10 +226,14 @@ export async function POST(req: Request) {
     const order = {
       source,
       order_ref: orderRef,
-      status: shouldCreateShipment ? "created" : "confirmed",
+      status: canCreateShipmentForManualItems ? "created" : "confirmed",
       payment_status: requestedPaymentStatus,
       payment_method: paymentMethod,
-      delivery_method: shouldCreateShipment ? "delivery" : requestedDeliveryMethod,
+      delivery_method: canCreateShipmentForManualItems
+        ? "delivery"
+        : isDashboardOnlyBulkOrder
+          ? "custom"
+          : requestedDeliveryMethod,
       created_at: timestamp,
       updated_at: timestamp,
       amount_egp: multiTotal,
@@ -207,7 +252,7 @@ export async function POST(req: Request) {
       items: builtItems,
       extras: {
         is_custom_order: hasSpecial,
-        exclude_from_stock_consumption: hasSpecial,
+        exclude_from_stock_consumption: hasSpecial && !hasCatalog,
         exclude_from_catalog_product_sales: hasSpecial,
         custom_order_note: body.notes || "",
         special_product_brief: body.specialProductBrief || "",
@@ -221,7 +266,8 @@ export async function POST(req: Request) {
           size: item.size || null,
           quantity: item.quantity,
         })),
-        bosta_created_from_manual_order: shouldCreateShipment,
+        bosta_created_from_manual_order: canCreateShipmentForManualItems,
+        dashboard_only_manual_order: !canCreateShipmentForManualItems,
       },
       admin_audit: [
         {
@@ -247,13 +293,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Failed to save custom order", details: logData }, { status: 502 });
     }
 
-    if (!shouldCreateShipment) {
+    if (!canCreateShipmentForManualItems) {
       return NextResponse.json({ success: true, order_ref: orderRef, order });
     }
 
     const shipmentRes = await fetch(`${appOrigin}/api/bosta/shipment`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-internal-api-secret": process.env.BOSTA_INTERNAL_API_SECRET || "",
+      },
       body: JSON.stringify({
         orderRef,
         customer: order.customer,
@@ -391,9 +440,13 @@ export async function POST(req: Request) {
     source: orderKind === "special" ? "admin_special_order" : "admin_catalog_order",
     order_ref: orderRef,
     status: shouldCreateShipment ? "created" : "confirmed",
-    payment_status: requestedPaymentStatus,
-    payment_method: paymentMethod,
-    delivery_method: shouldCreateShipment ? "delivery" : requestedDeliveryMethod,
+      payment_status: requestedPaymentStatus,
+      payment_method: paymentMethod,
+      delivery_method: shouldCreateShipment
+        ? "delivery"
+        : isDashboardOnlyManualOrder || !selectedProduct
+          ? "custom"
+          : requestedDeliveryMethod,
     created_at: timestamp,
     updated_at: timestamp,
     amount_egp: total,
@@ -471,7 +524,10 @@ export async function POST(req: Request) {
 
   const shipmentRes = await fetch(`${appOrigin}/api/bosta/shipment`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "x-internal-api-secret": process.env.BOSTA_INTERNAL_API_SECRET || "",
+    },
     body: JSON.stringify({
       orderRef,
       customer: order.customer,
@@ -497,7 +553,7 @@ export async function POST(req: Request) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...order,
-        source: orderKind === "special" ? "admin_special_order_bosta_failed" : "admin_catalog_order_bosta_failed",
+        source: "admin_catalog_order_bosta_failed",
         status: "confirmed",
         bosta: {
           error: shipmentData?.details || shipmentData?.error || "Bosta shipment failed",
@@ -519,7 +575,7 @@ export async function POST(req: Request) {
 
   const shippedOrder = {
     ...order,
-    source: orderKind === "special" ? "admin_special_order_bosta_created" : "admin_catalog_order_bosta_created",
+    source: "admin_catalog_order_bosta_created",
     status: "shipped",
     bosta: {
       provider: shipmentData.provider,

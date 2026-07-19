@@ -16,6 +16,9 @@ export type InventoryOrderItem = {
   quantity?: number;
   isBundle?: boolean;
   bundleSelections?: InventoryOrderSelection[];
+  isCustomOrder?: boolean;
+  is_custom_order?: boolean;
+  isSpecialProduct?: boolean;
 };
 
 type InventoryProduct = {
@@ -61,6 +64,8 @@ function flattenInventoryLines(items: InventoryOrderItem[]) {
   const lines: InventoryLine[] = [];
 
   for (const item of items) {
+    if (item.isCustomOrder || item.is_custom_order || item.isSpecialProduct) continue;
+
     const itemQuantity = positiveQuantity(item.quantity);
 
     if (typeof item.id === "number") {

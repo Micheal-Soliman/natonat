@@ -276,7 +276,7 @@ const ADMIN_DELIVERY_METHODS = [
 ];
 
 const MANUAL_ORDER_PAYMENT_METHODS = [
-  { value: "custom_bulk", label: "Custom / offline bulk" },
+  { value: "custom_bulk", label: "Custom bulk / finance-only" },
   { value: "cod", label: "Cash on Delivery" },
   { value: "paymob_card", label: "Card / Paymob" },
   { value: "instapay", label: "InstaPay / Wallets" },
@@ -2394,11 +2394,12 @@ export default function AdminDashboardPage() {
     setManualOrderDraft((current) => {
       const next = { ...current, [key]: value };
       if (key === "createBostaShipment" && value === true) {
-        next.deliveryMethod = "delivery";
-        if (next.paymentMethod === "custom_bulk") {
-          next.paymentMethod = "cod";
-          next.paymentStatus = "Cash on Delivery";
+        if (next.paymentMethod === "custom_bulk" || next.orderKind === "special") {
+          next.createBostaShipment = false;
+          next.deliveryMethod = "custom";
+          return next;
         }
+        next.deliveryMethod = "delivery";
       }
       if (key === "createBostaShipment" && value === false) {
         next.deliveryMethod = "custom";
@@ -2408,12 +2409,17 @@ export default function AdminDashboardPage() {
         }
       }
       if (key === "deliveryMethod") {
-        next.createBostaShipment = value === "delivery";
+        next.createBostaShipment =
+          value === "delivery" &&
+          next.paymentMethod !== "custom_bulk" &&
+          next.orderKind !== "special";
       }
       if (key === "orderKind") {
         if (value === "special") {
           next.productSlug = "";
           next.productSize = "";
+          next.createBostaShipment = false;
+          next.deliveryMethod = "custom";
           if (!next.paymentMethod || next.paymentMethod === "cod") {
             next.paymentMethod = "custom_bulk";
             next.paymentStatus = "Paid";
@@ -2423,7 +2429,11 @@ export default function AdminDashboardPage() {
       if (key === "paymentMethod") {
         if (value === "cod") next.paymentStatus = "Cash on Delivery";
         if (value === "paymob_card" || value === "instapay" || value === "bank_transfer") next.paymentStatus = "Paid";
-        if (value === "custom_bulk") next.paymentStatus = "Paid";
+        if (value === "custom_bulk") {
+          next.paymentStatus = "Paid";
+          next.createBostaShipment = false;
+          next.deliveryMethod = "custom";
+        }
       }
       if (key === "productSlug") {
         const product = inventory.find((item) => item.slug === String(value));
@@ -2546,7 +2556,7 @@ export default function AdminDashboardPage() {
           unitPrice: getNumber(manualOrderDraft.unitPrice),
           total: manualItemsTotal || getNumber(manualOrderDraft.total),
           items: manualItemsPayload,
-          createBostaShipment: manualOrderDraft.createBostaShipment,
+          createBostaShipment: manualOrderIsDashboardOnly ? false : manualOrderDraft.createBostaShipment,
         }),
       });
       const data = (await res.json()) as AdminActionResponse;
@@ -3979,6 +3989,10 @@ export default function AdminDashboardPage() {
     (safeOrdersPage - 1) * ordersPageSize,
     safeOrdersPage * ordersPageSize,
   );
+  const manualOrderIsDashboardOnly =
+    manualOrderDraft.paymentMethod === "custom_bulk" ||
+    manualOrderDraft.orderKind === "special" ||
+    manualOrderItems.some((item) => item.orderKind === "special");
 
   return (
     <main className="min-h-screen bg-[#F4EFE8] px-4 py-6 text-[#0F1A26] sm:px-6 lg:px-8" dir="ltr">
@@ -4239,13 +4253,13 @@ export default function AdminDashboardPage() {
                 {[
                   {
                     value: "special",
-                    title: "Special custom product",
-                    body: "Made specifically for one customer or company. Not listed on the website, no stock deduction, finance only unless shipment is enabled.",
+                    title: "Custom / bulk order",
+                    body: "Special made-to-order work outside the website catalog. Finance only, no stock deduction, no Bosta shipment.",
                   },
                   {
                     value: "catalog",
-                    title: "Website catalog product",
-                    body: "Use this when the order is for an existing product from Sanity/catalog and you want product/size values from the site.",
+                    title: "Manual catalog order",
+                    body: "A normal website product entered by admin for the customer. Uses catalog products, can deduct stock, and can create Bosta shipment.",
                   },
                 ].map((option) => (
                   <button
@@ -4290,8 +4304,8 @@ export default function AdminDashboardPage() {
                             onChange={(event) => updateManualOrderItem(index, "orderKind", event.target.value)}
                             className="mt-1 h-10 w-full rounded-xl border border-[#0F1A26]/10 bg-white px-3 text-xs font-bold normal-case tracking-normal outline-none"
                           >
-                            <option value="special">Special</option>
-                            <option value="catalog">Catalog</option>
+                            <option value="special">Custom / bulk - finance only</option>
+                            <option value="catalog">Catalog product - stock/courier</option>
                           </select>
                         </label>
                         {item.orderKind === "catalog" ? (
@@ -4483,11 +4497,14 @@ export default function AdminDashboardPage() {
                 <label className="flex items-center gap-3 rounded-2xl border border-[#0F1A26]/10 bg-white p-3 text-sm font-black text-[#0F1A26] md:col-span-2 xl:col-span-4">
                   <input
                     type="checkbox"
-                    checked={manualOrderDraft.createBostaShipment}
+                    checked={manualOrderDraft.createBostaShipment && !manualOrderIsDashboardOnly}
                     onChange={(event) => updateManualOrderDraft("createBostaShipment", event.target.checked)}
+                    disabled={manualOrderIsDashboardOnly}
                     className="h-5 w-5 accent-[#EEBC3F]"
                   />
-                  Create Bosta shipment now and return tracking number
+                  {manualOrderIsDashboardOnly
+                    ? "Dashboard-only custom/bulk order. No Bosta shipment will be created."
+                    : "Create Bosta shipment now and return tracking number"}
                 </label>
                 <label className="text-xs font-black uppercase tracking-[0.12em] text-[#0F1A26]/45 md:col-span-2 xl:col-span-4">
                   Internal note
@@ -4501,7 +4518,9 @@ export default function AdminDashboardPage() {
               </div>
               <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-900 sm:flex-row sm:items-center sm:justify-between">
                 <span>
-                  {manualOrderDraft.createBostaShipment
+                  {manualOrderIsDashboardOnly
+                    ? "This custom/bulk order is saved for dashboard, finance, Supabase, and Google Sheets only. It will not be sent to Bosta."
+                    : manualOrderDraft.createBostaShipment
                     ? "This will create the dashboard order plus a real Bosta shipment. The success message must include a tracking number."
                     : "This saves the order only. No shipment/tracking will be created unless you choose Delivery or tick Create Bosta shipment."}
                 </span>
@@ -4512,7 +4531,7 @@ export default function AdminDashboardPage() {
                 >
                   {actionLoadingRef === "manual-order"
                     ? "Saving..."
-                    : manualOrderDraft.createBostaShipment
+                    : manualOrderDraft.createBostaShipment && !manualOrderIsDashboardOnly
                       ? "Create order + shipment"
                       : "Save manual order"}
                 </button>
