@@ -469,6 +469,39 @@ function normalizeAddressSearch(value?: string) {
     .trim();
 }
 
+function normalizeLatinAddressSound(value: string) {
+  return value
+    .replace(/\b(el|al)\b/g, "")
+    .replace(/q/g, "k")
+    .replace(/[aeiou]/g, "")
+    .replace(/\s+/g, "")
+    .trim();
+}
+
+function getAddressSearchKeys(value?: string) {
+  const normalized = normalizeAddressSearch(value);
+  if (!normalized) return [];
+
+  const keys = new Set([normalized]);
+  const latinSound = normalizeLatinAddressSound(normalized);
+  if (latinSound) keys.add(latinSound);
+
+  return Array.from(keys);
+}
+
+function addressKeysMatch(
+  customerKeys: string[],
+  candidateKeys: string[],
+  mode: "exact" | "contains",
+) {
+  return customerKeys.some((customerKey) =>
+    candidateKeys.some((candidateKey) => {
+      if (mode === "exact") return candidateKey === customerKey;
+      return candidateKey.includes(customerKey) || customerKey.includes(candidateKey);
+    }),
+  );
+}
+
 function normalizePhone(phone?: string) {
   const digits = (phone || "").replace(/\D/g, "");
   if (digits.startsWith("20")) return `+${digits}`;
@@ -771,23 +804,27 @@ export async function fetchBostaCityDistricts(cityId: string) {
 function scoreBostaDistrict(district: BostaDistrict, customer: BostaCustomer) {
   if (district.dropOffAvailability === false) return -1;
 
-  const customerDistrict = normalizeAddressSearch(customer.districtName || customer.city);
-  const customerGovernorate = normalizeAddressSearch(customer.governorate);
-  const districtNames = [
+  const customerDistrictKeys = getAddressSearchKeys(customer.districtName || customer.city);
+  const customerCityKeys = getAddressSearchKeys(customer.city);
+  const customerGovernorateKeys = getAddressSearchKeys(customer.governorate);
+  const districtNameKeys = [
     district.districtName,
     district.districtOtherName,
     district.zoneName,
     district.zoneOtherName,
-  ].map(normalizeAddressSearch).filter(Boolean);
-  const cityNames = [
+  ].flatMap(getAddressSearchKeys);
+  const cityNameKeys = [
     district.cityName,
+    district.cityOtherName,
     district.city,
-  ].map(normalizeAddressSearch).filter(Boolean);
+  ].flatMap(getAddressSearchKeys);
 
   let score = 0;
-  if (customerDistrict && districtNames.some((name) => name === customerDistrict)) score += 100;
-  if (customerDistrict && districtNames.some((name) => name.includes(customerDistrict) || customerDistrict.includes(name))) score += 60;
-  if (customerGovernorate && cityNames.some((name) => name === customerGovernorate)) score += 25;
+  if (addressKeysMatch(customerDistrictKeys, districtNameKeys, "exact")) score += 120;
+  if (addressKeysMatch(customerDistrictKeys, districtNameKeys, "contains")) score += 70;
+  if (addressKeysMatch(customerCityKeys, districtNameKeys, "exact")) score += 40;
+  if (addressKeysMatch(customerGovernorateKeys, cityNameKeys, "exact")) score += 35;
+  if (addressKeysMatch(customerGovernorateKeys, cityNameKeys, "contains")) score += 15;
   if (district.coverage === "BOSTA") score += 5;
 
   return score;

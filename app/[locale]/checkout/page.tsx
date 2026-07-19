@@ -207,7 +207,7 @@ const arabicCityNames: Record<string, string> = {
 
 void arabicCityNames;
 
-const ARAMEX_CITIES_CACHE_KEY = "natonat-bosta-district-options-eg-v2";
+const ARAMEX_CITIES_CACHE_KEY = "natonat-bosta-district-options-eg-v3";
 const ARAMEX_CITIES_CACHE_TTL = 24 * 60 * 60 * 1000;
 const citySearchAliases: Record<string, string[]> = {
   cairo: ["cairo", "القاهرة", "قاهره", "القاهره", "el qahera", "alqahira"],
@@ -297,13 +297,22 @@ function getCitySearchTerms(city: string) {
   return [city, ...aliasTerms].map(normalizeCitySearch);
 }
 
-function findExactAramexCity(cities: string[], value: string) {
-  const normalizedValue = normalizeCitySearch(value);
-  if (!normalizedValue) return "";
+function getCityOptionSearchTerms(option: CheckoutCityOption) {
+  return [
+    ...getCitySearchTerms(option.name),
+    ...(option.aliases || []).map(normalizeCitySearch),
+    option.governorate ? normalizeCitySearch(option.governorate) : "",
+    option.governorateAr ? normalizeCitySearch(option.governorateAr) : "",
+  ].filter(Boolean);
+}
 
-  return cities.find((city) =>
-    getCitySearchTerms(city).some((term) => term === normalizedValue)
-  ) || "";
+function findExactBostaCityOption(options: CheckoutCityOption[], value: string) {
+  const normalizedValue = normalizeCitySearch(value);
+  if (!normalizedValue) return null;
+
+  return options.find((option) =>
+    getCityOptionSearchTerms(option).some((term) => term === normalizedValue)
+  ) || null;
 }
 
 function isDiscountShippingCity(city: string) {
@@ -357,12 +366,99 @@ function getShippingRule({
 type CheckoutCityOption = {
   name: string;
   governorate?: string;
+  governorateAr?: string;
+  districtId?: string;
+  districtName?: string;
+  cityId?: string;
+  zoneId?: string;
   aliases?: string[];
+};
+
+type CheckoutGovernorateOption = {
+  value: string;
+  en: string;
+  ar: string;
+  cityId?: string;
 };
 
 function getStringField(record: Record<string, unknown>, key: string) {
   const value = record[key];
   return typeof value === "string" && value.trim() ? value.trim() : "";
+}
+
+function normalizeGovernorateOptionsPayload(data: unknown): CheckoutGovernorateOption[] {
+  const options: CheckoutGovernorateOption[] = [];
+
+  if (data && typeof data === "object") {
+    const payload = data as Record<string, unknown>;
+    const governorates = Array.isArray(payload.governorates) ? payload.governorates : [];
+    const districts = Array.isArray(payload.districts) ? payload.districts : [];
+    const cities = Array.isArray(payload.cities) ? payload.cities : [];
+
+    governorates.forEach((value) => {
+      if (!value || typeof value !== "object") return;
+      const governorate = value as Record<string, unknown>;
+      const en = getStringField(governorate, "en") || getStringField(governorate, "value");
+      const ar = getStringField(governorate, "ar") || en;
+      const optionValue = getStringField(governorate, "value") || en || ar;
+      if (!optionValue) return;
+      options.push({
+        value: optionValue,
+        en: en || optionValue,
+        ar: ar || en || optionValue,
+        cityId: getStringField(governorate, "cityId"),
+      });
+    });
+
+    if (options.length === 0) {
+      districts.forEach((value) => {
+        if (!value || typeof value !== "object") return;
+        const district = value as Record<string, unknown>;
+        const en = getStringField(district, "cityName") || getStringField(district, "city");
+        const ar = getStringField(district, "cityOtherName") || en;
+        if (!en && !ar) return;
+        options.push({
+          value: en || ar,
+          en: en || ar,
+          ar: ar || en,
+          cityId: getStringField(district, "cityId"),
+        });
+      });
+    }
+
+    cities.forEach((value) => {
+      if (!value || typeof value !== "object") return;
+      const city = value as Record<string, unknown>;
+      const en = getStringField(city, "name") || getStringField(city, "alias");
+      const ar = getStringField(city, "nameAr") || en;
+      if (!en && !ar) return;
+      options.push({
+        value: en || ar,
+        en: en || ar,
+        ar: ar || en,
+        cityId: getStringField(city, "_id") || getStringField(city, "id"),
+      });
+    });
+  }
+
+  const unique = new Map<string, CheckoutGovernorateOption>();
+  options.forEach((option) => {
+    const key = normalizeCitySearch(option.value || option.en || option.ar);
+    if (!key || unique.has(key)) return;
+    unique.set(key, option);
+  });
+
+  const normalized = Array.from(unique.values()).sort((a, b) =>
+    (a.en || a.value).localeCompare(b.en || b.value, "en")
+  );
+
+  return normalized.length > 0
+    ? normalized
+    : egyptGovernorates.map((governorate) => ({
+        value: governorate.value,
+        en: governorate.en,
+        ar: governorate.ar,
+      }));
 }
 
 function getFallbackCityOptions(governorate?: string): CheckoutCityOption[] {
@@ -400,16 +496,24 @@ function normalizeCityOptionsPayload(data: unknown) {
         getStringField(district, "cityName") ||
         getStringField(district, "city") ||
         getStringField(district, "cityOtherName");
+      const governorateAr = getStringField(district, "cityOtherName") || governorate;
 
       if (name) {
         options.push({
           name,
           governorate,
+          governorateAr,
+          districtId: getStringField(district, "districtId") || getStringField(district, "districtI\""),
+          districtName: getStringField(district, "districtName") || name,
+          cityId: getStringField(district, "cityId"),
+          zoneId: getStringField(district, "zoneId"),
           aliases: [
             getStringField(district, "districtName"),
             getStringField(district, "districtOtherName"),
             getStringField(district, "zoneName"),
             getStringField(district, "zoneOtherName"),
+            governorate,
+            governorateAr,
           ].filter(Boolean),
         });
       }
@@ -451,7 +555,7 @@ function normalizeCityOptionsPayload(data: unknown) {
   );
 }
 
-function readCachedAramexCities() {
+function readCachedBostaLocations() {
   try {
     const raw = window.localStorage.getItem(ARAMEX_CITIES_CACHE_KEY);
     if (!raw) return null;
@@ -460,6 +564,7 @@ function readCachedAramexCities() {
       cachedAt?: number;
       options?: unknown;
       cities?: unknown;
+      governorates?: unknown;
     };
 
     if (
@@ -470,19 +575,24 @@ function readCachedAramexCities() {
     }
 
     const options = normalizeCityOptionsPayload(parsed.options || parsed.cities);
-    return options.length > 0 ? options : null;
+    const governorates = normalizeGovernorateOptionsPayload({ governorates: parsed.governorates });
+    return options.length > 0 ? { options, governorates } : null;
   } catch {
     return null;
   }
 }
 
-function writeCachedAramexCities(options: CheckoutCityOption[]) {
+function writeCachedBostaLocations(
+  options: CheckoutCityOption[],
+  governorates: CheckoutGovernorateOption[],
+) {
   try {
     window.localStorage.setItem(
       ARAMEX_CITIES_CACHE_KEY,
       JSON.stringify({
         cachedAt: Date.now(),
         options,
+        governorates,
       })
     );
   } catch {
@@ -799,25 +909,39 @@ function CheckoutContent() {
     firstName: "",
     address: "",
     governorate: "",
+    governorateAr: "",
+    governorateCityId: "",
     city: "",
+    districtId: "",
+    districtName: "",
+    cityId: "",
+    zoneId: "",
     phone: "",
   });
   const [cityOptions, setCityOptions] = useState<CheckoutCityOption[]>(getFallbackCityOptions());
+  const [governorateOptions, setGovernorateOptions] = useState<CheckoutGovernorateOption[]>(
+    egyptGovernorates.map((governorate) => ({
+      value: governorate.value,
+      en: governorate.en,
+      ar: governorate.ar,
+    })),
+  );
   const [loadingCities, setLoadingCities] = useState(false);
   const [citySearch, setCitySearch] = useState("");
   const [cityListOpen, setCityListOpen] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    const cachedCities = readCachedAramexCities();
+    const cachedLocations = readCachedBostaLocations();
     const controller = new AbortController();
 
-    if (cachedCities) {
-      setCityOptions(cachedCities);
+    if (cachedLocations) {
+      setCityOptions(cachedLocations.options);
+      setGovernorateOptions(cachedLocations.governorates);
     }
 
     async function getCities() {
-      if (!cachedCities) {
+      if (!cachedLocations) {
         setLoadingCities(true);
       }
 
@@ -829,10 +953,12 @@ function CheckoutContent() {
         if (res.ok) {
           const data = await res.json();
           const options = normalizeCityOptionsPayload(data);
+          const governorates = normalizeGovernorateOptionsPayload(data);
 
           if (options.length > 0) {
-            writeCachedAramexCities(options);
+            writeCachedBostaLocations(options, governorates);
             setCityOptions(options);
+            setGovernorateOptions(governorates);
           }
         }
       } catch (err) {
@@ -857,11 +983,19 @@ function CheckoutContent() {
 
     const filtered = cityOptions.filter((option) => {
       const optionGovernorate = normalizeCitySearch(option.governorate || "");
-      return optionGovernorate === selectedGovernorate || optionGovernorate.includes(selectedGovernorate);
+      const optionGovernorateAr = normalizeCitySearch(option.governorateAr || "");
+      const optionCityId = option.cityId || "";
+      return (
+        optionGovernorate === selectedGovernorate ||
+        optionGovernorate.includes(selectedGovernorate) ||
+        optionGovernorateAr === selectedGovernorate ||
+        optionGovernorateAr.includes(selectedGovernorate) ||
+        Boolean(formData.governorateCityId && optionCityId === formData.governorateCityId)
+      );
     });
 
     return filtered.length > 0 ? filtered : getFallbackCityOptions(formData.governorate);
-  }, [cityOptions, formData.governorate]);
+  }, [cityOptions, formData.governorate, formData.governorateCityId]);
 
   const aramexCities = useMemo(
     () => Array.from(new Set(scopedCityOptions.map((option) => option.name).filter(Boolean))),
@@ -910,13 +1044,21 @@ function CheckoutContent() {
       .slice(0, CITY_DROPDOWN_LIMIT);
   }, [citySearchIndex, citySearch]);
 
-  const selectedAramexCity = useMemo(
-    () => findExactAramexCity(aramexCities, formData.city),
-    [aramexCities, formData.city]
+  const selectedCityOption = useMemo(
+    () => findExactBostaCityOption(scopedCityOptions, formData.city),
+    [scopedCityOptions, formData.city]
   );
 
   const selectCity = (city: string) => {
-    setFormData((current) => ({ ...current, city }));
+    const option = findExactBostaCityOption(scopedCityOptions, city);
+    setFormData((current) => ({
+      ...current,
+      city: option?.name || city,
+      districtId: option?.districtId || "",
+      districtName: option?.districtName || option?.name || city,
+      cityId: option?.cityId || current.governorateCityId || "",
+      zoneId: option?.zoneId || "",
+    }));
     setCitySearch(city);
     setFieldErrors((current) => ({ ...current, city: "" }));
     setCityListOpen(false);
@@ -928,16 +1070,23 @@ function CheckoutContent() {
     if (loadingCities || aramexCities.length === 0) {
       const typedCity = citySearch.trim();
       if (typedCity) {
-        setFormData((current) => ({ ...current, city: typedCity }));
+        setFormData((current) => ({
+          ...current,
+          city: typedCity,
+          districtId: "",
+          districtName: "",
+          cityId: current.governorateCityId,
+          zoneId: "",
+        }));
         setFieldErrors((current) => ({ ...current, city: "" }));
       }
       return;
     }
 
-    const exactCity = findExactAramexCity(aramexCities, citySearch);
+    const exactCityOption = findExactBostaCityOption(scopedCityOptions, citySearch);
 
-    if (exactCity) {
-      selectCity(exactCity);
+    if (exactCityOption) {
+      selectCity(exactCityOption.name);
       return;
     }
 
@@ -951,12 +1100,19 @@ function CheckoutContent() {
 
   useEffect(() => {
     if (!formData.city || aramexCities.length === 0) return;
-    const exactCity = findExactAramexCity(aramexCities, formData.city);
-    if (!exactCity || exactCity === formData.city) return;
+    const exactCityOption = findExactBostaCityOption(scopedCityOptions, formData.city);
+    if (!exactCityOption || exactCityOption.name === formData.city) return;
 
-    setFormData((current) => ({ ...current, city: exactCity }));
-    setCitySearch(exactCity);
-  }, [aramexCities, formData.city]);
+    setFormData((current) => ({
+      ...current,
+      city: exactCityOption.name,
+      districtId: exactCityOption.districtId || "",
+      districtName: exactCityOption.districtName || exactCityOption.name,
+      cityId: exactCityOption.cityId || current.governorateCityId || "",
+      zoneId: exactCityOption.zoneId || "",
+    }));
+    setCitySearch(exactCityOption.name);
+  }, [aramexCities, scopedCityOptions, formData.city]);
 
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [instapayProof, setInstapayProof] = useState<InstaPayProofState>(null);
@@ -1040,7 +1196,7 @@ function CheckoutContent() {
     if (deliveryMethod === "delivery") {
       if (!formData.address.trim()) nextErrors.address = requiredMessage;
       if (!formData.governorate) nextErrors.governorate = requiredMessage;
-      if (!selectedAramexCity && !formData.city.trim()) {
+      if (!formData.city.trim() || (!loadingCities && scopedCityOptions.length > 0 && !selectedCityOption)) {
         nextErrors.city = invalidCityMessage;
       }
     }
@@ -1115,6 +1271,15 @@ function CheckoutContent() {
           referrer_name: confirmedAppliedDiscountCode.referrerName,
         }
       : null;
+    const customerBostaLocation = {
+      city: formData.city,
+      governorate: formData.governorate,
+      governorate_ar: formData.governorateAr,
+      districtId: formData.districtId || undefined,
+      districtName: formData.districtName || formData.city || undefined,
+      cityId: formData.cityId || formData.governorateCityId || undefined,
+      zoneId: formData.zoneId || undefined,
+    };
 
     const checkoutSignature = JSON.stringify({
       items: serializedCheckoutItems.map((item) => ({
@@ -1131,6 +1296,8 @@ function CheckoutContent() {
         name: formData.firstName.trim().toLowerCase(),
         city: formData.city,
         governorate: formData.governorate,
+        districtId: formData.districtId,
+        cityId: formData.cityId || formData.governorateCityId,
         address: formData.address.trim().toLowerCase(),
       },
       paymentMethod,
@@ -1241,6 +1408,11 @@ function CheckoutContent() {
             last_name: "",
             city: formData.city,
             governorate: formData.governorate,
+            governorate_ar: customerBostaLocation.governorate_ar,
+            districtId: customerBostaLocation.districtId,
+            districtName: customerBostaLocation.districtName,
+            cityId: customerBostaLocation.cityId,
+            zoneId: customerBostaLocation.zoneId,
             address: formData.address,
           },
           items: serializedCheckoutItems,
@@ -1328,6 +1500,11 @@ function CheckoutContent() {
               last_name: "",
               city: formData.city,
               governorate: formData.governorate,
+              governorate_ar: customerBostaLocation.governorate_ar,
+              districtId: customerBostaLocation.districtId,
+              districtName: customerBostaLocation.districtName,
+              cityId: customerBostaLocation.cityId,
+              zoneId: customerBostaLocation.zoneId,
               address: formData.address,
             },
             items: serializedCheckoutItems,
@@ -1417,6 +1594,11 @@ function CheckoutContent() {
               last_name: "",
               city: formData.city,
               governorate: formData.governorate,
+              governorate_ar: customerBostaLocation.governorate_ar,
+              districtId: customerBostaLocation.districtId,
+              districtName: customerBostaLocation.districtName,
+              cityId: customerBostaLocation.cityId,
+              zoneId: customerBostaLocation.zoneId,
               address: formData.address,
             },
             items: serializedCheckoutItems,
@@ -1518,6 +1700,11 @@ function CheckoutContent() {
             last_name: "",
             city: formData.city,
             governorate: formData.governorate,
+            governorate_ar: customerBostaLocation.governorate_ar,
+            districtId: customerBostaLocation.districtId,
+            districtName: customerBostaLocation.districtName,
+            cityId: customerBostaLocation.cityId,
+            zoneId: customerBostaLocation.zoneId,
             address: formData.address,
           },
           items: serializedCheckoutItems,
@@ -1582,6 +1769,11 @@ function CheckoutContent() {
             last_name: "",
             city: formData.city,
             governorate: formData.governorate,
+            governorate_ar: customerBostaLocation.governorate_ar,
+            districtId: customerBostaLocation.districtId,
+            districtName: customerBostaLocation.districtName,
+            cityId: customerBostaLocation.cityId,
+            zoneId: customerBostaLocation.zoneId,
             address: formData.address,
           },
 
@@ -2277,12 +2469,16 @@ function CheckoutContent() {
                             }}
                             onChange={(e) => {
                               const value = e.target.value;
-                              const exactCity = findExactAramexCity(aramexCities, value);
+                              const exactCityOption = findExactBostaCityOption(scopedCityOptions, value);
 
                               setCitySearch(value);
                               setFormData((current) => ({
                                 ...current,
-                                city: exactCity || value.trim(),
+                                city: exactCityOption?.name || value.trim(),
+                                districtId: exactCityOption?.districtId || "",
+                                districtName: exactCityOption?.districtName || exactCityOption?.name || "",
+                                cityId: exactCityOption?.cityId || current.governorateCityId || "",
+                                zoneId: exactCityOption?.zoneId || "",
                               }));
                               setFieldErrors((current) => ({ ...current, city: "" }));
                               setCityListOpen(true);
@@ -2361,7 +2557,20 @@ function CheckoutContent() {
                             required
                             value={formData.governorate}
                             onChange={(e) => {
-                              setFormData({ ...formData, governorate: e.target.value, city: "" });
+                              const selectedGovernorate = governorateOptions.find(
+                                (governorate) => governorate.value === e.target.value,
+                              );
+                              setFormData({
+                                ...formData,
+                                governorate: selectedGovernorate?.value || e.target.value,
+                                governorateAr: selectedGovernorate?.ar || "",
+                                governorateCityId: selectedGovernorate?.cityId || "",
+                                city: "",
+                                districtId: "",
+                                districtName: "",
+                                cityId: selectedGovernorate?.cityId || "",
+                                zoneId: "",
+                              });
                               setCitySearch("");
                               setCityListOpen(false);
                               setFieldErrors((current) => ({ ...current, governorate: "", city: "" }));
@@ -2369,7 +2578,7 @@ function CheckoutContent() {
                             className={`${getInputClass("governorate", inputIconClass)} appearance-none pr-11`}
                           >
                             <option value="">{t("form.shipping.governoratePlaceholder")}</option>
-                            {egyptGovernorates.map((governorate) => (
+                            {governorateOptions.map((governorate) => (
                               <option key={governorate.value} value={governorate.value}>
                                 {locale === "ar" ? governorate.ar : governorate.en}
                               </option>

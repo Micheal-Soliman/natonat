@@ -7,10 +7,32 @@ export async function GET() {
       fetchBostaDistricts().catch(() => []),
       fetchBostaCities().catch(() => []),
     ]);
+    const governorates = Array.from(
+      new Map(
+        [
+          ...districts.map((district) => ({
+            value: district.cityName || district.city || district.cityOtherName || "",
+            en: district.cityName || district.city || "",
+            ar: district.cityOtherName || district.cityName || district.city || "",
+            cityId: district.cityId || "",
+          })),
+          ...cities.map((city) => ({
+            value: city.name || city.alias || city.nameAr || "",
+            en: city.name || city.alias || "",
+            ar: city.nameAr || city.name || city.alias || "",
+            cityId: city._id || city.id || "",
+          })),
+        ]
+          .filter((governorate) => governorate.value.trim())
+          .map((governorate) => [governorate.value.toLowerCase(), governorate]),
+      ).values(),
+    ).sort((a, b) => a.en.localeCompare(b.en, "en"));
+
     return NextResponse.json({
       success: true,
       districts,
       cities,
+      governorates,
       names: Array.from(
         new Set(
           [
