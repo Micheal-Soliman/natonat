@@ -646,7 +646,7 @@ function OrderConfirmedContent() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={closeCardUpsell}
+                  onClick={() => closeCardUpsell("decline")}
                   className="h-12 rounded-2xl border-[#0F1A26]/20 bg-white text-sm font-black"
                 >
                   {checkoutPopup.declineLabel}
