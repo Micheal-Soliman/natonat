@@ -11,7 +11,20 @@ type LoggedOrder = {
   customer?: unknown;
   items?: Array<{
     name?: string;
+    productName?: string;
+    title?: string;
+    slug?: string;
+    productSlug?: string;
+    type?: string;
+    productType?: string;
+    size?: string;
+    selectedSize?: string;
+    variantSize?: string;
+    color?: string;
+    selectedColor?: string;
+    variant?: string;
     quantity?: number;
+    bundleSelections?: LoggedOrder["items"];
   }>;
   amount_egp?: number;
   amount_cents?: number;
@@ -102,8 +115,28 @@ export async function POST(req: Request) {
         orderRef,
         customer: order.customer,
         items: (order.items || []).map((item) => ({
-          name: item.name || "Order item",
+          name: item.name || item.productName || "Order item",
+          title: item.title,
+          slug: item.slug || item.productSlug,
+          type: item.type || item.productType,
+          size: item.size,
+          selectedSize: item.selectedSize,
+          variantSize: item.variantSize,
+          color: item.color,
+          selectedColor: item.selectedColor,
+          variant: item.variant,
           quantity: item.quantity || 1,
+          bundleSelections: Array.isArray(item.bundleSelections)
+            ? item.bundleSelections.map((selection) => ({
+                name: selection?.productName || selection?.name || selection?.title || "Bundle item",
+                title: selection?.title,
+                slug: selection?.productSlug || selection?.slug,
+                type: selection?.productType || selection?.type,
+                size: selection?.size,
+                color: selection?.color,
+                quantity: selection?.quantity || 1,
+              }))
+            : undefined,
         })),
         totalValue: order.amount_egp || Math.round((order.amount_cents || 0) / 100),
         cod: false,

@@ -164,6 +164,7 @@ export type BostaShipmentItem = {
   selectedColor?: string;
   variant?: string;
   quantity?: number;
+  bundleSelections?: BostaShipmentItem[];
 };
 
 export type CreateBostaDeliveryInput = {
@@ -230,7 +231,7 @@ export type CreateBostaAwbResult = {
   error?: string;
 };
 
-function formatBostaShipmentItem(item: BostaShipmentItem) {
+function formatBostaShipmentSingleItem(item: BostaShipmentItem) {
   const quantity = Math.max(1, Number(item.quantity || 1));
   const name = String(item.name || item.title || item.slug || "Product").trim();
   const size = String(item.size || item.selectedSize || item.variantSize || "").trim();
@@ -245,6 +246,21 @@ function formatBostaShipmentItem(item: BostaShipmentItem) {
   ].filter(Boolean);
 
   return details.join(" - ");
+}
+
+function formatBostaShipmentItem(item: BostaShipmentItem) {
+  const selections = Array.isArray(item.bundleSelections)
+    ? item.bundleSelections.filter(Boolean)
+    : [];
+
+  if (!selections.length) return formatBostaShipmentSingleItem(item);
+
+  const bundleName = String(item.name || item.title || item.slug || "Bundle").trim();
+  const selectionDetails = selections
+    .map((selection, index) => `${index + 1}) ${formatBostaShipmentSingleItem(selection)}`)
+    .join("; ");
+
+  return `${bundleName}: ${selectionDetails}`;
 }
 
 export type BostaPickupLocationContact = {

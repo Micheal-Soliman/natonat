@@ -68,6 +68,32 @@ function getNestedString(value: unknown, key: string) {
   return "";
 }
 
+function getBostaBundleSelections(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const item = value as Record<string, unknown>;
+  const selections = item.bundleSelections || item.bundle_selections;
+  if (!Array.isArray(selections) || selections.length === 0) return undefined;
+
+  return selections
+    .filter((selection) => selection && typeof selection === "object" && !Array.isArray(selection))
+    .map((selection) => {
+      const selectionRecord = selection as Record<string, unknown>;
+      return {
+        name:
+          getNestedString(selectionRecord, "productName") ||
+          getNestedString(selectionRecord, "name") ||
+          getNestedString(selectionRecord, "title") ||
+          "Bundle item",
+        title: getNestedString(selectionRecord, "title"),
+        slug: getNestedString(selectionRecord, "productSlug") || getNestedString(selectionRecord, "slug"),
+        type: getNestedString(selectionRecord, "productType") || getNestedString(selectionRecord, "type"),
+        size: getNestedString(selectionRecord, "size"),
+        color: getNestedString(selectionRecord, "color"),
+        quantity: Number(selectionRecord.quantity || selectionRecord.qty || 1) || 1,
+      };
+    });
+}
+
 function getOrderEventKey(body: OrderLogBody, status: string) {
   const source = typeof body.source === "string" ? body.source : "manual";
   const payment = body.payment;
@@ -284,6 +310,7 @@ async function attachBostaShipmentIfNeeded(order: StoredOrder) {
       size: getNestedString(item, "size"),
       color: getNestedString(item, "color"),
       quantity: Number(item.quantity || item.qty || 1) || 1,
+      bundleSelections: getBostaBundleSelections(item),
     })),
     totalValue,
     cod: isCod,

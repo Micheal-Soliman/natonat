@@ -188,6 +188,25 @@ function getShipmentItems(orderData: LoggedOrder) {
       selectedColor: item.selectedColor,
       variant: item.variant,
       quantity: typeof item.quantity === "number" && item.quantity > 0 ? item.quantity : 1,
+      bundleSelections: Array.isArray(item.bundleSelections)
+        ? item.bundleSelections
+            .filter((selection) => selection && typeof selection === "object" && !Array.isArray(selection))
+            .map((selection) => {
+              const selectionRecord = selection as Record<string, unknown>;
+              return {
+                name:
+                  String(selectionRecord.productName || selectionRecord.name || selectionRecord.title || "Bundle item").trim(),
+                title: typeof selectionRecord.title === "string" ? selectionRecord.title : undefined,
+                slug: String(selectionRecord.productSlug || selectionRecord.slug || "").trim(),
+                type: String(selectionRecord.productType || selectionRecord.type || "").trim(),
+                size: String(selectionRecord.size || "").trim(),
+                color: String(selectionRecord.color || "").trim(),
+                quantity: typeof selectionRecord.quantity === "number" && selectionRecord.quantity > 0
+                  ? selectionRecord.quantity
+                  : 1,
+              };
+            })
+        : undefined,
     }))
     .filter((item) => item.name.trim().length > 0);
 }

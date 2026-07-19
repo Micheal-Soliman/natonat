@@ -475,7 +475,14 @@ export async function POST(req: Request) {
     body: JSON.stringify({
       orderRef,
       customer: order.customer,
-      items: [{ name: item.name, quantity }],
+      items: [{
+        name: item.name,
+        title: item.name,
+        slug: item.slug,
+        type: item.type,
+        size: item.size,
+        quantity,
+      }],
       totalValue: total,
       cod: isCod,
       codAmount: isCod ? toNumber(body.codAmount) || total : 0,

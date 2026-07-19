@@ -9,9 +9,12 @@ type LoggedOrder = {
   customer?: unknown;
   items?: Array<{
     name?: string;
+    productName?: string;
     title?: string;
     slug?: string;
+    productSlug?: string;
     type?: string;
+    productType?: string;
     size?: string;
     selectedSize?: string;
     variantSize?: string;
@@ -19,6 +22,7 @@ type LoggedOrder = {
     selectedColor?: string;
     variant?: string;
     quantity?: number;
+    bundleSelections?: LoggedOrder["items"];
   }>;
   amount_egp?: number;
   amount_cents?: number;
@@ -121,6 +125,17 @@ export async function GET(req: Request) {
           selectedColor: item.selectedColor,
           variant: item.variant,
           quantity: item.quantity || 1,
+          bundleSelections: Array.isArray(item.bundleSelections)
+            ? item.bundleSelections.map((selection) => ({
+                name: selection.productName || selection.name || selection.title || "Bundle item",
+                title: selection.title,
+                slug: selection.productSlug || selection.slug,
+                type: selection.productType || selection.type,
+                size: selection.size,
+                color: selection.color,
+                quantity: selection.quantity || 1,
+              }))
+            : undefined,
         })),
         totalValue: order.amount_egp || Math.round((order.amount_cents || 0) / 100),
         cod: false,
