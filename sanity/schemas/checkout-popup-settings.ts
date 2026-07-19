@@ -63,13 +63,13 @@ export const checkoutPopupSettings = defineType({
       name: "acceptLabel",
       title: "Accept button label",
       type: "string",
-      initialValue: "\u0623\u0648\u0627\u0641\u0642",
+      initialValue: "\u0634\u0648\u0641 PackOnat",
     }),
     defineField({
       name: "declineLabel",
       title: "Decline button label",
       type: "string",
-      initialValue: "\u0644\u0627 \u0623\u0631\u064a\u062f",
+      initialValue: "\u0643\u0645\u0644 \u062a\u0623\u0643\u064a\u062f \u0627\u0644\u0637\u0644\u0628",
     }),
   ],
   preview: {

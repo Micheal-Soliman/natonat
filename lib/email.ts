@@ -1,12 +1,41 @@
 import nodemailer from 'nodemailer';
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+function getEmailTransportConfig() {
+  const infoHost = process.env.INFO_EMAIL_SMTP_HOST;
+  const infoUser = process.env.INFO_EMAIL_USER;
+  const infoPass = process.env.INFO_EMAIL_PASS;
+
+  if (infoHost && infoUser && infoPass) {
+    const port = Number(process.env.INFO_EMAIL_SMTP_PORT || 465);
+    const secure = !["0", "false", "no", "off"].includes(
+      String(process.env.INFO_EMAIL_SMTP_SECURE || (port === 465 ? "true" : "false")).toLowerCase(),
+    );
+
+    return {
+      host: infoHost,
+      port,
+      secure,
+      auth: {
+        user: infoUser,
+        pass: infoPass,
+      },
+    };
+  }
+
+  return {
+    service: 'gmail',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  };
+}
+
+function getEmailFromAddress() {
+  return process.env.INFO_EMAIL_FROM || process.env.INFO_EMAIL_USER || process.env.EMAIL_USER;
+}
+
+const transporter = nodemailer.createTransport(getEmailTransportConfig());
 
 type OrderEmailItem = {
   line_id?: string;
@@ -197,7 +226,7 @@ export async function sendOrderEmail(orderData: OrderEmailData) {
   const totalsHtml = renderTotalsHtml(orderData);
 
   const mailOptions = {
-    from: process.env.EMAIL_USER,
+    from: getEmailFromAddress(),
     to: adminEmail,
     subject: `New Order: ${orderData.order_ref || 'N/A'}`,
     html: `
@@ -296,7 +325,7 @@ export async function sendInstapayApprovalEmail(orderData: OrderEmailData) {
       `;
 
   const mailOptions = {
-    from: process.env.EMAIL_USER,
+    from: getEmailFromAddress(),
     to: adminEmail,
     subject: `InstaPay approval needed: ${orderData.order_ref || "N/A"}`,
     html: `
@@ -362,7 +391,7 @@ export async function sendInstapayPendingCustomerEmail(orderData: OrderEmailData
   const totalsHtml = renderTotalsHtml(orderData);
 
   const mailOptions = {
-    from: process.env.EMAIL_USER,
+    from: getEmailFromAddress(),
     to: customerEmail,
     subject: `We received your InstaPay proof - ${orderData.order_ref || "N/A"}`,
     html: `
@@ -419,7 +448,7 @@ export async function sendCustomerConfirmationEmail(orderData: OrderEmailData) {
   const totalsHtml = renderTotalsHtml(orderData);
 
   const mailOptions = {
-    from: process.env.EMAIL_USER,
+    from: getEmailFromAddress(),
     to: customerEmail,
     subject: `Order Confirmation - ${orderData.order_ref || 'N/A'}`,
     html: `
@@ -492,7 +521,7 @@ export async function sendReviewNotificationEmail(reviewData: ReviewNotification
   const studioUrl = "https://www.natonat.com/studio";
 
   const mailOptions = {
-    from: process.env.EMAIL_USER,
+    from: getEmailFromAddress(),
     to: adminEmail,
     subject: `New review pending approval: ${reviewData.productName}`,
     html: `
@@ -544,7 +573,7 @@ export async function sendReferralRewardEmail(rewardData: ReferralRewardEmailDat
   const shopUrl = "https://www.natonat.com/shop";
 
   const mailOptions = {
-    from: process.env.EMAIL_USER,
+    from: getEmailFromAddress(),
     to: rewardData.to,
     subject: `Your natOnat referral reward is ready`,
     html: `

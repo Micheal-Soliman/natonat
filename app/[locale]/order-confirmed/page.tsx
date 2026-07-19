@@ -280,7 +280,24 @@ function OrderConfirmedContent() {
     }
   }, [cardUpsellStorageKey, shouldShowOfferFromUrl]);
 
-  const closeCardUpsell = () => {
+  const trackCheckoutPopupAction = (action: "accept" | "decline") => {
+    const payload = {
+      action,
+      order_ref: orderRef,
+      product_slug: checkoutPopupProduct?.slug,
+      product_name: checkoutPopupProduct?.name,
+      value: checkoutPopupPrice,
+      currency: "EGP",
+    };
+
+    window.gtag?.("event", "post_purchase_packonat_popup", payload);
+    window.fbq?.("trackCustom", "PostPurchasePackonatPopup", payload);
+    window.ttq?.track?.("ClickButton", payload);
+  };
+
+  const closeCardUpsell = (action: "accept" | "decline" = "decline") => {
+    trackCheckoutPopupAction(action);
+
     if (cardUpsellStorageKey) {
       try {
         window.sessionStorage.setItem(cardUpsellStorageKey, "1");
@@ -292,7 +309,7 @@ function OrderConfirmedContent() {
   };
 
   const goToUpsellProduct = () => {
-    closeCardUpsell();
+    closeCardUpsell("accept");
     router.push(checkoutPopupProduct?.slug ? `/product/${checkoutPopupProduct.slug}` : "/shop");
   };
 
