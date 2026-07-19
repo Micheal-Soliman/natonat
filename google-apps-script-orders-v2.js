@@ -154,6 +154,14 @@ function doGet(e) {
     return applyDateRepair(params);
   }
 
+  if (action === "preview_quantity_repair") {
+    return previewQuantityRepair(params);
+  }
+
+  if (action === "apply_quantity_repair") {
+    return applyQuantityRepair(params);
+  }
+
   if (!orderRef) {
     return jsonOutput({
       success: true,
@@ -333,6 +341,108 @@ function applyDateRepair(params) {
   }
 }
 
+function previewQuantityRepair(params) {
+  try {
+    const result = collectQuantityRepairCandidates(params, false);
+    return jsonOutput({
+      success: result.success,
+      sheet: result.sheet,
+      mode: "preview_only",
+      note: "No cells were changed. Review candidates before applying quantity repair.",
+      returned: result.candidates ? result.candidates.length : 0,
+      candidates: result.candidates || [],
+      error: result.error || undefined,
+    });
+  } catch (error) {
+    return jsonOutput({ success: false, error: error.toString() });
+  }
+}
+
+function applyQuantityRepair(params) {
+  try {
+    const tokenCheck = validateDateRepairToken(params);
+    if (!tokenCheck.success) return jsonOutput(tokenCheck);
+
+    if (params.confirm !== "YES") {
+      return jsonOutput({
+        success: false,
+        error: "Missing confirmation. Add confirm=YES to apply quantity repair.",
+        mode: "blocked",
+      });
+    }
+
+    const result = collectQuantityRepairCandidates(params, true);
+    return jsonOutput({
+      success: result.success,
+      sheet: result.sheet,
+      mode: "applied",
+      repaired: result.candidates ? result.candidates.length : 0,
+      changes: result.candidates || [],
+      error: result.error || undefined,
+    });
+  } catch (error) {
+    return jsonOutput({ success: false, error: error.toString() });
+  }
+}
+
+function collectQuantityRepairCandidates(params, applyChanges) {
+  const sheetName = params.sheet || SHEET_NAME;
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(sheetName);
+  if (!sheet) return { success: false, error: "Sheet not found", sheet: sheetName, candidates: [] };
+
+  ensureHeaders(sheet);
+
+  const values = sheet.getDataRange().getValues();
+  if (values.length <= 1) return { success: true, sheet: sheetName, candidates: [] };
+
+  const headers = values[0] || [];
+  const quantityColumns = ["Quantity", "quantity", "Qty", "Total Items Quantity"]
+    .map((header) => headers.indexOf(header))
+    .filter((index, position, indexes) => index >= 0 && indexes.indexOf(index) === position);
+
+  if (!quantityColumns.length) {
+    return { success: false, error: "No quantity columns found", sheet: sheetName, candidates: [] };
+  }
+
+  const rawPayloadIndex = headers.indexOf("Raw Payload");
+  const fullItemsIndex = headers.indexOf("Items (Full JSON)");
+  const orderRefIndex = headers.indexOf("Order Ref");
+  const limit = Math.max(1, Math.min(1000, Number(params.limit || 500)));
+  const candidates = [];
+
+  for (let rowIndex = 1; rowIndex < values.length && candidates.length < limit; rowIndex++) {
+    const row = values[rowIndex];
+    const items = getRowItemsForQuantityRepair(row, rawPayloadIndex, fullItemsIndex);
+    if (!items.length) continue;
+
+    const quantity = calculateItemsQuantity(items);
+    if (!quantity) continue;
+
+    const hasBadQuantity = quantityColumns.some((columnIndex) => Number(row[columnIndex]) !== quantity);
+    if (!hasBadQuantity) continue;
+
+    const change = {
+      row: rowIndex + 1,
+      order_ref: orderRefIndex >= 0 ? row[orderRefIndex] : "",
+      quantity,
+      current_values: quantityColumns.map((columnIndex) => ({
+        header: headers[columnIndex],
+        value: row[columnIndex],
+      })),
+    };
+    candidates.push(change);
+
+    if (applyChanges) {
+      quantityColumns.forEach((columnIndex) => {
+        sheet.getRange(rowIndex + 1, columnIndex + 1).setValue(quantity);
+      });
+    }
+  }
+
+  return { success: true, sheet: sheetName, candidates };
+}
+
 function isCodOrder(data) {
   const paymentMethod = String(data.payment_method || "").toLowerCase();
   const paymentStatus = String(data.payment_status || "").toLowerCase();
@@ -462,7 +572,10 @@ function buildOrderRowObject(data, existingRowObject) {
   const paymentDiscountPercent = valueOrEmpty(
     extras.payment_discount_percent || data.payment_discount_percent
   );
-  const totalItemsQuantity = items.reduce((sum, item) => sum + numberOrZero(item.quantity), 0);
+  const totalItemsQuantity = items.reduce(
+    (sum, item) => sum + Math.max(1, numberOrZero(item.quantity || item.qty || 1)),
+    0
+  );
   const itemsFlat = Array.isArray(data.items_flat) ? data.items_flat : buildFlatItems(items);
   const itemsSummary = items.map(formatProductDetails).join(" || ");
   const productsDetails = items
@@ -529,6 +642,9 @@ function buildOrderRowObject(data, existingRowObject) {
     "Locale": locale,
     "Items Count": items.length,
     "Total Items Quantity": totalItemsQuantity,
+    "Quantity": totalItemsQuantity,
+    "quantity": totalItemsQuantity,
+    "Qty": totalItemsQuantity,
     "Items Summary": itemsSummary,
     "Products Details": productsDetails,
     "Bundles Details": bundlesDetails,
@@ -863,6 +979,38 @@ function parseJsonObject(value) {
   } catch (error) {
     return {};
   }
+}
+
+function parseJsonArray(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  if (typeof value !== "string") return [];
+
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function getRowItemsForQuantityRepair(row, rawPayloadIndex, fullItemsIndex) {
+  const rawPayload = rawPayloadIndex >= 0 ? parseJsonObject(row[rawPayloadIndex]) : {};
+  if (Array.isArray(rawPayload.items)) return rawPayload.items;
+
+  if (fullItemsIndex >= 0) {
+    const parsedItems = parseJsonArray(row[fullItemsIndex]);
+    if (parsedItems.length) return parsedItems;
+  }
+
+  return [];
+}
+
+function calculateItemsQuantity(items) {
+  return items.reduce((sum, item) => {
+    if (!item || typeof item !== "object") return sum;
+    return sum + Math.max(1, numberOrZero(item.quantity || item.qty || 1));
+  }, 0);
 }
 
 function parseDateFromOrderReference(value) {
