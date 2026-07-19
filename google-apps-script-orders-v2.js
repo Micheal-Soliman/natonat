@@ -17,7 +17,11 @@ const COD_SHEET_NAME = "cod_orders";
 
 const HEADERS = [
   "Timestamp",
+  "Updated At",
   "Source",
+  "Last Update Source",
+  "Update Count",
+  "Update Sources",
   "Order Ref",
   "Special Reference (Paymob)",
   "Intention Order ID",
@@ -160,6 +164,14 @@ function doGet(e) {
 
   if (action === "apply_quantity_repair") {
     return applyQuantityRepair(params);
+  }
+
+  if (action === "preview_duplicate_repair") {
+    return previewDuplicateRepair(params);
+  }
+
+  if (action === "apply_duplicate_repair") {
+    return applyDuplicateRepair(params);
   }
 
   if (!orderRef) {
@@ -385,6 +397,116 @@ function applyQuantityRepair(params) {
   }
 }
 
+function previewDuplicateRepair(params) {
+  try {
+    const result = collectDuplicateRepairCandidates(params, false);
+    return jsonOutput({
+      success: result.success,
+      sheet: result.sheet,
+      mode: "preview_only",
+      note: "No rows were changed. Review duplicate order refs before applying duplicate repair.",
+      returned: result.candidates ? result.candidates.length : 0,
+      candidates: result.candidates || [],
+      error: result.error || undefined,
+    });
+  } catch (error) {
+    return jsonOutput({ success: false, error: error.toString() });
+  }
+}
+
+function applyDuplicateRepair(params) {
+  try {
+    const tokenCheck = validateDateRepairToken(params);
+    if (!tokenCheck.success) return jsonOutput(tokenCheck);
+
+    if (params.confirm !== "YES") {
+      return jsonOutput({
+        success: false,
+        error: "Missing confirmation. Add confirm=YES to apply duplicate repair.",
+        mode: "blocked",
+      });
+    }
+
+    const result = collectDuplicateRepairCandidates(params, true);
+    return jsonOutput({
+      success: result.success,
+      sheet: result.sheet,
+      mode: "applied",
+      repaired: result.candidates ? result.candidates.length : 0,
+      deleted_rows: result.deletedRows || 0,
+      changes: result.candidates || [],
+      error: result.error || undefined,
+    });
+  } catch (error) {
+    return jsonOutput({ success: false, error: error.toString() });
+  }
+}
+
+function collectDuplicateRepairCandidates(params, applyChanges) {
+  const sheetName = params.sheet || SHEET_NAME;
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(sheetName);
+  if (!sheet) return { success: false, error: "Sheet not found", sheet: sheetName, candidates: [] };
+
+  ensureHeaders(sheet);
+
+  const values = sheet.getDataRange().getValues();
+  if (values.length <= 1) return { success: true, sheet: sheetName, candidates: [], deletedRows: 0 };
+
+  const headers = values[0] || [];
+  const orderRefIndex = headers.indexOf("Order Ref");
+  if (orderRefIndex === -1) {
+    return { success: false, error: "Order Ref column not found", sheet: sheetName, candidates: [] };
+  }
+
+  const groups = {};
+  for (let rowIndex = 1; rowIndex < values.length; rowIndex++) {
+    const orderRef = String(values[rowIndex][orderRefIndex] || "").trim();
+    if (!orderRef) continue;
+    if (!groups[orderRef]) groups[orderRef] = [];
+    groups[orderRef].push({ rowNumber: rowIndex + 1, row: values[rowIndex] });
+  }
+
+  const limit = Math.max(1, Math.min(1000, Number(params.limit || 500)));
+  const candidates = Object.keys(groups)
+    .filter((orderRef) => groups[orderRef].length > 1)
+    .slice(0, limit)
+    .map((orderRef) => {
+      const rows = groups[orderRef];
+      return {
+        order_ref: orderRef,
+        keep_row: rows[0].rowNumber,
+        duplicate_rows: rows.slice(1).map((entry) => entry.rowNumber),
+        row_count: rows.length,
+        sources: rows
+          .map((entry) => rowToObject(headers, entry.row)["Source"])
+          .map((value) => String(value || "").trim())
+          .filter(Boolean),
+      };
+    });
+
+  let deletedRows = 0;
+  if (applyChanges) {
+    const allRowsToDelete = [];
+    candidates.forEach((candidate) => {
+      const rows = groups[candidate.order_ref];
+      const mergedObject = mergeExistingRowObjects(headers, rows.map((entry) => entry.row));
+      const row = headers.map((header) => valueForCell(mergedObject[header]));
+      sheet.getRange(candidate.keep_row, 1, 1, row.length).setValues([row]);
+      candidate.duplicate_rows.forEach((rowNumber) => allRowsToDelete.push(rowNumber));
+    });
+
+    allRowsToDelete
+      .sort((a, b) => b - a)
+      .forEach((rowNumber) => {
+        sheet.deleteRow(rowNumber);
+        deletedRows += 1;
+      });
+  }
+
+  return { success: true, sheet: sheetName, candidates, deletedRows };
+}
+
 function collectQuantityRepairCandidates(params, applyChanges) {
   const sheetName = params.sheet || SHEET_NAME;
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -397,9 +519,7 @@ function collectQuantityRepairCandidates(params, applyChanges) {
   if (values.length <= 1) return { success: true, sheet: sheetName, candidates: [] };
 
   const headers = values[0] || [];
-  const quantityColumns = ["Quantity", "quantity", "Qty", "Total Items Quantity"]
-    .map((header) => headers.indexOf(header))
-    .filter((index, position, indexes) => index >= 0 && indexes.indexOf(index) === position);
+  const quantityColumns = getQuantityColumnIndexes(headers);
 
   if (!quantityColumns.length) {
     return { success: false, error: "No quantity columns found", sheet: sheetName, candidates: [] };
@@ -443,6 +563,27 @@ function collectQuantityRepairCandidates(params, applyChanges) {
   return { success: true, sheet: sheetName, candidates };
 }
 
+function getQuantityColumnIndexes(headers) {
+  const exactQuantityHeaders = [
+    "Total Items Quantity",
+    "Quantity",
+    "quantity",
+    "Qty",
+  ];
+
+  return headers
+    .map((header, index) => {
+      const normalized = String(header || "").trim().toLowerCase();
+      const isExact = exactQuantityHeaders.some(
+        (candidate) => candidate.toLowerCase() === normalized
+      );
+      const isLegacyQuantity = normalized === "items quantity" || normalized === "total quantity";
+      return isExact || isLegacyQuantity ? index : -1;
+    })
+    .filter((index) => index >= 0)
+    .filter((index, position, indexes) => indexes.indexOf(index) === position);
+}
+
 function isCodOrder(data) {
   const paymentMethod = String(data.payment_method || "").toLowerCase();
   const paymentStatus = String(data.payment_status || "").toLowerCase();
@@ -459,17 +600,25 @@ function upsertOrderRow(ss, sheetName, data) {
 
   ensureHeaders(sheet);
 
-  const orderRef = data.order_ref || data.special_reference || data.paymob?.special_reference || "";
-  const existingRow = findOrderRow(sheet, data);
+  const orderRef = extractOrderRef(data);
+  if (orderRef && !data.order_ref) data.order_ref = orderRef;
+  const existingRows = findOrderRows(sheet, data);
+  const existingRow = existingRows.length ? existingRows[0] : null;
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   const existingRowObject = existingRow
-    ? rowToObject(headers, sheet.getRange(existingRow, 1, 1, headers.length).getValues()[0])
+    ? mergeExistingRowObjects(
+        headers,
+        existingRows.map((rowNumber) => sheet.getRange(rowNumber, 1, 1, headers.length).getValues()[0])
+      )
     : {};
   const rowObject = buildOrderRowObject(data, existingRowObject);
   const row = headers.map((header) => valueForCell(rowObject[header]));
 
   if (existingRow) {
     sheet.getRange(existingRow, 1, 1, row.length).setValues([row]);
+    for (let index = existingRows.length - 1; index >= 1; index--) {
+      sheet.deleteRow(existingRows[index]);
+    }
     return { sheet: sheetName, updated: true, row: existingRow, order_ref: orderRef };
   }
 
@@ -535,16 +684,19 @@ function formatHeaders(sheet, startColumn, count) {
 
 function buildOrderRowObject(data, existingRowObject) {
   const now = new Date();
+  const nowIso = now.toISOString();
   const timestamp = firstNonEmpty(
+    existingRowObject && existingRowObject["Timestamp"],
     data.created_at,
     data.createdAt,
     data["Created At"],
-    existingRowObject && existingRowObject["Timestamp"],
     data.Timestamp,
-    now.toISOString()
+    nowIso
   );
   const source = data.source || "";
-  const orderRef = data.order_ref || "";
+  const orderRef = extractOrderRef(data);
+  const updateSources = mergeUpdateSources(existingRowObject && existingRowObject["Update Sources"], source);
+  const updateCount = Math.max(1, numberOrZero(existingRowObject && existingRowObject["Update Count"]) + 1);
   const status = data.status || "";
   const paymentStatus = data.payment_status || (status === "created" ? "Pending" : status);
   const amountEgp = numberOrZero(data.amount_egp);
@@ -612,7 +764,11 @@ function buildOrderRowObject(data, existingRowObject) {
 
   return {
     "Timestamp": timestamp,
+    "Updated At": data.updated_at || data.updatedAt || nowIso,
     "Source": source,
+    "Last Update Source": source,
+    "Update Count": updateCount,
+    "Update Sources": updateSources.join(" | "),
     "Order Ref": orderRef,
     "Special Reference (Paymob)": paymob.special_reference || data.special_reference || "",
     "Intention Order ID": paymob.intention_order_id || "",
@@ -784,15 +940,95 @@ function formatFlatItemDetails(row) {
   ].filter(Boolean).join(" | ");
 }
 
+function extractOrderRef(data) {
+  if (!data || typeof data !== "object") return "";
+
+  const paymob = data.paymob || {};
+  const payment = data.payment || {};
+  return firstNonEmpty(
+    data.order_ref,
+    data.orderRef,
+    data["Order Ref"],
+    data.special_reference,
+    data["Special Reference (Paymob)"],
+    paymob.special_reference,
+    paymob.intention_order_id,
+    payment.transaction_id,
+    data["Intention Order ID"],
+    data["Paymob Reference"],
+    ""
+  );
+}
+
+function mergeUpdateSources(existingSources, nextSource) {
+  const sources = String(`${existingSources || ""}|${nextSource || ""}`)
+    .split("|")
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  return sources.filter((source, index) => sources.indexOf(source) === index);
+}
+
+function mergeExistingRowObjects(headers, rows) {
+  return rows.reduce((merged, row, index) => {
+    const rowObject = rowToObject(headers, row);
+
+    headers.forEach((header) => {
+      const value = rowObject[header];
+      if (header === "Timestamp") {
+        if (!merged[header] || isEarlierTimestamp(value, merged[header])) {
+          merged[header] = value;
+        }
+        return;
+      }
+
+      if (header === "Update Count") {
+        merged[header] = Math.max(numberOrZero(merged[header]), numberOrZero(value));
+        return;
+      }
+
+      if (header === "Update Sources") {
+        mergeUpdateSources(merged[header], value).forEach((source) => {
+          merged[header] = mergeUpdateSources(merged[header], source).join(" | ");
+        });
+        return;
+      }
+
+      if (value !== "" && value !== null && value !== undefined) {
+        merged[header] = value;
+      } else if (index === 0 && merged[header] === undefined) {
+        merged[header] = "";
+      }
+    });
+
+    return merged;
+  }, {});
+}
+
+function isEarlierTimestamp(candidate, current) {
+  const candidateDate = new Date(candidate);
+  const currentDate = new Date(current);
+  if (isNaN(candidateDate.getTime())) return false;
+  if (isNaN(currentDate.getTime())) return true;
+  return candidateDate.getTime() < currentDate.getTime();
+}
+
 function findOrderRow(sheet, dataOrOrderRef) {
+  const rows = findOrderRows(sheet, dataOrOrderRef);
+  return rows.length ? rows[0] : null;
+}
+
+function findOrderRows(sheet, dataOrOrderRef) {
   const lastRow = sheet.getLastRow();
-  if (lastRow < 2) return null;
+  if (lastRow < 2) return [];
 
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   const values = sheet.getRange(2, 1, lastRow - 1, headers.length).getValues();
   const data = typeof dataOrOrderRef === "object" && dataOrOrderRef ? dataOrOrderRef : { order_ref: dataOrOrderRef };
   const identities = [
+    extractOrderRef(data),
     data.order_ref,
+    data.orderRef,
     data.special_reference,
     data.paymob && data.paymob.special_reference,
     data.paymob && data.paymob.intention_order_id,
@@ -803,8 +1039,9 @@ function findOrderRow(sheet, dataOrOrderRef) {
     data["Paymob Reference"],
   ].map((value) => String(value || "").trim()).filter(Boolean);
 
-  if (!identities.length) return null;
+  if (!identities.length) return [];
 
+  const matchedRows = [];
   for (let i = values.length - 1; i >= 0; i--) {
     const rowObject = rowToObject(headers, values[i]);
     const rowIdentities = [
@@ -815,11 +1052,11 @@ function findOrderRow(sheet, dataOrOrderRef) {
     ].map((value) => String(value || "").trim()).filter(Boolean);
 
     if (rowIdentities.some((value) => identities.indexOf(value) !== -1)) {
-      return i + 2;
+      matchedRows.push(i + 2);
     }
   }
 
-  return null;
+  return matchedRows.sort((a, b) => a - b);
 }
 
 function rowToObject(headers, row) {

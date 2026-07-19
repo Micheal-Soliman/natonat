@@ -2981,6 +2981,9 @@ export default function AdminDashboardPage() {
       ["orders_count", String(stats.totalOrders)],
       ["pickup_orders", String(stats.pickupOrders)],
       ["delivery_orders", String(stats.deliveryOrders)],
+      ["total_sold_pieces_before_returns", String(stats.soldPieces)],
+      ["returned_cancelled_pieces", String(stats.returnedPieces)],
+      ["delivered_sold_pieces", String(stats.deliveredPieces)],
       ["retail_pieces_after_returns_excluding_special_bulk", String(stats.totalPieces)],
       ["special_bulk_pieces_after_returns", String(stats.customPieces)],
       ["all_pieces_after_returns", String(stats.allPieces)],
@@ -3285,6 +3288,12 @@ export default function AdminDashboardPage() {
     const shippedNotDeliveredOrders = filteredMetricOrders.filter((order) => isInTransit(order) && !isDelivered(order) && !isReturned(order));
     const totalPieces = revenueOrders.reduce((sum, order) => sum + getOrderRecordedPieces(order), 0);
     const customPieces = customOrders.reduce((sum, order) => sum + getOrderCustomPieces(order), 0);
+    const getTotalOrderPieces = (order: AdminOrder) => getOrderRecordedPieces(order) + getOrderCustomPieces(order);
+    const soldPieces = confirmedOrders.reduce((sum, order) => sum + getTotalOrderPieces(order), 0);
+    const returnedPieces = returnedOrders.reduce((sum, order) => sum + getTotalOrderPieces(order), 0);
+    const deliveredPieces = confirmedOrders
+      .filter((order) => isDelivered(order) && !isReturned(order))
+      .reduce((sum, order) => sum + getTotalOrderPieces(order), 0);
     const awaitingPaymentOrders = filteredMetricOrders.filter((order) => !isConfirmed(order) && !isReturned(order));
     const paidOnlineOrders = revenueOrders.filter((order) => ["card", "instapay"].includes(getPaymentBucket(order)));
     const codRevenueOrders = revenueOrders.filter((order) => getPaymentBucket(order) === "cod");
@@ -3332,6 +3341,9 @@ export default function AdminDashboardPage() {
       totalPieces,
       customPieces,
       allPieces: totalPieces + customPieces,
+      soldPieces,
+      returnedPieces,
+      deliveredPieces,
       awaitingPaymentOrders: awaitingPaymentOrders.length,
       averageOrderValue: revenueOrders.length ? collectedRevenue / revenueOrders.length : 0,
       paidOnlineOrders: paidOnlineOrders.length,
@@ -4585,6 +4597,23 @@ export default function AdminDashboardPage() {
               <p className="text-xs font-bold text-white/55">Confirmed non-returned orders only. This is the source of truth for pieces.</p>
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl bg-[#EEBC3F] p-4 text-[#0F1A26]">
+                <p className="text-xs font-black uppercase tracking-[0.14em] text-[#0F1A26]/55">Total sold pieces</p>
+                <p className="mt-2 text-3xl font-black">{stats.soldPieces}</p>
+                <p className="mt-1 text-xs font-bold text-[#0F1A26]/55">All confirmed pieces before return deduction.</p>
+              </div>
+              <div className="rounded-2xl bg-rose-500 p-4 text-white">
+                <p className="text-xs font-black uppercase tracking-[0.14em] text-white/65">Returned pieces</p>
+                <p className="mt-2 text-3xl font-black">{stats.returnedPieces}</p>
+                <p className="mt-1 text-xs font-bold text-white/65">Pieces inside returned or cancelled confirmed orders.</p>
+              </div>
+              <div className="rounded-2xl bg-emerald-500 p-4 text-white">
+                <p className="text-xs font-black uppercase tracking-[0.14em] text-white/65">Delivered pieces</p>
+                <p className="mt-2 text-3xl font-black">{stats.deliveredPieces}</p>
+                <p className="mt-1 text-xs font-bold text-white/65">Confirmed, non-returned pieces marked delivered by courier/status.</p>
+              </div>
+            </div>
+            <div className="mt-3 grid gap-3 sm:grid-cols-3">
               <div className="rounded-2xl bg-white/10 p-4">
                 <p className="text-xs font-black uppercase tracking-[0.14em] text-white/45">Retail/catalog pieces</p>
                 <p className="mt-2 text-3xl font-black">{stats.totalPieces}</p>
