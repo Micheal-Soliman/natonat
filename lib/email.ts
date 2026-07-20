@@ -1,9 +1,10 @@
 import nodemailer from 'nodemailer';
 
-function getEmailTransportConfig() {
+function getEmailTransportConfigs() {
   const infoHost = process.env.INFO_EMAIL_SMTP_HOST;
   const infoUser = process.env.INFO_EMAIL_USER;
   const infoPass = process.env.INFO_EMAIL_PASS;
+  const configs = [];
 
   if (infoHost && infoUser && infoPass) {
     const port = Number(process.env.INFO_EMAIL_SMTP_PORT || 465);
@@ -11,7 +12,10 @@ function getEmailTransportConfig() {
       String(process.env.INFO_EMAIL_SMTP_SECURE || (port === 465 ? "true" : "false")).toLowerCase(),
     );
 
-    return {
+    configs.push({
+      name: "info",
+      from: process.env.INFO_EMAIL_FROM || infoUser,
+      transport: {
       host: infoHost,
       port,
       secure,
@@ -19,23 +23,71 @@ function getEmailTransportConfig() {
         user: infoUser,
         pass: infoPass,
       },
-    };
+      },
+    });
   }
 
-  return {
-    service: 'gmail',
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  };
+  if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+    configs.push({
+      name: "gmail",
+      from: process.env.EMAIL_USER,
+      transport: {
+        service: 'gmail',
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS,
+        },
+      },
+    });
+  }
+
+  return configs;
 }
 
 function getEmailFromAddress() {
   return process.env.INFO_EMAIL_FROM || process.env.INFO_EMAIL_USER || process.env.EMAIL_USER;
 }
 
-const transporter = nodemailer.createTransport(getEmailTransportConfig());
+async function sendMailWithFallback(mailOptions: Record<string, unknown>) {
+  const configs = getEmailTransportConfigs();
+
+  if (!configs.length) {
+    return { success: false, error: "Email SMTP is not configured" };
+  }
+
+  let lastError: unknown = null;
+
+  for (const config of configs) {
+    const transporter = nodemailer.createTransport(config.transport);
+
+    try {
+      const info = await transporter.sendMail({
+        ...mailOptions,
+        from: config.from || getEmailFromAddress(),
+      });
+
+      if (config.name !== "info") {
+        console.warn("Email sent using fallback SMTP", {
+          provider: config.name,
+          to: mailOptions.to,
+          subject: mailOptions.subject,
+        });
+      }
+
+      return { success: true, messageId: info.messageId, provider: config.name };
+    } catch (error) {
+      lastError = error;
+      console.error("Email SMTP send failed", {
+        provider: config.name,
+        to: mailOptions.to,
+        subject: mailOptions.subject,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  return { success: false, error: lastError || "Email delivery failed" };
+}
 
 type OrderEmailItem = {
   line_id?: string;
@@ -274,14 +326,11 @@ export async function sendOrderEmail(orderData: OrderEmailData) {
     `,
   };
 
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Order email sent: %s', info.messageId);
-    return { success: true, messageId: info.messageId };
-  } catch (error) {
-    console.error('Error sending order email:', error);
-    return { success: false, error };
+  const result = await sendMailWithFallback(mailOptions);
+  if (result.success) {
+    console.log('Order email sent: %s', result.messageId);
   }
+  return result;
 }
 
 function getDataUrlAttachment(proof: OrderEmailData["instapay_proof"]) {
@@ -371,14 +420,11 @@ export async function sendInstapayApprovalEmail(orderData: OrderEmailData) {
     attachments: proofAttachment ? [proofAttachment] : [],
   };
 
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log("InstaPay approval email sent: %s", info.messageId);
-    return { success: true, messageId: info.messageId };
-  } catch (error) {
-    console.error("Error sending InstaPay approval email:", error);
-    return { success: false, error };
+  const result = await sendMailWithFallback(mailOptions);
+  if (result.success) {
+    console.log("InstaPay approval email sent: %s", result.messageId);
   }
+  return result;
 }
 
 export async function sendInstapayPendingCustomerEmail(orderData: OrderEmailData) {
@@ -429,14 +475,11 @@ export async function sendInstapayPendingCustomerEmail(orderData: OrderEmailData
     `,
   };
 
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log("InstaPay pending customer email sent: %s", info.messageId);
-    return { success: true, messageId: info.messageId };
-  } catch (error) {
-    console.error("Error sending InstaPay pending customer email:", error);
-    return { success: false, error };
+  const result = await sendMailWithFallback(mailOptions);
+  if (result.success) {
+    console.log("InstaPay pending customer email sent: %s", result.messageId);
   }
+  return result;
 }
 
 export async function sendCustomerConfirmationEmail(orderData: OrderEmailData) {
@@ -497,14 +540,11 @@ export async function sendCustomerConfirmationEmail(orderData: OrderEmailData) {
     `,
   };
 
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Customer confirmation email sent: %s', info.messageId);
-    return { success: true, messageId: info.messageId };
-  } catch (error) {
-    console.error('Error sending customer confirmation email:', error);
-    return { success: false, error };
+  const result = await sendMailWithFallback(mailOptions);
+  if (result.success) {
+    console.log('Customer confirmation email sent: %s', result.messageId);
   }
+  return result;
 }
 
 type ReviewNotificationData = {
@@ -545,14 +585,11 @@ export async function sendReviewNotificationEmail(reviewData: ReviewNotification
     `,
   };
 
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log("Review notification email sent: %s", info.messageId);
-    return { success: true, messageId: info.messageId };
-  } catch (error) {
-    console.error("Error sending review notification email:", error);
-    return { success: false, error };
+  const result = await sendMailWithFallback(mailOptions);
+  if (result.success) {
+    console.log("Review notification email sent: %s", result.messageId);
   }
+  return result;
 }
 
 type ReferralRewardEmailData = {
@@ -600,12 +637,9 @@ export async function sendReferralRewardEmail(rewardData: ReferralRewardEmailDat
     `,
   };
 
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log("Referral reward email sent: %s", info.messageId);
-    return { success: true, messageId: info.messageId };
-  } catch (error) {
-    console.error("Error sending referral reward email:", error);
-    return { success: false, error };
+  const result = await sendMailWithFallback(mailOptions);
+  if (result.success) {
+    console.log("Referral reward email sent: %s", result.messageId);
   }
+  return result;
 }
