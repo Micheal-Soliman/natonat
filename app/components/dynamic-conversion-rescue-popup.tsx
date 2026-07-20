@@ -214,6 +214,8 @@ export function DynamicConversionRescuePopup() {
   const closePopup = useCallback(() => {
     if (!settings || !storageKey) {
       setIsOpen(false);
+      setCopied(false);
+      setIsClaiming(false);
       return;
     }
 
@@ -221,8 +223,18 @@ export function DynamicConversionRescuePopup() {
     const dismissUntil = Date.now() + dismissDays * 24 * 60 * 60 * 1000;
     setStoredValue(`${storagePrefix}:${storageKey}:dismissUntil`, String(dismissUntil));
     setIsOpen(false);
+    setCopied(false);
     setIsClaiming(false);
   }, [settings, storageKey]);
+
+  const handleClosePopup = useCallback(
+    (event?: React.MouseEvent<HTMLElement> | React.PointerEvent<HTMLElement>) => {
+      event?.preventDefault();
+      event?.stopPropagation();
+      closePopup();
+    },
+    [closePopup],
+  );
 
   const saveCode = async () => {
     if (!settings || !offerCode) return;
@@ -264,12 +276,12 @@ export function DynamicConversionRescuePopup() {
         type="button"
         aria-label="Close discount popup"
         className="absolute inset-0 bg-[#0F1A26]/55 backdrop-blur-md"
-        onClick={closePopup}
+        onClick={handleClosePopup}
       />
 
       <section
         dir="auto"
-        className="relative w-full max-w-[430px] overflow-hidden rounded-[30px] border border-[#EEBC3F]/35 bg-[#F8F2EA] p-2 text-center shadow-2xl shadow-black/25"
+        className="relative z-10 w-full max-w-[430px] overflow-hidden rounded-[30px] border border-[#EEBC3F]/35 bg-[#F8F2EA] p-2 text-center shadow-2xl shadow-black/25"
       >
         <div className="relative overflow-hidden rounded-[24px] border border-white/80 bg-white px-5 pb-6 pt-7 sm:px-7 sm:pb-8 sm:pt-8">
           <div className="pointer-events-none absolute inset-x-8 top-0 h-1 rounded-b-full bg-[#EEBC3F]" />
@@ -277,8 +289,8 @@ export function DynamicConversionRescuePopup() {
         <button
           type="button"
           aria-label="Close discount popup"
-          onClick={closePopup}
-          className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full border border-[#0F1A26]/10 bg-[#F1EBE3] text-[#0F1A26] shadow-sm transition hover:bg-[#EEBC3F]"
+          onClick={handleClosePopup}
+          className="absolute right-4 top-4 z-20 flex h-9 w-9 items-center justify-center rounded-full border border-[#0F1A26]/10 bg-[#F1EBE3] text-[#0F1A26] shadow-sm transition hover:bg-[#EEBC3F]"
         >
           <X className="h-4 w-4" />
         </button>
@@ -336,15 +348,6 @@ export function DynamicConversionRescuePopup() {
           </button>
         ) : null}
 
-        {settings.declineLabel ? (
-          <button
-            type="button"
-            onClick={closePopup}
-            className="mt-3 text-sm font-bold text-[#0F1A26]/55 underline-offset-4 hover:text-[#0F1A26] hover:underline"
-          >
-            {settings.declineLabel}
-          </button>
-        ) : null}
         </div>
       </section>
     </div>
