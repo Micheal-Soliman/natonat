@@ -8,7 +8,7 @@ export const revalidate = 0;
 const RESCUE_CODE_COOKIE = "natonat_rescue_code";
 
 export async function POST() {
-  const settings = await getSiteSettings();
+  const settings = await getSiteSettings("fresh");
   const rescue = settings.conversionRescue;
 
   if (!rescue.enabled || rescue.discountPercent <= 0) {

@@ -230,15 +230,15 @@ const fallbackConversionRescue: ConversionRescueSettings = {
   discountPercent: 5,
   codePrefix: "NAT",
   codeValidityHours: 24,
-  discountLabel: "",
-  eyebrow: "",
-  title: "",
-  description: "",
-  ctaLabel: "",
-  copyLabel: "",
-  copiedLabel: "",
-  declineLabel: "",
-  targetPath: "/shop",
+  discountLabel: "5% OFF",
+  eyebrow: "استنى",
+  title: "خد خصم لو كملت الأوردر دلوقتي",
+  description: "استخدم الكود قبل الدفع، والخصم هيتطبق في checkout.",
+  ctaLabel: "كمل الأوردر بالخصم",
+  copyLabel: "انسخ الكود",
+  copiedLabel: "اتنسخ",
+  declineLabel: "لا أريد",
+  targetPath: "/checkout",
 };
 
 const fallbackCheckoutPopup: CheckoutPopupSettings = {
@@ -264,6 +264,17 @@ function normalizePercent(value: unknown, fallback: number) {
   return Number.isFinite(numericValue)
     ? Math.max(0, Math.min(90, numericValue))
     : fallback;
+}
+
+function cleanSettingText(value: unknown, fallback: string) {
+  if (typeof value !== "string") return fallback;
+  const trimmed = value.trim();
+  if (!trimmed) return fallback;
+
+  // Some old Sanity initial values were saved with broken UTF-8 mojibake.
+  if (/[ØÙ]/.test(trimmed)) return fallback;
+
+  return trimmed;
 }
 
 function mergePaymentDiscounts(
@@ -371,6 +382,12 @@ function mergeConversionRescue(
     1,
     Math.min(60, Number(conversionRescue?.dismissDays) || fallbackConversionRescue.dismissDays),
   );
+  const discountPercent = normalizePercent(
+    conversionRescue?.discountPercent,
+    fallbackConversionRescue.discountPercent,
+  );
+  const rawTargetPath = conversionRescue?.targetPath?.trim() || fallbackConversionRescue.targetPath;
+  const targetPath = rawTargetPath === "/shop" ? fallbackConversionRescue.targetPath : rawTargetPath;
 
   return {
     ...fallbackConversionRescue,
@@ -380,17 +397,22 @@ function mergeConversionRescue(
     ),
     delaySeconds,
     dismissDays,
-    discountPercent: normalizePercent(
-      conversionRescue?.discountPercent,
-      fallbackConversionRescue.discountPercent,
-    ),
+    discountPercent,
     codePrefix: conversionRescue?.codePrefix?.trim().toUpperCase() || fallbackConversionRescue.codePrefix,
     codeValidityHours: Math.max(
       1,
       Math.min(168, Number(conversionRescue?.codeValidityHours) || fallbackConversionRescue.codeValidityHours),
     ),
+    discountLabel: cleanSettingText(conversionRescue?.discountLabel, `${discountPercent}% OFF`),
+    eyebrow: cleanSettingText(conversionRescue?.eyebrow, fallbackConversionRescue.eyebrow),
+    title: cleanSettingText(conversionRescue?.title, fallbackConversionRescue.title),
+    description: cleanSettingText(conversionRescue?.description, fallbackConversionRescue.description),
+    ctaLabel: cleanSettingText(conversionRescue?.ctaLabel, fallbackConversionRescue.ctaLabel),
+    copyLabel: cleanSettingText(conversionRescue?.copyLabel, fallbackConversionRescue.copyLabel),
+    copiedLabel: cleanSettingText(conversionRescue?.copiedLabel, fallbackConversionRescue.copiedLabel),
+    declineLabel: cleanSettingText(conversionRescue?.declineLabel, fallbackConversionRescue.declineLabel),
     discountCode: "",
-    targetPath: conversionRescue?.targetPath?.trim() || fallbackConversionRescue.targetPath,
+    targetPath,
   };
 }
 
@@ -454,12 +476,19 @@ function mergeCheckoutPopup(
   };
 }
 
-export async function getSiteSettings(): Promise<SiteSettings> {
+type SiteSettingsFetchMode = "cached" | "fresh";
+
+export async function getSiteSettings(fetchMode: SiteSettingsFetchMode = "cached"): Promise<SiteSettings> {
   try {
+    const fetchOptions =
+      fetchMode === "fresh"
+        ? { cache: "no-store" as const }
+        : { next: { revalidate: 60, tags: ["site-settings", "products"] } };
+
     const settings = await sanityClient.fetch<SiteSettingsQueryResult | null>(
       siteSettingsQuery,
       {},
-      { next: { revalidate: 60, tags: ["site-settings", "products"] } },
+      fetchOptions,
     );
 
     return {

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
-import { Copy, ShoppingBag, X } from "lucide-react";
+import { Copy, Loader2, ShoppingBag, X } from "lucide-react";
 
 type ConversionRescueSettings = {
   _updatedAt?: string;
@@ -112,6 +112,7 @@ export function DynamicConversionRescuePopup() {
   const [offerLabel, setOfferLabel] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isClaiming, setIsClaiming] = useState(false);
 
   const shouldRunOnPath = useMemo(() => {
     if (!pathname) return false;
@@ -131,11 +132,23 @@ export function DynamicConversionRescuePopup() {
 
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
 
-    fetch("/api/site-settings", { cache: "no-store" })
+    fetch("/api/site-settings", { cache: "no-store", signal: controller.signal })
       .then((res) => (res.ok ? res.json() : null))
       .then((data: SiteSettingsResponse | null) => {
-        if (!cancelled) setSettings(data?.conversionRescue || null);
+        if (cancelled) return;
+
+        const nextSettings = data?.conversionRescue || null;
+        setSettings(nextSettings);
+
+        if (!isReady(nextSettings)) {
+          setIsOpen(false);
+          setOfferCode("");
+          setOfferLabel("");
+          setCopied(false);
+          setIsClaiming(false);
+        }
       })
       .catch(() => {
         if (!cancelled) setSettings(null);
@@ -143,8 +156,9 @@ export function DynamicConversionRescuePopup() {
 
     return () => {
       cancelled = true;
+      controller.abort();
     };
-  }, []);
+  }, [pathname]);
 
   const openPopup = useCallback(async () => {
     if (!settings || !isReady(settings) || !shouldRunOnPath || !storageKey) return;
@@ -172,6 +186,7 @@ export function DynamicConversionRescuePopup() {
     setOfferCode(nextCode);
     setOfferLabel(nextLabel);
     setCopied(false);
+    setIsClaiming(false);
 
     window.gtag?.("event", "discount_rescue_popup_show", {
       offer_code: nextCode,
@@ -206,6 +221,7 @@ export function DynamicConversionRescuePopup() {
     const dismissUntil = Date.now() + dismissDays * 24 * 60 * 60 * 1000;
     setStoredValue(`${storagePrefix}:${storageKey}:dismissUntil`, String(dismissUntil));
     setIsOpen(false);
+    setIsClaiming(false);
   }, [settings, storageKey]);
 
   const saveCode = async () => {
@@ -222,8 +238,9 @@ export function DynamicConversionRescuePopup() {
   };
 
   const claimCode = async () => {
-    if (!settings || !pathname) return;
+    if (!settings || !pathname || isClaiming) return;
 
+    setIsClaiming(true);
     await saveCode();
     setStoredValue(`${storagePrefix}:${storageKey}:claimedAt`, new Date().toISOString());
     window.gtag?.("event", "discount_rescue_claim", {
@@ -285,7 +302,7 @@ export function DynamicConversionRescuePopup() {
             Code
           </span>
           <div className="mt-2 flex items-center justify-center gap-3">
-            <span className="text-4xl font-black tracking-[0.12em] text-[#0F1A26]">
+            <span className="max-w-full break-all text-3xl font-black tracking-[0.08em] text-[#0F1A26] sm:text-4xl sm:tracking-[0.12em]">
               {offerCode}
             </span>
           </div>
@@ -297,9 +314,14 @@ export function DynamicConversionRescuePopup() {
         <button
           type="button"
           onClick={claimCode}
-          className="inline-flex h-14 w-full items-center justify-center gap-2 rounded-full bg-[#EEBC3F] px-5 py-4 text-sm font-black text-[#0F1A26] shadow-lg shadow-[#EEBC3F]/25 transition hover:scale-[1.02] hover:bg-[#F5C84A]"
+          disabled={isClaiming}
+          className="inline-flex h-14 w-full items-center justify-center gap-2 rounded-full bg-[#EEBC3F] px-5 py-4 text-sm font-black text-[#0F1A26] shadow-lg shadow-[#EEBC3F]/25 transition hover:scale-[1.02] hover:bg-[#F5C84A] disabled:pointer-events-none disabled:opacity-70"
         >
-          <ShoppingBag className="h-4 w-4" />
+          {isClaiming ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <ShoppingBag className="h-4 w-4" />
+          )}
           {settings.ctaLabel}
         </button>
 

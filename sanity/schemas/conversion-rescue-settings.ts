@@ -4,6 +4,11 @@ export const conversionRescueSettings = defineType({
   name: "conversionRescueSettings",
   title: "Conversion rescue popup",
   type: "document",
+  groups: [
+    { name: "behavior", title: "Behavior", default: true },
+    { name: "discount", title: "Discount" },
+    { name: "content", title: "Popup content" },
+  ],
   fields: [
     defineField({
       name: "enabled",
@@ -11,15 +16,16 @@ export const conversionRescueSettings = defineType({
       description: "Shows a timed rescue popup for visitors who browse without buying.",
       type: "boolean",
       initialValue: false,
+      group: "behavior",
     }),
     defineField({
       name: "delaySeconds",
       title: "Show after seconds",
-      description:
-        "Recommended: 30 seconds. The popup is not shown on checkout, cart, order confirmation, or Studio pages.",
+      description: "Recommended: 30 seconds. It is hidden on checkout, cart, order confirmation, and Studio pages.",
       type: "number",
       initialValue: 30,
-      validation: (Rule) => Rule.min(10).max(300),
+      validation: (Rule) => Rule.required().min(10).max(300),
+      group: "behavior",
     }),
     defineField({
       name: "dismissDays",
@@ -27,24 +33,34 @@ export const conversionRescueSettings = defineType({
       description: "How long to hide the popup after the visitor closes it.",
       type: "number",
       initialValue: 7,
-      validation: (Rule) => Rule.min(1).max(60),
+      validation: (Rule) => Rule.required().min(1).max(60),
+      group: "behavior",
+    }),
+    defineField({
+      name: "targetPath",
+      title: "Main button target",
+      description: "Recommended: /checkout. The current language is kept automatically.",
+      type: "string",
+      initialValue: "/checkout",
+      validation: (Rule) => Rule.required(),
+      group: "behavior",
     }),
     defineField({
       name: "discountCode",
       title: "Deprecated fallback code",
-      description:
-        "Hidden legacy fallback. Normal popup codes are generated randomly, signed, time-limited, and bound to the visitor browser.",
+      description: "Hidden legacy fallback. Current codes are random, signed, time-limited, and browser-bound.",
       type: "string",
       hidden: true,
+      group: "discount",
     }),
     defineField({
       name: "discountPercent",
       title: "Discount percent",
-      description:
-        "CMS controls the percentage. The website generates a new random, signed, browser-bound code for each visitor.",
+      description: "CMS controls the percentage. The website generates a new random secure code for each visitor.",
       type: "number",
       initialValue: 5,
       validation: (Rule) => Rule.required().min(1).max(90),
+      group: "discount",
     }),
     defineField({
       name: "codePrefix",
@@ -52,6 +68,8 @@ export const conversionRescueSettings = defineType({
       description: "Short brand prefix before the random code, for example NAT.",
       type: "string",
       initialValue: "NAT",
+      validation: (Rule) => Rule.max(8),
+      group: "discount",
     }),
     defineField({
       name: "codeValidityHours",
@@ -60,6 +78,7 @@ export const conversionRescueSettings = defineType({
       type: "number",
       initialValue: 24,
       validation: (Rule) => Rule.required().min(1).max(168),
+      group: "discount",
     }),
     defineField({
       name: "discountLabel",
@@ -68,6 +87,7 @@ export const conversionRescueSettings = defineType({
       type: "string",
       initialValue: "5% OFF",
       validation: (Rule) => Rule.required(),
+      group: "content",
     }),
     defineField({
       name: "eyebrow",
@@ -75,6 +95,7 @@ export const conversionRescueSettings = defineType({
       type: "string",
       initialValue: "استنى",
       validation: (Rule) => Rule.required(),
+      group: "content",
     }),
     defineField({
       name: "title",
@@ -82,6 +103,7 @@ export const conversionRescueSettings = defineType({
       type: "string",
       initialValue: "خد خصم لو كملت الأوردر دلوقتي",
       validation: (Rule) => Rule.required(),
+      group: "content",
     }),
     defineField({
       name: "description",
@@ -89,6 +111,7 @@ export const conversionRescueSettings = defineType({
       type: "text",
       rows: 2,
       initialValue: "استخدم الكود قبل الدفع، والخصم هيتطبق في checkout.",
+      group: "content",
     }),
     defineField({
       name: "ctaLabel",
@@ -96,32 +119,41 @@ export const conversionRescueSettings = defineType({
       type: "string",
       initialValue: "كمل الأوردر بالخصم",
       validation: (Rule) => Rule.required(),
+      group: "content",
     }),
     defineField({
       name: "copyLabel",
       title: "Copy button label",
       type: "string",
       initialValue: "انسخ الكود",
+      group: "content",
     }),
     defineField({
       name: "copiedLabel",
       title: "Copied label",
       type: "string",
       initialValue: "اتنسخ",
+      group: "content",
     }),
     defineField({
       name: "declineLabel",
       title: "Decline label",
       type: "string",
       initialValue: "لا أريد",
-    }),
-    defineField({
-      name: "targetPath",
-      title: "Button target path",
-      description: "Example: /shop or /ar/shop. Leave as /shop to keep current language automatically.",
-      type: "string",
-      initialValue: "/shop",
-      validation: (Rule) => Rule.required(),
+      group: "content",
     }),
   ],
+  preview: {
+    select: {
+      title: "title",
+      enabled: "enabled",
+      percent: "discountPercent",
+    },
+    prepare({ title, enabled, percent }) {
+      return {
+        title: title || "Conversion rescue popup",
+        subtitle: `${enabled ? "Enabled" : "Disabled"} - ${percent || 0}% discount`,
+      };
+    },
+  },
 });
