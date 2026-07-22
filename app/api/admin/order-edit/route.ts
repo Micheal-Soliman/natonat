@@ -232,7 +232,18 @@ function isCodPayment(order: OrderRecord) {
 
 function shouldUpdateBostaDelivery(changedFields: string[]) {
   return changedFields.some((field) =>
-    ["customer", "amount_egp", "payment_method", "payment_status", "bosta"].includes(field),
+    ["customer", "amount_egp", "payment_method", "payment_status"].includes(field),
+  );
+}
+
+function isBostaAuthorizationError(error: string | undefined) {
+  const text = String(error || "").toLowerCase();
+  return (
+    text.includes(" 401 ") ||
+    text.includes("errorcode\":1028") ||
+    text.includes("invalid authorization token") ||
+    text.includes("invalid authorization") ||
+    text.includes("api key")
   );
 }
 
@@ -409,7 +420,7 @@ function applyManualEdit(existing: OrderRecord, body: OrderEditBody) {
     bosta_note: changedFields.includes("bosta")
       ? "Admin manually edited the stored Bosta tracking fields. This records tracking data in the dashboard but does not call Bosta."
       : getString(currentBosta.trackingNumber)
-        ? "This manual edit saves to the dashboard and attempts to update Bosta when address, phone, city, or COD changed. If Bosta rejects the update, the order is marked for replacement."
+        ? "This manual edit saves to the dashboard and attempts to update Bosta only when address, phone, or COD changed. Authorization failures are recorded as connection issues, not shipment replacements."
         : "No Bosta tracking exists. Creating a shipment later will use the saved order data.",
   };
 
@@ -490,15 +501,21 @@ export async function POST(req: Request) {
       };
       bostaUpdate = { attempted: true, success: true, message: updateResult.message };
     } else {
+      const updateError = updateResult.error || "Bosta delivery update failed";
+      const isAuthorizationError = isBostaAuthorizationError(updateError);
       updated.bosta = {
         ...currentBosta,
         provider: "bosta",
         trackingNumber,
-        needsReplacement: true,
-        replacementRequired: true,
-        replacementReason: updateResult.error || "Bosta rejected delivery update. Terminate old shipment before creating a replacement.",
+        needsReplacement: isAuthorizationError ? false : true,
+        replacementRequired: isAuthorizationError ? false : true,
+        replacementReason: isAuthorizationError
+          ? ""
+          : updateError || "Bosta rejected delivery update. Terminate old shipment before creating a replacement.",
         shipmentUpdateFailedAt: timestamp,
-        error: updateResult.error || "Bosta delivery update failed",
+        connectionIssue: isAuthorizationError,
+        connectionIssueReason: isAuthorizationError ? updateError : "",
+        error: updateError,
       };
       bostaUpdate = { attempted: true, success: false, error: updateResult.error };
     }

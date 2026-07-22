@@ -310,6 +310,7 @@ const BOSTA_TRACKING_STAGES = [
 const OPERATIONAL_TRACKING_STAGES = [
   { key: "pending_instapay_approval", label: "Pending InstaPay approval" },
   { key: "needs_bosta_replacement", label: "Needs shipment replacement" },
+  { key: "bosta_connection_issue", label: "Bosta connection issue" },
   { key: "bosta_exception", label: "Bosta exception" },
   { key: "bosta_failed", label: "Shipment failed" },
   { key: "missing_tracking", label: "Missing tracking" },
@@ -675,6 +676,18 @@ function getBostaError(order: AdminOrder) {
   return getString(Bosta.error || order["Bosta Error"] || order["Aramex Error"]);
 }
 
+function hasBostaConnectionIssue(order: AdminOrder) {
+  const Bosta = getBosta(order);
+  const error = getBostaError(order).toLowerCase();
+  return Boolean(
+    Bosta.connectionIssue ||
+      error.includes("invalid authorization token") ||
+      error.includes("errorcode\":1028") ||
+      error.includes("bosta update error: 401") ||
+      error.includes("api key"),
+  );
+}
+
 function getBostaStatus(order: AdminOrder) {
   const Bosta = getBosta(order);
   return getString(Bosta.status || order["Bosta Status"] || order["Aramex Status"]);
@@ -833,6 +846,7 @@ function getBostaTimelineStageKey(order: AdminOrder) {
 function getOrderShipmentStatusKey(order: AdminOrder) {
   if (isPendingInstaPay(order)) return "pending_instapay_approval";
   if (needsBostaReplacement(order)) return "needs_bosta_replacement";
+  if (hasBostaConnectionIssue(order)) return "bosta_connection_issue";
   if (getBostaError(order)) return "bosta_failed";
   if (hasReturnedSignal(order)) return "returned_cancelled";
   if (needsBosta(order)) return "missing_tracking";
@@ -906,7 +920,11 @@ function needsBosta(order: AdminOrder) {
 
 function needsBostaReplacement(order: AdminOrder) {
   const Bosta = getBosta(order);
-  return Boolean(getTrackingNumber(order) && (Bosta.needsReplacement || Bosta.replacementRequired));
+  return Boolean(
+    getTrackingNumber(order) &&
+      (Bosta.needsReplacement || Bosta.replacementRequired) &&
+      !hasBostaConnectionIssue(order),
+  );
 }
 
 function hasBostaTracking(order: AdminOrder) {
@@ -1330,6 +1348,15 @@ function OrderDetailsPanel({
   const canCreateBosta = getDeliveryBucket(order) === "delivery" && !isPendingInstaPay(order) && !trackingNumber;
   const previousTrackingNumbers = getPreviousTrackingNumbers(order);
   const oldTrackingCancelRequired = needsOldTrackingCancellation(order);
+  const bostaDisplay = hasBostaConnectionIssue(order)
+    ? {
+        ...Bosta,
+        needsReplacement: false,
+        replacementRequired: false,
+        replacementReason: "",
+        needsReplacementNote: "No replacement is required. The courier API connection failed while refreshing or updating Bosta.",
+      }
+    : Bosta;
   const [editOpen, setEditOpen] = useState(false);
   const [editDraft, setEditDraft] = useState<AdminOrderEditDraft>(() => buildOrderEditDraft(order));
 
@@ -1900,7 +1927,7 @@ function OrderDetailsPanel({
                 estimated_delivery: getString(Bosta.estimatedDelivery),
                 synced_at: formatAdminDateTime(getBostaSyncedAt(order)) || getBostaSyncedAt(order),
                 error: getBostaError(order),
-                ...Bosta,
+                ...bostaDisplay,
               }}
             />
             {!isEmptyAdminValue(Bosta.trackingRaw) && (

@@ -51,6 +51,7 @@ const HEADERS = [
   "Locale",
   "Items Count",
   "Total Items Quantity",
+  "Quantity",
   "Items Summary",
   "Products Details",
   "Bundles Details",
@@ -533,10 +534,7 @@ function collectQuantityRepairCandidates(params, applyChanges) {
 
   for (let rowIndex = 1; rowIndex < values.length && candidates.length < limit; rowIndex++) {
     const row = values[rowIndex];
-    const items = getRowItemsForQuantityRepair(row, rawPayloadIndex, fullItemsIndex);
-    if (!items.length) continue;
-
-    const quantity = calculateItemsQuantity(items);
+    const quantity = getRowQuantityForRepair(row, rawPayloadIndex, fullItemsIndex, quantityColumns);
     if (!quantity) continue;
 
     const hasBadQuantity = quantityColumns.some((columnIndex) => Number(row[columnIndex]) !== quantity);
@@ -612,7 +610,7 @@ function upsertOrderRow(ss, sheetName, data) {
       )
     : {};
   const rowObject = buildOrderRowObject(data, existingRowObject);
-  const row = headers.map((header) => valueForCell(rowObject[header]));
+  const row = headers.map((header) => valueForHeaderCell(rowObject, header));
 
   if (existingRow) {
     sheet.getRange(existingRow, 1, 1, row.length).setValues([row]);
@@ -646,6 +644,7 @@ function ensureHeaders(sheet) {
   const existingHeaders = sheet.getRange(1, 1, 1, lastColumn).getValues()[0];
 
   const headerRenames = {
+    " Quantity": "Quantity",
     "Aramex Tracking Number": "Bosta Tracking Number",
     "Aramex Tracking Link": "Bosta Tracking Link",
     "Aramex GUID": "Bosta Delivery ID",
@@ -660,8 +659,11 @@ function ensureHeaders(sheet) {
     const index = existingHeaders.indexOf(oldHeader);
     if (index >= 0) {
       const newHeader = headerRenames[oldHeader];
-      sheet.getRange(1, index + 1).setValue(newHeader);
-      existingHeaders[index] = newHeader;
+      const existingTargetIndex = existingHeaders.indexOf(newHeader);
+      if (existingTargetIndex === -1 || existingTargetIndex === index) {
+        sheet.getRange(1, index + 1).setValue(newHeader);
+        existingHeaders[index] = newHeader;
+      }
     }
   });
 
@@ -682,7 +684,8 @@ function formatHeaders(sheet, startColumn, count) {
   sheet.autoResizeColumns(startColumn, count);
 }
 
-function buildOrderRowObject(data, existingRowObject) {
+function buildOrderRowObject(incomingData, existingRowObject) {
+  const data = mergeIncomingOrderPayload(incomingData, existingRowObject);
   const now = new Date();
   const nowIso = now.toISOString();
   const timestamp = firstNonEmpty(
@@ -693,7 +696,7 @@ function buildOrderRowObject(data, existingRowObject) {
     data.Timestamp,
     nowIso
   );
-  const source = data.source || "";
+  const source = incomingData.source || data.source || "";
   const orderRef = extractOrderRef(data);
   const updateSources = mergeUpdateSources(existingRowObject && existingRowObject["Update Sources"], source);
   const updateCount = Math.max(1, numberOrZero(existingRowObject && existingRowObject["Update Count"]) + 1);
@@ -835,6 +838,102 @@ function buildOrderRowObject(data, existingRowObject) {
     "History (JSON)": jsonStringifySafe(data.history || []),
     "Raw Payload": jsonStringifySafe(data),
   };
+}
+
+function mergeIncomingOrderPayload(incomingData, existingRowObject) {
+  const existingPayload = parseJsonObject(existingRowObject && existingRowObject["Raw Payload"]);
+  const fallbackPayload = buildPayloadFromExistingRow(existingRowObject || {});
+  const basePayload = Object.keys(existingPayload).length ? existingPayload : fallbackPayload;
+  const merged = mergePlainObjects(basePayload, incomingData || {});
+
+  if (incomingData && incomingData.source) merged.source = incomingData.source;
+  if (incomingData && incomingData.updated_at) merged.updated_at = incomingData.updated_at;
+  if (incomingData && incomingData.updatedAt) merged.updatedAt = incomingData.updatedAt;
+
+  return merged;
+}
+
+function buildPayloadFromExistingRow(rowObject) {
+  if (!rowObject || typeof rowObject !== "object") return {};
+
+  const items = parseJsonArray(rowObject["Items (Full JSON)"]);
+  const customer = parseJsonObject(rowObject["Customer (Full JSON)"]);
+  const extras = parseJsonObject(rowObject["Extras (JSON)"]);
+  const paymob = parseJsonObject(rowObject["Paymob Data (JSON)"]);
+  const payment = parseJsonObject(rowObject["Payment Data (JSON)"]);
+  const discount = parseJsonObject(rowObject["Discount Data (JSON)"]);
+  const bosta = {
+    trackingNumber: rowObject["Bosta Tracking Number"] || "",
+    trackingLink: rowObject["Bosta Tracking Link"] || "",
+    deliveryId: rowObject["Bosta Delivery ID"] || "",
+    status: rowObject["Bosta Status"] || "",
+    latestDescription: rowObject["Bosta Latest Update"] || "",
+    latestLocation: rowObject["Bosta Latest Location"] || "",
+    syncedAt: rowObject["Bosta Synced At"] || "",
+    error: rowObject["Bosta Error"] || "",
+  };
+
+  return {
+    source: rowObject["Source"] || "",
+    order_ref: rowObject["Order Ref"] || "",
+    special_reference: rowObject["Special Reference (Paymob)"] || "",
+    status: rowObject["Status"] || "",
+    payment_status: rowObject["Payment Status"] || "",
+    amount_egp: rowObject["Total (EGP)"] || "",
+    amount_cents: rowObject["Total Cents"] || "",
+    shipping_egp: rowObject["Shipping (EGP)"] || "",
+    discount_code: rowObject["Discount Code"] || "",
+    discount_egp: rowObject["Discount (EGP)"] || "",
+    payment_discount_egp: rowObject["Payment Discount (EGP)"] || "",
+    payment_discount_percent: rowObject["Payment Discount Percent"] || "",
+    payment_method: rowObject["Payment Method"] || "",
+    delivery_method: rowObject["Delivery Method"] || "",
+    locale: rowObject["Locale"] || "",
+    created_at: rowObject["Timestamp"] || "",
+    updated_at: rowObject["Updated At"] || "",
+    customer,
+    items,
+    extras,
+    paymob,
+    payment,
+    discount,
+    bosta,
+    shipment: bosta,
+    aramex: bosta,
+    history: parseJsonArray(rowObject["History (JSON)"]),
+  };
+}
+
+function mergePlainObjects(base, patch) {
+  const output = {};
+
+  Object.keys(base || {}).forEach((key) => {
+    output[key] = base[key];
+  });
+
+  Object.keys(patch || {}).forEach((key) => {
+    const value = patch[key];
+    if (value === undefined) return;
+
+    const current = output[key];
+    if (isPlainObject(current) && isPlainObject(value)) {
+      output[key] = mergePlainObjects(current, value);
+      return;
+    }
+
+    output[key] = value;
+  });
+
+  return output;
+}
+
+function isPlainObject(value) {
+  return Boolean(
+    value &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    !(value instanceof Date)
+  );
 }
 
 function formatProductDetails(item) {
@@ -1231,16 +1330,52 @@ function parseJsonArray(value) {
   }
 }
 
-function getRowItemsForQuantityRepair(row, rawPayloadIndex, fullItemsIndex) {
+function getRowQuantityForRepair(row, rawPayloadIndex, fullItemsIndex, quantityColumns) {
   const rawPayload = rawPayloadIndex >= 0 ? parseJsonObject(row[rawPayloadIndex]) : {};
-  if (Array.isArray(rawPayload.items)) return rawPayload.items;
+  const rawPayloadQuantity = calculatePayloadQuantity(rawPayload);
+  if (rawPayloadQuantity) return rawPayloadQuantity;
 
   if (fullItemsIndex >= 0) {
     const parsedItems = parseJsonArray(row[fullItemsIndex]);
-    if (parsedItems.length) return parsedItems;
+    const itemsQuantity = calculateItemsQuantity(parsedItems);
+    if (itemsQuantity) return itemsQuantity;
   }
 
-  return [];
+  for (let index = 0; index < quantityColumns.length; index++) {
+    const value = row[quantityColumns[index]];
+    const payload = parseJsonObject(value);
+    const payloadQuantity = calculatePayloadQuantity(payload);
+    if (payloadQuantity) return payloadQuantity;
+
+    const items = parseJsonArray(value);
+    const itemsQuantity = calculateItemsQuantity(items);
+    if (itemsQuantity) return itemsQuantity;
+  }
+
+  return 0;
+}
+
+function calculatePayloadQuantity(payload) {
+  if (!payload || typeof payload !== "object") return 0;
+
+  if (Array.isArray(payload.items)) {
+    const itemsQuantity = calculateItemsQuantity(payload.items);
+    if (itemsQuantity) return itemsQuantity;
+  }
+
+  if (Array.isArray(payload.items_flat)) {
+    const flatQuantity = calculateItemsQuantity(payload.items_flat);
+    if (flatQuantity) return flatQuantity;
+  }
+
+  const extras = payload.extras && typeof payload.extras === "object" ? payload.extras : {};
+  return (
+    numberOrZero(payload.quantity) ||
+    numberOrZero(payload.qty) ||
+    numberOrZero(payload.total_quantity) ||
+    numberOrZero(payload.totalItemsQuantity) ||
+    numberOrZero(extras.custom_order_quantity)
+  );
 }
 
 function calculateItemsQuantity(items) {
@@ -1343,6 +1478,19 @@ function valueForCell(value) {
   if (value instanceof Date && Number.isFinite(value.getTime())) return value.toISOString();
   if (typeof value === "object") return jsonStringifySafe(value);
   return value;
+}
+
+function valueForHeaderCell(rowObject, header) {
+  if (rowObject && Object.prototype.hasOwnProperty.call(rowObject, header)) {
+    return valueForCell(rowObject[header]);
+  }
+
+  const normalizedHeader = String(header || "").trim();
+  if (normalizedHeader && rowObject && Object.prototype.hasOwnProperty.call(rowObject, normalizedHeader)) {
+    return valueForCell(rowObject[normalizedHeader]);
+  }
+
+  return "";
 }
 
 function jsonStringifySafe(value) {
