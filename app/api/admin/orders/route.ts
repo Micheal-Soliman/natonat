@@ -120,6 +120,46 @@ function firstNumber(...values: unknown[]) {
   return 0;
 }
 
+const UPDATE_ONLY_SOURCES = new Set([
+  "admin_manual_order_edit",
+  "admin_status_update",
+  "email_notification",
+  "email_notification_failed",
+  "email_notification_queued",
+  "customer_email_notification",
+  "meta_capi",
+  "paymob_webhook_aramex",
+  "paymob_webhook_bosta",
+  "bosta_sync",
+  "bosta_status_sync",
+  "bosta_manual_tracking_update",
+]);
+
+function isUpdateOnlySource(value: unknown) {
+  const source = getString(value).trim().toLowerCase();
+  return UPDATE_ONLY_SOURCES.has(source) || source.endsWith("_bosta_failed");
+}
+
+function getOriginalSource(order: OrderRecord) {
+  const currentSource = firstString(order.source, order.Source);
+  if (currentSource && !isUpdateOnlySource(currentSource)) return currentSource;
+
+  const rawPayload = getObject(order["Raw Payload"]);
+  const rawSource = firstString(rawPayload.original_source, rawPayload.initial_source, rawPayload.source);
+  if (rawSource && !isUpdateOnlySource(rawSource)) return rawSource;
+
+  const history = getArray(order.history || order["History (JSON)"] || rawPayload.history);
+  for (const entry of history) {
+    const source = getString(getObject(entry).source);
+    if (source && !isUpdateOnlySource(source)) return source;
+  }
+
+  const orderRef = firstString(order.order_ref, order["Order Ref"], rawPayload.order_ref);
+  if (orderRef.startsWith("NAT-")) return "checkout";
+  if (orderRef.startsWith("CUSTOM-")) return "admin_special_order";
+  return currentSource;
+}
+
 function normalizeOrder(input: unknown) {
   const order = getObject(input);
   const customerFromJson = getObject(order.customer || order["Customer (Full JSON)"]);
@@ -161,7 +201,8 @@ function normalizeOrder(input: unknown) {
   return {
     ...order,
     order_ref: firstString(order.order_ref, order["Order Ref"]),
-    source: firstString(order.source, order.Source),
+    source: getOriginalSource(order),
+    last_update_source: firstString(order.last_update_source, order["Last Update Source"], order.source, order.Source),
     created_at: createdDate?.toISOString() || firstString(order.created_at, order["Created At"], order.Timestamp),
     updated_at: updatedDate?.toISOString() || firstString(order.updated_at, order["Updated At"], order["Bosta Synced At"], order["Aramex Synced At"]),
     status: firstString(order.status, order.Status),

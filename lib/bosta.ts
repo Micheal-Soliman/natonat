@@ -424,6 +424,52 @@ function getBostaAuthHeaderAttempts(): Array<{ label: string; headers: Record<st
   ];
 }
 
+async function fetchBostaWithAuthAttempts(
+  url: string,
+  init: Omit<RequestInit, "headers" | "signal"> & { headers?: Record<string, string> },
+) {
+  const authAttempts = getBostaAuthHeaderAttempts();
+  const attemptedAuthLabels: string[] = [];
+  let response: Response | null = null;
+  let text = "";
+  let data: unknown = {};
+
+  for (const attempt of authAttempts) {
+    attemptedAuthLabels.push(attempt.label);
+    response = await fetch(url, {
+      ...init,
+      headers: {
+        ...attempt.headers,
+        ...(init.headers || {}),
+      },
+      signal: AbortSignal.timeout(45000),
+    });
+
+    const contentType = response.headers.get("content-type") || "";
+    if (contentType.includes("application/pdf")) {
+      const buffer = Buffer.from(await response.arrayBuffer());
+      text = buffer.toString("base64");
+      data = text;
+    } else {
+      text = await response.text();
+      data = text;
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        // Keep text for diagnostics.
+      }
+    }
+
+    if (response.ok || (response.status !== 401 && response.status !== 403)) break;
+  }
+
+  if (!response) {
+    throw new Error("Bosta request was not sent");
+  }
+
+  return { response, text, data, attemptedAuthLabels };
+}
+
 export function getBostaConfigDiagnostics() {
   const rawKey =
     process.env.BOSTA_API_KEY ||
@@ -1464,39 +1510,21 @@ export async function createBostaAwb(input: CreateBostaAwbInput): Promise<Create
     lang: input.lang || "ar",
   };
 
-  const response = await fetch(`${getBostaBaseUrl()}/deliveries/mass-awb`, {
+  const { response, data, attemptedAuthLabels } = await fetchBostaWithAuthAttempts(`${getBostaBaseUrl()}/deliveries/mass-awb`, {
     method: "POST",
     headers: {
-      Authorization: getBostaAuthorizationHeader(),
       "Content-Type": "application/json",
       Accept: "application/json, application/pdf",
     },
     body: JSON.stringify(payload),
-    signal: AbortSignal.timeout(45000),
   });
-
-  const contentType = response.headers.get("content-type") || "";
-  let data: unknown;
-
-  if (contentType.includes("application/pdf")) {
-    const buffer = Buffer.from(await response.arrayBuffer());
-    data = buffer.toString("base64");
-  } else {
-    const text = await response.text();
-    data = text;
-    try {
-      data = text ? JSON.parse(text) : {};
-    } catch {
-      // Keep text for diagnostics or direct base64 responses.
-    }
-  }
 
   if (!response.ok) {
     return {
       success: false,
       provider: "bosta",
       raw: data,
-      error: `Bosta AWB error: ${response.status} - ${typeof data === "string" ? data : JSON.stringify(data)}`,
+      error: `Bosta AWB error: ${response.status} - ${typeof data === "string" ? data : JSON.stringify(data)} | authAttempts=${attemptedAuthLabels.join(">")}`,
     };
   }
 
@@ -1550,24 +1578,14 @@ export async function searchBostaDeliveries(input: SearchBostaDeliveriesInput): 
     };
   }
 
-  const response = await fetch(`${getBostaBaseUrl()}/deliveries/search`, {
+  const { response, data, attemptedAuthLabels } = await fetchBostaWithAuthAttempts(`${getBostaBaseUrl()}/deliveries/search`, {
     method: "POST",
     headers: {
-      Authorization: getBostaAuthorizationHeader(),
       "Content-Type": "application/json",
       Accept: "application/json",
     },
     body: JSON.stringify(payload),
-    signal: AbortSignal.timeout(45000),
   });
-
-  const text = await response.text();
-  let data: unknown = text;
-  try {
-    data = text ? JSON.parse(text) : {};
-  } catch {
-    // Keep text for diagnostics.
-  }
 
   if (!response.ok) {
     return {
@@ -1575,7 +1593,7 @@ export async function searchBostaDeliveries(input: SearchBostaDeliveriesInput): 
       provider: "bosta",
       deliveries: [],
       raw: data,
-      error: `Bosta delivery search error: ${response.status} - ${typeof data === "string" ? data : JSON.stringify(data)}`,
+      error: `Bosta delivery search error: ${response.status} - ${typeof data === "string" ? data : JSON.stringify(data)} | authAttempts=${attemptedAuthLabels.join(">")}`,
     };
   }
 
@@ -1599,30 +1617,20 @@ export async function terminateBostaDelivery(trackingNumber: string): Promise<Te
     };
   }
 
-  const response = await fetch(`${getBostaBaseUrl()}/deliveries/business/${encodeURIComponent(normalizedTrackingNumber)}/terminate`, {
+  const { response, data, attemptedAuthLabels } = await fetchBostaWithAuthAttempts(`${getBostaBaseUrl()}/deliveries/business/${encodeURIComponent(normalizedTrackingNumber)}/terminate`, {
     method: "DELETE",
     headers: {
-      Authorization: getBostaAuthorizationHeader(),
       "Content-Type": "application/json",
       Accept: "application/json",
     },
-    signal: AbortSignal.timeout(45000),
   });
-
-  const text = await response.text();
-  let data: unknown = text;
-  try {
-    data = text ? JSON.parse(text) : {};
-  } catch {
-    // Keep text for diagnostics.
-  }
 
   if (!response.ok) {
     return {
       success: false,
       provider: "bosta",
       raw: data,
-      error: `Bosta terminate error: ${response.status} - ${typeof data === "string" ? data : JSON.stringify(data)}`,
+      error: `Bosta terminate error: ${response.status} - ${typeof data === "string" ? data : JSON.stringify(data)} | authAttempts=${attemptedAuthLabels.join(">")}`,
     };
   }
 
@@ -1669,31 +1677,21 @@ export async function updateBostaDelivery(input: UpdateBostaDeliveryInput): Prom
     };
   }
 
-  const response = await fetch(`${getBostaBaseUrl()}/deliveries/business/${encodeURIComponent(trackingNumber)}`, {
+  const { response, data, attemptedAuthLabels } = await fetchBostaWithAuthAttempts(`${getBostaBaseUrl()}/deliveries/business/${encodeURIComponent(trackingNumber)}`, {
     method: "PUT",
     headers: {
-      Authorization: getBostaAuthorizationHeader(),
       "Content-Type": "application/json",
       Accept: "application/json",
     },
     body: JSON.stringify(payload),
-    signal: AbortSignal.timeout(45000),
   });
-
-  const text = await response.text();
-  let data: unknown = text;
-  try {
-    data = text ? JSON.parse(text) : {};
-  } catch {
-    // Keep text for diagnostics.
-  }
 
   if (!response.ok) {
     return {
       success: false,
       provider: "bosta",
       raw: data,
-      error: `Bosta update error: ${response.status} - ${typeof data === "string" ? data : JSON.stringify(data)}`,
+      error: `Bosta update error: ${response.status} - ${typeof data === "string" ? data : JSON.stringify(data)} | authAttempts=${attemptedAuthLabels.join(">")}`,
     };
   }
 

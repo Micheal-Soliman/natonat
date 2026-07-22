@@ -420,6 +420,54 @@ function getArray(value: unknown): unknown[] {
   return [];
 }
 
+const UPDATE_ONLY_SOURCES = new Set([
+  "admin_manual_order_edit",
+  "admin_status_update",
+  "email_notification",
+  "email_notification_failed",
+  "email_notification_queued",
+  "customer_email_notification",
+  "meta_capi",
+  "paymob_webhook_aramex",
+  "paymob_webhook_bosta",
+  "bosta_sync",
+  "bosta_status_sync",
+  "bosta_manual_tracking_update",
+]);
+
+function isUpdateOnlySource(value: unknown) {
+  const source = getString(value).trim().toLowerCase();
+  return UPDATE_ONLY_SOURCES.has(source) || source.endsWith("_bosta_failed");
+}
+
+function getOrderSource(order: AdminOrder) {
+  const currentSource = getString(order.source || order["Source"]);
+  if (currentSource && !isUpdateOnlySource(currentSource)) return currentSource;
+
+  const rawPayload = getObject(order["Raw Payload"]);
+  const rawSource = getString(rawPayload.original_source || rawPayload.initial_source || rawPayload.source);
+  if (rawSource && !isUpdateOnlySource(rawSource)) return rawSource;
+
+  const history = getArray(order.history || order["History (JSON)"] || rawPayload.history);
+  for (const entry of history) {
+    const source = getString(getObject(entry).source);
+    if (source && !isUpdateOnlySource(source)) return source;
+  }
+
+  const orderRef = getOrderRef(order);
+  if (orderRef.startsWith("NAT-")) return "checkout";
+  if (orderRef.startsWith("CUSTOM-")) return "admin_special_order";
+  return currentSource;
+}
+
+function getOrderLastUpdateSource(order: AdminOrder) {
+  const lastUpdateSource = getString(order.last_update_source || order["Last Update Source"]);
+  if (lastUpdateSource) return lastUpdateSource;
+
+  const currentSource = getString(order.source || order["Source"]);
+  return isUpdateOnlySource(currentSource) ? currentSource : "";
+}
+
 function getOrderRef(order: AdminOrder) {
   return getString(order.order_ref || order["Order Ref"]);
 }
@@ -558,7 +606,7 @@ function isBundleParentItem(item: Record<string, unknown>) {
 }
 
 function isCustomOrder(order: AdminOrder) {
-  const source = getString(order.source || order["Source"]).toLowerCase();
+  const source = getOrderSource(order).toLowerCase();
   const extras = getExtras(order);
   const paymentMethod = getPaymentMethod(order);
   return (
@@ -845,8 +893,8 @@ function getBostaTimelineStageKey(order: AdminOrder) {
 
 function getOrderShipmentStatusKey(order: AdminOrder) {
   if (isPendingInstaPay(order)) return "pending_instapay_approval";
-  if (needsBostaReplacement(order)) return "needs_bosta_replacement";
   if (hasBostaConnectionIssue(order)) return "bosta_connection_issue";
+  if (needsBostaReplacement(order)) return "needs_bosta_replacement";
   if (getBostaError(order)) return "bosta_failed";
   if (hasReturnedSignal(order)) return "returned_cancelled";
   if (needsBosta(order)) return "missing_tracking";
@@ -935,7 +983,7 @@ function getPaymentBucket(order: AdminOrder) {
   if (isCustomOrder(order)) return "custom_bulk";
 
   const method = getPaymentMethod(order);
-  const source = getString(order.source || order["Source"]).toLowerCase();
+  const source = getOrderSource(order).toLowerCase();
   const extras = getExtras(order);
 
   if (
@@ -1871,7 +1919,8 @@ function OrderDetailsPanel({
                   payment_status: getPaymentStatus(order),
                   order_status: getStatus(order),
                   delivery_method: getString(order.delivery_method || order["Delivery Method"]),
-                  source: getString(order.source),
+                  created_from: getOrderSource(order),
+                  last_update_source: getOrderLastUpdateSource(order),
                 }}
               />
             </section>
@@ -2892,7 +2941,7 @@ export default function AdminDashboardPage() {
       const lastName = getString(customer.last_name);
       return [
         getOrderRef(order),
-        getString(order.source || order["Source"]),
+        getOrderSource(order),
         getCreatedAt(order),
         getUpdatedAt(order),
         getStatus(order),
@@ -3584,7 +3633,8 @@ export default function AdminDashboardPage() {
         getString(Bosta.status),
         getString(Bosta.latestDescription),
         getString(Bosta.latestLocation),
-        getString(order.source),
+        getOrderSource(order),
+        getOrderLastUpdateSource(order),
         getPaymentMethod(order),
         getPaymentStatus(order),
         getStatus(order),
@@ -6028,6 +6078,9 @@ export default function AdminDashboardPage() {
                   const BostaSyncedAt = getBostaSyncedAt(order);
                   const BostaError = getBostaError(order);
                   const orderRef = getOrderRef(order);
+                  const orderSource = getOrderSource(order);
+                  const lastUpdateSource = getOrderLastUpdateSource(order);
+                  const BostaConnectionIssue = hasBostaConnectionIssue(order);
                   const rowTone = isReturned(order)
                     ? "bg-rose-50/70"
                     : isPendingInstaPay(order)
@@ -6040,7 +6093,14 @@ export default function AdminDashboardPage() {
                     <tr key={`${orderRef}-${index}`} className={rowTone}>
                       <td className="px-5 py-4 align-top">
                         <p className="font-black text-[#0F1A26]">{orderRef || "No ref"}</p>
-                        <p className="mt-1 text-xs font-bold text-[#0F1A26]/45">{getString(order.source)}</p>
+                        <p className="mt-1 text-xs font-bold text-[#0F1A26]/45">
+                          Created from: {orderSource || "-"}
+                        </p>
+                        {lastUpdateSource && lastUpdateSource !== orderSource && (
+                          <p className="mt-1 text-xs font-bold text-[#0F1A26]/35">
+                            Last update: {lastUpdateSource}
+                          </p>
+                        )}
                         <p className="mt-1 text-xs font-bold text-[#0F1A26]/55">
                           Order created {formatAdminDateTime(getCreatedAt(order)) || "No date"}
                         </p>
@@ -6091,6 +6151,11 @@ export default function AdminDashboardPage() {
                           <p className="font-bold text-[#0F1A26]/40">No tracking</p>
                         )}
                         {BostaError && <p className="mt-1 max-w-[260px] text-xs font-bold text-rose-600">{BostaError}</p>}
+                        {BostaConnectionIssue && (
+                          <p className="mt-1 rounded-xl bg-amber-50 px-2 py-1 text-xs font-black text-amber-800">
+                            Check Bosta API key/token. Existing tracking is not marked for replacement.
+                          </p>
+                        )}
                         {needsBosta(order) && !BostaError && (
                           <p className="mt-1 text-xs font-bold text-orange-600">Needs courier shipment</p>
                         )}

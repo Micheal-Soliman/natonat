@@ -81,6 +81,21 @@ const ALLOWED_PAYMENT_METHODS = new Set([
 
 const ALLOWED_DELIVERY_METHODS = new Set(["delivery", "pickup", "custom"]);
 
+const UPDATE_ONLY_SOURCES = new Set([
+  "admin_manual_order_edit",
+  "admin_status_update",
+  "email_notification",
+  "email_notification_failed",
+  "email_notification_queued",
+  "customer_email_notification",
+  "meta_capi",
+  "paymob_webhook_aramex",
+  "paymob_webhook_bosta",
+  "bosta_sync",
+  "bosta_status_sync",
+  "bosta_manual_tracking_update",
+]);
+
 function getString(value: unknown) {
   if (typeof value === "string") return value.trim();
   if (typeof value === "number" && Number.isFinite(value)) return String(value);
@@ -236,6 +251,27 @@ function shouldUpdateBostaDelivery(changedFields: string[]) {
   );
 }
 
+function isUpdateOnlySource(value: unknown) {
+  const source = getString(value).toLowerCase();
+  return UPDATE_ONLY_SOURCES.has(source) || source.endsWith("_bosta_failed");
+}
+
+function getOriginalSource(order: OrderRecord) {
+  const currentSource = getString(order.source || order["Source"]);
+  if (currentSource && !isUpdateOnlySource(currentSource)) return currentSource;
+
+  const history = getArray(order.history || order["History (JSON)"]);
+  for (const entry of history) {
+    const source = getString(getObject(entry).source);
+    if (source && !isUpdateOnlySource(source)) return source;
+  }
+
+  const orderRef = getString(order.order_ref || order["Order Ref"]);
+  if (orderRef.startsWith("NAT-")) return "checkout";
+  if (orderRef.startsWith("CUSTOM-")) return "admin_special_order";
+  return currentSource || "";
+}
+
 function isBostaAuthorizationError(error: string | undefined) {
   const text = String(error || "").toLowerCase();
   return (
@@ -318,10 +354,13 @@ function applyManualEdit(existing: OrderRecord, body: OrderEditBody) {
   const currentCustomer = getCustomer(existing);
   const currentItems = getItems(existing);
   const currentBosta = getBosta(existing);
+  const originalSource = getOriginalSource(existing);
   const updated: OrderRecord = {
     ...existing,
     order_ref: getOrderRef(existing),
-    source: "admin_manual_order_edit",
+    source: originalSource,
+    original_source: originalSource,
+    last_update_source: "admin_manual_order_edit",
     customer: currentCustomer,
     items: currentItems,
     extras: currentExtras,
