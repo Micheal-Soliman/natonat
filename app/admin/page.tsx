@@ -1079,6 +1079,71 @@ function isPassportWalletItem(item: Record<string, unknown>) {
   );
 }
 
+function createDailyCategoryUnits() {
+  return {
+    luggageCovers: 0,
+    packOnat: 0,
+    passportWallet: 0,
+    customBulk: 0,
+    other: 0,
+    total: 0,
+  };
+}
+
+function addQuantityToDailyCategoryUnits(
+  units: ReturnType<typeof createDailyCategoryUnits>,
+  category: keyof Omit<ReturnType<typeof createDailyCategoryUnits>, "total">,
+  quantity: number,
+) {
+  if (quantity <= 0) return;
+  units[category] += quantity;
+  units.total += quantity;
+}
+
+function addOrderToDailyCategoryUnits(units: ReturnType<typeof createDailyCategoryUnits>, order: AdminOrder) {
+  if (!isConfirmed(order) || isReturned(order)) return;
+
+  const items = getItems(order);
+  let countedFromItems = false;
+
+  items.forEach((item) => {
+    if (isBundleParentItem(item)) return;
+
+    const quantity = getItemRecordedQuantity(item);
+    if (quantity <= 0) return;
+
+    countedFromItems = true;
+
+    if (isCustomOrderItem(item)) {
+      addQuantityToDailyCategoryUnits(units, "customBulk", quantity);
+    } else if (isPackOnatItem(item)) {
+      addQuantityToDailyCategoryUnits(units, "packOnat", quantity);
+    } else if (isPassportWalletItem(item)) {
+      addQuantityToDailyCategoryUnits(units, "passportWallet", quantity);
+    } else if (isLuggageCoverItem(item)) {
+      addQuantityToDailyCategoryUnits(units, "luggageCovers", quantity);
+    } else {
+      addQuantityToDailyCategoryUnits(units, "other", quantity);
+    }
+  });
+
+  if (!countedFromItems && isCustomOrder(order)) {
+    addQuantityToDailyCategoryUnits(units, "customBulk", getOrderCustomPieces(order));
+  }
+}
+
+function formatDailyCategoryUnits(units: ReturnType<typeof createDailyCategoryUnits>) {
+  const parts = [
+    units.luggageCovers ? `Covers ${units.luggageCovers}` : "",
+    units.packOnat ? `PackOnat ${units.packOnat}` : "",
+    units.passportWallet ? `Wallets ${units.passportWallet}` : "",
+    units.customBulk ? `Custom ${units.customBulk}` : "",
+    units.other ? `Other ${units.other}` : "",
+  ].filter(Boolean);
+
+  return parts.length ? parts.join(" · ") : "-";
+}
+
 function getOrderItemSizeKey(item: Record<string, unknown>) {
   const size = normalizeInventoryKey(item.size || item.selectedSize || item.variantSize);
   return size || "product";
@@ -3073,11 +3138,37 @@ export default function AdminDashboardPage() {
       ["paid_online_collected", String(stats.paidOnlineValue)],
       [],
       ["daily_close"],
-      ["date", "orders", "confirmed", "gross", "discounts", "shipping", "returns", "expenses", "net", "net_after_expenses", "Bosta_issues"],
+      [
+        "date",
+        "orders",
+        "confirmed",
+        "total_units",
+        "luggage_covers_units",
+        "packonat_units",
+        "passport_wallet_units",
+        "custom_bulk_units",
+        "other_units",
+        "units_by_category",
+        "gross",
+        "discounts",
+        "shipping",
+        "returns",
+        "expenses",
+        "net",
+        "net_after_expenses",
+        "Bosta_issues",
+      ],
       ...dailyClose.map((day) => [
         day.date,
         String(day.orders),
         String(day.confirmed),
+        String(day.unitsByCategory.total),
+        String(day.unitsByCategory.luggageCovers),
+        String(day.unitsByCategory.packOnat),
+        String(day.unitsByCategory.passportWallet),
+        String(day.unitsByCategory.customBulk),
+        String(day.unitsByCategory.other),
+        formatDailyCategoryUnits(day.unitsByCategory),
         String(day.gross),
         String(day.discounts),
         String(day.shipping),
@@ -3986,6 +4077,7 @@ export default function AdminDashboardPage() {
         net: number;
         netAfterExpenses: number;
         BostaIssues: number;
+        unitsByCategory: ReturnType<typeof createDailyCategoryUnits>;
       }
     >();
 
@@ -4007,6 +4099,7 @@ export default function AdminDashboardPage() {
           net: 0,
           netAfterExpenses: 0,
           BostaIssues: 0,
+          unitsByCategory: createDailyCategoryUnits(),
         };
 
       row.orders += 1;
@@ -4018,6 +4111,7 @@ export default function AdminDashboardPage() {
         row.shipping += getShipping(order);
       }
       if (isConfirmed(order) && !isReturned(order)) row.net += getAmount(order);
+      addOrderToDailyCategoryUnits(row.unitsByCategory, order);
       if (getBostaError(order) || needsBosta(order)) row.BostaIssues += 1;
       dayMap.set(key, row);
     });
@@ -4040,6 +4134,7 @@ export default function AdminDashboardPage() {
           net: 0,
           netAfterExpenses: 0,
           BostaIssues: 0,
+          unitsByCategory: createDailyCategoryUnits(),
         };
 
       row.expenses += getExpenseAmount(expense);
@@ -4886,6 +4981,7 @@ export default function AdminDashboardPage() {
                   <th className="px-5 py-3">Date</th>
                   <th className="px-5 py-3">Orders</th>
                   <th className="px-5 py-3">Confirmed</th>
+                  <th className="px-5 py-3">Units by category</th>
                   <th className="px-5 py-3">Gross</th>
                   <th className="px-5 py-3">Discounts</th>
                   <th className="px-5 py-3">Shipping</th>
@@ -4902,6 +4998,12 @@ export default function AdminDashboardPage() {
                     <td className="px-5 py-4 font-black">{day.date}</td>
                     <td className="px-5 py-4 font-bold">{day.orders}</td>
                     <td className="px-5 py-4 font-bold">{day.confirmed}</td>
+                    <td className="px-5 py-4">
+                      <p className="font-black">{day.unitsByCategory.total} units</p>
+                      <p className="mt-1 max-w-[260px] text-xs font-bold text-[#0F1A26]/50">
+                        {formatDailyCategoryUnits(day.unitsByCategory)}
+                      </p>
+                    </td>
                     <td className="px-5 py-4">{money.format(day.gross)}</td>
                     <td className="px-5 py-4 text-emerald-700">-{money.format(day.discounts)}</td>
                     <td className="px-5 py-4">{money.format(day.shipping)}</td>
@@ -4913,7 +5015,7 @@ export default function AdminDashboardPage() {
                   </tr>
                 )) : (
                   <tr>
-                    <td colSpan={11} className="px-5 py-8 text-center text-sm font-bold text-[#0F1A26]/45">
+                    <td colSpan={12} className="px-5 py-8 text-center text-sm font-bold text-[#0F1A26]/45">
                       No daily finance rows in this period.
                     </td>
                   </tr>
