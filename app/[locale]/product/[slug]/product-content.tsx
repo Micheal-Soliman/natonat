@@ -95,6 +95,9 @@ const getProductDetailArray = (messages: unknown, path: string) => {
 function ProductVideoSection({
   title,
   subtitle,
+  swipeHint,
+  previousLabel,
+  nextLabel,
   poster,
   src,
   fullWidth,
@@ -103,12 +106,17 @@ function ProductVideoSection({
 }: {
   title: string;
   subtitle: string;
+  swipeHint?: string;
+  previousLabel?: string;
+  nextLabel?: string;
   poster?: string;
   src?: string;
   fullWidth?: boolean;
   videoFit?: "cover" | "contain";
   videos?: ProductVideoItem[];
 }) {
+  const videosRef = useRef<HTMLDivElement | null>(null);
+  const hasVideoCarousel = Boolean(videos && videos.length > 1);
   const wrapperClassName = fullWidth
     ? "mt-6 lg:mt-8 relative left-1/2 right-1/2 -mx-[50vw] w-screen"
     : "mt-6 lg:mt-8";
@@ -120,56 +128,112 @@ function ProductVideoSection({
   const videoClassName = `w-full h-full ${videoFit === "contain" ? "object-contain" : "object-cover"
     }`;
 
+  const scrollVideos = (direction: "previous" | "next") => {
+    const list = videosRef.current;
+    if (!list) return;
+
+    const isRtl = document.documentElement.dir === "rtl";
+    const distance = Math.max(list.clientWidth * 0.82, 260);
+    const signedDistance = direction === "next" ? distance : -distance;
+
+    list.scrollBy({
+      left: isRtl ? -signedDistance : signedDistance,
+      behavior: "smooth",
+    });
+  };
+
   return (
     <div className={wrapperClassName}>
       <div className={innerClassName}>
         <div className="bg-white rounded-3xl p-6 md:p-8 border border-[#0F1A26]/5 shadow-lg">
-          <h3 className="text-base font-bold text-[#0F1A26] mb-5 tracking-[0.1em] uppercase flex items-center gap-3">
-            <Sparkles className="w-5 h-5 text-[#EEBC3F]" />
-            {title}
-          </h3>
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+            <h3 className="text-base font-bold text-[#0F1A26] tracking-[0.1em] uppercase flex items-center gap-3">
+              <Sparkles className="w-5 h-5 text-[#EEBC3F]" />
+              {title}
+            </h3>
+
+            {hasVideoCarousel && swipeHint && (
+              <div className="inline-flex items-center gap-2 rounded-full border border-[#EEBC3F]/30 bg-[#FFF7E2] px-3 py-2 text-xs font-black text-[#0F1A26] shadow-sm">
+                <ChevronLeft className="h-4 w-4 animate-pulse text-[#EEBC3F]" />
+                <span>{swipeHint}</span>
+                <ChevronRightIcon className="h-4 w-4 animate-pulse text-[#EEBC3F]" />
+              </div>
+            )}
+          </div>
 
           {videos && videos.length > 0 ? (
-            <div className="-mx-2 flex snap-x gap-4 overflow-x-auto px-2 pb-3 no-scrollbar sm:-mx-3 sm:px-3 lg:gap-6">
-              {videos.map((video, index) => (
-                <div
-                  key={`${video.src}-${index}`}
-                  className="w-[78vw] max-w-[320px] shrink-0 snap-start overflow-hidden rounded-2xl border border-[#0F1A26]/5 bg-[#F1EBE3] shadow-sm sm:w-[320px] lg:w-[360px] lg:max-w-[360px]"
-                >
-                  <div className="relative w-full aspect-[9/16] rounded-2xl overflow-hidden bg-[#F1EBE3]">
-                    <Image
-                      src={video.poster}
-                      alt={video.label || title}
-                      fill
-                      sizes="(max-width: 640px) 78vw, 360px"
-                      className="object-contain p-3"
-                      loading="lazy"
-                      quality={45}
-                    />
-                    <video
-                      autoPlay
-                      muted
-                      loop
-                      playsInline
-                      controls
-                      preload="metadata"
-                      className={`${videoClassName} relative z-10 bg-transparent`}
-                      poster={video.poster}
-                    >
-                      <source src={video.src} type="video/mp4" />
-                      <source src={video.src} type="video/quicktime" />
-                      <track kind="captions" src="/captions/silent-video.vtt" srcLang="en" label="English captions" />
-                      Your browser does not support the video tag.
-                    </video>
-                  </div>
+            <div className="relative">
+              {hasVideoCarousel && (
+                <>
+                  <button
+                    type="button"
+                    aria-label={previousLabel || "Previous video"}
+                    onClick={() => scrollVideos("previous")}
+                    className="absolute left-1 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-[#0F1A26]/10 bg-white/95 text-[#0F1A26] shadow-lg transition hover:bg-[#EEBC3F] hover:text-[#0F1A26] sm:left-2"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={nextLabel || "Next video"}
+                    onClick={() => scrollVideos("next")}
+                    className="absolute right-1 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-[#0F1A26]/10 bg-white/95 text-[#0F1A26] shadow-lg transition hover:bg-[#EEBC3F] hover:text-[#0F1A26] sm:right-2"
+                  >
+                    <ChevronRightIcon className="h-5 w-5" />
+                  </button>
+                </>
+              )}
 
-                  {video.label && (
-                    <p className="text-[#0F1A26]/60 text-xs sm:text-sm mt-3 text-center px-3 pb-3">
-                      {video.label}
-                    </p>
-                  )}
-                </div>
-              ))}
+              <div
+                ref={videosRef}
+                className="-mx-2 flex snap-x gap-4 overflow-x-auto scroll-smooth px-2 pb-3 no-scrollbar sm:-mx-3 sm:px-3 lg:gap-6"
+              >
+                {videos.map((video, index) => (
+                  <div
+                    key={`${video.src}-${index}`}
+                    className="w-[78vw] max-w-[320px] shrink-0 snap-start overflow-hidden rounded-2xl border border-[#0F1A26]/5 bg-[#F1EBE3] shadow-sm sm:w-[320px] lg:w-[360px] lg:max-w-[360px]"
+                  >
+                    <div className="relative w-full aspect-[9/16] rounded-2xl overflow-hidden bg-[#F1EBE3]">
+                      <Image
+                        src={video.poster}
+                        alt={video.label || title}
+                        fill
+                        sizes="(max-width: 640px) 78vw, 360px"
+                        className="object-contain p-3"
+                        loading="lazy"
+                        quality={45}
+                      />
+                      <video
+                        autoPlay
+                        muted
+                        loop
+                        playsInline
+                        controls
+                        preload="metadata"
+                        className={`${videoClassName} relative z-10 bg-transparent`}
+                        poster={video.poster}
+                      >
+                        <source src={video.src} type="video/mp4" />
+                        <source src={video.src} type="video/quicktime" />
+                        <track kind="captions" src="/captions/silent-video.vtt" srcLang="en" label="English captions" />
+                        Your browser does not support the video tag.
+                      </video>
+                    </div>
+
+                    {video.label && (
+                      <p className="text-[#0F1A26]/60 text-xs sm:text-sm mt-3 text-center px-3 pb-3">
+                        {video.label}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {hasVideoCarousel && (
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-y-0 right-0 hidden w-20 bg-gradient-to-l from-white via-white/70 to-transparent sm:block"
+                />
+              )}
             </div>
           ) : (
             <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-[#F1EBE3]">
@@ -2277,6 +2341,9 @@ export default function ProductPageContent({
             <ProductVideoSection
               title={t('videoSection.title')}
               subtitle={t('videoSection.luggageSubtitle')}
+              swipeHint={t('videoSection.swipeHint')}
+              previousLabel={t('videoSection.previousVideo')}
+              nextLabel={t('videoSection.nextVideo')}
               fullWidth
               videoFit="contain"
               videos={[

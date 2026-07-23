@@ -207,7 +207,7 @@ const arabicCityNames: Record<string, string> = {
 
 void arabicCityNames;
 
-const ARAMEX_CITIES_CACHE_KEY = "natonat-bosta-district-options-eg-v3";
+const ARAMEX_CITIES_CACHE_KEY = "natonat-bosta-district-options-eg-v4";
 const ARAMEX_CITIES_CACHE_TTL = 24 * 60 * 60 * 1000;
 const citySearchAliases: Record<string, string[]> = {
   cairo: ["cairo", "القاهرة", "قاهره", "القاهره", "el qahera", "alqahira"],
@@ -371,6 +371,8 @@ type CheckoutCityOption = {
   districtName?: string;
   cityId?: string;
   zoneId?: string;
+  bostaCityName?: string;
+  bostaCityOtherName?: string;
   aliases?: string[];
 };
 
@@ -414,8 +416,8 @@ function normalizeGovernorateOptionsPayload(data: unknown): CheckoutGovernorateO
       districts.forEach((value) => {
         if (!value || typeof value !== "object") return;
         const district = value as Record<string, unknown>;
-        const en = getStringField(district, "cityName") || getStringField(district, "city");
-        const ar = getStringField(district, "cityOtherName") || en;
+        const en = getStringField(district, "governorate") || getStringField(district, "cityName") || getStringField(district, "city");
+        const ar = getStringField(district, "governorateAr") || getStringField(district, "cityOtherName") || en;
         if (!en && !ar) return;
         options.push({
           value: en || ar,
@@ -493,10 +495,14 @@ function normalizeCityOptionsPayload(data: unknown) {
         getStringField(district, "zoneOtherName") ||
         getStringField(district, "zoneName");
       const governorate =
+        getStringField(district, "governorate") ||
         getStringField(district, "cityName") ||
         getStringField(district, "city") ||
         getStringField(district, "cityOtherName");
-      const governorateAr = getStringField(district, "cityOtherName") || governorate;
+      const governorateAr = getStringField(district, "governorateAr") || getStringField(district, "cityOtherName") || governorate;
+      const aliases = Array.isArray(district.aliases)
+        ? district.aliases.filter((alias): alias is string => typeof alias === "string" && alias.trim().length > 0)
+        : [];
 
       if (name) {
         options.push({
@@ -507,13 +513,18 @@ function normalizeCityOptionsPayload(data: unknown) {
           districtName: getStringField(district, "districtName") || name,
           cityId: getStringField(district, "cityId"),
           zoneId: getStringField(district, "zoneId"),
+          bostaCityName: getStringField(district, "bostaCityName") || getStringField(district, "cityName"),
+          bostaCityOtherName: getStringField(district, "bostaCityOtherName") || getStringField(district, "cityOtherName"),
           aliases: [
+            ...aliases,
             getStringField(district, "districtName"),
             getStringField(district, "districtOtherName"),
             getStringField(district, "zoneName"),
             getStringField(district, "zoneOtherName"),
             governorate,
             governorateAr,
+            getStringField(district, "bostaCityName"),
+            getStringField(district, "bostaCityOtherName"),
           ].filter(Boolean),
         });
       }
@@ -916,6 +927,8 @@ function CheckoutContent() {
     districtName: "",
     cityId: "",
     zoneId: "",
+    bostaCityName: "",
+    bostaCityOtherName: "",
     phone: "",
   });
   const [cityOptions, setCityOptions] = useState<CheckoutCityOption[]>(getFallbackCityOptions());
@@ -1058,6 +1071,8 @@ function CheckoutContent() {
       districtName: option?.districtName || option?.name || city,
       cityId: option?.cityId || current.governorateCityId || "",
       zoneId: option?.zoneId || "",
+      bostaCityName: option?.bostaCityName || "",
+      bostaCityOtherName: option?.bostaCityOtherName || "",
     }));
     setCitySearch(city);
     setFieldErrors((current) => ({ ...current, city: "" }));
@@ -1077,6 +1092,8 @@ function CheckoutContent() {
           districtName: "",
           cityId: current.governorateCityId,
           zoneId: "",
+          bostaCityName: "",
+          bostaCityOtherName: "",
         }));
         setFieldErrors((current) => ({ ...current, city: "" }));
       }
@@ -1110,6 +1127,8 @@ function CheckoutContent() {
       districtName: exactCityOption.districtName || exactCityOption.name,
       cityId: exactCityOption.cityId || current.governorateCityId || "",
       zoneId: exactCityOption.zoneId || "",
+      bostaCityName: exactCityOption.bostaCityName || "",
+      bostaCityOtherName: exactCityOption.bostaCityOtherName || "",
     }));
     setCitySearch(exactCityOption.name);
   }, [aramexCities, scopedCityOptions, formData.city]);
@@ -1279,6 +1298,8 @@ function CheckoutContent() {
       districtName: formData.districtName || formData.city || undefined,
       cityId: formData.cityId || formData.governorateCityId || undefined,
       zoneId: formData.zoneId || undefined,
+      bostaCityName: formData.bostaCityName || undefined,
+      bostaCityOtherName: formData.bostaCityOtherName || undefined,
     };
 
     const checkoutSignature = JSON.stringify({
@@ -1296,6 +1317,8 @@ function CheckoutContent() {
         name: formData.firstName.trim().toLowerCase(),
         city: formData.city,
         governorate: formData.governorate,
+        bostaCityName: formData.bostaCityName,
+        bostaCityOtherName: formData.bostaCityOtherName,
         districtId: formData.districtId,
         cityId: formData.cityId || formData.governorateCityId,
         address: formData.address.trim().toLowerCase(),
@@ -1413,6 +1436,8 @@ function CheckoutContent() {
             districtName: customerBostaLocation.districtName,
             cityId: customerBostaLocation.cityId,
             zoneId: customerBostaLocation.zoneId,
+            bostaCityName: customerBostaLocation.bostaCityName,
+            bostaCityOtherName: customerBostaLocation.bostaCityOtherName,
             address: formData.address,
           },
           items: serializedCheckoutItems,
@@ -1505,6 +1530,8 @@ function CheckoutContent() {
               districtName: customerBostaLocation.districtName,
               cityId: customerBostaLocation.cityId,
               zoneId: customerBostaLocation.zoneId,
+              bostaCityName: customerBostaLocation.bostaCityName,
+              bostaCityOtherName: customerBostaLocation.bostaCityOtherName,
               address: formData.address,
             },
             items: serializedCheckoutItems,
@@ -1599,6 +1626,8 @@ function CheckoutContent() {
               districtName: customerBostaLocation.districtName,
               cityId: customerBostaLocation.cityId,
               zoneId: customerBostaLocation.zoneId,
+              bostaCityName: customerBostaLocation.bostaCityName,
+              bostaCityOtherName: customerBostaLocation.bostaCityOtherName,
               address: formData.address,
             },
             items: serializedCheckoutItems,
@@ -1705,6 +1734,8 @@ function CheckoutContent() {
             districtName: customerBostaLocation.districtName,
             cityId: customerBostaLocation.cityId,
             zoneId: customerBostaLocation.zoneId,
+            bostaCityName: customerBostaLocation.bostaCityName,
+            bostaCityOtherName: customerBostaLocation.bostaCityOtherName,
             address: formData.address,
           },
           items: serializedCheckoutItems,
@@ -1774,6 +1805,8 @@ function CheckoutContent() {
             districtName: customerBostaLocation.districtName,
             cityId: customerBostaLocation.cityId,
             zoneId: customerBostaLocation.zoneId,
+            bostaCityName: customerBostaLocation.bostaCityName,
+            bostaCityOtherName: customerBostaLocation.bostaCityOtherName,
             address: formData.address,
           },
 
@@ -2479,6 +2512,8 @@ function CheckoutContent() {
                                 districtName: exactCityOption?.districtName || exactCityOption?.name || "",
                                 cityId: exactCityOption?.cityId || current.governorateCityId || "",
                                 zoneId: exactCityOption?.zoneId || "",
+                                bostaCityName: exactCityOption?.bostaCityName || "",
+                                bostaCityOtherName: exactCityOption?.bostaCityOtherName || "",
                               }));
                               setFieldErrors((current) => ({ ...current, city: "" }));
                               setCityListOpen(true);
@@ -2570,6 +2605,8 @@ function CheckoutContent() {
                                 districtName: "",
                                 cityId: selectedGovernorate?.cityId || "",
                                 zoneId: "",
+                                bostaCityName: "",
+                                bostaCityOtherName: "",
                               });
                               setCitySearch("");
                               setCityListOpen(false);

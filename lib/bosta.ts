@@ -1,8 +1,10 @@
+import bostaLocationsSnapshot from "@/data/bosta-locations.json";
+
 type BostaOrderType = 10 | 15 | 25 | 30;
 type BostaPickupPackageType = "Normal" | "Light Bulky" | "Heavy Bulky";
 type BostaPickupRepeatedType = "One Time" | "Daily" | "Weekly";
 
-type BostaDistrict = {
+export type BostaDistrict = {
   zoneId?: string;
   zoneName?: string;
   zoneOtherName?: string;
@@ -15,9 +17,23 @@ type BostaDistrict = {
   cityOtherName?: string;
   cityCode?: string;
   city?: string;
+  governorate?: string;
+  governorateAr?: string;
+  bostaCityName?: string;
+  bostaCityOtherName?: string;
+  bostaCityCode?: string;
+  aliases?: string[];
   pickupAvailability?: boolean;
   dropOffAvailability?: boolean;
   coverage?: string;
+};
+
+export type BostaLocationsSnapshot = {
+  generatedAt?: string;
+  source?: string;
+  countryId?: string;
+  governorates?: Array<{ value: string; en: string; ar: string; cityId?: string }>;
+  districts?: BostaDistrict[];
 };
 
 export type BostaCity = {
@@ -56,6 +72,15 @@ let bostaCitiesCache: Promise<BostaCity[]> | null = null;
 const bostaCityCache = new Map<string, Promise<BostaCity | null>>();
 const bostaCityZonesCache = new Map<string, Promise<BostaZone[]>>();
 const bostaCityDistrictsCache = new Map<string, Promise<BostaDistrict[]>>();
+
+export function getLocalBostaLocations() {
+  return bostaLocationsSnapshot as BostaLocationsSnapshot;
+}
+
+function getLocalBostaDistricts() {
+  const districts = getLocalBostaLocations().districts;
+  return Array.isArray(districts) ? districts.filter((district) => district.dropOffAvailability !== false) : [];
+}
 
 export const BOSTA_STATE_LABELS: Record<number, string> = {
   10: "Pickup requested",
@@ -142,6 +167,9 @@ export type BostaCustomer = {
   address?: string;
   city?: string;
   governorate?: string;
+  governorate_ar?: string;
+  bostaCityName?: string;
+  bostaCityOtherName?: string;
   districtId?: string;
   districtName?: string;
   cityId?: string;
@@ -612,6 +640,12 @@ function getBostaDeliveryId(data: unknown) {
 export async function fetchBostaDistricts() {
   if (bostaDistrictsCache) return bostaDistrictsCache;
 
+  const localDistricts = getLocalBostaDistricts();
+  if (localDistricts.length > 0) {
+    bostaDistrictsCache = Promise.resolve(localDistricts);
+    return bostaDistrictsCache;
+  }
+
   const normalizeDistrictsPayload = (data: unknown): BostaDistrict[] => {
     const records = Array.isArray(data)
       ? data
@@ -631,6 +665,9 @@ export async function fetchBostaDistricts() {
           cityName: district.cityName || city.cityName,
           cityOtherName: district.cityOtherName || city.cityOtherName,
           cityCode: district.cityCode || city.cityCode,
+          bostaCityName: district.bostaCityName || district.cityName || city.cityName,
+          bostaCityOtherName: district.bostaCityOtherName || district.cityOtherName || city.cityOtherName,
+          bostaCityCode: district.bostaCityCode || district.cityCode || city.cityCode,
           city: district.city || city.cityName,
         }));
       }
@@ -876,8 +913,12 @@ function scoreBostaDistrict(district: BostaDistrict, customer: BostaCustomer) {
     district.zoneOtherName,
   ].flatMap(getAddressSearchKeys);
   const cityNameKeys = [
+    district.governorate,
+    district.governorateAr,
     district.cityName,
     district.cityOtherName,
+    district.bostaCityName,
+    district.bostaCityOtherName,
     district.city,
   ].flatMap(getAddressSearchKeys);
 
@@ -898,7 +939,7 @@ async function resolveBostaDistrict(customer: BostaCustomer) {
       districtId: customer.districtId,
       districtName: customer.districtName || customer.city || "",
       cityId: customer.cityId || "",
-      city: customer.governorate || customer.city || "",
+      city: customer.bostaCityName || customer.governorate || customer.city || "",
       zoneId: customer.zoneId || "",
     };
   }
@@ -914,7 +955,7 @@ async function resolveBostaDistrict(customer: BostaCustomer) {
       districtId: match.districtId,
       districtName: match.districtName || customer.city || "",
       cityId: match.cityId || customer.cityId || "",
-      city: match.cityName || match.city || customer.governorate || customer.city || "",
+      city: match.bostaCityName || match.cityName || match.city || customer.bostaCityName || customer.governorate || customer.city || "",
       zoneId: match.zoneId || customer.zoneId || "",
     };
   }
@@ -928,7 +969,7 @@ async function resolveBostaDistrict(customer: BostaCustomer) {
       districtId: fallbackDistrictId,
       districtName: fallbackDistrictName || customer.city || "",
       cityId: fallbackCityId,
-      city: customer.governorate || customer.city || "Cairo",
+      city: customer.bostaCityName || customer.governorate || customer.city || "Cairo",
       zoneId: process.env.BOSTA_DEFAULT_ZONE_ID || "",
     };
   }

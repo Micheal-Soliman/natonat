@@ -717,6 +717,9 @@
       "subtitle": "Watch how PackOnat keeps your clothes organized and wrinkle-free",
       "passportSubtitle": "Discover the premium leather and RFID protection of our passport wallet",
       "luggageSubtitle": "Watch how our luggage covers protect your suitcase in style",
+      "swipeHint": "Swipe to see more videos",
+      "previousVideo": "Previous video",
+      "nextVideo": "Next video",
       "luggageLabels": {
         "protection": "Premium suitcase protection",
         "easyWear": "Easy to wear in seconds",
