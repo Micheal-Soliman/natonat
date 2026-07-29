@@ -423,6 +423,10 @@ function getArray(value: unknown): unknown[] {
 const UPDATE_ONLY_SOURCES = new Set([
   "admin_manual_order_edit",
   "admin_status_update",
+  "admin_bosta_created",
+  "admin_bosta_replaced",
+  "admin_bosta_sync",
+  "admin_bosta_terminated",
   "email_notification",
   "email_notification_failed",
   "email_notification_queued",
@@ -437,7 +441,7 @@ const UPDATE_ONLY_SOURCES = new Set([
 
 function isUpdateOnlySource(value: unknown) {
   const source = getString(value).trim().toLowerCase();
-  return UPDATE_ONLY_SOURCES.has(source) || source.endsWith("_bosta_failed");
+  return UPDATE_ONLY_SOURCES.has(source) || source.endsWith("_bosta_failed") || source.endsWith("_bosta_created");
 }
 
 function getOrderSource(order: AdminOrder) {

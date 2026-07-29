@@ -207,7 +207,7 @@ const arabicCityNames: Record<string, string> = {
 
 void arabicCityNames;
 
-const ARAMEX_CITIES_CACHE_KEY = "natonat-bosta-district-options-eg-v4";
+const ARAMEX_CITIES_CACHE_KEY = "natonat-bosta-district-options-eg-v5";
 const ARAMEX_CITIES_CACHE_TTL = 24 * 60 * 60 * 1000;
 const citySearchAliases: Record<string, string[]> = {
   cairo: ["cairo", "القاهرة", "قاهره", "القاهره", "el qahera", "alqahira"],
@@ -959,7 +959,7 @@ function CheckoutContent() {
       }
 
       try {
-          const res = await fetch("/api/bosta/districts", {
+          const res = await fetch("/api/bosta/districts?lite=1", {
           signal: controller.signal,
         });
 
@@ -1016,8 +1016,17 @@ function CheckoutContent() {
   );
 
   const citySearchIndex = useMemo(() => {
+    const optionsByName = new Map<string, CheckoutCityOption[]>();
+    scopedCityOptions.forEach((option) => {
+      const key = normalizeCitySearch(option.name);
+      if (!key) return;
+      const list = optionsByName.get(key) || [];
+      list.push(option);
+      optionsByName.set(key, list);
+    });
+
     const popularCities = popularCityNames
-      .map((name) => scopedCityOptions.find((option) => normalizeCitySearch(option.name) === normalizeCitySearch(name))?.name)
+      .map((name) => optionsByName.get(normalizeCitySearch(name))?.[0]?.name)
       .filter(Boolean) as string[];
     const uniquePopularCities = Array.from(new Set(popularCities));
     const uniqueNames = Array.from(new Set([...uniquePopularCities, ...scopedCityOptions.map((option) => option.name)]));
@@ -1027,8 +1036,7 @@ function CheckoutContent() {
       isPopular: uniquePopularCities.includes(city),
       terms: [
         ...getCitySearchTerms(city),
-        ...scopedCityOptions
-          .filter((option) => option.name === city)
+        ...(optionsByName.get(normalizeCitySearch(city)) || [])
           .flatMap((option) => option.aliases || [])
           .map(normalizeCitySearch),
       ],
@@ -1077,6 +1085,24 @@ function CheckoutContent() {
     setCitySearch(city);
     setFieldErrors((current) => ({ ...current, city: "" }));
     setCityListOpen(false);
+  };
+
+  const handleCitySearchInput = (value: string) => {
+    const exactCityOption = findExactBostaCityOption(scopedCityOptions, value);
+
+    setCitySearch(value);
+    setFormData((current) => ({
+      ...current,
+      city: exactCityOption?.name || value.trim(),
+      districtId: exactCityOption?.districtId || "",
+      districtName: exactCityOption?.districtName || exactCityOption?.name || "",
+      cityId: exactCityOption?.cityId || current.governorateCityId || "",
+      zoneId: exactCityOption?.zoneId || "",
+      bostaCityName: exactCityOption?.bostaCityName || "",
+      bostaCityOtherName: exactCityOption?.bostaCityOtherName || "",
+    }));
+    setFieldErrors((current) => ({ ...current, city: "" }));
+    setCityListOpen(true);
   };
 
   const validateCitySearch = () => {
@@ -1700,77 +1726,14 @@ function CheckoutContent() {
       city: formData.governorate,
     });
 
-    // Step 1: Persist the COD order before creating any external shipment.
-    // This avoids a Bosta shipment existing without a matching dashboard order.
-    try {
-      const preLogRes = await fetch("/api/orders/log?fast=1", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          source: "checkout",
-          order_ref: orderRef,
-          locale,
-          payment_method: paymentMethod,
-          status: "created",
-          payment_status: paymentMethod === "cod" ? "Cash on Delivery" : "Pending",
-          amount_egp: confirmedFinalTotal,
-          amount_cents: Math.round(confirmedFinalTotal * 100),
-          shipping_egp: shipping,
-          discount_egp: confirmedCodeDiscountAmount,
-          discount_code: confirmedAppliedDiscountCode?.code || null,
-          discount: confirmedDiscountPayload,
-          payment_discount_egp: confirmedPaymentDiscount,
-          delivery_method: deliveryMethod,
-          bosta: null,
-          customer: {
-            email: formData.email,
-            phone: formData.phone,
-            first_name: formData.firstName,
-            last_name: "",
-            city: formData.city,
-            governorate: formData.governorate,
-            governorate_ar: customerBostaLocation.governorate_ar,
-            districtId: customerBostaLocation.districtId,
-            districtName: customerBostaLocation.districtName,
-            cityId: customerBostaLocation.cityId,
-            zoneId: customerBostaLocation.zoneId,
-            bostaCityName: customerBostaLocation.bostaCityName,
-            bostaCityOtherName: customerBostaLocation.bostaCityOtherName,
-            address: formData.address,
-          },
-          items: serializedCheckoutItems,
-          extras: {
-            shipping_rule: shippingRuleCOD,
-            city_key: formData.city,
-            subtotal_egp: checkoutSubtotal,
-            free_shipping_threshold: 1000,
-            discount: confirmedDiscountPayload,
-            payment_discount: confirmedPaymentDiscount > 0 ? confirmedPaymentDiscount : null,
-            payment_discount_percent: confirmedPaymentDiscount > 0 ? getPaymentDiscountPercent(paymentMethod) : null,
-          },
-          created_at: new Date().toISOString(),
-        }),
-      });
-
-      const preLogData = await preLogRes.json().catch(() => null);
-      if (!preLogRes.ok) {
-        throw new Error(preLogData?.error || "Could not save order before shipment");
-      }
-    } catch (error) {
-      clearCheckoutLock(checkoutSignature);
-      setIsSubmitting(false);
-      setSubmitError(error instanceof Error ? error.message : "Could not save order before shipment");
-      return;
-    }
-
-    // Step 2: Bosta shipment is created server-side by /api/orders/log after confirmation.
+    // Step 1: Bosta shipment is created server-side by /api/orders/log after confirmation.
     if (deliveryMethod === "delivery") {
       setAramexStatus("pending");
     } else {
       setAramexStatus("skipped");
     }
 
-    // Step 3: Confirm the order and attach Bosta data
+    // Step 2: Confirm the order once. The server stores it first, then runs shipment/email/sheet side effects.
     try {
       const logRes = await fetch("/api/orders/log?fast=1", {
         method: "POST",
@@ -2500,24 +2463,8 @@ function CheckoutContent() {
                                 setCityListOpen(false);
                               }, 150);
                             }}
-                            onChange={(e) => {
-                              const value = e.target.value;
-                              const exactCityOption = findExactBostaCityOption(scopedCityOptions, value);
-
-                              setCitySearch(value);
-                              setFormData((current) => ({
-                                ...current,
-                                city: exactCityOption?.name || value.trim(),
-                                districtId: exactCityOption?.districtId || "",
-                                districtName: exactCityOption?.districtName || exactCityOption?.name || "",
-                                cityId: exactCityOption?.cityId || current.governorateCityId || "",
-                                zoneId: exactCityOption?.zoneId || "",
-                                bostaCityName: exactCityOption?.bostaCityName || "",
-                                bostaCityOtherName: exactCityOption?.bostaCityOtherName || "",
-                              }));
-                              setFieldErrors((current) => ({ ...current, city: "" }));
-                              setCityListOpen(true);
-                            }}
+                            onChange={(e) => handleCitySearchInput(e.target.value)}
+                            onInput={(e) => handleCitySearchInput(e.currentTarget.value)}
                             onKeyDown={(e) => {
                               if (e.key === "Enter" && cityListOpen && filteredCities[0]) {
                                 e.preventDefault();
@@ -2539,12 +2486,17 @@ function CheckoutContent() {
                             }`}
                           />
 
-                          {cityListOpen && !loadingCities && (
+                          {cityListOpen && (
                             <div
                               id="checkout-city-list"
                               role="listbox"
                               className="absolute z-50 mt-2 max-h-64 w-full overflow-y-auto rounded-xl border border-[#0F1A26]/10 bg-white p-1.5 shadow-xl"
                             >
+                              {loadingCities && (
+                                <p className="px-3 py-2 text-xs font-bold text-[#0F1A26]/40">
+                                  {t("form.shipping.loadingCities")}
+                                </p>
+                              )}
                               {filteredCities.length > 0 ? (
                                 filteredCities.map((city) => (
                                   <button

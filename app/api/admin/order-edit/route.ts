@@ -84,6 +84,10 @@ const ALLOWED_DELIVERY_METHODS = new Set(["delivery", "pickup", "custom"]);
 const UPDATE_ONLY_SOURCES = new Set([
   "admin_manual_order_edit",
   "admin_status_update",
+  "admin_bosta_created",
+  "admin_bosta_replaced",
+  "admin_bosta_sync",
+  "admin_bosta_terminated",
   "email_notification",
   "email_notification_failed",
   "email_notification_queued",
@@ -155,7 +159,23 @@ function normalizePaymentStatusValue(value: unknown) {
 
 function sanitizeCustomer(input: unknown) {
   const customer = getObject(input);
-  const allowedKeys = ["first_name", "last_name", "name", "email", "phone", "address", "city", "governorate"];
+  const allowedKeys = [
+    "first_name",
+    "last_name",
+    "name",
+    "email",
+    "phone",
+    "address",
+    "city",
+    "governorate",
+    "governorate_ar",
+    "districtId",
+    "districtName",
+    "cityId",
+    "zoneId",
+    "bostaCityName",
+    "bostaCityOtherName",
+  ];
   return Object.fromEntries(
     allowedKeys
       .map((key) => [key, getString(customer[key])])
@@ -253,7 +273,7 @@ function shouldUpdateBostaDelivery(changedFields: string[]) {
 
 function isUpdateOnlySource(value: unknown) {
   const source = getString(value).toLowerCase();
-  return UPDATE_ONLY_SOURCES.has(source) || source.endsWith("_bosta_failed");
+  return UPDATE_ONLY_SOURCES.has(source) || source.endsWith("_bosta_failed") || source.endsWith("_bosta_created");
 }
 
 function getOriginalSource(order: OrderRecord) {

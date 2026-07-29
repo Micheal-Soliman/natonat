@@ -141,6 +141,13 @@ export async function POST(req: Request) {
   const latestDescription = exceptionLabel
     ? `${stateLabel}: ${exceptionLabel}`
     : stateLabel;
+  const eventKey = `bosta_webhook:${trackingNumber || payload.businessReference || payload._id}:${stateCode}:${syncedAt}`;
+  const hasDuplicateHistoryEvent = history.some(
+    (entry) =>
+      entry &&
+      typeof entry === "object" &&
+      (entry as { event_key?: unknown }).event_key === eventKey,
+  );
 
   const updatedOrder: OrderRecord = {
     ...order,
@@ -177,15 +184,17 @@ export async function POST(req: Request) {
       status: stateLabel,
       syncedAt,
     },
-    history: [
-      ...history,
-      {
-        status,
-        timestamp: new Date().toISOString(),
-        source: "bosta_webhook",
-        event_key: `bosta_webhook:${trackingNumber || payload.businessReference || payload._id}:${stateCode}:${syncedAt}`,
-      },
-    ],
+    history: hasDuplicateHistoryEvent
+      ? history
+      : [
+          ...history,
+          {
+            status,
+            timestamp: new Date().toISOString(),
+            source: "bosta_webhook",
+            event_key: eventKey,
+          },
+        ],
   };
 
   await upsertOrderToDatabase(updatedOrder);

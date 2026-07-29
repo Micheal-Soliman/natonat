@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { fetchBostaCities, fetchBostaDistricts, getLocalBostaLocations } from "@/lib/bosta";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const lite = new URL(req.url).searchParams.get("lite") === "1";
     const localLocations = getLocalBostaLocations();
     const localDistricts = Array.isArray(localLocations.districts) ? localLocations.districts : [];
 
@@ -22,33 +23,38 @@ export async function GET() {
         aliases: district.aliases,
       }));
 
+      const payload = {
+        success: true,
+        source: "local_bosta_snapshot",
+        ...(lite ? {} : { generatedAt: localLocations.generatedAt, countryId: localLocations.countryId }),
+        districts,
+        cities: [],
+        governorates: localLocations.governorates || [],
+        ...(lite
+          ? {}
+          : {
+              names: Array.from(
+                new Set(
+                  districts
+                    .flatMap((district) => [
+                      district.districtOtherName,
+                      district.districtName,
+                      district.zoneOtherName,
+                      district.zoneName,
+                      district.governorateAr,
+                      district.governorate,
+                      district.bostaCityOtherName,
+                      district.bostaCityName,
+                      ...(Array.isArray(district.aliases) ? district.aliases : []),
+                    ])
+                    .filter((value): value is string => Boolean(value && value.trim())),
+                ),
+              ).sort((a, b) => a.localeCompare(b, "ar")),
+            }),
+      };
+
       return NextResponse.json(
-        {
-          success: true,
-          source: "local_bosta_snapshot",
-          generatedAt: localLocations.generatedAt,
-          countryId: localLocations.countryId,
-          districts,
-          cities: [],
-          governorates: localLocations.governorates || [],
-          names: Array.from(
-            new Set(
-              districts
-                .flatMap((district) => [
-                  district.districtOtherName,
-                  district.districtName,
-                  district.zoneOtherName,
-                  district.zoneName,
-                  district.governorateAr,
-                  district.governorate,
-                  district.bostaCityOtherName,
-                  district.bostaCityName,
-                  ...(Array.isArray(district.aliases) ? district.aliases : []),
-                ])
-                .filter((value): value is string => Boolean(value && value.trim())),
-            ),
-          ).sort((a, b) => a.localeCompare(b, "ar")),
-        },
+        payload,
         {
           headers: {
             "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
@@ -82,32 +88,37 @@ export async function GET() {
       ).values(),
     ).sort((a, b) => a.en.localeCompare(b.en, "en"));
 
-    return NextResponse.json({
+    const payload = {
       success: true,
       districts,
       cities,
       governorates,
-      names: Array.from(
-        new Set(
-          [
-            ...districts.flatMap((district) => [
-              district.districtOtherName,
-              district.districtName,
-              district.zoneOtherName,
-              district.zoneName,
-              district.governorateAr,
-              district.governorate,
-              district.cityName,
-              district.city,
-              district.bostaCityOtherName,
-              district.bostaCityName,
-            ]),
-            ...cities.flatMap((city) => [city.nameAr, city.name, city.alias]),
-          ]
-            .filter((value): value is string => Boolean(value && value.trim())),
-        ),
-      ).sort((a, b) => a.localeCompare(b, "ar")),
-    });
+      ...(lite
+        ? {}
+        : {
+            names: Array.from(
+              new Set(
+                [
+                  ...districts.flatMap((district) => [
+                    district.districtOtherName,
+                    district.districtName,
+                    district.zoneOtherName,
+                    district.zoneName,
+                    district.governorateAr,
+                    district.governorate,
+                    district.cityName,
+                    district.city,
+                    district.bostaCityOtherName,
+                    district.bostaCityName,
+                  ]),
+                  ...cities.flatMap((city) => [city.nameAr, city.name, city.alias]),
+                ].filter((value): value is string => Boolean(value && value.trim())),
+              ),
+            ).sort((a, b) => a.localeCompare(b, "ar")),
+          }),
+    };
+
+    return NextResponse.json(payload);
   } catch (error) {
     return NextResponse.json(
       {

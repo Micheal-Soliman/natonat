@@ -58,6 +58,25 @@ type StoredOrder = OrderLogBody & {
   instapay_pending_customer_email_sent_at?: string;
 };
 
+const UPDATE_ONLY_SOURCES = new Set([
+  "admin_manual_order_edit",
+  "admin_status_update",
+  "admin_bosta_created",
+  "admin_bosta_replaced",
+  "admin_bosta_sync",
+  "admin_bosta_terminated",
+  "bosta_sync",
+  "bosta_status_sync",
+  "bosta_manual_tracking_update",
+  "email_notification",
+  "email_notification_failed",
+  "email_notification_queued",
+  "customer_email_notification",
+  "meta_capi",
+  "paymob_webhook_aramex",
+  "paymob_webhook_bosta",
+]);
+
 function getNestedString(value: unknown, key: string) {
   if (!value || typeof value !== "object") return "";
 
@@ -92,6 +111,32 @@ function getBostaBundleSelections(value: unknown) {
         quantity: Number(selectionRecord.quantity || selectionRecord.qty || 1) || 1,
       };
     });
+}
+
+function isUpdateOnlySource(value: unknown) {
+  const source = getOrderStatusValue(value);
+  return (
+    UPDATE_ONLY_SOURCES.has(source) ||
+    source.endsWith("_bosta_failed") ||
+    source.endsWith("_bosta_created")
+  );
+}
+
+function getPersistentOrderSource(existing: StoredOrder | undefined, incoming: OrderLogBody) {
+  const incomingSource = typeof incoming.source === "string" ? incoming.source.trim() : "";
+  const existingSource = typeof existing?.source === "string" ? existing.source.trim() : "";
+  const existingOriginalSource =
+    typeof existing?.original_source === "string" ? existing.original_source.trim() : "";
+
+  if (incomingSource && !isUpdateOnlySource(incomingSource)) return incomingSource;
+  if (existingOriginalSource && !isUpdateOnlySource(existingOriginalSource)) return existingOriginalSource;
+  if (existingSource && !isUpdateOnlySource(existingSource)) return existingSource;
+
+  const orderRef = typeof incoming.order_ref === "string" ? incoming.order_ref : existing?.order_ref;
+  if (typeof orderRef === "string" && orderRef.startsWith("NAT-")) return "checkout";
+  if (typeof orderRef === "string" && orderRef.startsWith("CUSTOM-")) return "admin_special_order";
+
+  return incomingSource || existingSource || "manual";
 }
 
 function getOrderEventKey(body: OrderLogBody, status: string) {
@@ -332,6 +377,22 @@ async function attachBostaShipmentIfNeeded(order: StoredOrder) {
         status: "failed",
         error: result.error || "Bosta shipment failed",
       };
+  const bostaHistoryKey = result.success
+    ? `bosta_shipment_created:${result.trackingNumber || order.order_ref || ""}`
+    : `bosta_shipment_failed:${order.order_ref || ""}:${bosta.error || ""}`;
+  const existingHistory = Array.isArray(order.history) ? order.history : [];
+  const hasBostaHistory = existingHistory.some((entry) => entry.event_key === bostaHistoryKey);
+  const history = hasBostaHistory
+    ? existingHistory
+    : [
+        ...existingHistory,
+        {
+          status: result.success ? "shipped" : "shipment_failed",
+          timestamp: new Date().toISOString(),
+          source: result.success ? "bosta_shipment_created" : "bosta_shipment_failed",
+          event_key: bostaHistoryKey,
+        },
+      ];
 
   return {
     ...order,
@@ -339,6 +400,7 @@ async function attachBostaShipmentIfNeeded(order: StoredOrder) {
     bosta,
     shipment: bosta,
     aramex: bosta,
+    history,
     tracking_link: result.trackingLink || order.tracking_link,
   } as StoredOrder;
 }
@@ -647,10 +709,94 @@ async function mirrorOrderToGoogleSheets(webhookUrl: string, body: OrderLogBody)
   };
 }
 
+async function sendConfirmedOrderEmails(orderRef: string, order: StoredOrder) {
+  const [adminEmailResult, customerEmailResult] = await Promise.allSettled([
+    sendOrderEmail(order),
+    sendCustomerConfirmationEmail(order),
+  ]);
+
+  const adminEmailOk =
+    adminEmailResult.status === "fulfilled" &&
+    Boolean((adminEmailResult.value as { success?: boolean } | undefined)?.success);
+  const customerEmail = (order.customer as { email?: string } | undefined)?.email;
+  const customerEmailOk =
+    !customerEmail ||
+    (
+      customerEmailResult.status === "fulfilled" &&
+      Boolean((customerEmailResult.value as { success?: boolean } | undefined)?.success)
+    );
+  const timestamp = new Date().toISOString();
+
+  if (!adminEmailOk || !customerEmailOk) {
+    const emailError = {
+      admin:
+        adminEmailResult.status === "rejected"
+          ? String(adminEmailResult.reason)
+          : (adminEmailResult.value as { error?: unknown } | undefined)?.error || "",
+      customer:
+        customerEmailResult.status === "rejected"
+          ? String(customerEmailResult.reason)
+          : (customerEmailResult.value as { error?: unknown } | undefined)?.error || "",
+    };
+
+    return {
+      ...order,
+      email_queued_at: "",
+      email_error: emailError,
+      history: [
+        ...(order.history || []),
+        {
+          status: "email_failed",
+          timestamp,
+          source: "email_notification_failed",
+          event_key: `email_notification_failed:${orderRef}`,
+        },
+      ],
+      updated_at: timestamp,
+    } as StoredOrder;
+  }
+
+  return {
+    ...order,
+    email_sent_at: timestamp,
+    email_queued_at: "",
+    email_error: "",
+    history: [
+      ...(order.history || []),
+      {
+        status: "email_sent",
+        timestamp,
+        source: "email_notification",
+        event_key: `email_notification:${orderRef}`,
+      },
+    ],
+    updated_at: timestamp,
+  } as StoredOrder;
+}
+
 async function runPostStorageSideEffects(orderRef: string | undefined, body: OrderLogBody) {
-  if (!orderRef) return;
+  if (!orderRef) return body as StoredOrder;
 
   let storedOrder = body as StoredOrder;
+  storedOrder = await attachBostaShipmentIfNeeded(storedOrder);
+
+  if (shouldSendOrderEmail(storedOrder) && !hasCheckoutEmailAlreadySent(storedOrder)) {
+    try {
+      storedOrder = await sendConfirmedOrderEmails(orderRef, storedOrder);
+    } catch (error) {
+      console.error("Order email delivery failed:", {
+        order_ref: orderRef,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      storedOrder = {
+        ...storedOrder,
+        email_queued_at: "",
+        email_error: error instanceof Error ? error.message : "Order email delivery failed",
+        updated_at: new Date().toISOString(),
+      };
+    }
+  }
+
   if (shouldAdjustInventory(storedOrder) && Array.isArray(storedOrder.items)) {
     try {
       const inventoryResult = await adjustInventoryForConfirmedOrder(
@@ -712,6 +858,8 @@ async function runPostStorageSideEffects(orderRef: string | undefined, body: Ord
       error: error instanceof Error ? error.message : String(error),
     });
   }
+
+  return storedOrder;
 }
 
 export async function POST(req: Request) {
@@ -819,9 +967,16 @@ export async function POST(req: Request) {
     );
 
     const incomingBosta = ((body as StoredOrder).bosta || (body as StoredOrder).shipment || (body as StoredOrder).aramex) as StoredOrder["bosta"] | undefined;
+    const persistentSource = getPersistentOrderSource(existing, body);
+    const incomingSource = typeof body.source === "string" ? body.source.trim() : "";
     let updatedOrder = {
       ...existing,
       ...body,
+      source: persistentSource,
+      original_source: persistentSource,
+      last_update_source: incomingSource && isUpdateOnlySource(incomingSource)
+        ? incomingSource
+        : existing?.last_update_source,
       bosta: incomingBosta == null ? existingBosta : incomingBosta,
       shipment: incomingBosta == null ? existingBosta : incomingBosta,
       aramex: incomingBosta == null ? existing?.aramex : incomingBosta,
@@ -829,12 +984,14 @@ export async function POST(req: Request) {
       tracking_link: trackingLink
     } as StoredOrder;
 
-    updatedOrder = await attachBostaShipmentIfNeeded(updatedOrder);
+    if (!fastStore) {
+      updatedOrder = await attachBostaShipmentIfNeeded(updatedOrder);
+    }
 
     // Send email notification only after the order is genuinely confirmable.
     // Card orders are first stored as created/Pending before Paymob redirects;
     // their email waits for a successful Paymob webhook.
-    if (shouldSendOrderEmail(updatedOrder) && !hasCheckoutEmailAlreadySent(existing)) {
+    if (!fastStore && shouldSendOrderEmail(updatedOrder) && !hasCheckoutEmailAlreadySent(existing)) {
       const emailQueuedAt = new Date().toISOString();
       const emailQueuedHistoryEntry: OrderHistoryEntry = {
         status: "email_queued",
@@ -1045,9 +1202,11 @@ export async function POST(req: Request) {
 
   if (fastStore && databaseStored) {
     after(async () => {
+      const sideEffectOrder = await runPostStorageSideEffects(orderRef, body);
+
       if (webhookUrl) {
         try {
-          const result = await mirrorOrderToGoogleSheets(webhookUrl, body);
+          const result = await mirrorOrderToGoogleSheets(webhookUrl, sideEffectOrder);
           if (!result.stored) {
             console.error("Fast order Google Sheets mirror failed", {
               order_ref: orderRef,
@@ -1061,8 +1220,6 @@ export async function POST(req: Request) {
           });
         }
       }
-
-      await runPostStorageSideEffects(orderRef, body);
     });
 
     return NextResponse.json({
