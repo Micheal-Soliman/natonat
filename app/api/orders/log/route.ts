@@ -73,6 +73,7 @@ const UPDATE_ONLY_SOURCES = new Set([
   "email_notification_queued",
   "customer_email_notification",
   "meta_capi",
+  "paymob_webhook",
   "paymob_webhook_aramex",
   "paymob_webhook_bosta",
 ]);
@@ -160,11 +161,35 @@ function getOrderEventKey(body: OrderLogBody, status: string) {
 function hasCheckoutEmailAlreadySent(existing: StoredOrder | undefined) {
   return Boolean(
     existing?.email_sent_at ||
-      existing?.email_queued_at ||
       existing?.history?.some((entry) =>
-        entry.source === "email_notification" ||
-        entry.source === "email_notification_queued"
+        entry.source === "email_notification"
       )
+  );
+}
+
+function hasRecentCheckoutEmailAttempt(existing: StoredOrder | undefined) {
+  const queuedAt =
+    typeof existing?.email_queued_at === "string" ? Date.parse(existing.email_queued_at) : 0;
+  if (Number.isFinite(queuedAt) && queuedAt > 0 && Date.now() - queuedAt < 3 * 60 * 1000) {
+    return true;
+  }
+
+  return Boolean(
+    existing?.history?.some((entry) => {
+      if (entry.source !== "email_notification_queued") return false;
+      const queuedEventAt = Date.parse(entry.timestamp);
+      return Number.isFinite(queuedEventAt) && Date.now() - queuedEventAt < 3 * 60 * 1000;
+    })
+  );
+}
+
+function shouldEmailSourceTriggerSend(source: unknown) {
+  const value = getOrderStatusValue(source);
+  return (
+    value !== "email_notification" &&
+    value !== "email_notification_failed" &&
+    value !== "email_notification_queued" &&
+    value !== "customer_email_notification"
   );
 }
 
@@ -181,8 +206,8 @@ function getNumberValue(value: unknown) {
   return 0;
 }
 
-function shouldSendOrderEmail(order: StoredOrder) {
-  const source = getOrderStatusValue(order.source);
+function shouldSendOrderEmail(order: StoredOrder, triggerSource?: unknown) {
+  const source = getOrderStatusValue(triggerSource) || getOrderStatusValue(order.source);
   const status = getOrderStatusValue(order.status);
   const paymentStatus = getOrderStatusValue(order.payment_status);
   const deliveryMethod = getOrderStatusValue(order.delivery_method);
@@ -192,7 +217,7 @@ function shouldSendOrderEmail(order: StoredOrder) {
   }
 
   if (source === "checkout") {
-    return status === "confirmed" || paymentStatus === "cash on delivery";
+    return status === "confirmed" || status === "shipped" || paymentStatus === "cash on delivery";
   }
 
   if (source === "paymob_webhook_bosta" || source === "paymob_webhook_aramex") {
@@ -780,7 +805,7 @@ async function runPostStorageSideEffects(orderRef: string | undefined, body: Ord
   let storedOrder = body as StoredOrder;
   storedOrder = await attachBostaShipmentIfNeeded(storedOrder);
 
-  if (shouldSendOrderEmail(storedOrder) && !hasCheckoutEmailAlreadySent(storedOrder)) {
+  if (shouldSendOrderEmail(storedOrder, storedOrder.source) && !hasCheckoutEmailAlreadySent(storedOrder)) {
     try {
       storedOrder = await sendConfirmedOrderEmails(orderRef, storedOrder);
     } catch (error) {
@@ -991,7 +1016,13 @@ export async function POST(req: Request) {
     // Send email notification only after the order is genuinely confirmable.
     // Card orders are first stored as created/Pending before Paymob redirects;
     // their email waits for a successful Paymob webhook.
-    if (!fastStore && shouldSendOrderEmail(updatedOrder) && !hasCheckoutEmailAlreadySent(existing)) {
+    if (
+      !fastStore &&
+      shouldEmailSourceTriggerSend(body.source) &&
+      shouldSendOrderEmail(updatedOrder, body.source) &&
+      !hasCheckoutEmailAlreadySent(existing) &&
+      !hasRecentCheckoutEmailAttempt(existing)
+    ) {
       const emailQueuedAt = new Date().toISOString();
       const emailQueuedHistoryEntry: OrderHistoryEntry = {
         status: "email_queued",
