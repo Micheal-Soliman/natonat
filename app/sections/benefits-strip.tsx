@@ -72,7 +72,7 @@ export async function BenefitsStrip() {
                   sizes="(max-width: 640px) 86vw, (max-width: 1024px) 42vw, 22vw"
                   className="w-full h-full object-cover opacity-90 transition-all duration-700 group-hover:opacity-100 group-hover:scale-105"
                   loading="lazy"
-                  quality={45}
+                  quality={35}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
               </div>

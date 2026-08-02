@@ -66,7 +66,7 @@ export async function FeaturedCollections() {
                     sizes="(max-width: 640px) 76vw, (max-width: 1024px) 42vw, 260px"
                     className="object-contain p-3 transition-transform duration-700 ease-out group-hover:scale-[1.15] group-hover:-rotate-2 sm:p-4"
                     loading="lazy"
-                    quality={45}
+                    quality={35}
                   />
                   <span className="absolute bottom-3 right-3 z-20 inline-flex items-center gap-2 rounded-full bg-[#EEBC3F] px-3 py-1.5 text-[10px] font-black uppercase tracking-wide text-[#0F1A26] shadow-lg shadow-black/10 transition-all duration-500 group-hover:-translate-y-1 group-hover:scale-105">
                     <collection.icon className="h-3.5 w-3.5" strokeWidth={2} />

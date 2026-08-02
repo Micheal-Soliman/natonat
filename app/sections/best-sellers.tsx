@@ -361,7 +361,7 @@ export function BestSellers() {
                         sizes="(max-width: 640px) 58vw, (max-width: 1024px) 30vw, 280px"
                         className="object-contain transition-transform duration-500 group-hover:scale-105"
                         loading="lazy"
-                        quality={45}
+                        quality={35}
                       />
 
                       <QuantityDiscountRibbon compact seed={product.id} className="absolute left-2 top-2 z-10 sm:left-3 sm:top-3" />

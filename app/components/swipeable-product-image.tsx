@@ -16,6 +16,7 @@ export function SwipeableProductImage({
   const t = useTranslations("bestSellers");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [startX, setStartX] = useState(0);
+  const [startY, setStartY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -42,8 +43,11 @@ export function SwipeableProductImage({
     (e: React.TouchEvent | React.MouseEvent) => {
       const clientX =
         "touches" in e ? e.touches[0].clientX : e.clientX;
+      const clientY =
+        "touches" in e ? e.touches[0].clientY : e.clientY;
 
       setStartX(clientX);
+      setStartY(clientY);
       setIsDragging(true);
     },
     []
@@ -52,9 +56,20 @@ export function SwipeableProductImage({
   const handleTouchMove = useCallback(
     (e: React.TouchEvent | React.MouseEvent) => {
       if (!isDragging) return;
-      e.preventDefault();
+
+      if ("touches" in e) {
+        const touch = e.touches[0];
+        const diffX = Math.abs(startX - touch.clientX);
+        const diffY = Math.abs(startY - touch.clientY);
+
+        if (diffX > diffY && diffX > 8) {
+          e.preventDefault();
+        }
+      } else {
+        e.preventDefault();
+      }
     },
-    [isDragging]
+    [isDragging, startX, startY]
   );
 
   const handleTouchEnd = useCallback(
@@ -89,7 +104,7 @@ export function SwipeableProductImage({
   return (
     <div
       ref={containerRef}
-      className="relative w-full aspect-[3/4] rounded-2xl overflow-hidden mb-3 border border-[#0F1A26]/5 md:transition-all md:duration-300 md:group-hover:border-[#EEBC3F]/50 md:group-hover:shadow-xl md:group-hover:shadow-[#EEBC3F]/10 bg-[#F1EBE3]"
+      className="relative w-full aspect-[3/4] touch-pan-y select-none rounded-2xl overflow-hidden mb-3 border border-[#0F1A26]/5 md:transition-all md:duration-300 md:group-hover:border-[#EEBC3F]/50 md:group-hover:shadow-xl md:group-hover:shadow-[#EEBC3F]/10 bg-[#F1EBE3]"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -113,7 +128,7 @@ export function SwipeableProductImage({
               sizes="(max-width: 640px) 46vw, (max-width: 1024px) 30vw, 260px"
               className="object-contain pointer-events-none"
               draggable={false}
-              quality={50}
+              quality={35}
               loading="lazy"
             />
           </div>
@@ -132,7 +147,7 @@ export function SwipeableProductImage({
           fill
           sizes="(max-width: 1024px) 30vw, 260px"
           className="object-contain pointer-events-none"
-          quality={55}
+          quality={40}
           loading="lazy"
         />
       </div>
@@ -146,7 +161,7 @@ export function SwipeableProductImage({
             fill
             sizes="(max-width: 1024px) 30vw, 260px"
             className="object-contain pointer-events-none"
-            quality={50}
+            quality={35}
             loading="lazy"
           />
         </div>

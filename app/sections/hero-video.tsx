@@ -2,11 +2,19 @@
 
 import { useEffect, useState } from "react";
 
+const VIDEO_LOAD_DELAY_MS = 1800;
+
 export function HeroVideo() {
   const [loadVideo, setLoadVideo] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if ("connection" in navigator) {
+      const connection = navigator.connection as { saveData?: boolean } | undefined;
+      if (connection?.saveData) return;
+    }
 
     const win = window as Window & typeof globalThis & {
       requestIdleCallback?: (callback: () => void) => number;
@@ -20,10 +28,10 @@ export function HeroVideo() {
 
     if (typeof win.requestIdleCallback !== "undefined") {
       idleId = win.requestIdleCallback(() => {
-        timeoutId = win.setTimeout(load, 2000);
+        timeoutId = win.setTimeout(load, VIDEO_LOAD_DELAY_MS);
       });
     } else {
-      timeoutId = win.setTimeout(load, 2000);
+      timeoutId = win.setTimeout(load, VIDEO_LOAD_DELAY_MS);
     }
 
     return () => {
@@ -43,6 +51,7 @@ export function HeroVideo() {
       muted
       loop
       playsInline
+      disablePictureInPicture
       className="absolute inset-0 w-full h-full object-cover"
     >
       {loadVideo ? <source src="/hero.mp4" type="video/mp4" /> : null}

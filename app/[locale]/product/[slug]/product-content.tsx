@@ -1063,8 +1063,9 @@ const ProductGallery = memo(function ProductGallery({
             fill
             sizes="(max-width: 768px) 92vw, (max-width: 1280px) 45vw, 40vw"
             className={isBundle ? "h-full w-full object-cover" : "h-full w-full object-contain p-2 sm:p-4"}
+            draggable={false}
             priority={safeActiveImage === 0}
-            quality={65}
+            quality={55}
           />
         </div>
 

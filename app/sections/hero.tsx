@@ -15,8 +15,8 @@ export default async function Hero() {
     </div>
   );
 
-  const marqueeItems = Array.from({ length: 16 }, (_, i) => renderMarqueeItem(i, 'marquee-item'));
-  const marqueeItemsCopy = Array.from({ length: 16 }, (_, i) => renderMarqueeItem(i, 'marquee-copy'));
+  const marqueeItems = Array.from({ length: 8 }, (_, i) => renderMarqueeItem(i, 'marquee-item'));
+  const marqueeItemsCopy = Array.from({ length: 8 }, (_, i) => renderMarqueeItem(i, 'marquee-copy'));
 
   return (
     <section className="relative h-screen flex items-center justify-center overflow-hidden bg-[#0a0f14]">

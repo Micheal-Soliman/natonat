@@ -86,7 +86,7 @@ export function Navigation() {
 
     handleScroll();
 
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -164,7 +164,7 @@ export function Navigation() {
     () => {
       const repeatedAnnouncements: typeof discountAnnouncements = [];
       discountAnnouncements.forEach((announcement) => {
-        repeatedAnnouncements.push(announcement, announcement, announcement, announcement);
+        repeatedAnnouncements.push(announcement, announcement);
       });
       return repeatedAnnouncements;
     },
@@ -185,10 +185,10 @@ export function Navigation() {
               <Link
                 key={`${announcement._id || announcement.code}-${index}`}
                 href={announcement.href}
-                className="inline-flex items-center gap-3 px-8 text-[11px] font-black uppercase tracking-[0.18em] transition hover:text-white"
+                className="inline-flex items-center gap-3 px-6 text-[10px] font-black uppercase tracking-[0.16em] transition hover:text-white sm:px-8 sm:text-[11px] sm:tracking-[0.18em]"
               >
                 <span>{announcement.text}</span>
-                <span className="rounded-full border border-[#EEBC3F]/40 px-2 py-0.5 text-[10px]">
+                <span className="rounded-full border border-[#EEBC3F]/40 px-2 py-0.5 text-[9px] sm:text-[10px]">
                   {announcement.code}
                 </span>
                 <span className="text-white/25">|</span>
