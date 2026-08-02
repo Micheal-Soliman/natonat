@@ -155,13 +155,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
 
     if (item.isBundle && item.bundleSelections?.length) {
-      const componentLimits = item.bundleSelections.flatMap((selection) => {
+      const componentLimits: number[] = [];
+      item.bundleSelections.forEach((selection) => {
         const product = products.find((candidate) => candidate.id === selection.productId);
-        if (!product) return [];
+        if (!product) return;
         const available = getAvailableStockQuantity(product, selection.size);
-        return typeof available === "number"
-          ? [Math.floor(available / Math.max(1, selection.quantity || 1))]
-          : [];
+        if (typeof available === "number") {
+          componentLimits.push(Math.floor(available / Math.max(1, selection.quantity || 1)));
+        }
       });
       limits.push(...componentLimits);
     }

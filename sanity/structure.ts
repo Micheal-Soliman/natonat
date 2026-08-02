@@ -21,14 +21,6 @@ export const structure: StructureResolver = (S) =>
             .title("Flash sale section"),
         ),
       S.listItem()
-        .title("Conversion rescue popup")
-        .child(
-          S.document()
-            .schemaType("conversionRescueSettings")
-            .documentId("conversionRescueSettings")
-            .title("Conversion rescue popup"),
-        ),
-      S.listItem()
         .title("Quantity discount")
         .child(
           S.document()

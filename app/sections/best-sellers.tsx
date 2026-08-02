@@ -358,10 +358,10 @@ export function BestSellers() {
                         src={product.image}
                         alt={product.name}
                         fill
-                        sizes="(max-width: 640px) 65vw, (max-width: 1024px) 33vw, 300px"
+                        sizes="(max-width: 640px) 58vw, (max-width: 1024px) 30vw, 280px"
                         className="object-contain transition-transform duration-500 group-hover:scale-105"
                         loading="lazy"
-                        quality={55}
+                        quality={45}
                       />
 
                       <QuantityDiscountRibbon compact seed={product.id} className="absolute left-2 top-2 z-10 sm:left-3 sm:top-3" />

@@ -161,13 +161,13 @@ export function Navigation() {
     { href: "/contact", label: t("contact") },
   ];
   const announcementItems = useMemo(
-    () =>
-      discountAnnouncements.flatMap((announcement) => [
-        announcement,
-        announcement,
-        announcement,
-        announcement,
-      ]),
+    () => {
+      const repeatedAnnouncements: typeof discountAnnouncements = [];
+      discountAnnouncements.forEach((announcement) => {
+        repeatedAnnouncements.push(announcement, announcement, announcement, announcement);
+      });
+      return repeatedAnnouncements;
+    },
     [discountAnnouncements],
   );
   const hasDiscountAnnouncement = discountAnnouncements.length > 0;

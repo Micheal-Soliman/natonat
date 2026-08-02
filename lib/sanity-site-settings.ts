@@ -128,30 +128,9 @@ export type PaymentDiscountSettings = {
   codPercent: number;
 };
 
-export type ConversionRescueSettings = {
-  _updatedAt?: string;
-  enabled: boolean;
-  delaySeconds: number;
-  dismissDays: number;
-  discountCode: string;
-  discountPercent: number;
-  codePrefix: string;
-  codeValidityHours: number;
-  discountLabel: string;
-  eyebrow: string;
-  title: string;
-  description: string;
-  ctaLabel: string;
-  copyLabel: string;
-  copiedLabel: string;
-  declineLabel: string;
-  targetPath: string;
-};
-
 export type SiteSettings = {
   flashSale: FlashSaleSettings;
   flashSaleSection: FlashSaleSectionSettings;
-  conversionRescue: ConversionRescueSettings;
   quantityDiscount: QuantityDiscountSettings;
   paymentDiscounts: PaymentDiscountSettings;
   sizeGuide: SizeGuideSettings;
@@ -163,7 +142,6 @@ type SiteSettingsQueryResult = {
   legacy?: Partial<SiteSettings> | null;
   flashSale?: Partial<FlashSaleSettings> | null;
   flashSaleSection?: Partial<FlashSaleSectionSettings> | null;
-  conversionRescue?: Partial<ConversionRescueSettings> | null;
   quantityDiscount?: Partial<QuantityDiscountSettings> | null;
   paymentDiscounts?: Partial<PaymentDiscountSettings> | null;
   legacyFlashSaleSection?: Partial<FlashSaleSectionSettings> | null;
@@ -222,25 +200,6 @@ const fallbackFlashSaleSection: FlashSaleSectionSettings = {
   offers: [],
 };
 
-const fallbackConversionRescue: ConversionRescueSettings = {
-  enabled: false,
-  delaySeconds: 30,
-  dismissDays: 7,
-  discountCode: "",
-  discountPercent: 5,
-  codePrefix: "NAT",
-  codeValidityHours: 24,
-  discountLabel: "5% OFF",
-  eyebrow: "استنى",
-  title: "خد خصم لو كملت الأوردر دلوقتي",
-  description: "استخدم الكود قبل الدفع، والخصم هيتطبق في checkout.",
-  ctaLabel: "كمل الأوردر بالخصم",
-  copyLabel: "انسخ الكود",
-  copiedLabel: "اتنسخ",
-  declineLabel: "لا أريد",
-  targetPath: "/checkout",
-};
-
 const fallbackCheckoutPopup: CheckoutPopupSettings = {
   enabled: false,
   badge: "PackOnat",
@@ -264,17 +223,6 @@ function normalizePercent(value: unknown, fallback: number) {
   return Number.isFinite(numericValue)
     ? Math.max(0, Math.min(90, numericValue))
     : fallback;
-}
-
-function cleanSettingText(value: unknown, fallback: string) {
-  if (typeof value !== "string") return fallback;
-  const trimmed = value.trim();
-  if (!trimmed) return fallback;
-
-  // Some old Sanity initial values were saved with broken UTF-8 mojibake.
-  if (/[ØÙ]/.test(trimmed)) return fallback;
-
-  return trimmed;
 }
 
 function mergePaymentDiscounts(
@@ -371,51 +319,6 @@ function mergeFlashSaleSection(
   };
 }
 
-function mergeConversionRescue(
-  conversionRescue?: Partial<ConversionRescueSettings> | null,
-): ConversionRescueSettings {
-  const delaySeconds = Math.max(
-    10,
-    Math.min(300, Number(conversionRescue?.delaySeconds) || fallbackConversionRescue.delaySeconds),
-  );
-  const dismissDays = Math.max(
-    1,
-    Math.min(60, Number(conversionRescue?.dismissDays) || fallbackConversionRescue.dismissDays),
-  );
-  const discountPercent = normalizePercent(
-    conversionRescue?.discountPercent,
-    fallbackConversionRescue.discountPercent,
-  );
-  const rawTargetPath = conversionRescue?.targetPath?.trim() || fallbackConversionRescue.targetPath;
-  const targetPath = rawTargetPath === "/shop" ? fallbackConversionRescue.targetPath : rawTargetPath;
-
-  return {
-    ...fallbackConversionRescue,
-    ...conversionRescue,
-    enabled: Boolean(
-      conversionRescue?.enabled && Number(conversionRescue.discountPercent) > 0,
-    ),
-    delaySeconds,
-    dismissDays,
-    discountPercent,
-    codePrefix: conversionRescue?.codePrefix?.trim().toUpperCase() || fallbackConversionRescue.codePrefix,
-    codeValidityHours: Math.max(
-      1,
-      Math.min(168, Number(conversionRescue?.codeValidityHours) || fallbackConversionRescue.codeValidityHours),
-    ),
-    discountLabel: cleanSettingText(conversionRescue?.discountLabel, `${discountPercent}% OFF`),
-    eyebrow: cleanSettingText(conversionRescue?.eyebrow, fallbackConversionRescue.eyebrow),
-    title: cleanSettingText(conversionRescue?.title, fallbackConversionRescue.title),
-    description: cleanSettingText(conversionRescue?.description, fallbackConversionRescue.description),
-    ctaLabel: cleanSettingText(conversionRescue?.ctaLabel, fallbackConversionRescue.ctaLabel),
-    copyLabel: cleanSettingText(conversionRescue?.copyLabel, fallbackConversionRescue.copyLabel),
-    copiedLabel: cleanSettingText(conversionRescue?.copiedLabel, fallbackConversionRescue.copiedLabel),
-    declineLabel: cleanSettingText(conversionRescue?.declineLabel, fallbackConversionRescue.declineLabel),
-    discountCode: "",
-    targetPath,
-  };
-}
-
 function getDiscountAnnouncementFallbackText(announcement: NonNullable<SiteSettingsQueryResult["discountAnnouncements"]>[number]) {
   const code = announcement.code || "";
 
@@ -496,7 +399,6 @@ export async function getSiteSettings(fetchMode: SiteSettingsFetchMode = "cached
       flashSaleSection: mergeFlashSaleSection(
         settings?.flashSaleSection || settings?.legacyFlashSaleSection || undefined,
       ),
-      conversionRescue: mergeConversionRescue(settings?.conversionRescue),
       quantityDiscount: normalizeQuantityDiscountSettings(
         settings?.quantityDiscount || settings?.legacy?.quantityDiscount,
       ),
@@ -510,7 +412,6 @@ export async function getSiteSettings(fetchMode: SiteSettingsFetchMode = "cached
     return {
       flashSale: fallbackFlashSale,
       flashSaleSection: fallbackFlashSaleSection,
-      conversionRescue: fallbackConversionRescue,
       quantityDiscount: fallbackQuantityDiscount,
       paymentDiscounts: fallbackPaymentDiscounts,
       sizeGuide: fallbackSizeGuide,

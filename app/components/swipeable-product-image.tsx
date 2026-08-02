@@ -110,12 +110,11 @@ export function SwipeableProductImage({
               src={img}
               alt={`${product.name} - view ${idx + 1}`}
               fill
-              sizes="(max-width: 640px) 50vw, 33vw"
+              sizes="(max-width: 640px) 46vw, (max-width: 1024px) 30vw, 260px"
               className="object-contain pointer-events-none"
               draggable={false}
-              quality={60}
-              loading={idx === 0 ? "eager" : "lazy"}
-              priority={idx === 0}
+              quality={50}
+              loading="lazy"
             />
           </div>
         ))}
@@ -131,9 +130,9 @@ export function SwipeableProductImage({
           src={primaryImage}
           alt={product.name}
           fill
-          sizes="(max-width: 1024px) 33vw, 25vw"
+          sizes="(max-width: 1024px) 30vw, 260px"
           className="object-contain pointer-events-none"
-          quality={65}
+          quality={55}
           loading="lazy"
         />
       </div>
@@ -145,9 +144,9 @@ export function SwipeableProductImage({
             src={hoverImage}
             alt={`${product.name} - hover view`}
             fill
-            sizes="(max-width: 1024px) 33vw, 25vw"
+            sizes="(max-width: 1024px) 30vw, 260px"
             className="object-contain pointer-events-none"
-            quality={60}
+            quality={50}
             loading="lazy"
           />
         </div>

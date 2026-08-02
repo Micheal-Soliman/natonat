@@ -305,25 +305,6 @@ export const siteSettingsQuery = groq`
         "imageUrl": coalesce(mainImage.asset->url, imageUrl)
       }
     },
-    "conversionRescue": *[_type == "conversionRescueSettings"][0] {
-      _updatedAt,
-      enabled,
-      delaySeconds,
-      dismissDays,
-      discountCode,
-      discountPercent,
-      codePrefix,
-      codeValidityHours,
-      discountLabel,
-      eyebrow,
-      title,
-      description,
-      ctaLabel,
-      copyLabel,
-      copiedLabel,
-      declineLabel,
-      targetPath
-    },
     "quantityDiscount": *[_type == "quantityDiscountSettings"][0] {
       enabled,
       title,

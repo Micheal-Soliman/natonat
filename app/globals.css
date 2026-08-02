@@ -168,6 +168,13 @@ a, button {
   display: none;
 }
 
+@supports (content-visibility: auto) {
+  .below-fold-section {
+    content-visibility: auto;
+    contain-intrinsic-size: 1px 900px;
+  }
+}
+
 @keyframes ribbon-shine {
   0%, 38% {
     transform: translateX(-130%);

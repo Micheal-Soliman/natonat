@@ -36,7 +36,7 @@ export async function FeaturedCollections() {
     },
   ];
   return (
-    <section className="bg-[#F1EBE3] py-12 sm:py-14 lg:py-16">
+    <section className="below-fold-section bg-[#F1EBE3] py-12 sm:py-14 lg:py-16">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-8 text-center transition-all duration-700 opacity-100 translate-y-0 sm:mb-10">
           <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#EEBC3F]">{t('sectionLabel')}</span>
@@ -63,10 +63,10 @@ export async function FeaturedCollections() {
                     src={collection.image}
                     alt={collection.title}
                     fill
-                    sizes="(max-width: 640px) 82vw, (max-width: 1024px) 45vw, 30vw"
+                    sizes="(max-width: 640px) 76vw, (max-width: 1024px) 42vw, 260px"
                     className="object-contain p-3 transition-transform duration-700 ease-out group-hover:scale-[1.15] group-hover:-rotate-2 sm:p-4"
                     loading="lazy"
-                    quality={60}
+                    quality={45}
                   />
                   <span className="absolute bottom-3 right-3 z-20 inline-flex items-center gap-2 rounded-full bg-[#EEBC3F] px-3 py-1.5 text-[10px] font-black uppercase tracking-wide text-[#0F1A26] shadow-lg shadow-black/10 transition-all duration-500 group-hover:-translate-y-1 group-hover:scale-105">
                     <collection.icon className="h-3.5 w-3.5" strokeWidth={2} />

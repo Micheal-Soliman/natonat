@@ -66,6 +66,8 @@ export function FloatingContact() {
       {/* Main Toggle Button - Fixed position, never moves */}
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
+        aria-label={isOpen ? "Close contact options" : "Open contact options"}
+        aria-expanded={isOpen}
         className="relative w-14 h-14 rounded-full bg-[#0F1A26] flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-105 cursor-pointer"
         whileTap={{ scale: 0.95 }}
       >

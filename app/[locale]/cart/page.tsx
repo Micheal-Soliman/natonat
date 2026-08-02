@@ -56,7 +56,8 @@ function CartContent() {
   const freeShippingProgress = Math.min(100, (subtotal / freeShippingThreshold) * 100);
   const quantityDiscountPercent = getQuantityDiscountPercent(totalItems, quantityDiscountSettings);
   const nextQuantityDiscount = getNextQuantityDiscount(totalItems, quantityDiscountSettings);
-  const maxTierQuantity = quantityDiscountSettings.tiers.at(-1)?.minQuantity || 4;
+  const lastDiscountTier = quantityDiscountSettings.tiers[quantityDiscountSettings.tiers.length - 1];
+  const maxTierQuantity = lastDiscountTier?.minQuantity || 4;
   const quantityDiscountProgress = Math.min(
     100,
     Math.max(0, ((totalItems - 1) / Math.max(1, maxTierQuantity - 1)) * 100),

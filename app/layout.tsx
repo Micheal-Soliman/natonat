@@ -7,7 +7,6 @@ import { GoogleAnalyticsPageView } from "./components/google-analytics-page-view
 import { MetaPixelPageView } from "./components/meta-pixel-page-view";
 import { TikTokPixelPageView } from "./components/tiktok-pixel-page-view";
 import { YandexMetrikaPageView } from "./components/yandex-metrika-page-view";
-import { DynamicConversionRescuePopup } from "./components/dynamic-conversion-rescue-popup";
 import { absoluteUrl, siteConfig } from "@/lib/seo";
 
 const montserrat = Montserrat({
@@ -157,6 +156,13 @@ export default function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://www.googletagmanager.com" />
+        <link rel="preconnect" href="https://connect.facebook.net" />
+        <link rel="preconnect" href="https://analytics.tiktok.com" />
+        <link rel="preconnect" href="https://mc.yandex.ru" />
+        <link rel="preconnect" href="https://cdn.sanity.io" />
+      </head>
       <body
         className={`${montserrat.variable} ${quicksand.variable} ${notoSansArabic.variable} ${arthaus.variable} antialiased font-sans`}
       >
@@ -200,7 +206,7 @@ export default function RootLayout({
           `}
         </Script>
 
-        <Script id="tiktok-pixel" strategy="beforeInteractive">
+        <Script id="tiktok-pixel" strategy="afterInteractive">
           {`
             if (!window.location.pathname.startsWith('/studio')) {
               !function (w, d, t) {
@@ -237,7 +243,7 @@ export default function RootLayout({
           `}
         </Script>
 
-        <Script id="yandex-metrika" strategy="afterInteractive">
+        <Script id="yandex-metrika" strategy="lazyOnload">
           {`
             if (!window.location.pathname.startsWith('/studio')) {
               (function(m,e,t,r,i,k,a){
@@ -288,7 +294,6 @@ export default function RootLayout({
         <MetaPixelPageView />
         <TikTokPixelPageView />
         <YandexMetrikaPageView />
-        <DynamicConversionRescuePopup />
         {children}
       </body>
     </html>

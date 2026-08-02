@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { sanityClient } from "@/sanity/lib/client";
 import { discountCodeByCodeQuery } from "@/sanity/lib/queries";
-import { validateConversionRescueCode } from "@/lib/conversion-rescue-code";
 import { validateReferralDiscount } from "@/lib/referrals";
 
 type DiscountType = "percentage" | "fixed" | "free_shipping";
@@ -45,24 +44,12 @@ type DiscountValidationBody = {
   items?: DiscountValidationItem[];
 };
 
-const RESCUE_CODE_COOKIE = "natonat_rescue_code";
-
 function getNumber(value: unknown, fallback = 0) {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
 
 function normalizeCode(code: string) {
   return code.trim().toUpperCase();
-}
-
-function getCookieValue(header: string | null, name: string) {
-  if (!header) return "";
-  const match = header
-    .split(";")
-    .map((part) => part.trim())
-    .find((part) => part.startsWith(`${name}=`));
-
-  return match ? decodeURIComponent(match.slice(name.length + 1)).trim().toUpperCase() : "";
 }
 
 function itemTotal(item: DiscountValidationItem) {
@@ -144,38 +131,6 @@ export async function POST(req: Request) {
   if (!code) return jsonInvalid("Enter a discount code");
   const subtotal = Math.max(0, getNumber(body.subtotal));
   const shipping = Math.max(0, getNumber(body.shipping));
-  const rescueCode = validateConversionRescueCode(code);
-
-  if (rescueCode) {
-    if (!rescueCode.valid) {
-      return jsonInvalid(
-        rescueCode.reason === "expired" ? "Discount code has expired" : "Discount code is not valid",
-      );
-    }
-
-    const browserBoundCode = getCookieValue(req.headers.get("cookie"), RESCUE_CODE_COOKIE);
-    if (browserBoundCode !== rescueCode.code) {
-      return jsonInvalid("Discount code is only valid on the browser it was generated for");
-    }
-
-    const discountAmount = Math.max(0, Math.round(subtotal * (rescueCode.percent / 100)));
-    if (discountAmount <= 0) {
-      return jsonInvalid("Discount code is valid, but there is nothing to discount");
-    }
-
-    return NextResponse.json({
-      valid: true,
-      code: rescueCode.code,
-      discountId: "conversion-rescue",
-      title: "Conversion rescue discount",
-      discountType: "percentage",
-      value: rescueCode.percent,
-      discountAmount,
-      eligibleSubtotal: subtotal,
-      combineWithPaymentDiscount: false,
-      message: `${rescueCode.percent}% discount applied`,
-    });
-  }
 
   let discounts: DiscountCodeDocument[] = [];
 

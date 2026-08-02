@@ -890,7 +890,8 @@ async function runPostStorageSideEffects(orderRef: string | undefined, body: Ord
 export async function POST(req: Request) {
   const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL;
   const databaseConfigured = isOrderDatabaseConfigured();
-  const fastStore = new URL(req.url).searchParams.get("fast") === "1";
+  const requestedFastStore = new URL(req.url).searchParams.get("fast") === "1";
+  const fastStore = requestedFastStore && databaseConfigured;
 
   if (!webhookUrl && !databaseConfigured) {
     return NextResponse.json(

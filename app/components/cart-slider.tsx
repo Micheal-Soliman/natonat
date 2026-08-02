@@ -41,7 +41,8 @@ export function CartSlider() {
   const freeShippingProgress = Math.min(100, (subtotal / freeShippingThreshold) * 100);
   const quantityDiscountPercent = getQuantityDiscountPercent(totalItems, quantityDiscountSettings);
   const nextQuantityDiscount = getNextQuantityDiscount(totalItems, quantityDiscountSettings);
-  const maxTierQuantity = quantityDiscountSettings.tiers.at(-1)?.minQuantity || 4;
+  const lastDiscountTier = quantityDiscountSettings.tiers[quantityDiscountSettings.tiers.length - 1];
+  const maxTierQuantity = lastDiscountTier?.minQuantity || 4;
   const quantityDiscountProgress = Math.min(
     100,
     Math.max(0, ((totalItems - 1) / Math.max(1, maxTierQuantity - 1)) * 100),
@@ -150,6 +151,7 @@ export function CartSlider() {
           </div>
           <button
             onClick={closeCart}
+            aria-label="Close cart"
             className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0F1A26]/5 text-[#0F1A26]/60 transition-colors hover:bg-[#0F1A26]/10 hover:text-[#0F1A26]"
           >
             <X className="h-4 w-4" />
@@ -312,6 +314,7 @@ export function CartSlider() {
                       </div>
                       <button
                         onClick={() => removeFromCart(item.id, item.size, item.color, item.bundleKey)}
+                        aria-label={`Remove ${item.name} from cart`}
                         className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-white text-[#0F1A26]/50 transition-colors hover:bg-red-50 hover:text-red-500"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -323,6 +326,7 @@ export function CartSlider() {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => updateQuantity(item.id, -1, item.size, item.color, item.bundleKey)}
+                          aria-label={`Decrease ${item.name} quantity`}
                           className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-[#0F1A26] transition-colors hover:bg-[#0F1A26]/10"
                         >
                           <Minus className="w-3.5 h-3.5" />
@@ -332,6 +336,7 @@ export function CartSlider() {
                         </span>
                         <button
                           onClick={() => updateQuantity(item.id, 1, item.size, item.color, item.bundleKey)}
+                          aria-label={`Increase ${item.name} quantity`}
                           className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-[#0F1A26] transition-colors hover:bg-[#0F1A26]/10"
                         >
                           <Plus className="w-3.5 h-3.5" />

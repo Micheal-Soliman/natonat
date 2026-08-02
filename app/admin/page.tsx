@@ -585,7 +585,6 @@ function getOrderDiscount(order: AdminOrder) {
     getNumber(order.discount_egp || order["Discount (EGP)"]) ||
     getNumber(extras.discount_egp) ||
     getNumber(extras.quantity_discount) ||
-    getNumber(extras.rescue_discount) ||
     0
   );
 }

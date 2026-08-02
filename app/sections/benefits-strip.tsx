@@ -37,7 +37,7 @@ export async function BenefitsStrip() {
   ];
 
   return (
-    <section className="py-24 bg-[#F5F0EB] overflow-hidden">
+    <section className="below-fold-section py-24 bg-[#F5F0EB] overflow-hidden">
       <div className="mx-auto max-w-[1480px] px-4 sm:px-6 lg:px-8">
         {/* Section Header - Minimal */}
         <div className="mb-20">
@@ -69,10 +69,10 @@ export async function BenefitsStrip() {
                   src={benefit.image}
                   alt={benefit.title}
                   fill
-                  sizes="(max-width: 640px) 92vw, (max-width: 1024px) 45vw, 22vw"
+                  sizes="(max-width: 640px) 86vw, (max-width: 1024px) 42vw, 22vw"
                   className="w-full h-full object-cover opacity-90 transition-all duration-700 group-hover:opacity-100 group-hover:scale-105"
                   loading="lazy"
-                  quality={55}
+                  quality={45}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
               </div>

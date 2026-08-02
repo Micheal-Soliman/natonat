@@ -35,15 +35,6 @@ function LoadingState() {
   );
 }
 
-function clearSavedRescueDiscountCode() {
-  try {
-    window.sessionStorage.removeItem("natonat-saved-discount-code");
-    window.localStorage.removeItem("natonat-saved-discount-code");
-  } catch {
-    // Ignore storage errors.
-  }
-}
-
 function OrderConfirmedContent() {
   const searchParams = useSearchParams();
   const t = useTranslations("orderConfirmed");
@@ -281,7 +272,6 @@ function OrderConfirmedContent() {
 
       clearCart();
       setBuyNowItem(null);
-      clearSavedRescueDiscountCode();
     }
   }, [
     verificationStatus,

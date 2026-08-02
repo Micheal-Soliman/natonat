@@ -2,7 +2,7 @@
 
 import { useCart } from "@/app/lib/cart-context";
 import { useWishlist } from "@/app/lib/wishlist-context";
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { memo, useState, useEffect, useRef, useCallback, useMemo } from "react";
 import type { FormEvent, PointerEvent as ReactPointerEvent } from "react";
 import Image from "next/image";
 import { Link } from "@/i18n/routing";
@@ -908,7 +908,8 @@ function ProductQuantityUpsellTracker({
 }) {
   const discountPercent = getQuantityDiscountPercent(quantity, settings);
   const nextDiscount = getNextQuantityDiscount(quantity, settings);
-  const maxTierQuantity = settings.tiers.at(-1)?.minQuantity || 4;
+  const lastDiscountTier = settings.tiers[settings.tiers.length - 1];
+  const maxTierQuantity = lastDiscountTier?.minQuantity || 4;
   const progress = Math.min(100, Math.max(0, ((quantity - 1) / Math.max(1, maxTierQuantity - 1)) * 100));
   const savingsPerItem = Math.max(0, baseUnitPrice - discountedUnitPrice);
   const tiers = [
@@ -986,6 +987,185 @@ function ProductQuantityUpsellTracker({
     </div>
   );
 }
+
+type ProductGalleryProps = {
+  product: Product;
+  selectedColor: string | null;
+  isBundle: boolean;
+  isBagCover: boolean;
+  t: (key: string, values?: Record<string, string | number | Date>) => string;
+};
+
+const ProductGallery = memo(function ProductGallery({
+  product,
+  selectedColor,
+  isBundle,
+  isBagCover,
+  t,
+}: ProductGalleryProps) {
+  const [activeImage, setActiveImage] = useState(0);
+  const touchStartXRef = useRef<number | null>(null);
+
+  const colorImages = useMemo(() => {
+    const fallbackImages = product.images?.length ? product.images : [product.image];
+    if (!product.colors || !selectedColor) return fallbackImages;
+
+    const colorIndex = product.colors.findIndex((color) => color.id === selectedColor);
+    if (colorIndex === -1) return fallbackImages;
+
+    const colorSlice = product.images?.slice(colorIndex * 3, colorIndex * 3 + 3) || [];
+    return colorSlice.length ? colorSlice : fallbackImages;
+  }, [product.colors, product.image, product.images, selectedColor]);
+
+  const imageCount = Math.max(1, colorImages.length);
+  const safeActiveImage = Math.min(activeImage, imageCount - 1);
+
+  const showPreviousImage = useCallback(() => {
+    setActiveImage((previous) => (previous === 0 ? imageCount - 1 : previous - 1));
+  }, [imageCount]);
+
+  const showNextImage = useCallback(() => {
+    setActiveImage((previous) => (previous === imageCount - 1 ? 0 : previous + 1));
+  }, [imageCount]);
+
+  return (
+    <>
+      <div
+        className={`relative w-full bg-white/55 backdrop-blur-sm rounded-2xl sm:rounded-[2rem] flex items-center justify-center overflow-hidden border border-white/80 shadow-[0_28px_80px_rgba(15,26,38,0.10)] touch-pan-y ${
+          isBundle ? "h-[280px] sm:aspect-square sm:h-auto" : "aspect-[0.96/1] lg:aspect-[1.02/1]"
+        }`}
+        onTouchStart={(event) => {
+          touchStartXRef.current = event.touches[0]?.clientX ?? null;
+        }}
+        onTouchEnd={(event) => {
+          const startX = touchStartXRef.current;
+          const endX = event.changedTouches[0]?.clientX;
+          touchStartXRef.current = null;
+
+          if (startX === null || typeof endX !== "number") return;
+
+          const diff = startX - endX;
+          if (Math.abs(diff) <= 50) return;
+
+          if (diff > 0) {
+            showNextImage();
+          } else {
+            showPreviousImage();
+          }
+        }}
+      >
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(238,188,63,0.15),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(255,255,255,0.05),transparent_50%)]" />
+        <div className="absolute inset-0 p-2 sm:p-4 lg:p-5">
+          <Image
+            src={colorImages[safeActiveImage] || product.image}
+            alt={product.name}
+            fill
+            sizes="(max-width: 768px) 92vw, (max-width: 1280px) 45vw, 40vw"
+            className={isBundle ? "h-full w-full object-cover" : "h-full w-full object-contain p-2 sm:p-4"}
+            priority={safeActiveImage === 0}
+            quality={65}
+          />
+        </div>
+
+        <QuantityDiscountRibbon
+          compact
+          seed={product.id}
+          className="absolute left-3 top-3 z-30 max-w-[42%] sm:left-5 sm:top-5 sm:max-w-[180px]"
+        />
+        {isBagCover && (
+          <div className="absolute right-3 top-3 z-20 flex max-w-[48%] items-start gap-2 rounded-2xl border border-white/80 bg-white/95 px-2.5 py-2 text-[#0F1A26] shadow-xl shadow-[#0F1A26]/10 backdrop-blur-sm sm:right-6 sm:top-6 sm:max-w-[330px] sm:px-4 sm:py-3">
+            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#EEBC3F] text-[#0F1A26]">
+              <Shield className="h-4 w-4" strokeWidth={2.5} />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-xs font-black leading-tight sm:text-sm">
+                {t("coverOnlyNotice.title")}
+              </span>
+              <span className="mt-0.5 block text-[10px] font-bold leading-tight text-[#0F1A26]/65 sm:text-xs">
+                {t("coverOnlyNotice.subtitle")}
+              </span>
+              <span className="mt-1 block text-[8px] font-black uppercase leading-tight tracking-[0.08em] text-[#0F1A26]/45 sm:text-[10px]">
+                {t("coverOnlyNotice.english")}
+              </span>
+            </span>
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={showPreviousImage}
+          className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-12 sm:h-12 bg-white/90 hover:bg-[#EEBC3F] text-[#0F1A26] rounded-full flex items-center justify-center transition-colors duration-200 shadow-lg active:scale-95"
+          aria-label={t("aria.previousImage")}
+        >
+          <ChevronLeft className="w-4 h-4 sm:w-6 sm:h-6" />
+        </button>
+        <button
+          type="button"
+          onClick={showNextImage}
+          className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-12 sm:h-12 bg-white/90 hover:bg-[#EEBC3F] text-[#0F1A26] rounded-full flex items-center justify-center transition-colors duration-200 shadow-lg active:scale-95"
+          aria-label={t("aria.nextImage")}
+        >
+          <ChevronRightIcon className="w-4 h-4 sm:w-6 sm:h-6" />
+        </button>
+      </div>
+
+      <div className="space-y-2 sm:space-y-3 w-full max-w-full overflow-hidden rounded-[1.5rem] border border-white/70 bg-white/45 p-2 shadow-sm backdrop-blur">
+        <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 sm:pb-3 px-1 no-scrollbar max-w-full">
+          {colorImages.map((img, idx) => (
+            <button
+              key={`${img}-${idx}`}
+              type="button"
+              onClick={() => setActiveImage(idx)}
+              className={`flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-lg sm:rounded-xl bg-white/80 flex items-center justify-center transition-colors duration-200 border-2 overflow-hidden ${
+                safeActiveImage === idx
+                  ? "border-[#EEBC3F] shadow-lg shadow-[#EEBC3F]/20"
+                  : "border-transparent opacity-80 hover:opacity-100"
+              }`}
+              aria-label={t("aria.goToImage", { number: idx + 1 })}
+            >
+              <Image
+                src={img}
+                alt={`${product.name} view ${idx + 1}`}
+                width={96}
+                height={96}
+                className={isBundle ? "h-full w-full object-cover" : "w-full h-full object-contain p-1"}
+                loading="lazy"
+                quality={45}
+              />
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center justify-center gap-2 sm:gap-4 max-w-full">
+          <span className="text-xs sm:text-sm font-bold text-[#EEBC3F] min-w-[16px] sm:min-w-[20px]">
+            {String(safeActiveImage + 1).padStart(2, "0")}
+          </span>
+
+          <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto max-w-[180px] sm:max-w-[280px] px-1">
+            {colorImages.map((_, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => setActiveImage(idx)}
+                className={`h-1 sm:h-1.5 rounded-full transition-all duration-200 ${
+                  safeActiveImage === idx
+                    ? "w-4 sm:w-6 bg-[#EEBC3F]"
+                    : "w-1.5 sm:w-1.5 bg-[#0F1A26]/20 hover:bg-[#0F1A26]/40"
+                }`}
+                aria-label={t("aria.goToImage", { number: idx + 1 })}
+              />
+            ))}
+          </div>
+
+          <span className="text-xs sm:text-sm text-[#0F1A26]/60 min-w-[16px] sm:min-w-[20px]">
+            {String(imageCount).padStart(2, "0")}
+          </span>
+        </div>
+      </div>
+    </>
+  );
+});
 
 export default function ProductPageContent({
   product,
@@ -1209,20 +1389,7 @@ export default function ProductPageContent({
     router.push("/checkout");
   };
 
-  // Filter images based on selected color - memoized to prevent infinite loops
-  const colorImages = useMemo(() => {
-    if (!product.colors || !selectedColor) return product.images || [product.image];
-    const colorIndex = product.colors.findIndex(c => c.id === selectedColor);
-    if (colorIndex === -1) return product.images || [product.image];
-    // Each color has 3 images, get the slice for selected color
-    const startIdx = colorIndex * 3;
-    const endIdx = startIdx + 3;
-    return product.images?.slice(startIdx, endIdx) || [product.image];
-  }, [product.colors, product.images, product.image, selectedColor]);
-
-  const [activeImage, setActiveImage] = useState(0);
   const [showShareToast, setShowShareToast] = useState(false);
-  const touchStartXRef = useRef<number | null>(null);
   const bundleOptionsDragRef = useRef<{
     element: HTMLDivElement;
     pointerId: number;
@@ -1313,14 +1480,12 @@ export default function ProductPageContent({
     const getBundleProductIds = (item: Product): number[] => {
       if (!item.bundleItems?.length) return [];
 
-      return item.bundleItems.flatMap((bundleItem) => {
-        const ids: number[] = [];
-
+      const ids: number[] = [];
+      item.bundleItems.forEach((bundleItem) => {
         if (bundleItem.productId) ids.push(bundleItem.productId);
         if (bundleItem.productIds?.length) ids.push(...bundleItem.productIds);
-
-        return ids;
       });
+      return ids;
     };
 
     const isBundleProduct = (item: Product): boolean => {
@@ -1334,9 +1499,12 @@ export default function ProductPageContent({
     const getBundleCategories = (item: Product): string[] => {
       const bundleProductIds = getBundleProductIds(item);
 
-      const categories = bundleProductIds.flatMap((id) => {
+      const categories: string[] = [];
+      bundleProductIds.forEach((id) => {
         const bundleProduct = productById.get(id);
-        return bundleProduct ? getCategories(bundleProduct) : [];
+        if (bundleProduct) {
+          categories.push(...getCategories(bundleProduct));
+        }
       });
 
       return unique(categories);
@@ -1550,11 +1718,11 @@ export default function ProductPageContent({
         .forEach(({ item }) => selected.set(item.id, item));
     };
 
-    const affinityCategories = unique(
-      currentAllCategories.flatMap((category) =>
-        Array.from(categoryAffinityMap.get(category)?.keys() || [])
-      )
-    );
+    const affinityCategoryList: string[] = [];
+    currentAllCategories.forEach((category) => {
+      affinityCategoryList.push(...Array.from(categoryAffinityMap.get(category)?.keys() || []));
+    });
+    const affinityCategories = unique(affinityCategoryList);
 
     if (currentIsBundle) {
       // For bundles: recommend bundle items plus similar bundles.
@@ -1607,12 +1775,6 @@ export default function ProductPageContent({
     return Array.from(selected.values()).slice(0, RELATED_LIMIT);
   }, [product, products]);
 
-
-  // Reset active image when color changes
-  useEffect(() => {
-    const frameId = requestAnimationFrame(() => setActiveImage(0));
-    return () => cancelAnimationFrame(frameId);
-  }, [selectedColor]);
 
   const productFaqs = useMemo(() => {
     const categories = Array.isArray(product.category) ? product.category : [product.category];
@@ -1727,139 +1889,14 @@ export default function ProductPageContent({
           <div className="grid min-w-0 grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1.08fr)_minmax(380px,0.92fr)] lg:gap-12">
             {/* Section 1: Gallery */}
             <div className="min-w-0 space-y-3 sm:space-y-4 w-full max-w-full overflow-hidden lg:sticky lg:top-24">
-              {/* Main Image - Premium with Navigation Arrows + Swipe Support */}
-              <div
-                className={`relative w-full bg-white/55 backdrop-blur-sm rounded-2xl sm:rounded-[2rem] flex items-center justify-center overflow-hidden border border-white/80 shadow-[0_28px_80px_rgba(15,26,38,0.10)] touch-pan-y ${
-                  isBundle ? "h-[280px] sm:aspect-square sm:h-auto" : "aspect-[0.96/1] lg:aspect-[1.02/1]"
-                }`}
-                onTouchStart={(e) => {
-                  const touch = e.touches[0];
-                  touchStartXRef.current = touch.clientX;
-                }}
-                onTouchEnd={(e) => {
-                  const touch = e.changedTouches[0];
-                  const startX = touchStartXRef.current;
-                  if (startX === null) return;
-                  const diff = startX - touch.clientX;
-                  touchStartXRef.current = null;
-                  const threshold = 50;
-                  if (Math.abs(diff) > threshold) {
-                    if (diff > 0) {
-                      setActiveImage((prev) => (prev === (colorImages.length || 1) - 1 ? 0 : prev + 1));
-                    } else {
-                      setActiveImage((prev) => (prev === 0 ? (colorImages.length || 1) - 1 : prev - 1));
-                    }
-                  }
-                }}
-              >
-                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(238,188,63,0.15),transparent_60%)]" />
-                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(255,255,255,0.05),transparent_50%)]" />
-                <div className="absolute inset-0 p-2 sm:p-4 lg:p-5">
-                  <Image
-                    src={colorImages[activeImage] || product.image}
-                    alt={product.name}
-                    fill
-                    sizes="(max-width: 768px) 92vw, (max-width: 1280px) 45vw, 40vw"
-                    className={isBundle ? "h-full w-full object-cover" : "h-full w-full object-contain p-2 sm:p-4"}
-                    priority={activeImage === 0}
-                    quality={65}
-                  />
-                </div>
-
-                {/* Product Badges */}
-                <QuantityDiscountRibbon
-                  compact
-                  seed={product.id}
-                  className="absolute left-3 top-3 z-30 max-w-[42%] sm:left-5 sm:top-5 sm:max-w-[180px]"
-                />
-                {isBagCover && (
-                  <div className="absolute right-3 top-3 z-20 flex max-w-[48%] items-start gap-2 rounded-2xl border border-white/80 bg-white/95 px-2.5 py-2 text-[#0F1A26] shadow-xl shadow-[#0F1A26]/10 backdrop-blur-sm sm:right-6 sm:top-6 sm:max-w-[330px] sm:px-4 sm:py-3">
-                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#EEBC3F] text-[#0F1A26]">
-                      <Shield className="h-4 w-4" strokeWidth={2.5} />
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block text-xs font-black leading-tight sm:text-sm">
-                        {t("coverOnlyNotice.title")}
-                      </span>
-                      <span className="mt-0.5 block text-[10px] font-bold leading-tight text-[#0F1A26]/65 sm:text-xs">
-                        {t("coverOnlyNotice.subtitle")}
-                      </span>
-                      <span className="mt-1 block text-[8px] font-black uppercase leading-tight tracking-[0.08em] text-[#0F1A26]/45 sm:text-[10px]">
-                        {t("coverOnlyNotice.english")}
-                      </span>
-                    </span>
-                  </div>
-                )}
-
-                {/* Previous/Next Arrows */}
-                <button
-                  onClick={() => setActiveImage((prev) => (prev === 0 ? (product.images?.length || 1) - 1 : prev - 1))}
-                  className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-12 sm:h-12 bg-white/90 hover:bg-[#EEBC3F] text-[#0F1A26] rounded-full flex items-center justify-center transition-all duration-300 shadow-lg hover:scale-110 active:scale-95"
-                  aria-label={t('aria.previousImage')}
-                >
-                  <ChevronLeft className="w-4 h-4 sm:w-6 sm:h-6" />
-                </button>
-                <button
-                  onClick={() => setActiveImage((prev) => (prev === (product.images?.length || 1) - 1 ? 0 : prev + 1))}
-                  className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-12 sm:h-12 bg-white/90 hover:bg-[#EEBC3F] text-[#0F1A26] rounded-full flex items-center justify-center transition-all duration-300 shadow-lg hover:scale-110 active:scale-95"
-                  aria-label={t('aria.nextImage')}
-                >
-                  <ChevronRightIcon className="w-4 h-4 sm:w-6 sm:h-6" />
-                </button>
-              </div>
-
-              {/* Thumbnails - Horizontal Scrollable with Index */}
-              <div className="space-y-2 sm:space-y-3 w-full max-w-full overflow-hidden rounded-[1.5rem] border border-white/70 bg-white/45 p-2 shadow-sm backdrop-blur">
-                {/* Thumbnails Row */}
-                <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 sm:pb-3 px-1 no-scrollbar max-w-full">
-                  {(colorImages || [product.image]).map((img, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setActiveImage(idx)}
-                      className={`flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-lg sm:rounded-xl bg-white/80 flex items-center justify-center transition-all duration-300 border-2 overflow-hidden ${activeImage === idx
-                        ? "border-[#EEBC3F] shadow-lg shadow-[#EEBC3F]/20"
-                        : "border-transparent opacity-80 hover:opacity-100"
-                        }`}
-                    >
-                      <Image
-                        src={img}
-                        alt={`${product.name} view ${idx + 1}`}
-                        width={96}
-                        height={96}
-                        className={isBundle ? "h-full w-full object-cover" : "w-full h-full object-contain p-1"}
-                        loading="lazy"
-                        quality={45}
-                      />
-                    </button>
-                  ))}
-                </div>
-
-                {/* Index Indicator with Dots */}
-                <div className="flex items-center justify-center gap-2 sm:gap-4 max-w-full">
-                  <span className="text-xs sm:text-sm font-bold text-[#EEBC3F] min-w-[16px] sm:min-w-[20px]">
-                    {String(activeImage + 1).padStart(2, '0')}
-                  </span>
-
-                  {/* Dots */}
-                  <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto max-w-[180px] sm:max-w-[280px] px-1">
-                    {(colorImages || [product.image]).map((_, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => setActiveImage(idx)}
-                        className={`h-1 sm:h-1.5 rounded-full transition-all duration-300 ${activeImage === idx
-                          ? "w-4 sm:w-6 bg-[#EEBC3F]"
-                          : "w-1.5 sm:w-1.5 bg-[#0F1A26]/20 hover:bg-[#0F1A26]/40"
-                          }`}
-                        aria-label={t('aria.goToImage', { number: idx + 1 })}
-                      />
-                    ))}
-                  </div>
-
-                  <span className="text-xs sm:text-sm text-[#0F1A26]/60 min-w-[16px] sm:min-w-[20px]">
-                    {String(colorImages.length || 1).padStart(2, '0')}
-                  </span>
-                </div>
-              </div>
+              <ProductGallery
+                key={`${product.id}-${selectedColor || "default"}`}
+                product={product}
+                selectedColor={selectedColor}
+                isBundle={isBundle}
+                isBagCover={isBagCover}
+                t={t}
+              />
 
               <ProductQuantityUpsellTracker
                 quantity={quantity}
@@ -2247,7 +2284,6 @@ export default function ProductPageContent({
                           key={color.id}
                           onClick={() => {
                             setSelectedColor(color.id);
-                            setActiveImage(0); // Reset to first image of new color
                           }}
                           className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl border-2 overflow-hidden transition-all duration-300 ${selectedColor === color.id
                             ? "border-[#EEBC3F] shadow-lg shadow-[#EEBC3F]/30 scale-105 ring-2 ring-[#EEBC3F]/20"

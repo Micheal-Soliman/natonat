@@ -144,6 +144,7 @@ export function Footer() {
                 href={t('social.instagramUrl')}
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label="Instagram"
                 className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:bg-[#EEBC3F] hover:text-[#0F1A26] transition-all"
               >
                 <Instagram className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -152,6 +153,7 @@ export function Footer() {
                 href={t('social.facebookUrl')}
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label="Facebook"
                 className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:bg-[#EEBC3F] hover:text-[#0F1A26] transition-all"
               >
                 <Facebook className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -160,6 +162,7 @@ export function Footer() {
                 href={t('social.tiktokUrl')}
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label="TikTok"
                 className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:bg-[#EEBC3F] hover:text-[#0F1A26] transition-all"
               >
                 <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="currentColor">
@@ -179,6 +182,7 @@ export function Footer() {
                 href={t('social.whatsappUrl')}
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label="WhatsApp"
                 className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:bg-[#EEBC3F] hover:text-[#0F1A26] transition-all"
               >
                 <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />

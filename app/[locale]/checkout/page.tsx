@@ -100,17 +100,6 @@ function clearCheckoutLock(signature: string) {
   }
 }
 
-function clearSavedRescueDiscountCode() {
-  if (typeof window === "undefined") return;
-
-  try {
-    window.sessionStorage.removeItem("natonat-saved-discount-code");
-    window.localStorage.removeItem("natonat-saved-discount-code");
-  } catch {
-    // Ignore storage errors.
-  }
-}
-
 const popularCityNames = [
   "Cairo",
   "New Cairo",
@@ -288,11 +277,16 @@ function normalizeCitySearch(value: string) {
 
 function getCitySearchTerms(city: string) {
   const cityKey = normalizeCitySearch(city);
-  const aliasTerms = Object.entries({ ...citySearchAliases, ...arabicCitySearchAliases }).flatMap(([key, aliases]) =>
-    cityKey === normalizeCitySearch(key) || aliases.some((alias) => cityKey.includes(normalizeCitySearch(alias)))
-      ? aliases
-      : []
-  );
+  const aliasTerms: string[] = [];
+  Object.entries({ ...citySearchAliases, ...arabicCitySearchAliases }).forEach(([key, aliases]) => {
+    const isMatchingAlias =
+      cityKey === normalizeCitySearch(key) ||
+      aliases.some((alias) => cityKey.includes(normalizeCitySearch(alias)));
+
+    if (isMatchingAlias) {
+      aliasTerms.push(...aliases);
+    }
+  });
 
   return [city, ...aliasTerms].map(normalizeCitySearch);
 }
@@ -1034,12 +1028,14 @@ function CheckoutContent() {
     return uniqueNames.map((city) => ({
       city,
       isPopular: uniquePopularCities.includes(city),
-      terms: [
-        ...getCitySearchTerms(city),
-        ...(optionsByName.get(normalizeCitySearch(city)) || [])
-          .flatMap((option) => option.aliases || [])
-          .map(normalizeCitySearch),
-      ],
+      terms: (() => {
+        const optionAliases: string[] = [];
+        (optionsByName.get(normalizeCitySearch(city)) || []).forEach((option) => {
+          optionAliases.push(...(option.aliases || []));
+        });
+
+        return [...getCitySearchTerms(city), ...optionAliases.map(normalizeCitySearch)];
+      })(),
     }));
   }, [scopedCityOptions]);
 
@@ -1695,7 +1691,6 @@ function CheckoutContent() {
       setIsRedirectingToConfirmation(true);
       clearCart();
       setBuyNowItem(null);
-      clearSavedRescueDiscountCode();
       const successPath = `/order-confirmed?order_ref=${encodeURIComponent(orderRef)}&method=instapay&success=true&show_offer=1`;
       writeCheckoutLock({
         signature: checkoutSignature,
@@ -1809,7 +1804,6 @@ function CheckoutContent() {
     setIsRedirectingToConfirmation(true);
     clearCart();
     setBuyNowItem(null);
-    clearSavedRescueDiscountCode();
 
     const successPath = `/order-confirmed?order_ref=${encodeURIComponent(orderRef)}&method=${encodeURIComponent(paymentMethod)}&success=true&show_offer=1`;
     writeCheckoutLock({
@@ -1988,23 +1982,12 @@ function CheckoutContent() {
   };
 
   useEffect(() => {
-    let savedCode = "";
-    try {
-      savedCode =
-        window.sessionStorage.getItem("natonat-saved-discount-code") ||
-        window.localStorage.getItem("natonat-saved-discount-code") ||
-        "";
-    } catch {
-      savedCode = "";
-    }
-
     const autoCode = (
       searchParams.get("discount") ||
       searchParams.get("code") ||
       searchParams.get("coupon") ||
       searchParams.get("ref") ||
       searchParams.get("referral") ||
-      savedCode ||
       ""
     ).trim();
     if (!autoCode || autoAppliedDiscountRef.current === autoCode || appliedDiscountCode) return;
