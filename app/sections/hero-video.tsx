@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 
-const VIDEO_LOAD_DELAY_MS = 1800;
+const DESKTOP_VIDEO_LOAD_DELAY_MS = 1800;
+const MOBILE_VIDEO_LOAD_DELAY_MS = 3600;
 
 export function HeroVideo() {
   const [loadVideo, setLoadVideo] = useState(false);
@@ -24,14 +25,16 @@ export function HeroVideo() {
     let idleId: number | null = null;
     let timeoutId: number | null = null;
 
+    const isMobile = window.matchMedia("(max-width: 767px)").matches;
+    const loadDelay = isMobile ? MOBILE_VIDEO_LOAD_DELAY_MS : DESKTOP_VIDEO_LOAD_DELAY_MS;
     const load = () => setLoadVideo(true);
 
     if (typeof win.requestIdleCallback !== "undefined") {
       idleId = win.requestIdleCallback(() => {
-        timeoutId = win.setTimeout(load, VIDEO_LOAD_DELAY_MS);
+        timeoutId = win.setTimeout(load, loadDelay);
       });
     } else {
-      timeoutId = win.setTimeout(load, VIDEO_LOAD_DELAY_MS);
+      timeoutId = win.setTimeout(load, loadDelay);
     }
 
     return () => {

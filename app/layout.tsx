@@ -188,7 +188,7 @@ export default function RootLayout({
           `}
         </Script>
 
-        <Script id="meta-pixel" strategy="afterInteractive">
+        <Script id="meta-pixel" strategy="lazyOnload">
           {`
             if (!window.location.pathname.startsWith('/studio')) {
               !function(f,b,e,v,n,t,s)
@@ -206,7 +206,7 @@ export default function RootLayout({
           `}
         </Script>
 
-        <Script id="tiktok-pixel" strategy="afterInteractive">
+        <Script id="tiktok-pixel" strategy="lazyOnload">
           {`
             if (!window.location.pathname.startsWith('/studio')) {
               !function (w, d, t) {
