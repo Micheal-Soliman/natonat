@@ -1005,6 +1005,7 @@ const ProductGallery = memo(function ProductGallery({
 }: ProductGalleryProps) {
   const [activeImage, setActiveImage] = useState(0);
   const touchStartXRef = useRef<number | null>(null);
+  const warmedImagesRef = useRef<Set<string>>(new Set());
 
   const colorImages = useMemo(() => {
     const fallbackImages = product.images?.length ? product.images : [product.image];
@@ -1019,6 +1020,54 @@ const ProductGallery = memo(function ProductGallery({
 
   const imageCount = Math.max(1, colorImages.length);
   const safeActiveImage = Math.min(activeImage, imageCount - 1);
+  const previousImageIndex = imageCount > 1 ? (safeActiveImage === 0 ? imageCount - 1 : safeActiveImage - 1) : safeActiveImage;
+  const nextImageIndex = imageCount > 1 ? (safeActiveImage === imageCount - 1 ? 0 : safeActiveImage + 1) : safeActiveImage;
+  const warmImageIndexes = useMemo(
+    () => new Set([safeActiveImage, previousImageIndex, nextImageIndex]),
+    [nextImageIndex, previousImageIndex, safeActiveImage],
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined" || colorImages.length <= 1) return;
+
+    const win = window as Window & typeof globalThis & {
+      requestIdleCallback?: (callback: () => void) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+
+    const warmImages = () => {
+      const width = window.matchMedia("(max-width: 768px)").matches ? 640 : 1080;
+
+      colorImages.forEach((image) => {
+        if (!image || warmedImagesRef.current.has(image)) return;
+
+        warmedImagesRef.current.add(image);
+        const preloadImage = new window.Image();
+        preloadImage.decoding = "async";
+        preloadImage.src = `/_next/image?url=${encodeURIComponent(image)}&w=${width}&q=50`;
+      });
+    };
+
+    let idleId: number | null = null;
+    let timeoutId: number | null = null;
+
+    if (typeof win.requestIdleCallback !== "undefined") {
+      idleId = win.requestIdleCallback(() => {
+        timeoutId = win.setTimeout(warmImages, 600);
+      });
+    } else {
+      timeoutId = win.setTimeout(warmImages, 1200);
+    }
+
+    return () => {
+      if (idleId !== null) {
+        win.cancelIdleCallback?.(idleId);
+      }
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [colorImages]);
 
   const showPreviousImage = useCallback(() => {
     setActiveImage((previous) => (previous === 0 ? imageCount - 1 : previous - 1));
@@ -1057,16 +1106,26 @@ const ProductGallery = memo(function ProductGallery({
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(238,188,63,0.15),transparent_60%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(255,255,255,0.05),transparent_50%)]" />
         <div className="absolute inset-0 p-2 sm:p-4 lg:p-5">
-          <Image
-            src={colorImages[safeActiveImage] || product.image}
-            alt={product.name}
-            fill
-            sizes="(max-width: 768px) 92vw, (max-width: 1280px) 45vw, 40vw"
-            className={isBundle ? "h-full w-full object-cover" : "h-full w-full object-contain p-2 sm:p-4"}
-            draggable={false}
-            priority={safeActiveImage === 0}
-            quality={55}
-          />
+          {colorImages.map((image, index) => {
+            if (!warmImageIndexes.has(index)) return null;
+
+            return (
+              <Image
+                key={`${image}-${index}`}
+                src={image || product.image}
+                alt={safeActiveImage === index ? product.name : ""}
+                aria-hidden={safeActiveImage === index ? undefined : true}
+                fill
+                sizes="(max-width: 480px) 360px, (max-width: 768px) 560px, (max-width: 1280px) 45vw, 640px"
+                className={`sm:transition-opacity sm:duration-150 ${
+                  isBundle ? "h-full w-full object-cover" : "h-full w-full object-contain p-2 sm:p-4"
+                } ${safeActiveImage === index ? "opacity-100" : "opacity-0"}`}
+                draggable={false}
+                loading="eager"
+                quality={50}
+              />
+            );
+          })}
         </div>
 
         <QuantityDiscountRibbon
