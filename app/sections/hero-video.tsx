@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 const DESKTOP_VIDEO_LOAD_DELAY_MS = 1800;
-const MOBILE_VIDEO_LOAD_DELAY_MS = 3600;
+const MOBILE_VIDEO_LOAD_DELAY_MS = 10000;
 
 export function HeroVideo() {
   const [loadVideo, setLoadVideo] = useState(false);
@@ -24,10 +24,27 @@ export function HeroVideo() {
 
     let idleId: number | null = null;
     let timeoutId: number | null = null;
+    let hasLoaded = false;
 
     const isMobile = window.matchMedia("(max-width: 767px)").matches;
     const loadDelay = isMobile ? MOBILE_VIDEO_LOAD_DELAY_MS : DESKTOP_VIDEO_LOAD_DELAY_MS;
-    const load = () => setLoadVideo(true);
+    const removeInteractionListeners = () => {
+      window.removeEventListener("pointerdown", load);
+      window.removeEventListener("touchstart", load);
+      window.removeEventListener("scroll", load);
+      window.removeEventListener("keydown", load);
+    };
+    const load = () => {
+      if (hasLoaded) return;
+      hasLoaded = true;
+      removeInteractionListeners();
+      setLoadVideo(true);
+    };
+
+    window.addEventListener("pointerdown", load, { passive: true, once: true });
+    window.addEventListener("touchstart", load, { passive: true, once: true });
+    window.addEventListener("scroll", load, { passive: true, once: true });
+    window.addEventListener("keydown", load, { once: true });
 
     if (typeof win.requestIdleCallback !== "undefined") {
       idleId = win.requestIdleCallback(() => {
@@ -44,6 +61,7 @@ export function HeroVideo() {
       if (timeoutId !== null) {
         clearTimeout(timeoutId);
       }
+      removeInteractionListeners();
     };
   }, []);
 

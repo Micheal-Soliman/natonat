@@ -358,7 +358,7 @@ export function BestSellers() {
                         src={product.image}
                         alt={product.name}
                         fill
-                        sizes="(max-width: 640px) 58vw, (max-width: 1024px) 30vw, 280px"
+                        sizes="(max-width: 640px) 46vw, (max-width: 1024px) 30vw, 280px"
                         className="object-contain transition-transform duration-500 group-hover:scale-105"
                         loading="lazy"
                         quality={35}
