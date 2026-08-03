@@ -12,21 +12,21 @@ import { absoluteUrl, siteConfig } from "@/lib/seo";
 const montserrat = Montserrat({
   variable: "--font-montserrat",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["400", "600", "700"],
   display: "swap",
 });
 
 const quicksand = Quicksand({
   variable: "--font-quicksand",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["400", "600", "700"],
   display: "swap",
 });
 
 const notoSansArabic = Noto_Sans_Arabic({
   variable: "--font-arabic",
   subsets: ["arabic"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["400", "600", "700"],
   display: "swap",
 });
 
@@ -51,6 +51,7 @@ const googleAnalyticsId =
 const yandexMetrikaId =
   process.env.NEXT_PUBLIC_YANDEX_METRIKA_ID ||
   "110397858";
+const yandexWebvisorEnabled = process.env.NEXT_PUBLIC_YANDEX_WEBVISOR === "true";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
@@ -160,7 +161,6 @@ export default function RootLayout({
         <link rel="preconnect" href="https://www.googletagmanager.com" />
         <link rel="preconnect" href="https://connect.facebook.net" />
         <link rel="preconnect" href="https://analytics.tiktok.com" />
-        <link rel="preconnect" href="https://mc.yandex.ru" />
         <link rel="preconnect" href="https://cdn.sanity.io" />
       </head>
       <body
@@ -246,25 +246,27 @@ export default function RootLayout({
         <Script id="yandex-metrika" strategy="lazyOnload">
           {`
             if (!window.location.pathname.startsWith('/studio')) {
-              (function(m,e,t,r,i,k,a){
-                m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
-                m[i].l=1*new Date();
-                for (var j = 0; j < document.scripts.length; j++) {
-                  if (document.scripts[j].src === r) { return; }
-                }
-                k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
-              })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=${yandexMetrikaId}', 'ym');
+              window.setTimeout(function(){
+                (function(m,e,t,r,i,k,a){
+                  m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+                  m[i].l=1*new Date();
+                  for (var j = 0; j < document.scripts.length; j++) {
+                    if (document.scripts[j].src === r) { return; }
+                  }
+                  k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+                })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=${yandexMetrikaId}', 'ym');
 
-              ym(${yandexMetrikaId}, 'init', {
-                ssr: true,
-                webvisor: true,
-                clickmap: true,
-                ecommerce: "dataLayer",
-                referrer: document.referrer,
-                url: location.href,
-                accurateTrackBounce: true,
-                trackLinks: true
-              });
+                ym(${yandexMetrikaId}, 'init', {
+                  ssr: true,
+                  webvisor: ${yandexWebvisorEnabled ? "true" : "false"},
+                  clickmap: ${yandexWebvisorEnabled ? "true" : "false"},
+                  ecommerce: "dataLayer",
+                  referrer: document.referrer,
+                  url: location.href,
+                  accurateTrackBounce: true,
+                  trackLinks: true
+                });
+              }, 9000);
             }
           `}
         </Script>
