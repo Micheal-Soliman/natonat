@@ -9,8 +9,6 @@ import { HowItWorks } from "@/app/sections/how-it-works";
 import { ArticlesSection } from "@/app/sections/articles-section";
 import { Footer } from "@/app/sections/footer";
 import { Loading } from "@/app/components/loading";
-import { FlashSaleModal } from "@/app/components/flash-sale-modal";
-import { FlashSaleSection } from "@/app/sections/flash-sale-carousel-section";
 import { createPageMetadata } from "@/lib/seo";
 import { getSiteSettings } from "@/lib/sanity-site-settings";
 
@@ -25,6 +23,20 @@ const SocialProof = dynamic(
   () => import("@/app/sections/social-proof").then((mod) => mod.SocialProof),
   {
     loading: () => <SectionPlaceholder />,
+  }
+);
+
+const FlashSaleModal = dynamic(
+  () => import("@/app/components/flash-sale-modal").then((mod) => mod.FlashSaleModal),
+  {
+    loading: () => null,
+  }
+);
+
+const FlashSaleSection = dynamic(
+  () => import("@/app/sections/flash-sale-carousel-section").then((mod) => mod.FlashSaleSection),
+  {
+    loading: () => null,
   }
 );
 
@@ -81,14 +93,18 @@ function HomeContent({
   flashSale: Awaited<ReturnType<typeof getSiteSettings>>["flashSale"];
   flashSaleSection: Awaited<ReturnType<typeof getSiteSettings>>["flashSaleSection"];
 }) {
+  const shouldRenderFlashSaleModal = flashSale.enabled;
+  const shouldRenderFlashSaleSection =
+    flashSaleSection.sectionEnabled && flashSaleSection.offers.length > 0;
+
   return (
     <>
-      <FlashSaleModal settings={flashSale} />
+      {shouldRenderFlashSaleModal && <FlashSaleModal settings={flashSale} />}
       <Navigation />
       <main>
         <Hero />
         <BenefitsStrip />
-        <FlashSaleSection settings={flashSaleSection} />
+        {shouldRenderFlashSaleSection && <FlashSaleSection settings={flashSaleSection} />}
         <FeaturedCollections />
         <BestSellers />
         <HowItWorks />
