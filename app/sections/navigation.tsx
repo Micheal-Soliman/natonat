@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { Link } from "@/i18n/routing";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
@@ -15,7 +16,6 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { ShopMegaMenu } from "./shop-mega-menu";
 import { useCart } from "@/app/lib/cart-context";
 import { useWishlist } from "@/app/lib/wishlist-context";
 import {
@@ -24,6 +24,14 @@ import {
 } from "@/app/components/locale-switcher";
 import { useCatalogProducts } from "@/app/lib/catalog-context";
 import { useSiteSettings } from "@/app/lib/site-settings-context";
+
+const ShopMegaMenu = dynamic(
+  () => import("./shop-mega-menu").then((mod) => mod.ShopMegaMenu),
+  {
+    ssr: false,
+    loading: () => null,
+  },
+);
 
 export function Navigation() {
   const t = useTranslations("navigation");
@@ -42,12 +50,23 @@ export function Navigation() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [mounted, setMounted] = useState(false);
+  const [isDesktopNav, setIsDesktopNav] = useState(false);
 
   const searchRef = useRef<HTMLDivElement>(null);
+  const scrolledRef = useRef(false);
 
   useEffect(() => {
     const frameId = requestAnimationFrame(() => setMounted(true));
     return () => cancelAnimationFrame(frameId);
+  }, []);
+
+  useEffect(() => {
+    const media = window.matchMedia("(min-width: 768px)");
+    const updateDesktopNav = () => setIsDesktopNav(media.matches);
+
+    updateDesktopNav();
+    media.addEventListener("change", updateDesktopNav);
+    return () => media.removeEventListener("change", updateDesktopNav);
   }, []);
 
   useEffect(() => {
@@ -81,7 +100,11 @@ export function Navigation() {
 
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
+      const nextScrolled = window.scrollY > 50;
+      if (scrolledRef.current === nextScrolled) return;
+
+      scrolledRef.current = nextScrolled;
+      setScrolled(nextScrolled);
     };
 
     handleScroll();
@@ -224,7 +247,7 @@ export function Navigation() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-1">
-            <ShopMegaMenu scrolled={scrolled} />
+            {isDesktopNav && <ShopMegaMenu scrolled={scrolled} />}
 
             {otherNavLinks.map((link) => (
               <Link
