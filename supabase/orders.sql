@@ -35,6 +35,8 @@ create table if not exists public.orders (
   items jsonb not null default '[]'::jsonb,
   items_flat text,
   aramex jsonb not null default '{}'::jsonb,
+  bosta jsonb not null default '{}'::jsonb,
+  shipment jsonb not null default '{}'::jsonb,
   extras jsonb not null default '{}'::jsonb,
   payment jsonb not null default '{}'::jsonb,
   referral jsonb not null default '{}'::jsonb,
@@ -71,6 +73,8 @@ alter table public.orders add column if not exists email_sent_at timestamptz;
 alter table public.orders add column if not exists instapay_proof_email_sent_at timestamptz;
 alter table public.orders add column if not exists instapay_pending_customer_email_sent_at timestamptz;
 alter table public.orders add column if not exists items_flat text;
+alter table public.orders add column if not exists bosta jsonb not null default '{}'::jsonb;
+alter table public.orders add column if not exists shipment jsonb not null default '{}'::jsonb;
 alter table public.orders add column if not exists history jsonb not null default '[]'::jsonb;
 
 create index if not exists orders_created_at_idx
@@ -99,6 +103,12 @@ create index if not exists orders_aramex_tracking_number_idx
 
 create index if not exists orders_aramex_tracking_idx
   on public.orders ((aramex ->> 'trackingNumber'));
+
+create index if not exists orders_bosta_tracking_idx
+  on public.orders ((bosta ->> 'trackingNumber'));
+
+create index if not exists orders_shipment_tracking_idx
+  on public.orders ((shipment ->> 'trackingNumber'));
 
 create index if not exists orders_customer_phone_idx
   on public.orders ((customer ->> 'phone'));

@@ -4759,7 +4759,7 @@ export default function AdminDashboardPage() {
             </button>
           </div>
           <div className="mt-4 grid gap-3 rounded-3xl bg-[#F8F6F3] p-4 sm:grid-cols-3">
-            <DataPill label="data source" value="Google Sheets orders webhook + in-memory fallback for recent orders" />
+            <DataPill label="data source" value="Supabase orders database + Google Sheets backup log" />
             <DataPill label="auto refresh" value="Every 60 seconds while the admin page is open" />
             <DataPill label="tracking refresh" value="Refresh Tracking Status reads latest movement from the courier for stored tracking numbers" />
           </div>
