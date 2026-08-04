@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { Suspense, useState, useEffect, useMemo, useRef, useCallback, useDeferredValue } from "react";
 import type { Product } from "@/lib/products";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
@@ -14,6 +14,7 @@ import { trackMetaPixelEvent } from "@/lib/meta-pixel";
 import { useCatalogProducts } from "@/app/lib/catalog-context";
 import { useSiteSettings } from "@/app/lib/site-settings-context";
 import { isLegacyBundleCartItem } from "@/lib/legacy-bundles";
+import checkoutBostaLocations from "@/data/bosta-checkout-locations.json";
 
 const INSTAPAY_PROOF_MAX_BYTES = 5 * 1024 * 1024;
 
@@ -376,6 +377,21 @@ type CheckoutGovernorateOption = {
   cityId?: string;
 };
 
+type CompactCheckoutBostaLocations = {
+  g?: Array<{ v?: string; e?: string; a?: string; c?: string }>;
+  d?: Array<{
+    i?: string;
+    n?: string;
+    e?: string;
+    z?: string;
+    c?: string;
+    g?: string;
+    a?: string;
+    b?: string;
+    o?: string;
+  }>;
+};
+
 function getStringField(record: Record<string, unknown>, key: string) {
   const value = record[key];
   return typeof value === "string" && value.trim() ? value.trim() : "";
@@ -711,6 +727,61 @@ function PaymentLogo({
   );
 }
 
+function getLocalCheckoutBostaLocations() {
+  const payload = checkoutBostaLocations as CompactCheckoutBostaLocations;
+  const governorates = Array.isArray(payload.g)
+    ? payload.g
+        .map((governorate) => ({
+          value: governorate.v || governorate.e || governorate.a || "",
+          en: governorate.e || governorate.v || governorate.a || "",
+          ar: governorate.a || governorate.e || governorate.v || "",
+          cityId: governorate.c || "",
+        }))
+        .filter((governorate) => governorate.value)
+    : [];
+
+  const options = Array.isArray(payload.d)
+    ? payload.d
+        .map((district) => ({
+          name: district.n || district.e || "",
+          governorate: district.g || district.b || "",
+          governorateAr: district.a || district.o || district.g || "",
+          districtId: district.i || "",
+          districtName: district.e || district.n || "",
+          cityId: district.c || "",
+          zoneId: district.z || "",
+          bostaCityName: district.b || district.g || "",
+          bostaCityOtherName: district.o || district.a || "",
+          aliases: [
+            district.e,
+            district.n,
+            district.g,
+            district.a,
+            district.b,
+            district.o,
+          ].filter((value): value is string => Boolean(value && value.trim())),
+        }))
+        .filter((option) => option.name && option.governorate)
+    : [];
+
+  const uniqueOptions = new Map<string, CheckoutCityOption>();
+  options.forEach((option) => {
+    const key = `${normalizeCitySearch(option.governorate || "")}::${normalizeCitySearch(option.name)}`;
+    if (!uniqueOptions.has(key)) uniqueOptions.set(key, option);
+  });
+
+  return {
+    options: uniqueOptions.size > 0
+      ? Array.from(uniqueOptions.values()).sort((a, b) =>
+          `${a.governorate || ""} ${a.name}`.localeCompare(`${b.governorate || ""} ${b.name}`, "ar")
+        )
+      : getFallbackCityOptions(),
+    governorates: governorates.length > 0 ? governorates : normalizeGovernorateOptionsPayload({}),
+  };
+}
+
+const localCheckoutBostaLocations = getLocalCheckoutBostaLocations();
+
 function CardPaymentLogos() {
   return (
     <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
@@ -845,16 +916,13 @@ function CheckoutContent() {
     bostaCityOtherName: "",
     phone: "",
   });
-  const [cityOptions, setCityOptions] = useState<CheckoutCityOption[]>(getFallbackCityOptions());
+  const [cityOptions, setCityOptions] = useState<CheckoutCityOption[]>(localCheckoutBostaLocations.options);
   const [governorateOptions, setGovernorateOptions] = useState<CheckoutGovernorateOption[]>(
-    egyptGovernorates.map((governorate) => ({
-      value: governorate.value,
-      en: governorate.en,
-      ar: governorate.ar,
-    })),
+    localCheckoutBostaLocations.governorates,
   );
   const [loadingCities, setLoadingCities] = useState(false);
   const [citySearch, setCitySearch] = useState("");
+  const deferredCitySearch = useDeferredValue(citySearch);
   const [cityListOpen, setCityListOpen] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
@@ -868,12 +936,10 @@ function CheckoutContent() {
     }
 
     async function getCities() {
-      if (!cachedLocations) {
-        setLoadingCities(true);
-      }
+      setLoadingCities(false);
 
       try {
-          const res = await fetch("/api/bosta/districts?lite=1", {
+        const res = await fetch("/api/bosta/districts?lite=1", {
           signal: controller.signal,
         });
 
@@ -885,13 +951,13 @@ function CheckoutContent() {
           if (options.length > 0) {
             writeCachedBostaLocations(options, governorates);
             setCityOptions(options);
-            setGovernorateOptions(governorates);
+            setGovernorateOptions(governorates.length > 0 ? governorates : localCheckoutBostaLocations.governorates);
           }
         }
       } catch (err) {
         if (controller.signal.aborted) return;
         console.error("Error fetching Bosta districts:", err);
-        setCityOptions((current) => (current.length > 0 ? current : getFallbackCityOptions()));
+        setCityOptions((current) => (current.length > 0 ? current : localCheckoutBostaLocations.options));
       } finally {
         if (!controller.signal.aborted) {
           setLoadingCities(false);
@@ -960,7 +1026,7 @@ function CheckoutContent() {
   }, [scopedCityOptions]);
 
   const filteredCities = useMemo(() => {
-    const query = normalizeCitySearch(citySearch);
+    const query = normalizeCitySearch(deferredCitySearch);
 
     if (!query) {
       return citySearchIndex
@@ -979,7 +1045,7 @@ function CheckoutContent() {
       })
       .map((entry) => entry.city)
       .slice(0, CITY_DROPDOWN_LIMIT);
-  }, [citySearchIndex, citySearch]);
+  }, [citySearchIndex, deferredCitySearch]);
 
   const selectedCityOption = useMemo(
     () => findExactBostaCityOption(scopedCityOptions, formData.city),
@@ -2051,7 +2117,7 @@ function CheckoutContent() {
 
   return (
     <>
-      <main className="min-h-screen bg-white pb-12 text-[#0F1A26]">
+      <main className="min-h-screen overflow-x-hidden bg-white pb-10 text-[#0F1A26]">
         <header className="border-b border-[#0F1A26]/10 bg-white">
           <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
             <Link href="/" className="text-xl font-black tracking-tight text-[#0F1A26]">
@@ -2066,12 +2132,12 @@ function CheckoutContent() {
           </div>
         </header>
 
-        <div className="mx-auto grid max-w-7xl lg:grid-cols-[minmax(0,1fr)_430px]">
-          <div className="px-4 py-6 sm:px-6 lg:px-12 lg:py-10">
-            <div className="max-w-[680px]">
+        <div className="mx-auto grid max-w-7xl items-start lg:grid-cols-[minmax(0,1fr)_430px]">
+          <div className="min-w-0 px-3 py-5 sm:px-6 lg:px-12 lg:py-10">
+            <div className="max-w-[680px] min-w-0">
             {/* Checkout Form */}
             <div>
-              <form id="checkout-form" onSubmit={handleSubmit} className="flex flex-col gap-6" noValidate>
+              <form id="checkout-form" onSubmit={handleSubmit} className="flex min-w-0 flex-col gap-5 sm:gap-6" noValidate>
                 {/* Delivery Method */}
                 <div className="order-2">
                   <h2 className="mb-3 text-base font-black text-[#0F1A26]">
@@ -2080,7 +2146,7 @@ function CheckoutContent() {
 
                   <div className="flex flex-col overflow-hidden rounded-lg border border-[#D8D2C8] bg-white">
                     <label
-                      className={`flex cursor-pointer items-center gap-3 border-b border-[#D8D2C8] p-4 transition-all ${deliveryMethod === "delivery"
+                      className={`flex cursor-pointer items-center gap-3 border-b border-[#D8D2C8] p-3 transition-all sm:p-4 ${deliveryMethod === "delivery"
                         ? "bg-[#FFF8E6] ring-2 ring-inset ring-[#EEBC3F]"
                         : "hover:bg-[#F7F5F2]"
                         }`}
@@ -2107,7 +2173,7 @@ function CheckoutContent() {
                     </label>
 
                     <label
-                      className={`flex cursor-pointer items-center gap-3 p-4 transition-all ${deliveryMethod === "pickup"
+                      className={`flex cursor-pointer items-center gap-3 p-3 transition-all sm:p-4 ${deliveryMethod === "pickup"
                         ? "bg-[#FFF8E6] ring-2 ring-inset ring-[#EEBC3F]"
                         : "hover:bg-[#F7F5F2]"
                         }`}
@@ -2135,7 +2201,7 @@ function CheckoutContent() {
 
                     {/* Pickup Customer Details */}
                     {deliveryMethod === "pickup" && (
-                      <div className="mx-4 md:ml-7 p-4 md:p-5 bg-[#EEBC3F]/10 rounded-xl border border-[#EEBC3F]/30 animate-in slide-in-from-top-2 duration-200">
+                      <div className="mx-3 rounded-xl border border-[#EEBC3F]/30 bg-[#EEBC3F]/10 p-3 animate-in slide-in-from-top-2 duration-200 md:ml-7 md:p-5">
                         <div className="mb-4">
                           <p className="text-sm font-semibold text-[#0F1A26]">
                             {t("form.delivery.pickupLocation.title")}
@@ -2342,7 +2408,7 @@ function CheckoutContent() {
                             <div
                               id="checkout-city-list"
                               role="listbox"
-                              className="absolute z-50 mt-1.5 max-h-64 w-full overflow-y-auto rounded-lg border border-[#D8D2C8] bg-white p-1 shadow-xl"
+                              className="absolute z-50 mt-1.5 max-h-[45vh] w-full overflow-y-auto rounded-lg border border-[#D8D2C8] bg-white p-1 shadow-xl sm:max-h-64"
                             >
                               {loadingCities && (
                                 <p className="px-3 py-2 text-xs font-bold text-[#0F1A26]/40">
@@ -2473,7 +2539,7 @@ function CheckoutContent() {
 
                   <div className="flex flex-col overflow-hidden rounded-lg border border-[#D8D2C8] bg-white">
                     <label
-                      className={`order-3 flex cursor-pointer items-start gap-3 border-b border-[#D8D2C8] p-4 transition-all ${paymentMethod === "card"
+                      className={`order-3 flex cursor-pointer items-start gap-3 border-b border-[#D8D2C8] p-3 transition-all sm:p-4 ${paymentMethod === "card"
                         ? "bg-[#FFF8E6] ring-2 ring-inset ring-[#EEBC3F]"
                         : "hover:bg-[#F7F5F2]"
                         }`}
@@ -2510,7 +2576,7 @@ function CheckoutContent() {
                     </label>
 
                     <label
-                      className={`order-1 flex cursor-pointer items-center gap-3 border-b border-[#D8D2C8] p-4 transition-all ${paymentMethod === "cod"
+                      className={`order-1 flex cursor-pointer items-center gap-3 border-b border-[#D8D2C8] p-3 transition-all sm:p-4 ${paymentMethod === "cod"
                         ? "bg-[#FFF8E6] ring-2 ring-inset ring-[#EEBC3F]"
                         : "hover:bg-[#F7F5F2]"
                         }`}
@@ -2540,7 +2606,7 @@ function CheckoutContent() {
                     </label>
 
                     <label
-                      className={`order-2 flex cursor-pointer items-start gap-3 p-4 transition-all ${paymentMethod === "instapay"
+                      className={`order-2 flex cursor-pointer items-start gap-3 p-3 transition-all sm:p-4 ${paymentMethod === "instapay"
                         ? "bg-[#FFF8E6] ring-2 ring-inset ring-[#EEBC3F]"
                         : "hover:bg-[#F7F5F2]"
                         }`}
@@ -2710,7 +2776,7 @@ function CheckoutContent() {
           </div>
 
           {/* Order Summary */}
-          <aside className="order-first self-start border-b border-[#0F1A26]/10 bg-[#F7F2EA] px-4 py-6 sm:px-6 lg:order-last lg:border-b-0 lg:border-s lg:px-8 lg:py-10">
+          <aside className="order-first w-full min-w-0 self-start border-b border-[#0F1A26]/10 bg-[#F7F2EA] px-3 py-5 sm:px-6 lg:order-last lg:border-b-0 lg:border-s lg:px-8 lg:py-10">
             <div id="checkout-review" className="scroll-mt-28">
                 <h2 className="mb-4 text-base font-black text-[#0F1A26]">{t('summary.title')}</h2>
 
