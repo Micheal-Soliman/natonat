@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect, useMemo, useRef, useCallback, useDeferredValue } from "react";
+import { Suspense, useState, useEffect, useMemo, useRef, useCallback } from "react";
 import type { Product } from "@/lib/products";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
@@ -298,15 +298,6 @@ function getCityOptionSearchTerms(option: CheckoutCityOption) {
     option.governorate ? normalizeCitySearch(option.governorate) : "",
     option.governorateAr ? normalizeCitySearch(option.governorateAr) : "",
   ].filter(Boolean);
-}
-
-function findExactBostaCityOption(options: CheckoutCityOption[], value: string) {
-  const normalizedValue = normalizeCitySearch(value);
-  if (!normalizedValue) return null;
-
-  return options.find((option) =>
-    getCityOptionSearchTerms(option).some((term) => term === normalizedValue)
-  ) || null;
 }
 
 function isDiscountShippingCity(city: string) {
@@ -922,9 +913,17 @@ function CheckoutContent() {
   );
   const [loadingCities, setLoadingCities] = useState(false);
   const [citySearch, setCitySearch] = useState("");
-  const deferredCitySearch = useDeferredValue(citySearch);
+  const [citySearchQuery, setCitySearchQuery] = useState("");
   const [cityListOpen, setCityListOpen] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setCitySearchQuery(citySearch);
+    }, 90);
+
+    return () => window.clearTimeout(timer);
+  }, [citySearch]);
 
   useEffect(() => {
     const cachedLocations = readCachedBostaLocations();
@@ -1025,8 +1024,27 @@ function CheckoutContent() {
     }));
   }, [scopedCityOptions]);
 
+  const exactCityOptionsByTerm = useMemo(() => {
+    const optionsByTerm = new Map<string, CheckoutCityOption>();
+
+    scopedCityOptions.forEach((option) => {
+      getCityOptionSearchTerms(option).forEach((term) => {
+        if (term && !optionsByTerm.has(term)) {
+          optionsByTerm.set(term, option);
+        }
+      });
+    });
+
+    return optionsByTerm;
+  }, [scopedCityOptions]);
+
+  const findExactScopedCityOption = useCallback(
+    (value: string) => exactCityOptionsByTerm.get(normalizeCitySearch(value)) || null,
+    [exactCityOptionsByTerm],
+  );
+
   const filteredCities = useMemo(() => {
-    const query = normalizeCitySearch(deferredCitySearch);
+    const query = normalizeCitySearch(citySearchQuery);
 
     if (!query) {
       return citySearchIndex
@@ -1034,26 +1052,48 @@ function CheckoutContent() {
         .slice(0, CITY_DROPDOWN_LIMIT);
     }
 
-    return citySearchIndex
-      .filter((entry) => entry.terms.some((term) => term.includes(query)))
-      .sort((a, b) => {
-        const aStartsWith = a.terms.some((term) => term.startsWith(query));
-        const bStartsWith = b.terms.some((term) => term.startsWith(query));
-        if (aStartsWith !== bStartsWith) return aStartsWith ? -1 : 1;
-        if (a.isPopular !== b.isPopular) return a.isPopular ? -1 : 1;
-        return a.city.localeCompare(b.city);
-      })
-      .map((entry) => entry.city)
-      .slice(0, CITY_DROPDOWN_LIMIT);
-  }, [citySearchIndex, deferredCitySearch]);
+    const exactMatches: string[] = [];
+    const partialMatches: string[] = [];
+
+    for (const entry of citySearchIndex) {
+      let startsWithQuery = false;
+      let includesQuery = false;
+
+      for (const term of entry.terms) {
+        if (term.startsWith(query)) {
+          startsWithQuery = true;
+          includesQuery = true;
+          break;
+        }
+
+        if (term.includes(query)) {
+          includesQuery = true;
+        }
+      }
+
+      if (!includesQuery) continue;
+
+      if (startsWithQuery || entry.isPopular) {
+        exactMatches.push(entry.city);
+      } else {
+        partialMatches.push(entry.city);
+      }
+
+      if (query.length === 1 && exactMatches.length >= CITY_DROPDOWN_LIMIT) {
+        break;
+      }
+    }
+
+    return [...exactMatches, ...partialMatches].slice(0, CITY_DROPDOWN_LIMIT);
+  }, [citySearchIndex, citySearchQuery]);
 
   const selectedCityOption = useMemo(
-    () => findExactBostaCityOption(scopedCityOptions, formData.city),
-    [scopedCityOptions, formData.city]
+    () => findExactScopedCityOption(formData.city),
+    [findExactScopedCityOption, formData.city]
   );
 
   const selectCity = (city: string) => {
-    const option = findExactBostaCityOption(scopedCityOptions, city);
+    const option = findExactScopedCityOption(city);
     setFormData((current) => ({
       ...current,
       city: option?.name || city,
@@ -1070,7 +1110,7 @@ function CheckoutContent() {
   };
 
   const handleCitySearchInput = (value: string) => {
-    const exactCityOption = findExactBostaCityOption(scopedCityOptions, value);
+    const exactCityOption = findExactScopedCityOption(value);
 
     setCitySearch(value);
     setFormData((current) => ({
@@ -1108,7 +1148,7 @@ function CheckoutContent() {
       return;
     }
 
-    const exactCityOption = findExactBostaCityOption(scopedCityOptions, citySearch);
+    const exactCityOption = findExactScopedCityOption(citySearch);
 
     if (exactCityOption) {
       selectCity(exactCityOption.name);
@@ -1125,7 +1165,7 @@ function CheckoutContent() {
 
   useEffect(() => {
     if (!formData.city || aramexCities.length === 0) return;
-    const exactCityOption = findExactBostaCityOption(scopedCityOptions, formData.city);
+    const exactCityOption = findExactScopedCityOption(formData.city);
     if (!exactCityOption || exactCityOption.name === formData.city) return;
 
     setFormData((current) => ({
@@ -1139,7 +1179,7 @@ function CheckoutContent() {
       bostaCityOtherName: exactCityOption.bostaCityOtherName || "",
     }));
     setCitySearch(exactCityOption.name);
-  }, [aramexCities, scopedCityOptions, formData.city]);
+  }, [aramexCities, findExactScopedCityOption, formData.city]);
 
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [instapayProof, setInstapayProof] = useState<InstaPayProofState>(null);
@@ -2387,7 +2427,6 @@ function CheckoutContent() {
                               }, 150);
                             }}
                             onChange={(e) => handleCitySearchInput(e.target.value)}
-                            onInput={(e) => handleCitySearchInput(e.currentTarget.value)}
                             onKeyDown={(e) => {
                               if (e.key === "Enter" && cityListOpen && filteredCities[0]) {
                                 e.preventDefault();
