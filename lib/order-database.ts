@@ -75,6 +75,15 @@ function getObject(value: unknown): OrderRecord {
     : {};
 }
 
+function getNonEmptyObject(...values: unknown[]): OrderRecord {
+  for (const value of values) {
+    const next = getObject(value);
+    if (Object.keys(next).length > 0) return next;
+  }
+
+  return {};
+}
+
 function getArray(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
 }
@@ -177,7 +186,7 @@ export function normalizeOrderForDatabase(order: OrderRecord): SupabaseOrderRow 
 
   const customer = getObject(order.customer || order["Customer (Full JSON)"]);
   const extras = getObject(order.extras || order["Extras (JSON)"] || order["Extras (Full JSON)"]);
-  const bosta = getObject(order.bosta || order.shipment || order.aramex);
+  const bosta = getNonEmptyObject(order.bosta, order.shipment, order.aramex);
 
   return {
     order_ref: orderRef,
@@ -218,6 +227,8 @@ export function normalizeOrderForDatabase(order: OrderRecord): SupabaseOrderRow 
     items: getArray(order.items || order["Items (Full JSON)"] || order.Items),
     items_flat: firstString(order.items_flat, order["Items"]) || null,
     aramex: bosta,
+    bosta,
+    shipment: bosta,
     extras,
     payment: getObject(order.payment),
     referral: getObject(order.referral),
@@ -235,6 +246,14 @@ export function normalizeOrderForDatabase(order: OrderRecord): SupabaseOrderRow 
 
 export function databaseRowToOrder(row: SupabaseOrderRow): OrderRecord {
   const rawPayload = getObject(row.raw_payload);
+  const shipment = getNonEmptyObject(
+    row.bosta,
+    row.shipment,
+    row.aramex,
+    rawPayload.bosta,
+    rawPayload.shipment,
+    rawPayload.aramex,
+  );
 
   return {
     ...rawPayload,
@@ -253,9 +272,9 @@ export function databaseRowToOrder(row: SupabaseOrderRow): OrderRecord {
     customer: row.customer || rawPayload.customer,
     items: row.items || rawPayload.items,
     items_flat: row.items_flat || rawPayload.items_flat,
-    aramex: row.bosta || row.shipment || row.aramex || rawPayload.bosta || rawPayload.shipment || rawPayload.aramex,
-    bosta: row.bosta || row.shipment || row.aramex || rawPayload.bosta || rawPayload.shipment || rawPayload.aramex,
-    shipment: row.shipment || row.bosta || row.aramex || rawPayload.shipment || rawPayload.bosta || rawPayload.aramex,
+    aramex: shipment,
+    bosta: shipment,
+    shipment,
     extras: row.extras || rawPayload.extras,
     payment: row.payment || rawPayload.payment,
     referral: row.referral || rawPayload.referral,
