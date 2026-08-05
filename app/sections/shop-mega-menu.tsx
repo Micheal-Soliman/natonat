@@ -27,7 +27,7 @@ export function ShopMegaMenu({ scrolled }: ShopMegaMenuProps) {
       name: t('luggageCovers'),
       description: t('luggageCoversDesc'),
       href: "/shop?category=luggage-covers",
-      image: "/octopus photo/Anara/1.png",
+      image: "/Octopus/Anaraa/1.jpg",
     },
     {
       id: "passport-wallets",

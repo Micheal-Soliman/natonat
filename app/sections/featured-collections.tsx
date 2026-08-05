@@ -13,7 +13,7 @@ export async function FeaturedCollections() {
       badge: t('luggageCovers.badge'),
       cta: t('luggageCovers.cta'),
       href: "/shop?category=luggage-covers",
-      image: "/octopus photo/Anara/1.png",
+      image: "/Octopus/Anaraa/1.jpg",
       icon: ShieldCheck,
     },
     {

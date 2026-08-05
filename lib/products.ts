@@ -1,6 +1,8 @@
 // Central product catalog for natOnat
 // Single source of truth for all product data
 
+import { withLatestOctopusImages } from "@/lib/octopus-images";
+
 export interface Product {
   id: number;
   slug: string;
@@ -61,7 +63,7 @@ export interface Product {
   pricingRule?: string;
 }
 
-export const products: Product[] = [
+const productCatalog: Product[] = [
   // Real Products from octopus-photo folder
   {
     id: 1,
@@ -1418,6 +1420,8 @@ export const products: Product[] = [
     features: ["RFID Blocking", "Magnetic Clasp", "Vaccine Card Slot", "5 Card Pockets", "Faux Leather", "Honey Brown Color"]
   },
 ];
+
+export const products: Product[] = productCatalog.map(withLatestOctopusImages);
 
 // Helper functions
 export const getProductById = (id: number): Product | undefined => {

@@ -2444,17 +2444,17 @@ export default function ProductPageContent({
               videoFit="contain"
               videos={[
                 {
-                  poster: "/octopus photo/Black/1.png",
+                  poster: "/Octopus/Black/1.jpg",
                   src: "/octopus photo/Wear2.mp4",
                   label: t('videoSection.luggageLabels.protection'),
                 },
                 {
-                  poster: "/octopus photo/Green/021A9832.jpg",
+                  poster: "/Octopus/Green/1.jpg",
                   src: "/octopus photo/Wear.mp4",
                   label: t('videoSection.luggageLabels.easyWear'),
                 },
                 {
-                  poster: "/octopus photo/Black/1.png",
+                  poster: "/Octopus/Black/1.jpg",
                   src: "/octopus photo/Wear3.mp4",
                   label: t('videoSection.luggageLabels.secureFit'),
                 },

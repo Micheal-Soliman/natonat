@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server";
-import { readFile } from "fs/promises";
-import path from "path";
 import { getCatalogProducts } from "@/lib/sanity-products";
 import { isProductOutOfStock } from "@/lib/product-stock";
 
@@ -52,14 +50,12 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const format = (url.searchParams.get("format") || "json").toLowerCase();
 
-    const filePath = path.join(process.cwd(), "data", "media-buyer-products.json");
-    const raw = await readFile(filePath, "utf-8");
-    const { slugs } = JSON.parse(raw) as { slugs: string[]; label?: string };
+    // Sanity is the live source of truth. Keeping a separate slug allow-list
+    // caused newly published products to disappear from the media catalog.
+    const matchedProducts = await getCatalogProducts();
 
-    const products = await getCatalogProducts();
-    const matchedProducts = products.filter((product) => slugs.includes(product.slug));
-
-    const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || "https://example.com").replace(/\/$/, "");
+    const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || "https://www.natonat.com";
+    const siteOrigin = new URL(configuredSiteUrl).origin;
 
     // Build catalog items. For products with sizePrices create per-size rows.
     const items: CatalogItem[] = [];
@@ -72,8 +68,8 @@ export async function GET(request: Request) {
         description: p.description ?? "",
         availability: isUnavailable ? "out of stock" : "in stock",
         condition: "new",
-        link: `${siteUrl}/product/${encodeURIComponent(p.slug)}`,
-        image_link: p.image ? (p.image.startsWith("http") ? p.image : `${siteUrl}${p.image}`) : "",
+        link: `${siteOrigin}/en/product/${encodeURIComponent(p.slug.trim())}`,
+        image_link: p.image ? (p.image.startsWith("http") ? p.image : `${siteOrigin}${p.image}`) : "",
         brand: process.env.MEDIA_BUYER_BRAND || "natOnat",
         google_product_category: "",
         fb_product_category: "",

@@ -1,5 +1,6 @@
 import { products as fallbackProducts, type Product } from "@/lib/products";
 import { normalizeImageList, normalizeImageUrl } from "@/lib/image-url";
+import { withLatestOctopusImages } from "@/lib/octopus-images";
 import { sanityClient } from "@/sanity/lib/client";
 import { activeProductsQuery, productBySlugQuery } from "@/sanity/lib/queries";
 
@@ -84,7 +85,9 @@ function isBundleProduct(product: Product) {
 }
 
 function hidePublicBundles(products: Product[]) {
-  return products.filter((product) => !isBundleProduct(product));
+  return products
+    .filter((product) => !isBundleProduct(product))
+    .map(withLatestOctopusImages);
 }
 
 type CatalogProductsOptions = {
@@ -116,13 +119,17 @@ export async function getCatalogProductBySlug(slug: string): Promise<Product | u
       { next: { revalidate: 60, tags: ["products"] } },
     );
     const normalized = sanityProduct ? normalizeProduct(sanityProduct) : null;
-    if (normalized && !isBundleProduct(normalized)) return normalized;
+    if (normalized && !isBundleProduct(normalized)) return withLatestOctopusImages(normalized);
 
     const fallbackProduct = fallbackProducts.find((product) => product.slug === slug);
-    return fallbackProduct && !isBundleProduct(fallbackProduct) ? fallbackProduct : undefined;
+    return fallbackProduct && !isBundleProduct(fallbackProduct)
+      ? withLatestOctopusImages(fallbackProduct)
+      : undefined;
   } catch (error) {
     console.error("Falling back to local product after Sanity fetch failed", error);
     const fallbackProduct = fallbackProducts.find((product) => product.slug === slug);
-    return fallbackProduct && !isBundleProduct(fallbackProduct) ? fallbackProduct : undefined;
+    return fallbackProduct && !isBundleProduct(fallbackProduct)
+      ? withLatestOctopusImages(fallbackProduct)
+      : undefined;
   }
 }

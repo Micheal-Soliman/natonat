@@ -219,7 +219,7 @@ Use passport wallets to keep everyone's documents in one place. Our family bundl
 
 Travel is about experiences. Take photos, try new foods, and enjoy the journey together.
     `,
-    image: "/octopus photo/Dubai/1.png",
+    image: "/Octopus/Dubai/1.jpg",
     category: "Family Travel",
     author: "natOnat Team",
     date: "2024-02-15",
@@ -434,7 +434,7 @@ export const articlesAr: Article[] = [
 
 السفر يتعلق بالتجارب. التقط صوراً، جرب أطعمة جديدة، واستمتع بالرحلة معاً.
     `,
-    image: "/octopus photo/Dubai/1.png",
+    image: "/Octopus/Dubai/1.jpg",
     category: "سفر عائلي",
     author: "فريق نت أونات",
     date: "2024-02-15",
