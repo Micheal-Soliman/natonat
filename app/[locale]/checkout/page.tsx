@@ -914,6 +914,7 @@ function CheckoutContent() {
   const [loadingCities, setLoadingCities] = useState(false);
   const [citySearch, setCitySearch] = useState("");
   const [citySearchQuery, setCitySearchQuery] = useState("");
+  const lastCityInputValueRef = useRef("");
   const [cityListOpen, setCityListOpen] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
@@ -1106,11 +1107,16 @@ function CheckoutContent() {
       bostaCityOtherName: option?.bostaCityOtherName || "",
     }));
     setCitySearch(city);
+    setCitySearchQuery(city);
+    lastCityInputValueRef.current = city;
     setFieldErrors((current) => ({ ...current, city: "" }));
     setCityListOpen(false);
   };
 
   const handleCitySearchInput = (value: string) => {
+    if (lastCityInputValueRef.current === value) return;
+    lastCityInputValueRef.current = value;
+
     const exactCityOption = findExactScopedCityOption(value);
 
     setCitySearch(value);
@@ -2458,6 +2464,7 @@ function CheckoutContent() {
                               }, 150);
                             }}
                             onChange={(e) => handleCitySearchInput(e.target.value)}
+                            onInput={(e) => handleCitySearchInput(e.currentTarget.value)}
                             onKeyDown={(e) => {
                               if (e.key === "Enter" && cityListOpen && filteredCities[0]) {
                                 e.preventDefault();
@@ -2545,6 +2552,8 @@ function CheckoutContent() {
                                 bostaCityOtherName: "",
                               });
                               setCitySearch("");
+                              setCitySearchQuery("");
+                              lastCityInputValueRef.current = "";
                               setCityListOpen(false);
                               setFieldErrors((current) => ({ ...current, governorate: "", city: "" }));
                             }}
@@ -3011,7 +3020,7 @@ function CheckoutContent() {
                             handleApplyDiscountCode();
                           }
                         }}
-                        className="min-w-0 flex-1 rounded-lg border border-[#D8D2C8] bg-white px-3 py-2.5 text-sm font-bold uppercase tracking-[0.08em] text-[#0F1A26] outline-none placeholder:normal-case placeholder:tracking-normal focus:border-[#EEBC3F] focus:ring-2 focus:ring-[#EEBC3F]/18"
+                        className="min-w-0 flex-1 rounded-lg border border-[#D8D2C8] bg-white px-3 py-2.5 text-base font-bold uppercase tracking-[0.08em] text-[#0F1A26] outline-none placeholder:normal-case placeholder:tracking-normal focus:border-[#EEBC3F] focus:ring-2 focus:ring-[#EEBC3F]/18 sm:text-sm"
                         placeholder={t("discount.placeholder")}
                         disabled={discountCodeStatus === "loading"}
                       />
