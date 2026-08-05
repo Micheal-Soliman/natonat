@@ -959,6 +959,15 @@ export async function POST(req: Request) {
         ? undefined
         : ((await fetchOrderFromGoogleSheets(orderRef)) as StoredOrder | null)) ||
       undefined;
+
+    // New checkout timestamps must come from our server. Customer devices can
+    // have an incorrect clock, which previously moved orders into the wrong
+    // financial reporting day. Existing orders always retain their first date.
+    const serverReceivedAt = new Date().toISOString();
+    const authoritativeCreatedAt =
+      existing?.created_at ||
+      (getOrderStatusValue(body.source) === "checkout" ? serverReceivedAt : body.created_at) ||
+      serverReceivedAt;
     
     // Build status history
     const newStatus = (body.status || existing?.status || "confirmed") as string;
@@ -998,6 +1007,8 @@ export async function POST(req: Request) {
     let updatedOrder = {
       ...existing,
       ...body,
+      created_at: authoritativeCreatedAt,
+      updated_at: body.updated_at || serverReceivedAt,
       source: persistentSource,
       original_source: persistentSource,
       last_update_source: incomingSource && isUpdateOnlySource(incomingSource)

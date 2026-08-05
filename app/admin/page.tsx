@@ -522,6 +522,23 @@ function getOrderDate(order: AdminOrder) {
   return parseDateValue(order.created_at || order["Created At"] || order["Timestamp"] || order.updated_at || order["Updated At"]);
 }
 
+const CAIRO_DATE_FORMATTER = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Africa/Cairo",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+function getCairoDateKey(date: Date) {
+  return CAIRO_DATE_FORMATTER.format(date);
+}
+
+function shiftDateKey(dateKey: string, days: number) {
+  const date = new Date(`${dateKey}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
 function getExpenseDate(expense: AdminExpense) {
   return parseDateValue(expense.expenseDate || expense._updatedAt);
 }
@@ -3234,24 +3251,26 @@ export default function AdminDashboardPage() {
 
   const dateRange = useMemo(() => {
     const now = new Date();
+    const todayKey = getCairoDateKey(now);
     const startOfDay = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
     const endOfDay = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
 
     if (datePreset === "today") {
-      return { from: startOfDay(now), to: endOfDay(now), label: "Today" };
+      return { from: startOfDay(now), to: endOfDay(now), fromKey: todayKey, toKey: todayKey, label: "Today" };
     }
 
     if (datePreset === "yesterday") {
       const yesterday = new Date(now);
       yesterday.setDate(now.getDate() - 1);
-      return { from: startOfDay(yesterday), to: endOfDay(yesterday), label: "Yesterday" };
+      const yesterdayKey = shiftDateKey(todayKey, -1);
+      return { from: startOfDay(yesterday), to: endOfDay(yesterday), fromKey: yesterdayKey, toKey: yesterdayKey, label: "Yesterday" };
     }
 
     if (datePreset === "7d" || datePreset === "30d") {
       const days = datePreset === "7d" ? 7 : 30;
       const from = startOfDay(new Date(now));
       from.setDate(from.getDate() - (days - 1));
-      return { from, to: endOfDay(now), label: `Last ${days} days` };
+      return { from, to: endOfDay(now), fromKey: shiftDateKey(todayKey, -(days - 1)), toKey: todayKey, label: `Last ${days} days` };
     }
 
     if (datePreset === "custom" && (customDateFrom || customDateTo)) {
@@ -3260,11 +3279,13 @@ export default function AdminDashboardPage() {
       return {
         from: from && Number.isFinite(from.getTime()) ? from : null,
         to: to && Number.isFinite(to.getTime()) ? to : null,
+        fromKey: customDateFrom || null,
+        toKey: customDateTo || null,
         label: "Custom range",
       };
     }
 
-    return { from: null, to: null, label: "All time" };
+    return { from: null, to: null, fromKey: null, toKey: null, label: "All time" };
   }, [customDateFrom, customDateTo, datePreset]);
 
   const visibleOrders = useMemo(() => {
@@ -3272,22 +3293,24 @@ export default function AdminDashboardPage() {
       if (!dateRange.from && !dateRange.to) return true;
       const date = getOrderDate(order);
       if (!date) return false;
-      if (dateRange.from && date < dateRange.from) return false;
-      if (dateRange.to && date > dateRange.to) return false;
+      const dateKey = getCairoDateKey(date);
+      if (dateRange.fromKey && dateKey < dateRange.fromKey) return false;
+      if (dateRange.toKey && dateKey > dateRange.toKey) return false;
       return true;
     });
-  }, [dateRange.from, dateRange.to, orders]);
+  }, [dateRange.from, dateRange.fromKey, dateRange.to, dateRange.toKey, orders]);
 
   const visibleExpenses = useMemo(() => {
     return expenses.filter((expense) => {
       if (!dateRange.from && !dateRange.to) return true;
       const date = getExpenseDate(expense);
       if (!date) return false;
-      if (dateRange.from && date < dateRange.from) return false;
-      if (dateRange.to && date > dateRange.to) return false;
+      const dateKey = getCairoDateKey(date);
+      if (dateRange.fromKey && dateKey < dateRange.fromKey) return false;
+      if (dateRange.toKey && dateKey > dateRange.toKey) return false;
       return true;
     });
-  }, [dateRange.from, dateRange.to, expenses]);
+  }, [dateRange.from, dateRange.fromKey, dateRange.to, dateRange.toKey, expenses]);
 
   const orderFilterOptions = useMemo(() => {
     const paymentBuckets = new Map<string, number>();

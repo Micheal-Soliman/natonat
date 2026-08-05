@@ -120,6 +120,51 @@ function firstNumber(...values: unknown[]) {
   return 0;
 }
 
+function getCanonicalCreatedDate(createdValue: unknown, updatedValue: unknown) {
+  const createdDate = parseDateValue(createdValue);
+  const updatedDate = parseDateValue(updatedValue);
+
+  // A record cannot be created after its first persisted update. This can
+  // happen when checkout receives a bad clock from the customer's device.
+  if (createdDate && updatedDate && createdDate.getTime() > updatedDate.getTime()) {
+    return updatedDate;
+  }
+
+  return createdDate || updatedDate;
+}
+
+function hasValue(value: unknown) {
+  if (value == null) return false;
+  if (typeof value === "string") return value.trim().length > 0;
+  if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === "object") return Object.keys(value as OrderRecord).length > 0;
+  return true;
+}
+
+function mergeObjects(primary: unknown, fallback: unknown): OrderRecord {
+  const preferred = getObject(primary);
+  const secondary = getObject(fallback);
+  const merged: OrderRecord = { ...secondary };
+
+  for (const [key, value] of Object.entries(preferred)) {
+    const fallbackValue = secondary[key];
+    if (
+      value &&
+      typeof value === "object" &&
+      !Array.isArray(value) &&
+      fallbackValue &&
+      typeof fallbackValue === "object" &&
+      !Array.isArray(fallbackValue)
+    ) {
+      merged[key] = mergeObjects(value, fallbackValue);
+    } else if (hasValue(value)) {
+      merged[key] = value;
+    }
+  }
+
+  return merged;
+}
+
 const UPDATE_ONLY_SOURCES = new Set([
   "admin_manual_order_edit",
   "admin_status_update",
@@ -170,8 +215,11 @@ function normalizeOrder(input: unknown) {
   const extras = getObject(order.extras || order["Extras (JSON)"] || order["Extras (Full JSON)"]);
   const bostaFromJson = getObject(order.bosta || order.shipment || order.aramex);
   const items = getArray(order.items || order["Items (Full JSON)"] || order["Items"]);
-  const createdDate = parseDateValue(order.created_at || order["Created At"] || order.Timestamp);
   const updatedDate = parseDateValue(order.updated_at || order["Updated At"] || order["Bosta Synced At"] || order["Aramex Synced At"]);
+  const createdDate = getCanonicalCreatedDate(
+    order.created_at || order["Created At"] || order.Timestamp,
+    updatedDate,
+  );
 
   const customer = {
     ...customerFromJson,
@@ -236,6 +284,40 @@ function normalizeOrder(input: unknown) {
 }
 
 type NormalizedOrder = ReturnType<typeof normalizeOrder>;
+
+function mergeNormalizedOrders(existing: NormalizedOrder, incoming: NormalizedOrder): NormalizedOrder {
+  const existingUpdatedAt = parseDateValue(existing.updated_at)?.getTime() || 0;
+  const incomingUpdatedAt = parseDateValue(incoming.updated_at)?.getTime() || 0;
+  const preferred = incomingUpdatedAt >= existingUpdatedAt ? incoming : existing;
+  const fallback = preferred === incoming ? existing : incoming;
+  const merged = mergeObjects(preferred, fallback) as NormalizedOrder;
+  const createdAt = getCanonicalCreatedDate(
+    [existing.created_at, incoming.created_at]
+      .map(parseDateValue)
+      .filter((date): date is Date => Boolean(date))
+      .sort((a, b) => a.getTime() - b.getTime())[0],
+    [existing.updated_at, incoming.updated_at]
+      .map(parseDateValue)
+      .filter((date): date is Date => Boolean(date))
+      .sort((a, b) => a.getTime() - b.getTime())[0],
+  );
+  const customer = mergeObjects(preferred.customer, fallback.customer) as NormalizedOrder["customer"];
+  const extras = mergeObjects(preferred.extras, fallback.extras) as NormalizedOrder["extras"];
+  const bosta = mergeObjects(preferred.bosta, fallback.bosta) as NormalizedOrder["bosta"];
+
+  return {
+    ...merged,
+    order_ref: firstString(preferred.order_ref, fallback.order_ref),
+    created_at: createdAt?.toISOString() || firstString(preferred.created_at, fallback.created_at),
+    updated_at: firstString(preferred.updated_at, fallback.updated_at),
+    customer,
+    extras,
+    items: getArray(preferred.items).length ? getArray(preferred.items) : getArray(fallback.items),
+    bosta,
+    shipment: bosta,
+    aramex: bosta,
+  };
+}
 
 function isDeletedOrder(order: NormalizedOrder) {
   return isDeletedOrderRecord(order);
@@ -363,7 +445,8 @@ export async function GET(req: Request) {
       orphanOrders.push(order);
       continue;
     }
-    mergedByRef.set(orderRef, order);
+    const existing = mergedByRef.get(orderRef);
+    mergedByRef.set(orderRef, existing ? mergeNormalizedOrders(existing, order) : order);
   }
 
   const orders = [...mergedByRef.values(), ...orphanOrders].sort((a, b) => {
