@@ -920,7 +920,7 @@ function CheckoutContent() {
   useEffect(() => {
     const timer = window.setTimeout(() => {
       setCitySearchQuery(citySearch);
-    }, 90);
+    }, 50);
 
     return () => window.clearTimeout(timer);
   }, [citySearch]);
@@ -1044,7 +1044,8 @@ function CheckoutContent() {
   );
 
   const filteredCities = useMemo(() => {
-    const query = normalizeCitySearch(citySearchQuery);
+    const activeCitySearchQuery = citySearch.trim().length <= 1 ? citySearch : citySearchQuery;
+    const query = normalizeCitySearch(activeCitySearchQuery);
 
     if (!query) {
       return citySearchIndex
@@ -1085,7 +1086,7 @@ function CheckoutContent() {
     }
 
     return [...exactMatches, ...partialMatches].slice(0, CITY_DROPDOWN_LIMIT);
-  }, [citySearchIndex, citySearchQuery]);
+  }, [citySearch, citySearchIndex, citySearchQuery]);
 
   const selectedCityOption = useMemo(
     () => findExactScopedCityOption(formData.city),
@@ -1113,16 +1114,46 @@ function CheckoutContent() {
     const exactCityOption = findExactScopedCityOption(value);
 
     setCitySearch(value);
-    setFormData((current) => ({
-      ...current,
-      city: exactCityOption?.name || value.trim(),
-      districtId: exactCityOption?.districtId || "",
-      districtName: exactCityOption?.districtName || exactCityOption?.name || "",
-      cityId: exactCityOption?.cityId || current.governorateCityId || "",
-      zoneId: exactCityOption?.zoneId || "",
-      bostaCityName: exactCityOption?.bostaCityName || "",
-      bostaCityOtherName: exactCityOption?.bostaCityOtherName || "",
-    }));
+    if (value.trim().length <= 1) {
+      setCitySearchQuery(value);
+    }
+
+    setFormData((current) => {
+      if (exactCityOption) {
+        return {
+          ...current,
+          city: exactCityOption.name,
+          districtId: exactCityOption.districtId || "",
+          districtName: exactCityOption.districtName || exactCityOption.name || "",
+          cityId: exactCityOption.cityId || current.governorateCityId || "",
+          zoneId: exactCityOption.zoneId || "",
+          bostaCityName: exactCityOption.bostaCityName || "",
+          bostaCityOtherName: exactCityOption.bostaCityOtherName || "",
+        };
+      }
+
+      if (
+        !current.city &&
+        !current.districtId &&
+        !current.districtName &&
+        !current.zoneId &&
+        !current.bostaCityName &&
+        !current.bostaCityOtherName
+      ) {
+        return current;
+      }
+
+      return {
+        ...current,
+        city: "",
+        districtId: "",
+        districtName: "",
+        cityId: current.governorateCityId || "",
+        zoneId: "",
+        bostaCityName: "",
+        bostaCityOtherName: "",
+      };
+    });
     setFieldErrors((current) => ({ ...current, city: "" }));
     setCityListOpen(true);
   };
@@ -2020,7 +2051,7 @@ function CheckoutContent() {
   }, [checkoutItems, finalTotal, hasCheckoutItems]);
 
   const controlBase =
-    "border border-[#D8D2C8] bg-white text-sm font-semibold text-[#0F1A26] placeholder:text-[#0F1A26]/42 caret-[#0F1A26] shadow-[0_1px_0_rgba(15,26,38,0.02)] transition-colors focus:border-[#EEBC3F] focus:outline-none focus:ring-2 focus:ring-[#EEBC3F]/18 [color-scheme:light]";
+    "border border-[#D8D2C8] bg-white text-base font-semibold text-[#0F1A26] placeholder:text-[#0F1A26]/42 caret-[#0F1A26] shadow-[0_1px_0_rgba(15,26,38,0.02)] transition-colors focus:border-[#EEBC3F] focus:outline-none focus:ring-2 focus:ring-[#EEBC3F]/18 sm:text-sm [color-scheme:light]";
 
   const inputClass = `w-full rounded-lg px-3.5 py-3 ${controlBase}`;
   const inputSmallClass = `w-full rounded-lg px-3 py-2.5 ${controlBase}`;
