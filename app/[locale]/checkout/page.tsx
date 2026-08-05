@@ -117,6 +117,7 @@ const popularCityNames = [
 ];
 
 const CITY_DROPDOWN_LIMIT = 60;
+const CITY_SEARCH_RESULT_LIMIT = 20;
 
 const fallbackCitiesByGovernorate: Record<string, string[]> = {
   Cairo: ["Cairo", "New Cairo", "Nasr City", "Maadi", "Heliopolis", "Zamalek", "Downtown", "Ain Shams", "El Rehab", "Mokattam", "Shorouk", "Madinaty"],
@@ -261,17 +262,12 @@ function normalizeCitySearch(value: string) {
     .trim()
     .toLocaleLowerCase()
     .normalize("NFKD")
-    .replace(/[إأآا]/g, "ا")
-    .replace(/ى/g, "ي")
-    .replace(/ة/g, "ه")
-    .replace(/ؤ/g, "و")
-    .replace(/ئ/g, "ي")
+    .replace(/[\u0622\u0623\u0625\u0627]/g, "\u0627")
+    .replace(/\u0649/g, "\u064a")
+    .replace(/\u0629/g, "\u0647")
+    .replace(/\u0624/g, "\u0648")
+    .replace(/\u0626/g, "\u064a")
     .replace(/[\u064B-\u065F\u0670]/g, "")
-    .replace(/[إأآا]/g, "ا")
-    .replace(/ى/g, "ي")
-    .replace(/ة/g, "ه")
-    .replace(/ؤ/g, "و")
-    .replace(/ئ/g, "ي")
     .replace(/\s+/g, " ");
 }
 
@@ -913,18 +909,9 @@ function CheckoutContent() {
   );
   const [loadingCities, setLoadingCities] = useState(false);
   const [citySearch, setCitySearch] = useState("");
-  const [citySearchQuery, setCitySearchQuery] = useState("");
   const lastCityInputValueRef = useRef("");
   const [cityListOpen, setCityListOpen] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setCitySearchQuery(citySearch);
-    }, 50);
-
-    return () => window.clearTimeout(timer);
-  }, [citySearch]);
 
   useEffect(() => {
     const cachedLocations = readCachedBostaLocations();
@@ -1013,6 +1000,7 @@ function CheckoutContent() {
 
     return uniqueNames.map((city) => ({
       city,
+      normalizedCity: normalizeCitySearch(city),
       isPopular: uniquePopularCities.includes(city),
       terms: (() => {
         const optionAliases: string[] = [];
@@ -1027,6 +1015,17 @@ function CheckoutContent() {
 
   const exactCityOptionsByTerm = useMemo(() => {
     const optionsByTerm = new Map<string, CheckoutCityOption>();
+
+    // Reserve real district names first so a shared Bosta zone alias cannot
+    // resolve to an unrelated district that happened to appear earlier.
+    scopedCityOptions.forEach((option) => {
+      [option.name, option.districtName].forEach((value) => {
+        const term = normalizeCitySearch(value || "");
+        if (term && !optionsByTerm.has(term)) {
+          optionsByTerm.set(term, option);
+        }
+      });
+    });
 
     scopedCityOptions.forEach((option) => {
       getCityOptionSearchTerms(option).forEach((term) => {
@@ -1045,8 +1044,7 @@ function CheckoutContent() {
   );
 
   const filteredCities = useMemo(() => {
-    const activeCitySearchQuery = citySearch.trim().length <= 1 ? citySearch : citySearchQuery;
-    const query = normalizeCitySearch(activeCitySearchQuery);
+    const query = normalizeCitySearch(citySearch);
 
     if (!query) {
       return citySearchIndex
@@ -1054,16 +1052,28 @@ function CheckoutContent() {
         .slice(0, CITY_DROPDOWN_LIMIT);
     }
 
-    const exactMatches: string[] = [];
+    const exactNameMatches: string[] = [];
+    const nameStartsWithMatches: string[] = [];
+    const aliasStartsWithMatches: string[] = [];
     const partialMatches: string[] = [];
 
     for (const entry of citySearchIndex) {
-      let startsWithQuery = false;
+      if (entry.normalizedCity === query) {
+        exactNameMatches.push(entry.city);
+        continue;
+      }
+
+      if (entry.normalizedCity.startsWith(query)) {
+        nameStartsWithMatches.push(entry.city);
+        continue;
+      }
+
+      let aliasStartsWithQuery = false;
       let includesQuery = false;
 
       for (const term of entry.terms) {
         if (term.startsWith(query)) {
-          startsWithQuery = true;
+          aliasStartsWithQuery = true;
           includesQuery = true;
           break;
         }
@@ -1075,19 +1085,20 @@ function CheckoutContent() {
 
       if (!includesQuery) continue;
 
-      if (startsWithQuery || entry.isPopular) {
-        exactMatches.push(entry.city);
+      if (aliasStartsWithQuery || entry.isPopular) {
+        aliasStartsWithMatches.push(entry.city);
       } else {
         partialMatches.push(entry.city);
       }
-
-      if (query.length === 1 && exactMatches.length >= CITY_DROPDOWN_LIMIT) {
-        break;
-      }
     }
 
-    return [...exactMatches, ...partialMatches].slice(0, CITY_DROPDOWN_LIMIT);
-  }, [citySearch, citySearchIndex, citySearchQuery]);
+    return [
+      ...exactNameMatches,
+      ...nameStartsWithMatches,
+      ...aliasStartsWithMatches,
+      ...partialMatches,
+    ].slice(0, CITY_SEARCH_RESULT_LIMIT);
+  }, [citySearch, citySearchIndex]);
 
   const selectedCityOption = useMemo(
     () => findExactScopedCityOption(formData.city),
@@ -1107,7 +1118,6 @@ function CheckoutContent() {
       bostaCityOtherName: option?.bostaCityOtherName || "",
     }));
     setCitySearch(city);
-    setCitySearchQuery(city);
     lastCityInputValueRef.current = city;
     setFieldErrors((current) => ({ ...current, city: "" }));
     setCityListOpen(false);
@@ -1120,9 +1130,6 @@ function CheckoutContent() {
     const exactCityOption = findExactScopedCityOption(value);
 
     setCitySearch(value);
-    if (value.trim().length <= 1) {
-      setCitySearchQuery(value);
-    }
 
     setFormData((current) => {
       if (exactCityOption) {
@@ -2552,7 +2559,6 @@ function CheckoutContent() {
                                 bostaCityOtherName: "",
                               });
                               setCitySearch("");
-                              setCitySearchQuery("");
                               lastCityInputValueRef.current = "";
                               setCityListOpen(false);
                               setFieldErrors((current) => ({ ...current, governorate: "", city: "" }));
