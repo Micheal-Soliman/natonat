@@ -35,7 +35,7 @@ const OCTOPUS_FOLDERS: Record<string, string> = {
 
 const FILE_OVERRIDES: Partial<Record<string, readonly string[]>> = {
   valoria: ["1.jpg", "2.jpg", "3_.jpg", "4.png", "5.jpg", "6.jpg"],
-  wildfern: ["1_.jpg", "2_.jpg", "3_.jpg", "4.png", "5_.jpg", "6.jpg"],
+  wildfern: ["1.jpg", "2_.jpg", "3_.jpg", "4.png", "5_.jpg", "6.jpg"],
 };
 
 function encodePathSegment(value: string) {
