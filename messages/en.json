@@ -497,7 +497,10 @@
     "aria": {
       "previousImage": "Previous image",
       "nextImage": "Next image",
-      "goToImage": "Go to image {number}"
+      "goToImage": "Go to image {number}",
+      "openGallery": "Open product gallery",
+      "closeGallery": "Close product gallery",
+      "swipeGallery": "Swipe to explore"
     },
     "rating": {
       "value": "4.9",

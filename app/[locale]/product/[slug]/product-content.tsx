@@ -11,13 +11,14 @@ import { useLocale, useMessages, useTranslations } from 'next-intl';
 import { Navigation } from "@/app/sections/navigation";
 import { Footer } from "@/app/sections/footer";
 import { Button } from "@/components/ui/button";
-import { Shield, Sparkles, Ruler, Heart, Share2, Check, Star, Truck, RotateCcw, ArrowUpRight, Award, ArrowLeft, ChevronLeft, ChevronRight as ChevronRightIcon, BadgeCheck } from "lucide-react";
+import { Shield, Sparkles, Ruler, Heart, Share2, Check, Star, Truck, RotateCcw, ArrowUpRight, Award, ArrowLeft, ChevronLeft, ChevronRight as ChevronRightIcon, BadgeCheck, Maximize2 } from "lucide-react";
 import { FAQSection } from "@/app/components/faq-section";
 import { DeliveryCountdown } from "@/app/components/delivery-countdown";
 import { SwipeableProductImage } from "@/app/components/swipeable-product-image";
 import { WishlistToggleButton } from "@/app/components/wishlist-toggle-button";
 import { QuantityDiscountRibbon } from "@/app/components/quantity-discount-ribbon";
 import { SizeModal } from "@/app/components/size-modal";
+import { ProductImageLightbox } from "@/app/components/product-image-lightbox";
 import {
   ReviewsLightbox,
   type ReviewImage,
@@ -1004,7 +1005,9 @@ const ProductGallery = memo(function ProductGallery({
   t,
 }: ProductGalleryProps) {
   const [activeImage, setActiveImage] = useState(0);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const touchStartXRef = useRef<number | null>(null);
+  const didSwipeRef = useRef(false);
   const warmedImagesRef = useRef<Set<string>>(new Set());
 
   const colorImages = useMemo(() => {
@@ -1079,95 +1082,119 @@ const ProductGallery = memo(function ProductGallery({
 
   return (
     <>
-      <div
-        className={`relative w-full bg-white/55 backdrop-blur-sm rounded-2xl sm:rounded-[2rem] flex items-center justify-center overflow-hidden border border-white/80 shadow-[0_28px_80px_rgba(15,26,38,0.10)] touch-pan-y ${
-          isBundle ? "h-[280px] sm:aspect-square sm:h-auto" : "aspect-[0.96/1] lg:aspect-[1.02/1]"
-        }`}
-        onTouchStart={(event) => {
-          touchStartXRef.current = event.touches[0]?.clientX ?? null;
-        }}
-        onTouchEnd={(event) => {
-          const startX = touchStartXRef.current;
-          const endX = event.changedTouches[0]?.clientX;
-          touchStartXRef.current = null;
+      <div className="w-full">
+        <div
+          className={`relative flex w-full touch-pan-y items-center justify-center overflow-hidden border border-white/80 bg-white/55 backdrop-blur-sm ${
+            isBagCover
+              ? "rounded-t-2xl rounded-b-none shadow-[0_24px_65px_rgba(15,26,38,0.09)] sm:rounded-t-[2rem]"
+              : "rounded-2xl shadow-[0_28px_80px_rgba(15,26,38,0.10)] sm:rounded-[2rem]"
+          } ${isBundle ? "h-[280px] sm:aspect-square sm:h-auto" : "aspect-[0.96/1] lg:aspect-[1.02/1]"}`}
+          onTouchStart={(event) => {
+            didSwipeRef.current = false;
+            touchStartXRef.current = event.touches[0]?.clientX ?? null;
+          }}
+          onTouchEnd={(event) => {
+            const startX = touchStartXRef.current;
+            const endX = event.changedTouches[0]?.clientX;
+            touchStartXRef.current = null;
 
-          if (startX === null || typeof endX !== "number") return;
+            if (startX === null || typeof endX !== "number") return;
 
-          const diff = startX - endX;
-          if (Math.abs(diff) <= 50) return;
+            const diff = startX - endX;
+            if (Math.abs(diff) <= 50) return;
 
-          if (diff > 0) {
-            showNextImage();
-          } else {
-            showPreviousImage();
-          }
-        }}
-      >
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(238,188,63,0.15),transparent_60%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(255,255,255,0.05),transparent_50%)]" />
-        <div className="absolute inset-0 p-2 sm:p-4 lg:p-5">
-          {colorImages.map((image, index) => {
-            if (!warmImageIndexes.has(index)) return null;
+            didSwipeRef.current = true;
+            if (diff > 0) showNextImage();
+            else showPreviousImage();
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => {
+              if (didSwipeRef.current) {
+                didSwipeRef.current = false;
+                return;
+              }
+              setIsLightboxOpen(true);
+            }}
+            className="absolute inset-0 z-10 cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#EEBC3F]"
+            aria-label={t("aria.openGallery")}
+          >
+            <span className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(238,188,63,0.15),transparent_60%)]" />
+            <span className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(255,255,255,0.05),transparent_50%)]" />
+            <span className="absolute inset-0 p-2 sm:p-4 lg:p-5">
+              {colorImages.map((image, index) => {
+                if (!warmImageIndexes.has(index)) return null;
 
-            return (
-              <Image
-                key={`${image}-${index}`}
-                src={image || product.image}
-                alt={safeActiveImage === index ? product.name : ""}
-                aria-hidden={safeActiveImage === index ? undefined : true}
-                fill
-                sizes="(max-width: 480px) 360px, (max-width: 768px) 560px, (max-width: 1280px) 45vw, 640px"
-                className={`sm:transition-opacity sm:duration-150 ${
-                  isBundle ? "h-full w-full object-cover" : "h-full w-full object-contain p-2 sm:p-4"
-                } ${safeActiveImage === index ? "opacity-100" : "opacity-0"}`}
-                draggable={false}
-                loading="eager"
-                quality={50}
-              />
-            );
-          })}
+                return (
+                  <Image
+                    key={`${image}-${index}`}
+                    src={image || product.image}
+                    alt={safeActiveImage === index ? product.name : ""}
+                    aria-hidden={safeActiveImage === index ? undefined : true}
+                    fill
+                    sizes="(max-width: 480px) 360px, (max-width: 768px) 560px, (max-width: 1280px) 45vw, 640px"
+                    className={`sm:transition-opacity sm:duration-150 ${
+                      isBundle ? "h-full w-full object-cover" : "h-full w-full object-contain p-2 sm:p-4"
+                    } ${safeActiveImage === index ? "opacity-100" : "opacity-0"}`}
+                    draggable={false}
+                    loading="eager"
+                    quality={50}
+                  />
+                );
+              })}
+            </span>
+            <span className="absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-full border border-white/80 bg-white/90 text-[#0F1A26] shadow-lg backdrop-blur sm:bottom-5 sm:right-5 sm:h-11 sm:w-11">
+              <Maximize2 className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2.2} />
+            </span>
+          </button>
+
+          <QuantityDiscountRibbon
+            compact
+            seed={product.id}
+            className="absolute left-3 top-3 z-30 max-w-[42%] sm:left-5 sm:top-5 sm:max-w-[180px]"
+          />
+
+          {imageCount > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={showPreviousImage}
+                className="absolute left-2 top-1/2 z-30 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#0F1A26] shadow-lg transition-colors duration-200 hover:bg-[#EEBC3F] active:scale-95 sm:left-4 sm:h-12 sm:w-12"
+                aria-label={t("aria.previousImage")}
+              >
+                <ChevronLeft className="h-4 w-4 sm:h-6 sm:w-6" />
+              </button>
+              <button
+                type="button"
+                onClick={showNextImage}
+                className="absolute right-2 top-1/2 z-30 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#0F1A26] shadow-lg transition-colors duration-200 hover:bg-[#EEBC3F] active:scale-95 sm:right-4 sm:h-12 sm:w-12"
+                aria-label={t("aria.nextImage")}
+              >
+                <ChevronRightIcon className="h-4 w-4 sm:h-6 sm:w-6" />
+              </button>
+            </>
+          )}
         </div>
 
-        <QuantityDiscountRibbon
-          compact
-          seed={product.id}
-          className="absolute left-3 top-3 z-30 max-w-[42%] sm:left-5 sm:top-5 sm:max-w-[180px]"
-        />
         {isBagCover && (
-          <div className="absolute right-3 top-3 z-20 flex max-w-[48%] items-start gap-2 rounded-2xl border border-white/80 bg-white/95 px-2.5 py-2 text-[#0F1A26] shadow-xl shadow-[#0F1A26]/10 backdrop-blur-sm sm:right-6 sm:top-6 sm:max-w-[330px] sm:px-4 sm:py-3">
-            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#EEBC3F] text-[#0F1A26]">
-              <Shield className="h-4 w-4" strokeWidth={2.5} />
+          <div className="relative z-20 -mt-px flex w-full items-center gap-3 rounded-b-2xl border border-t-0 border-white/80 bg-[#0F1A26] px-3 py-3 text-white shadow-[0_18px_45px_rgba(15,26,38,0.16)] sm:rounded-b-[2rem] sm:px-5 sm:py-4">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#EEBC3F] text-[#0F1A26] sm:h-11 sm:w-11 sm:rounded-2xl">
+              <Shield className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2.5} />
             </span>
-            <span className="min-w-0">
+            <span className="min-w-0 flex-1">
               <span className="block text-xs font-black leading-tight sm:text-sm">
                 {t("coverOnlyNotice.title")}
               </span>
-              <span className="mt-0.5 block text-[10px] font-bold leading-tight text-[#0F1A26]/65 sm:text-xs">
+              <span className="mt-0.5 block text-[10px] font-bold leading-tight text-white/60 sm:text-xs">
                 {t("coverOnlyNotice.subtitle")}
               </span>
-              <span className="mt-1 block text-[8px] font-black uppercase leading-tight tracking-[0.08em] text-[#0F1A26]/45 sm:text-[10px]">
-                {t("coverOnlyNotice.english")}
-              </span>
+            </span>
+            <span className="max-w-[42%] text-end text-[8px] font-black uppercase leading-snug tracking-[0.08em] text-[#EEBC3F] sm:text-[10px]">
+              {t("coverOnlyNotice.english")}
             </span>
           </div>
         )}
-
-        <button
-          type="button"
-          onClick={showPreviousImage}
-          className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-12 sm:h-12 bg-white/90 hover:bg-[#EEBC3F] text-[#0F1A26] rounded-full flex items-center justify-center transition-colors duration-200 shadow-lg active:scale-95"
-          aria-label={t("aria.previousImage")}
-        >
-          <ChevronLeft className="w-4 h-4 sm:w-6 sm:h-6" />
-        </button>
-        <button
-          type="button"
-          onClick={showNextImage}
-          className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-12 sm:h-12 bg-white/90 hover:bg-[#EEBC3F] text-[#0F1A26] rounded-full flex items-center justify-center transition-colors duration-200 shadow-lg active:scale-95"
-          aria-label={t("aria.nextImage")}
-        >
-          <ChevronRightIcon className="w-4 h-4 sm:w-6 sm:h-6" />
-        </button>
       </div>
 
       <div className="space-y-2 sm:space-y-3 w-full max-w-full overflow-hidden rounded-[1.5rem] border border-white/70 bg-white/45 p-2 shadow-sm backdrop-blur">
@@ -1223,6 +1250,21 @@ const ProductGallery = memo(function ProductGallery({
           </span>
         </div>
       </div>
+
+      <ProductImageLightbox
+        images={colorImages}
+        productName={product.name}
+        open={isLightboxOpen}
+        initialIndex={safeActiveImage}
+        onClose={() => setIsLightboxOpen(false)}
+        labels={{
+          close: t("aria.closeGallery"),
+          previous: t("aria.previousImage"),
+          next: t("aria.nextImage"),
+          swipe: t("aria.swipeGallery"),
+          goToImage: (number) => t("aria.goToImage", { number }),
+        }}
+      />
     </>
   );
 });

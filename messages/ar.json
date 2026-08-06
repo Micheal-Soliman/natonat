@@ -951,7 +951,10 @@
     "aria": {
       "previousImage": "الصورة السابقة",
       "nextImage": "الصورة التالية",
-      "goToImage": "الانتقال للصورة {number}"
+      "goToImage": "الانتقال للصورة {number}",
+      "openGallery": "فتح معرض صور المنتج",
+      "closeGallery": "إغلاق معرض صور المنتج",
+      "swipeGallery": "اسحب لتصفح الصور"
     },
     "nav": {
       "previous": "السابق",
