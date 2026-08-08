@@ -48,6 +48,20 @@ function getEmailFromAddress() {
   return process.env.INFO_EMAIL_FROM || process.env.INFO_EMAIL_USER || process.env.EMAIL_USER;
 }
 
+const ADDITIONAL_ORDER_ADMIN_EMAIL = "mahmoudt570@gmail.com";
+
+function getOrderAdminRecipients() {
+  const to = process.env.ORDER_ADMIN_EMAIL || process.env.ADMIN_EMAIL || "natonateg@gmail.com";
+  const configuredBcc = String(process.env.ORDER_ADMIN_BCC_EMAILS || "")
+    .split(/[;,]/)
+    .map((email) => email.trim())
+    .filter(Boolean);
+  const bcc = [...new Set([ADDITIONAL_ORDER_ADMIN_EMAIL, ...configuredBcc])]
+    .filter((email) => email.toLowerCase() !== to.toLowerCase());
+
+  return { to, bcc };
+}
+
 async function sendMailWithFallback(mailOptions: Record<string, unknown>) {
   const configs = getEmailTransportConfigs();
 
@@ -273,13 +287,14 @@ function renderTotalsHtml(orderData: OrderEmailData) {
 }
 
 export async function sendOrderEmail(orderData: OrderEmailData) {
-  const adminEmail = process.env.ORDER_ADMIN_EMAIL || process.env.ADMIN_EMAIL || 'natonateg@gmail.com';
+  const adminRecipients = getOrderAdminRecipients();
   const itemsHtml = (orderData.items || []).map(renderItemHtml).join('');
   const totalsHtml = renderTotalsHtml(orderData);
 
   const mailOptions = {
     from: getEmailFromAddress(),
-    to: adminEmail,
+    to: adminRecipients.to,
+    bcc: adminRecipients.bcc,
     subject: `New Order: ${orderData.order_ref || 'N/A'}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 10px;">
@@ -348,7 +363,7 @@ function getDataUrlAttachment(proof: OrderEmailData["instapay_proof"]) {
 }
 
 export async function sendInstapayApprovalEmail(orderData: OrderEmailData) {
-  const adminEmail = process.env.ORDER_ADMIN_EMAIL || process.env.ADMIN_EMAIL || "natonateg@gmail.com";
+  const adminRecipients = getOrderAdminRecipients();
   const itemsHtml = (orderData.items || []).map(renderItemHtml).join("");
   const totalsHtml = renderTotalsHtml(orderData);
   const proofAttachment = getDataUrlAttachment(orderData.instapay_proof);
@@ -375,7 +390,8 @@ export async function sendInstapayApprovalEmail(orderData: OrderEmailData) {
 
   const mailOptions = {
     from: getEmailFromAddress(),
-    to: adminEmail,
+    to: adminRecipients.to,
+    bcc: adminRecipients.bcc,
     subject: `InstaPay approval needed: ${orderData.order_ref || "N/A"}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 14px;">
