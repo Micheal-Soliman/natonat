@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { getCatalogProducts } from "@/lib/sanity-products";
-import { isProductOutOfStock } from "@/lib/product-stock";
+import {
+  getAvailableStockQuantity,
+  isProductOutOfStock,
+  isProductSizeOutOfStock,
+} from "@/lib/product-stock";
 
 export const dynamic = "force-dynamic";
 
@@ -43,6 +47,22 @@ function csvEscape(value: unknown) {
   const escaped = s.replace(/"/g, '""');
   if (/[",\n]/.test(s)) return `"${escaped}"`;
   return escaped;
+}
+
+function getFeedPrices(currentValue: unknown, originalValue: unknown) {
+  const currency = process.env.MEDIA_BUYER_CURRENCY || "EGP";
+  const currentPrice = Number(currentValue);
+  const originalPrice = Number(originalValue);
+
+  if (!Number.isFinite(currentPrice) || currentPrice <= 0) {
+    return { price: "", salePrice: "" };
+  }
+
+  const hasDiscount = Number.isFinite(originalPrice) && originalPrice > currentPrice;
+  return {
+    price: `${(hasDiscount ? originalPrice : currentPrice).toFixed(2)} ${currency}`,
+    salePrice: hasDiscount ? `${currentPrice.toFixed(2)} ${currency}` : "",
+  };
 }
 
 export async function GET(request: Request) {
@@ -98,26 +118,32 @@ export async function GET(request: Request) {
           const sizeData = p.sizePrices[sizeKey as keyof typeof p.sizePrices];
           if (!sizeData) continue;
           const sizeLabel = sizeKey.toUpperCase();
-          const priceVal = Number(sizeData.price).toFixed(2);
-          const originalVal = Number(sizeData.originalPrice || 0).toFixed(2);
+          const prices = getFeedPrices(sizeData.price, sizeData.originalPrice);
+          if (!prices.price) continue;
+          const sizeUnavailable = isProductSizeOutOfStock(p, sizeKey);
+          const sizeQuantity = getAvailableStockQuantity(p, sizeKey);
           const itemId = `${p.slug}-${sizeKey}`;
           items.push({
             ...base,
             id: itemId,
             title: `${base.title} - ${sizeLabel}`,
-            price: `${priceVal} ${process.env.MEDIA_BUYER_CURRENCY || "EGP"}`,
-            sale_price: originalVal && Number(originalVal) > Number(priceVal) ? `${priceVal} ${process.env.MEDIA_BUYER_CURRENCY || "EGP"}` : "",
+            availability: sizeUnavailable ? "out of stock" : "in stock",
+            quantity_to_sell_on_facebook: sizeUnavailable ? 0 : sizeQuantity ?? 100,
+            price: prices.price,
+            sale_price: prices.salePrice,
             size: sizeLabel,
             item_group_id: p.slug,
           });
         }
       } else {
         // single row
-        const priceVal = p.price != null ? Number(p.price).toFixed(2) : "";
+        const prices = getFeedPrices(p.price, p.originalPrice);
+        if (!prices.price) continue;
         items.push({
           ...base,
           id: p.slug,
-          price: priceVal ? `${priceVal} ${process.env.MEDIA_BUYER_CURRENCY || "EGP"}` : "",
+          price: prices.price,
+          sale_price: prices.salePrice,
           size: p.size ?? "",
         });
       }
