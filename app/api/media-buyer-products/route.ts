@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCatalogProducts } from "@/lib/sanity-products";
-import {
-  getAvailableStockQuantity,
-  isProductOutOfStock,
-  isProductSizeOutOfStock,
-} from "@/lib/product-stock";
+import { isProductOutOfStock } from "@/lib/product-stock";
 
 export const dynamic = "force-dynamic";
 
@@ -77,11 +73,27 @@ export async function GET(request: Request) {
     const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || "https://www.natonat.com";
     const siteOrigin = new URL(configuredSiteUrl).origin;
 
-    // Build catalog items. For products with sizePrices create per-size rows.
+    // Keep one catalog row per product. Sizes remain selectable on the product
+    // page instead of appearing as separate products in ad catalogs.
     const items: CatalogItem[] = [];
 
     for (const p of matchedProducts) {
-      const isUnavailable = isProductOutOfStock(p);
+      const sizeStocks = Object.values(p.sizeStock || {}).filter(Boolean);
+      const knownSizeQuantities = sizeStocks
+        .map((stock) => stock?.quantity)
+        .filter((quantity): quantity is number => typeof quantity === "number");
+      const totalSizeQuantity = knownSizeQuantities.reduce((total, quantity) => total + Math.max(0, quantity), 0);
+      const hasSizeQuantityData = knownSizeQuantities.length > 0;
+      const availableQuantity = hasSizeQuantityData ? totalSizeQuantity : p.stockQuantity ?? 100;
+      const isUnavailable = isProductOutOfStock(p) || availableQuantity === 0;
+      const defaultSizePrice = p.sizePrices?.m || p.sizePrices?.s || p.sizePrices?.l || p.sizePrices?.xl;
+      const prices = getFeedPrices(
+        p.price ?? defaultSizePrice?.price,
+        p.originalPrice ?? defaultSizePrice?.originalPrice,
+      );
+
+      if (!prices.price) continue;
+
       const base = {
         id: p.slug,
         title: p.name ?? p.slug,
@@ -93,10 +105,10 @@ export async function GET(request: Request) {
         brand: process.env.MEDIA_BUYER_BRAND || "natOnat",
         google_product_category: "",
         fb_product_category: "",
-        quantity_to_sell_on_facebook: isUnavailable ? 0 : p.stockQuantity ?? 100,
-        sale_price: "",
+        quantity_to_sell_on_facebook: isUnavailable ? 0 : availableQuantity,
+        sale_price: prices.salePrice,
         sale_price_effective_date: "",
-        item_group_id: p.slug,
+        item_group_id: "",
         gender: Array.isArray(p.gender) ? p.gender.join("|") : p.gender ?? "",
         color: p.color ?? "",
         age_group: "adult",
@@ -112,41 +124,11 @@ export async function GET(request: Request) {
         style: [p.theme ?? ""].filter(Boolean),
       };
 
-      // If sizePrices exist, expand into variants with size-specific prices
-      if (p.sizePrices) {
-        for (const sizeKey of ["s", "m", "l", "xl"]) {
-          const sizeData = p.sizePrices[sizeKey as keyof typeof p.sizePrices];
-          if (!sizeData) continue;
-          const sizeLabel = sizeKey.toUpperCase();
-          const prices = getFeedPrices(sizeData.price, sizeData.originalPrice);
-          if (!prices.price) continue;
-          const sizeUnavailable = isProductSizeOutOfStock(p, sizeKey);
-          const sizeQuantity = getAvailableStockQuantity(p, sizeKey);
-          const itemId = `${p.slug}-${sizeKey}`;
-          items.push({
-            ...base,
-            id: itemId,
-            title: `${base.title} - ${sizeLabel}`,
-            availability: sizeUnavailable ? "out of stock" : "in stock",
-            quantity_to_sell_on_facebook: sizeUnavailable ? 0 : sizeQuantity ?? 100,
-            price: prices.price,
-            sale_price: prices.salePrice,
-            size: sizeLabel,
-            item_group_id: p.slug,
-          });
-        }
-      } else {
-        // single row
-        const prices = getFeedPrices(p.price, p.originalPrice);
-        if (!prices.price) continue;
-        items.push({
-          ...base,
-          id: p.slug,
-          price: prices.price,
-          sale_price: prices.salePrice,
-          size: p.size ?? "",
-        });
-      }
+      items.push({
+        ...base,
+        price: prices.price,
+        size: "",
+      });
     }
 
     if (format === "csv") {
