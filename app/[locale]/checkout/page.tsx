@@ -802,7 +802,7 @@ function CheckoutContent() {
   const locale = useLocale();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { items, addToCart, appliedDiscounts, clearCart, buyNowItem, setBuyNowItem } = useCart();
+  const { items, appliedDiscounts, clearCart, buyNowItem, setBuyNowItem } = useCart();
   const checkoutTracked = useRef(false);
   const autoAppliedDiscountRef = useRef("");
   const getPaymentDiscountPercent = useCallback(
@@ -859,34 +859,6 @@ function CheckoutContent() {
     () => checkoutItems.map((item) => serializeOrderItem(item, products)),
     [checkoutItems, products]
   );
-  const checkoutProductIds = useMemo(() => new Set(checkoutItems.map((item) => item.id)), [checkoutItems]);
-  const checkoutPackOnat = useMemo(() => {
-    const isPackOnat = (product: Product) => {
-      const categories = Array.isArray(product.category) ? product.category : [product.category];
-      return categories.includes("packonat") || product.slug.toLowerCase().includes("packonat");
-    };
-
-    return products.find((product) => isPackOnat(product) && !checkoutProductIds.has(product.id));
-  }, [checkoutProductIds, products]);
-  const checkoutPackOnatColor = checkoutPackOnat?.colors?.[0];
-
-  const addCheckoutPackOnat = () => {
-    if (!checkoutPackOnat) return;
-
-    addToCart({
-      id: checkoutPackOnat.id,
-      name: checkoutPackOnat.name,
-      slug: checkoutPackOnat.slug,
-      type: checkoutPackOnat.type,
-      price: checkoutPackOnat.price,
-      basePrice: checkoutPackOnat.price,
-      originalPrice: checkoutPackOnat.originalPrice,
-      quantity: 1,
-      image: checkoutPackOnatColor?.image || checkoutPackOnat.image,
-      color: checkoutPackOnatColor?.name,
-    }, { openCart: false });
-  };
-
   const [formData, setFormData] = useState({
     email: "",
     firstName: "",
@@ -2916,69 +2888,6 @@ function CheckoutContent() {
                     </Link>
                   ))}
                 </div>
-
-                {mounted && checkoutPackOnat && (
-                  <div className="mb-5 overflow-hidden rounded-[24px] border border-[#EEBC3F]/45 bg-[#FFF4D6] shadow-[0_18px_45px_rgba(238,188,63,0.18)]">
-                    <div className="flex items-center justify-between gap-3 border-b border-[#EEBC3F]/25 px-4 py-3">
-                      <div className="min-w-0">
-                        <p className="text-sm font-black text-[#0F1A26]">{t("upsell.title")}</p>
-                        <p className="mt-1 text-xs font-semibold leading-5 text-[#0F1A26]/65">
-                          {t("upsell.subtitle")}
-                        </p>
-                      </div>
-                      <span className="shrink-0 rounded-full bg-[#0F1A26] px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-[#EEBC3F]">
-                        PackOnat
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-4 p-4">
-                      <Link
-                        href={`/product/${checkoutPackOnat.slug}`}
-                        className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-white shadow-sm"
-                        prefetch={false}
-                      >
-                        <Image
-                          src={checkoutPackOnatColor?.image || checkoutPackOnat.image}
-                          alt={checkoutPackOnat.name}
-                          fill
-                          sizes="96px"
-                          className="object-contain p-2"
-                          loading="lazy"
-                          quality={60}
-                        />
-                      </Link>
-                      <div className="min-w-0 flex-1">
-                        <Link
-                          href={`/product/${checkoutPackOnat.slug}`}
-                          className="block truncate text-base font-black text-[#0F1A26] transition hover:text-[#B88900]"
-                          prefetch={false}
-                        >
-                          {checkoutPackOnat.name}
-                        </Link>
-                        {checkoutPackOnatColor?.name && (
-                          <p className="mt-1 truncate text-xs font-bold text-[#0F1A26]/55">
-                            {checkoutPackOnatColor.name}
-                          </p>
-                        )}
-                        <div className="mt-2 flex items-baseline gap-2">
-                          <span className="text-lg font-black text-[#0F1A26]">EGP {checkoutPackOnat.price}</span>
-                          {checkoutPackOnat.originalPrice && checkoutPackOnat.originalPrice > checkoutPackOnat.price && (
-                            <span className="text-xs font-bold text-[#0F1A26]/35 line-through">
-                              EGP {checkoutPackOnat.originalPrice}
-                            </span>
-                          )}
-                        </div>
-                        <Button
-                          type="button"
-                          onClick={addCheckoutPackOnat}
-                          className="mt-3 h-10 w-full rounded-full bg-[#EEBC3F] px-4 text-xs font-black text-[#0F1A26] hover:bg-[#0F1A26] hover:text-white"
-                        >
-                          {t("upsell.addToCart")}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
 
                 <div className="space-y-4">
                   <div className="flex justify-between text-sm">

@@ -1,17 +1,12 @@
 import { NextResponse } from "next/server";
 
 import { isAdminAuthorized } from "@/lib/admin-auth";
+import { reconcileBostaOrders } from "@/lib/bosta-reconciliation";
 import {
   fetchOrderFromDatabaseIncludingDeleted,
   isDeletedOrderRecord,
   listOrdersFromDatabase,
 } from "@/lib/order-database";
-import {
-  getBostaExceptionLabel,
-  getBostaStateLabel,
-  getOrderStatusFromBostaState,
-  searchBostaDeliveries,
-} from "@/lib/bosta";
 
 type OrderRecord = Record<string, unknown>;
 
@@ -23,22 +18,7 @@ type SyncBody = {
 function getString(value: unknown) {
   if (typeof value === "string") return value.trim();
   if (typeof value === "number" && Number.isFinite(value)) return String(value);
-  if (value instanceof Date) return value.toISOString();
   return "";
-}
-
-function getObject(value: unknown): OrderRecord {
-  if (typeof value === "string" && value.trim().startsWith("{")) {
-    try {
-      return getObject(JSON.parse(value) as unknown);
-    } catch {
-      return {};
-    }
-  }
-
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? value as OrderRecord
-    : {};
 }
 
 function getAppOrigin(req: Request) {
@@ -51,15 +31,6 @@ function getAppOrigin(req: Request) {
 
 function getOrderRef(order: OrderRecord) {
   return getString(order.order_ref || order["Order Ref"]);
-}
-
-function getBosta(order: OrderRecord) {
-  return getObject(order.bosta || order.shipment || order.aramex);
-}
-
-function getTrackingNumber(order: OrderRecord) {
-  const bosta = getBosta(order);
-  return getString(bosta.trackingNumber || order["Bosta Tracking Number"] || order["Aramex Tracking Number"]);
 }
 
 async function fetchSheetOrders(limit: number) {
@@ -119,46 +90,34 @@ async function fetchOrdersForSync(orderRefs: string[], limit: number) {
   return [...byRef.values()].slice(0, limit);
 }
 
-function getStateCode(delivery: OrderRecord) {
-  const state = getObject(delivery.state);
-  return getString(state.code || delivery.stateCode || delivery.state);
-}
+async function persistReconciliationUpdate(
+  appOrigin: string,
+  update: Awaited<ReturnType<typeof reconcileBostaOrders>>["updates"][number],
+) {
+  const logRes = await fetch(`${appOrigin}/api/orders/log`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      ...update.order,
+      source: "admin_bosta_sync",
+      order_ref: update.orderRef,
+      status: update.status,
+      bosta: update.bosta,
+      shipment: {
+        provider: "bosta",
+        trackingNumber: update.bosta.trackingNumber,
+        trackingLink: update.bosta.trackingLink,
+        status: update.bosta.status,
+        syncedAt: update.bosta.syncedAt,
+      },
+      updated_at: new Date().toISOString(),
+    }),
+    cache: "no-store",
+  });
 
-function getStateValue(delivery: OrderRecord) {
-  const state = getObject(delivery.state);
-  return getString(state.value || delivery.stateValue || delivery.status);
-}
-
-function buildBostaUpdate(order: OrderRecord, delivery: OrderRecord) {
-  const currentBosta = getBosta(order);
-  const stateCode = getStateCode(delivery);
-  const stateValue = getStateValue(delivery) || getBostaStateLabel(stateCode);
-  const exceptionCode = getString(delivery.exceptionCode || delivery.exceptionReasonCode);
-  const exceptionLabel = getString(delivery.exceptionReason) || getBostaExceptionLabel(exceptionCode);
-  const trackingNumber = getString(delivery.trackingNumber) || getTrackingNumber(order);
-  const deliveryId = getString(delivery._id || delivery.id) || getString(currentBosta.deliveryId || currentBosta.guid);
-  const latestDescription = [stateValue, exceptionLabel].filter(Boolean).join(" · ");
-  const syncedAt = new Date().toISOString();
-
-  return {
-    ...currentBosta,
-    provider: "bosta",
-    guid: deliveryId,
-    deliveryId,
-    trackingNumber,
-    trackingLink: trackingNumber
-      ? `https://bosta.co/tracking-shipments?shipmentNumber=${encodeURIComponent(trackingNumber)}`
-      : getString(currentBosta.trackingLink),
-    status: stateValue || getString(currentBosta.status),
-    latestCode: stateCode,
-    latestDescription: latestDescription || getString(currentBosta.latestDescription),
-    latestDate: getString(delivery.updatedAt || delivery.updated_at || delivery.lastUpdatedAt || delivery.createdAt) || syncedAt,
-    latestComments: getString(delivery.notes || delivery.message),
-    latestProblemCode: exceptionCode,
-    syncedAt,
-    trackingRaw: delivery,
-    error: "",
-  };
+  if (logRes.ok) return "";
+  const data = await logRes.json().catch(() => null) as { error?: string } | null;
+  return data?.error || "Could not update order log after Bosta sync";
 }
 
 export async function POST(req: Request) {
@@ -168,70 +127,35 @@ export async function POST(req: Request) {
 
   const body = await req.json().catch(() => ({})) as SyncBody;
   const orderRefs = (body.orderRefs || []).map((value) => String(value || "").trim()).filter(Boolean);
-  const limit = Math.max(1, Math.min(200, Math.round(Number(body.limit || 50))));
+  const limit = Math.max(1, Math.min(1000, Math.round(Number(body.limit || 500))));
   const orders = await fetchOrdersForSync(orderRefs, limit);
+  const reconciliation = await reconcileBostaOrders(orders);
   const appOrigin = getAppOrigin(req);
-
-  let checked = 0;
+  const errors = [
+    ...reconciliation.errors,
+    ...reconciliation.missing.map((entry) => ({
+      orderRef: entry.orderRef,
+      error: "No Bosta delivery found for tracking number",
+    })),
+  ];
   let synced = 0;
-  let failed = 0;
-  const errors: Array<{ orderRef: string; error: string }> = [];
 
-  for (const order of orders) {
-    const orderRef = getOrderRef(order);
-    const trackingNumber = getTrackingNumber(order);
-    if (!orderRef || !trackingNumber) continue;
-
-    checked += 1;
-
-    const searchResult = await searchBostaDeliveries({ trackingNumbers: [trackingNumber] });
-    if (!searchResult.success || !searchResult.deliveries.length) {
-      failed += 1;
-      errors.push({ orderRef, error: searchResult.error || "No Bosta delivery found for tracking number" });
-      continue;
+  for (const update of reconciliation.updates) {
+    const error = await persistReconciliationUpdate(appOrigin, update);
+    if (error) {
+      errors.push({ orderRef: update.orderRef, error });
+    } else {
+      synced += 1;
     }
-
-    const delivery = searchResult.deliveries.find((item) => getString(item.trackingNumber) === trackingNumber) || searchResult.deliveries[0];
-    const bosta = buildBostaUpdate(order, delivery);
-    const status = getOrderStatusFromBostaState(bosta.latestCode) || getString(order.status) || "shipped";
-
-    const logRes = await fetch(`${appOrigin}/api/orders/log`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...order,
-        source: "admin_bosta_sync",
-        order_ref: orderRef,
-        status,
-        bosta,
-        shipment: {
-          provider: "bosta",
-          trackingNumber: bosta.trackingNumber,
-          trackingLink: bosta.trackingLink,
-          status: bosta.status,
-          syncedAt: bosta.syncedAt,
-        },
-        updated_at: new Date().toISOString(),
-      }),
-      cache: "no-store",
-    });
-
-    if (!logRes.ok) {
-      failed += 1;
-      const data = await logRes.json().catch(() => null) as { error?: string } | null;
-      errors.push({ orderRef, error: data?.error || "Could not update order log after Bosta sync" });
-      continue;
-    }
-
-    synced += 1;
   }
 
   return NextResponse.json({
     success: true,
-    checked,
+    checked: reconciliation.checked,
     synced,
-    failed,
+    failed: errors.length,
+    skipped: reconciliation.missing.length,
     errors,
-    message: `Bosta sync checked ${checked} orders, updated ${synced}, failed ${failed}.`,
+    message: `Bosta sync checked ${reconciliation.checked} orders, updated ${synced}, failed ${errors.length}.`,
   });
 }

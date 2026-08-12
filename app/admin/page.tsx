@@ -791,16 +791,6 @@ function getStageLabel(stageKey: string) {
   return SHIPMENT_STATUS_STAGES.find((stage) => stage.key === stageKey)?.label || stageKey;
 }
 
-function getTrackingRawText(value: unknown) {
-  if (!value) return "";
-  if (typeof value === "string") return value;
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return "";
-  }
-}
-
 function getBostaTrackingText(order: AdminOrder) {
   const Bosta = getBosta(order);
   return [
@@ -809,7 +799,6 @@ function getBostaTrackingText(order: AdminOrder) {
     getBostaLatestUpdate(order),
     getBostaLatestLocation(order),
     getString(Bosta.latestDate),
-    getTrackingRawText(Bosta.trackingRaw),
   ]
     .join(" ")
     .toLowerCase();
@@ -913,13 +902,18 @@ function getBostaTimelineStageKey(order: AdminOrder) {
 
 function getOrderShipmentStatusKey(order: AdminOrder) {
   if (isPendingInstaPay(order)) return "pending_instapay_approval";
+
+  const timelineStage = getBostaTimelineStageKey(order);
+  if (timelineStage === "delivered" || timelineStage === "returned_cancelled") {
+    return timelineStage;
+  }
+
   if (hasBostaConnectionIssue(order)) return "bosta_connection_issue";
   if (needsBostaReplacement(order)) return "needs_bosta_replacement";
   if (getBostaError(order)) return "bosta_failed";
-  if (hasReturnedSignal(order)) return "returned_cancelled";
   if (needsBosta(order)) return "missing_tracking";
 
-  const timelineStage = getBostaTimelineStageKey(order);
+  if (hasReturnedSignal(order)) return "returned_cancelled";
   if (timelineStage) return timelineStage;
 
   if (getTrackingNumber(order)) return "shipment_created";
@@ -2391,7 +2385,7 @@ export default function AdminDashboardPage() {
           "Content-Type": "application/json",
           ...(savedToken ? { Authorization: `Bearer ${savedToken}` } : {}),
         },
-        body: JSON.stringify({ limit: 50 }),
+        body: JSON.stringify({ limit: 500 }),
       });
       const data = (await res.json()) as BostaSyncResponse;
 

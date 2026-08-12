@@ -158,6 +158,73 @@ export function getOrderStatusFromBostaState(state: unknown) {
   return "";
 }
 
+function getRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+}
+
+function getBostaString(value: unknown) {
+  if (typeof value === "string") return value.trim();
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  return "";
+}
+
+export function getBostaDeliveryStateCode(delivery: unknown) {
+  const record = getRecord(delivery);
+  const state = getRecord(record.state);
+  const status = getRecord(record.status);
+  return getBostaString(
+    state.code ||
+      record.stateCode ||
+      record.state_code ||
+      status.code ||
+      record.state,
+  );
+}
+
+export function getBostaDeliveryStateValue(delivery: unknown) {
+  const record = getRecord(delivery);
+  const state = getRecord(record.state);
+  const status = getRecord(record.status);
+  const code = getBostaDeliveryStateCode(record);
+  return getBostaString(
+    state.value ||
+      state.name ||
+      record.stateValue ||
+      record.state_value ||
+      status.value ||
+      status.name ||
+      record.status,
+  ) || getBostaStateLabel(code);
+}
+
+export function getBostaDeliveryTimestamp(delivery: unknown) {
+  const record = getRecord(delivery);
+  const candidates = [
+    record.timeStamp,
+    record.timestamp,
+    record.updatedAt,
+    record.updated_at,
+    record.lastUpdatedAt,
+    record.createdAt,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === "number" && Number.isFinite(candidate)) {
+      const timestamp = candidate > 1_000_000_000_000 ? candidate : candidate * 1000;
+      if (Number.isFinite(new Date(timestamp).getTime())) return timestamp;
+    }
+
+    const raw = getBostaString(candidate);
+    if (!raw) continue;
+    const timestamp = Date.parse(raw);
+    if (Number.isFinite(timestamp)) return timestamp;
+  }
+
+  return 0;
+}
+
 export type BostaCustomer = {
   first_name?: string;
   last_name?: string;
@@ -1603,7 +1670,7 @@ function normalizeBostaSearchData(data: unknown): BostaDeliverySearchRecord[] {
 export async function searchBostaDeliveries(input: SearchBostaDeliveriesInput): Promise<SearchBostaDeliveriesResult> {
   const trackingNumbers = (input.trackingNumbers || []).map((value) => value.trim()).filter(Boolean);
   const payload = {
-    type: input.type || "SEND",
+    ...(input.type ? { type: input.type } : {}),
     ...(trackingNumbers.length ? { trackingNumbers: trackingNumbers.join(", ") } : {}),
     ...(input.mobilePhones ? { mobilePhones: input.mobilePhones } : {}),
     ...(input.businessReference ? { businessReference: input.businessReference } : {}),

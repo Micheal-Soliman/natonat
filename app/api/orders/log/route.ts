@@ -65,6 +65,7 @@ const UPDATE_ONLY_SOURCES = new Set([
   "admin_bosta_replaced",
   "admin_bosta_sync",
   "admin_bosta_terminated",
+  "bosta_webhook",
   "bosta_sync",
   "bosta_status_sync",
   "bosta_manual_tracking_update",

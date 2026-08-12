@@ -5,7 +5,12 @@ import {
   listOrdersFromDatabase,
   upsertOrderToDatabase,
 } from "@/lib/order-database";
-import { getBostaExceptionLabel, getBostaStateLabel, getOrderStatusFromBostaState } from "@/lib/bosta";
+import {
+  getBostaDeliveryStateCode,
+  getBostaDeliveryStateValue,
+  getBostaExceptionLabel,
+  getOrderStatusFromBostaState,
+} from "@/lib/bosta";
 
 type OrderRecord = Record<string, unknown>;
 type BostaWebhookPayload = {
@@ -66,17 +71,11 @@ function getWebhookPayload(payload: BostaWebhookPayload): BostaWebhookPayload {
 }
 
 function getStateCode(payload: BostaWebhookPayload) {
-  const state = payload.state;
-  if (state && typeof state === "object") return getString(state.code);
-  return getString(state);
+  return getBostaDeliveryStateCode(payload);
 }
 
 function getStateLabel(payload: BostaWebhookPayload) {
-  const state = payload.state;
-  if (state && typeof state === "object") {
-    return getString(state.value) || getBostaStateLabel(state.code);
-  }
-  return getBostaStateLabel(state);
+  return getBostaDeliveryStateValue(payload);
 }
 
 async function findOrder(payload: BostaWebhookPayload) {
@@ -136,6 +135,23 @@ export async function POST(req: Request) {
   }
 
   const currentBosta = getObject(order.bosta || order.shipment || order.aramex);
+  const currentLatestDate = Date.parse(getString(currentBosta.latestDate));
+  const incomingLatestDate = Date.parse(syncedAt);
+  if (
+    Number.isFinite(currentLatestDate) &&
+    Number.isFinite(incomingLatestDate) &&
+    incomingLatestDate < currentLatestDate
+  ) {
+    return NextResponse.json({
+      success: true,
+      ignored: true,
+      reason: "Older Bosta event",
+      order_ref: getString(order.order_ref),
+      trackingNumber,
+      state: stateCode,
+    });
+  }
+
   const history = Array.isArray(order.history) ? order.history : [];
   const status = getOrderStatusFromBostaState(stateCode) || getString(order.status) || "shipped";
   const latestDescription = exceptionLabel
@@ -152,7 +168,8 @@ export async function POST(req: Request) {
   const updatedOrder: OrderRecord = {
     ...order,
     status,
-    source: "bosta_webhook",
+    source: order.source || "checkout",
+    last_update_source: "bosta_webhook",
     updated_at: syncedAt,
     bosta: {
       ...currentBosta,
