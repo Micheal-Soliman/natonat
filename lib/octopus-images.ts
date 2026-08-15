@@ -1,10 +1,14 @@
 const STANDARD_FILES = ["1.jpg", "2.jpg", "3.jpg", "4.png", "5.jpg", "6.jpg"] as const;
 
 const OCTOPUS_FOLDERS: Record<string, string> = {
+  accord: "Accord",
   anara: "Anaraa",
+  andalus: "Andalus",
   ascend: "Ascend",
+  azure: "Azure",
   barcelona: "Barcelona",
   black: "Black",
+  blush: "Blush",
   dubai: "Dubai",
   "egypt-skyline": "Egypt skyline",
   "egyptian-flag": "Egyptian flag",
@@ -34,6 +38,7 @@ const OCTOPUS_FOLDERS: Record<string, string> = {
 };
 
 const FILE_OVERRIDES: Partial<Record<string, readonly string[]>> = {
+  accord: ["1.jpg", "2.jpg", "3.jpg", "4.jpg", "5.jpg", "6.jpg"],
   valoria: ["1.jpg", "2.jpg", "3_.jpg", "4.png", "5.jpg", "6.jpg"],
   wildfern: ["1.jpg", "2_.jpg", "3_.jpg", "4.png", "5_.jpg", "6.jpg"],
 };

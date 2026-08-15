@@ -80,14 +80,14 @@ const productCatalog: Product[] = [
     originalPrice: 750,
     type: "Luggage Cover",
     tag: null,
-    image: "/octopus%20photo/ACCORD/1.png",
+    image: "/Octopus/Accord/1.jpg",
     images: [
-      "/octopus%20photo/ACCORD/1.png",
-      "/octopus%20photo/ACCORD/2.webp",
-      "/octopus%20photo/ACCORD/3.webp",
-      "/octopus%20photo/ACCORD/4.webp",
-      "/octopus%20photo/ACCORD/5.webp",
-      "/octopus%20photo/ACCORD/6.webp"
+      "/Octopus/Accord/1.jpg",
+      "/Octopus/Accord/2.jpg",
+      "/Octopus/Accord/3.jpg",
+      "/Octopus/Accord/4.jpg",
+      "/Octopus/Accord/5.jpg",
+      "/Octopus/Accord/6.jpg"
     ],
     description: "Modern geometric design for the stylish traveler",
     sizePrices: {

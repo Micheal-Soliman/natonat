@@ -158,7 +158,7 @@ export function Navigation() {
       name: t("luggageCovers"),
       description: t("luggageCoversDesc"),
       href: "/shop?category=luggage-covers",
-      image: "/octopus%20photo/ACCORD/1.png",
+      image: "/Octopus/Accord/1.jpg",
     },
     {
       id: "passport-wallets",

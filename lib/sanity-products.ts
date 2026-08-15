@@ -51,6 +51,7 @@ function normalizeProduct(product: SanityProduct): Product | null {
 
   return {
     ...product,
+    slug: product.slug.trim().toLowerCase(),
     id: product.legacyId || getGeneratedProductId(product._id),
     category:
       Array.isArray(product.category) && product.category.length === 1
