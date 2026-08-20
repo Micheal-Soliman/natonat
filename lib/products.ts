@@ -2,6 +2,7 @@
 // Single source of truth for all product data
 
 import { withLatestOctopusImages } from "@/lib/octopus-images";
+import { getProductDisplayName } from "@/lib/product-naming";
 
 export interface Product {
   id: number;
@@ -1421,7 +1422,12 @@ const productCatalog: Product[] = [
   },
 ];
 
-export const products: Product[] = productCatalog.map(withLatestOctopusImages);
+export const products: Product[] = productCatalog.map((product) =>
+  withLatestOctopusImages({
+    ...product,
+    name: getProductDisplayName(product),
+  }),
+);
 
 // Helper functions
 export const getProductById = (id: number): Product | undefined => {

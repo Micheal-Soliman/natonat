@@ -15,6 +15,11 @@ import { useCatalogProducts } from "@/app/lib/catalog-context";
 import { useSiteSettings } from "@/app/lib/site-settings-context";
 import { isLegacyBundleCartItem } from "@/lib/legacy-bundles";
 import checkoutBostaLocations from "@/data/bosta-checkout-locations.json";
+import {
+  applyCartDiscount,
+  FREE_DELIVERY_THRESHOLD,
+  getCartOffer,
+} from "@/lib/cart-offers";
 
 const INSTAPAY_PROOF_MAX_BYTES = 5 * 1024 * 1024;
 
@@ -338,7 +343,7 @@ function getShippingRule({
   city: string;
 }) {
   if (deliveryMethod === "pickup") return "pickup_free";
-  if (subtotal > 1000) return "subtotal_over_1000_free";
+  if (subtotal >= FREE_DELIVERY_THRESHOLD) return "subtotal_threshold_free";
   return isDiscountShippingCity(city)
     ? "cairo_giza_alex_75"
     : "other_governorates_100";
@@ -822,7 +827,7 @@ function CheckoutContent() {
       (item) => !isLegacyBundleCartItem(item),
     );
 
-    return rawCheckoutItems.reduce((acc: typeof rawCheckoutItems, item) => {
+    const groupedItems = rawCheckoutItems.reduce((acc: typeof rawCheckoutItems, item) => {
       const existing = acc.find(
         (i) =>
           i.id === item.id &&
@@ -839,7 +844,35 @@ function CheckoutContent() {
 
       return acc;
     }, []);
+
+    const qualifyingSubtotal = groupedItems.reduce(
+      (sum, item) => sum + (item.basePrice ?? item.price ?? 0) * (item.quantity || 1),
+      0,
+    );
+    const discountPercent = getCartOffer(qualifyingSubtotal).discountPercent;
+
+    return groupedItems.map((item) => {
+      const basePrice = item.basePrice ?? item.price ?? 0;
+      return {
+        ...item,
+        basePrice,
+        price: applyCartDiscount(basePrice, discountPercent),
+        quantityDiscountPercent: discountPercent,
+      };
+    });
   }, [buyNowItem, items]);
+
+  const checkoutOfferSubtotal = checkoutItems.reduce(
+    (sum, item) => sum + (item.basePrice ?? item.price ?? 0) * (item.quantity || 1),
+    0,
+  );
+  const checkoutOffer = getCartOffer(checkoutOfferSubtotal);
+  const checkoutOfferDetails = {
+    cart_offer_subtotal_egp: checkoutOfferSubtotal,
+    cart_offer_discount_egp: checkoutOffer.discountAmount,
+    cart_offer_discount_percent: checkoutOffer.discountPercent,
+    free_first_exchange: checkoutOffer.freeFirstExchange,
+  };
 
   const checkoutSubtotal = checkoutItems.reduce(
     (sum, item) => sum + (item.price || 0) * (item.quantity || 1),
@@ -1465,6 +1498,7 @@ function CheckoutContent() {
           amount_cents: amountCents,
           shipping_egp: shipping,
           discount: confirmedDiscountPayload,
+          ...checkoutOfferDetails,
           payment_discount_egp: confirmedPaymentDiscount,
           customer: {
             email: formData.email,
@@ -1519,6 +1553,7 @@ function CheckoutContent() {
               discount_code: confirmedAppliedDiscountCode?.code || null,
               discount_amount: confirmedCodeDiscountAmount > 0 ? confirmedCodeDiscountAmount : null,
               discount: confirmedDiscountPayload,
+              ...checkoutOfferDetails,
               payment_discount: confirmedPaymentDiscount > 0 ? confirmedPaymentDiscount : null,
               payment_discount_percent: confirmedPaymentDiscount > 0 ? paymentDiscountPercent : null,
             },
@@ -1538,7 +1573,7 @@ function CheckoutContent() {
 
         const shippingRule = getShippingRule({
           deliveryMethod,
-          subtotal: checkoutSubtotal,
+          subtotal: checkoutOfferSubtotal,
           city: formData.governorate,
         });
 
@@ -1558,6 +1593,7 @@ function CheckoutContent() {
             discount_egp: confirmedCodeDiscountAmount,
             discount_code: confirmedAppliedDiscountCode?.code || null,
             discount: confirmedDiscountPayload,
+            ...checkoutOfferDetails,
             payment_discount_egp: confirmedPaymentDiscount,
             delivery_method: deliveryMethod,
             customer: {
@@ -1587,9 +1623,10 @@ function CheckoutContent() {
               shipping_rule: shippingRule,
               city_key: formData.city,
               subtotal_egp: checkoutSubtotal,
-              free_shipping_threshold: 1000,
+              free_shipping_threshold: FREE_DELIVERY_THRESHOLD,
               order_url: `${origin}/${locale}/orders/${orderRef}`,
               discount: confirmedDiscountPayload,
+              ...checkoutOfferDetails,
               payment_discount: confirmedPaymentDiscount > 0 ? confirmedPaymentDiscount : null,
               payment_discount_percent: confirmedPaymentDiscount > 0 ? paymentDiscountPercent : null,
             },
@@ -1632,7 +1669,7 @@ function CheckoutContent() {
 
       const shippingRuleInstaPay = getShippingRule({
         deliveryMethod,
-        subtotal: checkoutSubtotal,
+        subtotal: checkoutOfferSubtotal,
         city: formData.governorate,
       });
 
@@ -1653,6 +1690,7 @@ function CheckoutContent() {
             discount_egp: confirmedCodeDiscountAmount,
             discount_code: confirmedAppliedDiscountCode?.code || null,
             discount: confirmedDiscountPayload,
+            ...checkoutOfferDetails,
             payment_discount_egp: confirmedPaymentDiscount,
             delivery_method: deliveryMethod,
             bosta: null,
@@ -1684,8 +1722,9 @@ function CheckoutContent() {
               shipping_rule: shippingRuleInstaPay,
               city_key: formData.city,
               subtotal_egp: checkoutSubtotal,
-              free_shipping_threshold: 1000,
+              free_shipping_threshold: FREE_DELIVERY_THRESHOLD,
               discount: confirmedDiscountPayload,
+              ...checkoutOfferDetails,
               payment_discount: confirmedPaymentDiscount > 0 ? confirmedPaymentDiscount : null,
               payment_discount_percent: confirmedPaymentDiscount > 0 ? getPaymentDiscountPercent(paymentMethod) : null,
               instapay_requires_admin_approval: true,
@@ -1737,7 +1776,7 @@ function CheckoutContent() {
 
     const shippingRuleCOD = getShippingRule({
       deliveryMethod,
-      subtotal: checkoutSubtotal,
+      subtotal: checkoutOfferSubtotal,
       city: formData.governorate,
     });
 
@@ -1766,6 +1805,7 @@ function CheckoutContent() {
           discount_egp: confirmedCodeDiscountAmount,
           discount_code: confirmedAppliedDiscountCode?.code || null,
           discount: confirmedDiscountPayload,
+          ...checkoutOfferDetails,
           payment_discount_egp: confirmedPaymentDiscount,
           delivery_method: deliveryMethod,
 
@@ -1794,8 +1834,9 @@ function CheckoutContent() {
             shipping_rule: shippingRuleCOD,
             city_key: formData.city,
             subtotal_egp: checkoutSubtotal,
-            free_shipping_threshold: 1000,
+            free_shipping_threshold: FREE_DELIVERY_THRESHOLD,
             discount: confirmedDiscountPayload,
+            ...checkoutOfferDetails,
             payment_discount: confirmedPaymentDiscount > 0 ? confirmedPaymentDiscount : null,
             payment_discount_percent: confirmedPaymentDiscount > 0 ? getPaymentDiscountPercent(paymentMethod) : null,
           },
@@ -1836,16 +1877,16 @@ function CheckoutContent() {
     router.push(successPath);
   };
 
-  // Shipping: 75 EGP for Cairo, Giza & Alexandria, 100 EGP for other cities, free for orders > 1000, pickup = 0
+  // Delivery and cart discount are intentionally evaluated as independent rules.
   const shipping = useMemo(() => {
     if (!deliveryMethod) return 0;
     if (deliveryMethod === "pickup") return 0;
-    if (checkoutSubtotal > 1000) return 0;
+    if (checkoutOfferSubtotal >= FREE_DELIVERY_THRESHOLD) return 0;
 
     return isDiscountShippingCity(formData.governorate) ? 75 : 100;
   }, [
     deliveryMethod,
-    checkoutSubtotal,
+    checkoutOfferSubtotal,
     formData.governorate
   ]);
   const total = useMemo(

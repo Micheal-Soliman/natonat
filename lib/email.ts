@@ -608,6 +608,34 @@ export async function sendReviewNotificationEmail(reviewData: ReviewNotification
   return result;
 }
 
+export async function sendReturnRequestEmail(request: {
+  orderRef: string;
+  customerName: string;
+  phone: string;
+  email?: string;
+  requestType: "exchange" | "return";
+  reason: string;
+}) {
+  const recipients = getOrderAdminRecipients();
+  return sendMailWithFallback({
+    to: recipients.to,
+    bcc: recipients.bcc,
+    replyTo: request.email || undefined,
+    subject: `${request.requestType === "exchange" ? "Exchange" : "Return"} request: ${request.orderRef}`,
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:640px;margin:auto;padding:24px;border:1px solid #ddd;border-radius:12px">
+        <h2>New ${escapeHtml(request.requestType)} request</h2>
+        <p><strong>Order:</strong> ${escapeHtml(request.orderRef)}</p>
+        <p><strong>Customer:</strong> ${escapeHtml(request.customerName)}</p>
+        <p><strong>Phone:</strong> ${escapeHtml(request.phone)}</p>
+        <p><strong>Email:</strong> ${escapeHtml(request.email || "-")}</p>
+        <p><strong>Reason:</strong></p>
+        <div style="background:#F8F6F3;padding:14px;border-radius:8px">${escapeHtml(request.reason)}</div>
+      </div>
+    `,
+  });
+}
+
 type ReferralRewardEmailData = {
   to?: string;
   referrerName?: string;

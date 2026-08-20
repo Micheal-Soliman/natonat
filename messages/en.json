@@ -34,7 +34,7 @@
     "title": "natOnat",
     "tagline": "Pack Smart. Travel Bold.",
     "cta": "Shop Now",
-    "freeShipping": "Free shipping on orders over 1000 EGP",
+    "freeShipping": "Spend EGP 1,600 and get free delivery",
     "egyptOnly": "Egypt Only"
   },
   "deliveryCountdown": {
@@ -368,7 +368,8 @@
         "privacy": "Privacy Policy",
         "terms": "Terms & Conditions",
         "shipping": "Shipping & Returns",
-        "warranty": "Warranty"
+        "warranty": "Warranty",
+        "promise": "30-Day Fit Guarantee"
       }
     },
     "social": {
@@ -572,7 +573,7 @@
       },
       "shipping": {
         "title": "Free Shipping",
-        "desc": "On orders over 1000 EGP"
+        "desc": "When you spend EGP 1,600 or more"
       },
       "returns": {
         "title": "30-Day Returns",
@@ -585,7 +586,7 @@
     },
     "trust": {
       "measure": "Measure height without wheels",
-      "shipping": "Free shipping over 1000 EGP",
+      "shipping": "Free delivery from EGP 1,600",
       "returns": "30-day exchange and returns",
       "payment": "Secure card and COD payments",
       "whatsapp": {
@@ -815,7 +816,12 @@
       "freeShippingUnlocked": "You unlocked free shipping",
       "quantityDiscount": "Order discount",
       "quantityDiscountNext": "Add {count} more item to unlock {percent}% off",
-      "quantityDiscountUnlocked": "You unlocked {percent}% off this order"
+      "quantityDiscountUnlocked": "You unlocked {percent}% off this order",
+      "valueOffer": "Spend more, unlock more",
+      "offerNextDiscount": "Spend EGP {amount} more to unlock {percent}% off",
+      "offerNextFreeDelivery": "Spend EGP {amount} more to unlock free delivery",
+      "offerNextFreeExchange": "Spend EGP {amount} more to unlock a free first exchange",
+      "offerMaximumUnlocked": "12% off, free delivery and a free first exchange unlocked"
     },
     "savings": "You're saving EGP {amount}"
   },
@@ -989,7 +995,7 @@
       "discount": "Discount",
       "shipping": "Shipping",
       "free": "Free",
-      "freeShippingOver1000": "(Order > 1000 EGP)",
+      "freeShippingOver1000": "(Spend EGP 1,600 or more)",
       "total": "Total",
       "size": "Size",
       "color": "Color",
@@ -1424,7 +1430,7 @@
         "otherGovs": "Other Governorates",
         "cairoTime": "1-2 business days",
         "govsTime": "5-7 business days",
-        "freeShippingHint": "FREE shipping on orders over 1000 EGP"
+        "freeShippingHint": "FREE delivery when you spend EGP 1,600"
       },
       "returns": {
         "title": "Returns & Exchanges",
@@ -4719,6 +4725,28 @@
         "content": "Order your PackOnat packing folder today and travel with everything you need, perfectly organized."
       }
     }
+  },
+  "promise": {
+    "title": "The natOnat Promise",
+    "subtitle": "A clear 30-day fit guarantee. Request an exchange or return online using your order number and phone.",
+    "benefits": {
+      "fit": { "title": "The right fit", "description": "If the selected cover size is not right, request an exchange through this page." },
+      "window": { "title": "30-day request window", "description": "Submit your request within 30 days, with the product unused and in its original condition." },
+      "support": { "title": "Tracked by our team", "description": "Your request is linked to the original order and sent directly to the natOnat team." }
+    },
+    "formTitle": "Request an exchange or return",
+    "orderRef": "Order number",
+    "phone": "Order phone number",
+    "name": "Your name",
+    "email": "Email (optional)",
+    "exchange": "Exchange",
+    "return": "Return",
+    "reason": "Tell us what you need and why",
+    "submit": "Submit request",
+    "sending": "Sending...",
+    "error": "Could not submit the request.",
+    "successTitle": "Request received",
+    "successBody": "We linked it to your order and the natOnat team will contact you with the next step."
   },
   "components": {
     "floatingContact": {

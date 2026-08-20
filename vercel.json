@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/aramex-sync",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/order-verification",
+      "schedule": "0 * * * *"
     }
   ]
 }

@@ -3,7 +3,6 @@
 import { useState, useRef, useCallback, useMemo } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { QuantityDiscountRibbon } from "@/app/components/quantity-discount-ribbon";
 import type { Product } from "@/lib/products";
 
 interface SwipeableProductImageProps {
@@ -167,7 +166,6 @@ export function SwipeableProductImage({
         </div>
       )}
 
-      <QuantityDiscountRibbon compact seed={product.id} className="absolute left-2 top-2 z-30 sm:left-3 sm:top-3" />
 
       {/* MOBILE DOTS */}
       {hasMultipleImages && (

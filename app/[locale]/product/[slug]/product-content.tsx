@@ -16,25 +16,19 @@ import { FAQSection } from "@/app/components/faq-section";
 import { DeliveryCountdown } from "@/app/components/delivery-countdown";
 import { SwipeableProductImage } from "@/app/components/swipeable-product-image";
 import { WishlistToggleButton } from "@/app/components/wishlist-toggle-button";
-import { QuantityDiscountRibbon } from "@/app/components/quantity-discount-ribbon";
 import { SizeModal } from "@/app/components/size-modal";
 import { ProductImageLightbox } from "@/app/components/product-image-lightbox";
 import {
   ReviewsLightbox,
   type ReviewImage,
 } from "@/app/components/reviews-lightbox";
-import { useQuantityDiscountSettings, useSizeGuideSizes } from "@/app/lib/site-settings-context";
+import { useSizeGuideSizes } from "@/app/lib/site-settings-context";
 import { type Product } from "@/lib/products";
 import { calculateBundlePrice, getPricingRuleKey } from "@/lib/bundle-pricing";
 import { trackMetaPixelEvent } from "@/lib/meta-pixel";
 import { getStockLabel, isProductOutOfStock, isProductSizeOutOfStock } from "@/lib/product-stock";
 import { getProductRating } from "@/lib/product-rating";
-import {
-  applyQuantityDiscount,
-  getNextQuantityDiscount,
-  getQuantityDiscountPercent,
-  type QuantityDiscountSettings,
-} from "@/lib/quantity-discount";
+import { applyCartDiscount, getCartOffer } from "@/lib/cart-offers";
 
 // Separate component for detailed product description
 interface ProductDetailedDescriptionProps {
@@ -273,82 +267,6 @@ function ProductVideoSection({
         </div>
       </div>
     </div>
-  );
-}
-
-function ProductComparisonTable({ t }: { t: (key: string) => string }) {
-  const rows = [
-    "elastic",
-    "zipper",
-    "fabric",
-    "print",
-    "designs",
-    "ecosystem",
-    "guarantee",
-  ];
-
-  return (
-    <section className="mt-8 lg:mt-10">
-      <div className="overflow-hidden rounded-[2rem] border border-[#0F1A26]/8 bg-white shadow-[0_24px_70px_rgba(15,26,38,0.08)]">
-        <div className="bg-[#0F1A26] px-5 py-6 text-center sm:px-8">
-          <span className="text-xs font-black uppercase tracking-[0.24em] text-[#EEBC3F]">
-            {t("comparison.eyebrow")}
-          </span>
-          <h2 className="mt-2 text-2xl font-black tracking-tight text-white sm:text-3xl">
-            {t("comparison.title")}
-          </h2>
-          <p className="mt-2 text-sm font-semibold text-white/55">
-            {t("comparison.subtitle")}
-          </p>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="min-w-[760px] w-full border-collapse text-start">
-            <thead>
-              <tr className="border-b border-[#0F1A26]/8 bg-[#F8F6F3]">
-                <th className="w-[24%] px-5 py-4 text-sm font-black text-[#0F1A26]">
-                  {t("comparison.feature")}
-                </th>
-                <th className="w-[38%] bg-[#0F1A26] px-5 py-4 text-sm font-black text-white">
-                  <span className="inline-flex items-center gap-2">
-                    <span className="rounded-full bg-[#EEBC3F] px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-[#0F1A26]">
-                      {t("comparison.bestChoice")}
-                    </span>
-                    {t("comparison.natonat")}
-                  </span>
-                </th>
-                <th className="w-[38%] px-5 py-4 text-sm font-black text-[#0F1A26]/55">
-                  {t("comparison.competitors")}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row, index) => (
-                <tr
-                  key={row}
-                  className={`border-b border-[#0F1A26]/8 last:border-0 ${
-                    index % 2 === 0 ? "bg-white" : "bg-[#F8F6F3]/70"
-                  }`}
-                >
-                  <td className="px-5 py-4 text-sm font-black text-[#0F1A26]">
-                    {t(`comparison.rows.${row}.feature`)}
-                  </td>
-                  <td className="bg-[#0F1A26] px-5 py-4 text-sm font-bold leading-relaxed text-white">
-                    <span className="inline-flex items-start gap-2">
-                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#EEBC3F]" strokeWidth={2.5} />
-                      {t(`comparison.rows.${row}.natonat`)}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4 text-sm font-semibold leading-relaxed text-[#0F1A26]/50">
-                    {t(`comparison.rows.${row}.competitors`)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
   );
 }
 
@@ -894,101 +812,6 @@ function getInitialSelectedSize(product: Product) {
 
 type ProductTabId = "details" | "features" | "faq";
 
-function ProductQuantityUpsellTracker({
-  quantity,
-  baseUnitPrice,
-  discountedUnitPrice,
-  settings,
-  t,
-}: {
-  quantity: number;
-  baseUnitPrice: number;
-  discountedUnitPrice: number;
-  settings: QuantityDiscountSettings;
-  t: (key: string, values?: Record<string, number | string>) => string;
-}) {
-  const discountPercent = getQuantityDiscountPercent(quantity, settings);
-  const nextDiscount = getNextQuantityDiscount(quantity, settings);
-  const lastDiscountTier = settings.tiers[settings.tiers.length - 1];
-  const maxTierQuantity = lastDiscountTier?.minQuantity || 4;
-  const progress = Math.min(100, Math.max(0, ((quantity - 1) / Math.max(1, maxTierQuantity - 1)) * 100));
-  const savingsPerItem = Math.max(0, baseUnitPrice - discountedUnitPrice);
-  const tiers = [
-    { quantity: 1, label: t("upsell.tiers.one"), percent: 0 },
-    ...settings.tiers.map((tier) => ({
-      quantity: tier.minQuantity,
-      label: tier.label || t("upsell.tiers.dynamic", { count: tier.minQuantity }),
-      percent: tier.percent,
-    })),
-  ];
-
-  return (
-    <div className="mb-4 sm:mb-6 overflow-hidden rounded-3xl border border-[#EEBC3F]/35 bg-white p-4 shadow-[0_18px_45px_rgba(15,26,38,0.08)] sm:p-5">
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div>
-          <span className="inline-flex items-center gap-2 rounded-full bg-[#0F1A26] px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] text-[#EEBC3F]">
-            <Sparkles className="h-3.5 w-3.5" />
-            {t("upsell.eyebrow")}
-          </span>
-          <p className="mt-3 text-base font-black leading-snug text-[#0F1A26] sm:text-lg">
-            {nextDiscount
-              ? t("upsell.next", {
-                  count: Math.max(1, nextDiscount.minQuantity - quantity),
-                  percent: nextDiscount.percent,
-                })
-              : t("upsell.unlocked", { percent: discountPercent })}
-          </p>
-        </div>
-        <div className="shrink-0 rounded-2xl bg-[#FFF7DF] px-3 py-2 text-center ring-1 ring-[#EEBC3F]/35">
-          <span className="block text-[10px] font-black uppercase tracking-[0.16em] text-[#0F1A26]/45">
-            {discountPercent > 0 ? t("upsell.current") : t("upsell.start")}
-          </span>
-          <span className="text-xl font-black text-[#0F1A26]">
-            {discountPercent > 0 ? `${discountPercent}%` : "0%"}
-          </span>
-        </div>
-      </div>
-
-      <div className="relative mb-3 h-3 rounded-full bg-[#0F1A26]/8">
-        <div
-          className="h-full rounded-full bg-[#0F1A26] transition-all duration-500"
-          style={{ width: `${progress}%` }}
-        />
-        <span className="absolute top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-[#0F1A26] text-xs font-black text-[#EEBC3F] shadow-lg shadow-[#0F1A26]/20"
-          style={{ insetInlineStart: `calc(${progress}% - 18px)` }}
-        >
-          {quantity}
-        </span>
-      </div>
-
-      <div className="grid grid-cols-4 gap-2">
-        {tiers.map((tier) => {
-          const isActive = quantity >= tier.quantity;
-          return (
-            <div key={tier.quantity} className="text-center">
-              <span className={`block text-[11px] font-black ${isActive ? "text-[#0F1A26]" : "text-[#0F1A26]/35"}`}>
-                {tier.label}
-              </span>
-              <span className={`mt-0.5 block text-[10px] font-bold ${isActive ? "text-[#EEBC3F]" : "text-[#0F1A26]/30"}`}>
-                {tier.percent > 0 ? t("upsell.percentOff", { percent: tier.percent }) : t("upsell.noDiscount")}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-
-      {discountPercent > 0 && (
-        <div className="mt-4 rounded-2xl bg-[#F8F2EA] px-3 py-2 text-center text-xs font-bold text-[#0F1A26]/70">
-          {t("upsell.priceAfter", {
-            price: discountedUnitPrice,
-            saved: savingsPerItem,
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
 type ProductGalleryProps = {
   product: Product;
   selectedColor: string | null;
@@ -1149,11 +972,12 @@ const ProductGallery = memo(function ProductGallery({
             </span>
           </button>
 
-          <QuantityDiscountRibbon
-            compact
-            seed={product.id}
-            className="absolute left-3 top-3 z-30 max-w-[42%] sm:left-5 sm:top-5 sm:max-w-[180px]"
-          />
+          {isBagCover && (
+            <div className="pointer-events-none absolute left-3 top-3 z-30 max-w-[62%] rounded-xl border border-white/80 bg-white/95 px-3 py-2 text-start shadow-lg backdrop-blur sm:left-5 sm:top-5 sm:max-w-[280px] sm:px-4 sm:py-3">
+              <p className="text-xs font-black text-[#0F1A26] sm:text-sm">{t("coverOnlyNotice.title")}</p>
+              <p className="mt-0.5 text-[10px] font-bold text-[#0F1A26]/65 sm:text-xs">{t("coverOnlyNotice.subtitle")}</p>
+            </div>
+          )}
 
           {imageCount > 1 && (
             <>
@@ -1177,24 +1001,6 @@ const ProductGallery = memo(function ProductGallery({
           )}
         </div>
 
-        {isBagCover && (
-          <div className="relative z-20 -mt-px flex w-full items-center gap-3 rounded-b-2xl border border-t-0 border-white/80 bg-[#0F1A26] px-3 py-3 text-white shadow-[0_18px_45px_rgba(15,26,38,0.16)] sm:rounded-b-[2rem] sm:px-5 sm:py-4">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#EEBC3F] text-[#0F1A26] sm:h-11 sm:w-11 sm:rounded-2xl">
-              <Shield className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2.5} />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-xs font-black leading-tight sm:text-sm">
-                {t("coverOnlyNotice.title")}
-              </span>
-              <span className="mt-0.5 block text-[10px] font-bold leading-tight text-white/60 sm:text-xs">
-                {t("coverOnlyNotice.subtitle")}
-              </span>
-            </span>
-            <span className="max-w-[42%] text-end text-[8px] font-black uppercase leading-snug tracking-[0.08em] text-[#EEBC3F] sm:text-[10px]">
-              {t("coverOnlyNotice.english")}
-            </span>
-          </div>
-        )}
       </div>
 
       <div className="space-y-2 sm:space-y-3 w-full max-w-full overflow-hidden rounded-[1.5rem] border border-white/70 bg-white/45 p-2 shadow-sm backdrop-blur">
@@ -1276,10 +1082,10 @@ export default function ProductPageContent({
   products,
 }: ProductPageContentProps) {
   const t = useTranslations('product');
+  const promiseT = useTranslations('promise');
   const stockT = useTranslations('stock');
   const locale = useLocale();
   const { addToCart, setBuyNowItem, validateQuantity } = useCart();
-  const quantityDiscountSettings = useQuantityDiscountSettings();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const router = useRouter();
   const [selectedSize, setSelectedSize] = useState(() => getInitialSelectedSize(product));
@@ -1383,10 +1189,10 @@ export default function ProductPageContent({
   }, [product, bundleSelections, products]);
 
   const currentPrice = product.dynamicPricing ? calculateDynamicBundlePrice() : getPriceBySize(selectedSize);
-  const quantityDiscountPercent = getQuantityDiscountPercent(quantity, quantityDiscountSettings);
+  const quantityDiscountPercent = getCartOffer(currentPrice.price * quantity).discountPercent;
   const discountedUnitPrice = Math.max(
     0,
-    applyQuantityDiscount(currentPrice.price, quantityDiscountPercent),
+    applyCartDiscount(currentPrice.price, quantityDiscountPercent),
   );
   const cartUnitPrice = currentPrice.price;
   const previewUnitPrice = quantityDiscountPercent > 0 ? discountedUnitPrice : currentPrice.price;
@@ -2000,13 +1806,6 @@ export default function ProductPageContent({
                 t={t}
               />
 
-              <ProductQuantityUpsellTracker
-                quantity={quantity}
-                baseUnitPrice={currentPrice.price}
-                discountedUnitPrice={previewUnitPrice}
-                settings={quantityDiscountSettings}
-                t={t}
-              />
             </div>
 
             {/* Section 2: Product Info */}
@@ -2093,7 +1892,23 @@ export default function ProductPageContent({
                   </span>
                 </div>
 
+                {isBagCover && (
+                  <div className="mb-6 rounded-2xl border-2 border-[#EEBC3F] bg-[#0F1A26] px-4 py-3 text-white shadow-lg sm:mb-8 sm:px-5 sm:py-4">
+                    <p className="text-sm font-black sm:text-base">{t("coverOnlyNotice.title")}</p>
+                    <p className="mt-1 text-xs font-bold text-white/70 sm:text-sm">{t("coverOnlyNotice.subtitle")}</p>
+                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.08em] text-[#EEBC3F] sm:text-xs">{t("coverOnlyNotice.english")}</p>
+                  </div>
+                )}
+
                 <DeliveryCountdown variant="light" className="mb-6 sm:mb-8" />
+
+                <Link
+                  href="/promise"
+                  className="mb-6 flex items-center justify-between rounded-xl border border-[#0F1A26]/10 bg-white px-4 py-3 text-sm font-black text-[#0F1A26] transition hover:border-[#EEBC3F] sm:mb-8"
+                >
+                  <span>{promiseT("title")}</span>
+                  <ArrowUpRight className="h-4 w-4 text-[#EEBC3F]" />
+                </Link>
 
                 {/* Size Selection */}
                 {product.size && (
@@ -2124,6 +1939,29 @@ export default function ProductPageContent({
                         )}
                       </div>
                     )}
+                    <div className="mb-4 grid grid-cols-4 items-end gap-2 rounded-2xl border border-[#0F1A26]/10 bg-white p-3 sm:p-4">
+                      {sizes.map((size, index) => (
+                        <button
+                          key={`visual-${size.id}`}
+                          type="button"
+                          disabled={isProductSizeOutOfStock(product, size.id)}
+                          onClick={() => setSelectedSize(size.id)}
+                          className="group flex min-w-0 flex-col items-center gap-2 disabled:opacity-35"
+                          aria-label={`${size.label} ${size.range}`}
+                        >
+                          <span
+                            className={`block w-full max-w-14 rounded-lg border-2 transition-colors ${
+                              selectedSize === size.id
+                                ? "border-[#EEBC3F] bg-[#EEBC3F]/20"
+                                : "border-[#0F1A26]/15 bg-[#F8F6F3] group-hover:border-[#EEBC3F]/60"
+                            }`}
+                            style={{ height: `${42 + index * 9}px` }}
+                          />
+                          <span className="text-xs font-black text-[#0F1A26]">{size.label}</span>
+                          <span className="max-w-full text-center text-[9px] font-bold leading-tight text-[#0F1A26]/50 sm:text-[10px]">{size.range}</span>
+                        </button>
+                      ))}
+                    </div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
                       {sizes.map((size) => {
                         const isRecommended = recommendedSize?.id === size.id;
@@ -2591,7 +2429,6 @@ export default function ProductPageContent({
           </section>
 
           <ProductCustomerReviews product={product} locale={locale} t={t} />
-          <ProductComparisonTable t={t} />
           <ProductReviewsLoop t={t} />
 
           {/* Related Products */}

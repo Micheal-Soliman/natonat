@@ -27,6 +27,7 @@ import {
 } from "@/lib/meta-capi";
 import { createBostaDelivery } from "@/lib/bosta";
 import type { Product } from "@/lib/products";
+import { isOrderVerificationEnabled, sendOrderVerificationWhatsApp } from "@/lib/order-verification";
 
 type OrderLogBody = Record<string, unknown>;
 type OrderHistoryEntry = {
@@ -77,6 +78,7 @@ const UPDATE_ONLY_SOURCES = new Set([
   "paymob_webhook",
   "paymob_webhook_aramex",
   "paymob_webhook_bosta",
+  "order_verification_whatsapp",
 ]);
 
 function getNestedString(value: unknown, key: string) {
@@ -908,6 +910,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
+  const shouldRequireVerification =
+    isOrderVerificationEnabled() &&
+    getOrderStatusValue(body.source) === "checkout" &&
+    getOrderStatusValue(body.status) === "confirmed" &&
+    getOrderStatusValue(body.payment_method) === "cod";
+  if (shouldRequireVerification) {
+    body = {
+      ...body,
+      status: "pending_verification",
+      verification_status: "pending",
+      verification_requested_at: new Date().toISOString(),
+    };
+  }
+
   const skipStockValidation =
     isSideEffectOnlySource(body.source) ||
     Boolean(
@@ -1021,6 +1037,33 @@ export async function POST(req: Request) {
       history,
       tracking_link: trackingLink
     } as StoredOrder;
+
+    if (
+      getOrderStatusValue(updatedOrder.status) === "pending_verification" &&
+      !updatedOrder.verification_message_sent_at &&
+      !updatedOrder.verification_message_queued_at
+    ) {
+      const queuedAt = new Date().toISOString();
+      updatedOrder = { ...updatedOrder, verification_message_queued_at: queuedAt };
+      const verificationSnapshot = updatedOrder;
+      const appOrigin = new URL(req.url).origin;
+      after(async () => {
+        const result = await sendOrderVerificationWhatsApp(verificationSnapshot);
+        await fetch(`${appOrigin}/api/orders/log`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            source: "order_verification_whatsapp",
+            order_ref: orderRef,
+            verification_message_queued_at: "",
+            verification_message_sent_at: result.success ? new Date().toISOString() : "",
+            verification_message_error: result.success ? "" : result.error,
+            updated_at: new Date().toISOString(),
+          }),
+          cache: "no-store",
+        }).catch((error) => console.error("Could not store WhatsApp verification result", error));
+      });
+    }
 
     if (!fastStore) {
       updatedOrder = await attachBostaShipmentIfNeeded(updatedOrder);

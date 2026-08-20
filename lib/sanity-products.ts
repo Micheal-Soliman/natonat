@@ -1,6 +1,7 @@
 import { products as fallbackProducts, type Product } from "@/lib/products";
 import { normalizeImageList, normalizeImageUrl } from "@/lib/image-url";
 import { withLatestOctopusImages } from "@/lib/octopus-images";
+import { getProductDisplayName } from "@/lib/product-naming";
 import { sanityClient } from "@/sanity/lib/client";
 import { activeProductsQuery, productBySlugQuery } from "@/sanity/lib/queries";
 
@@ -51,6 +52,7 @@ function normalizeProduct(product: SanityProduct): Product | null {
 
   return {
     ...product,
+    name: getProductDisplayName(product),
     slug: product.slug.trim().toLowerCase(),
     id: product.legacyId || getGeneratedProductId(product._id),
     category:

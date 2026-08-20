@@ -52,7 +52,7 @@ export async function generateMetadata({
   const localizedType = getLocalizedProductType(product.type, locale);
   const title = isArabic
     ? `${product.name} | ${localizedType} | نات أونات`
-    : `${product.name} ${product.type ? `| ${product.type}` : ""} | natOnat`;
+    : `${product.name} | natOnat`;
   const description = isArabic
     ? `تسوق ${product.name} من نات أونات. ${localizedType} بجودة عالية وتجربة طلب سهلة داخل مصر.`
     : product.description ||

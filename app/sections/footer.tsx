@@ -27,6 +27,7 @@ export function Footer() {
       { label: t('links.legal.terms'), href: "/legal/terms" },
       { label: t('links.legal.shipping'), href: "/legal/shipping" },
       { label: t('links.legal.warranty'), href: "/legal/warranty" },
+      { label: t('links.legal.promise'), href: "/promise" },
     ],
   };
 

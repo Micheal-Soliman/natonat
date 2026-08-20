@@ -8,17 +8,16 @@ import Image from "next/image";
 import { useMemo } from "react";
 import { Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
 import { useCatalogProducts } from "@/app/lib/catalog-context";
-import { useQuantityDiscountSettings, useSizeGuideSizes } from "@/app/lib/site-settings-context";
+import { useSizeGuideSizes } from "@/app/lib/site-settings-context";
 import type { Product } from "@/lib/products";
 import { isProductOutOfStock, isProductSizeOutOfStock } from "@/lib/product-stock";
-import { getNextQuantityDiscount, getQuantityDiscountPercent } from "@/lib/quantity-discount";
+import { FREE_DELIVERY_THRESHOLD, FREE_FIRST_EXCHANGE_THRESHOLD } from "@/lib/cart-offers";
 
 export function CartSlider() {
   const t = useTranslations("cart");
   const stockT = useTranslations("stock");
   const products = useCatalogProducts();
   const sizes = useSizeGuideSizes();
-  const quantityDiscountSettings = useQuantityDiscountSettings();
   const {
     items,
     addToCart,
@@ -32,21 +31,26 @@ export function CartSlider() {
     isOpen,
     closeCart,
     totalItems,
+    offerSubtotal,
+    offerDiscountPercent,
+    freeDelivery,
+    nextOfferMilestone,
     setBuyNowItem,
   } = useCart();
 
   // Cart shows subtotal only - shipping calculated at checkout based on city selection
-  const freeShippingThreshold = 1000;
-  const remainingForFreeShipping = Math.max(0, freeShippingThreshold - subtotal);
-  const freeShippingProgress = Math.min(100, (subtotal / freeShippingThreshold) * 100);
-  const quantityDiscountPercent = getQuantityDiscountPercent(totalItems, quantityDiscountSettings);
-  const nextQuantityDiscount = getNextQuantityDiscount(totalItems, quantityDiscountSettings);
-  const lastDiscountTier = quantityDiscountSettings.tiers[quantityDiscountSettings.tiers.length - 1];
-  const maxTierQuantity = lastDiscountTier?.minQuantity || 4;
-  const quantityDiscountProgress = Math.min(
-    100,
-    Math.max(0, ((totalItems - 1) / Math.max(1, maxTierQuantity - 1)) * 100),
-  );
+  const freeShippingProgress = Math.min(100, (offerSubtotal / FREE_DELIVERY_THRESHOLD) * 100);
+  const offerProgress = Math.min(100, (offerSubtotal / FREE_FIRST_EXCHANGE_THRESHOLD) * 100);
+  const offerMessage = nextOfferMilestone?.unlocksFreeDelivery
+    ? t("summary.offerNextFreeDelivery", { amount: nextOfferMilestone.amountRemaining })
+    : nextOfferMilestone?.unlocksFreeFirstExchange
+      ? t("summary.offerNextFreeExchange", { amount: nextOfferMilestone.amountRemaining })
+      : nextOfferMilestone
+        ? t("summary.offerNextDiscount", {
+            amount: nextOfferMilestone.amountRemaining,
+            percent: nextOfferMilestone.discountPercent,
+          })
+        : t("summary.offerMaximumUnlocked");
 
   const getSizeOptions = (product?: Product) => {
     if (!product?.sizePrices) return [];
@@ -353,7 +357,7 @@ export function CartSlider() {
                 );
               })}
 
-              {quantityDiscountSettings.enabled && suggestedProduct && (
+              {suggestedProduct && (
                 <div className="overflow-hidden rounded-2xl border border-[#0F1A26]/10 bg-white shadow-sm">
                   <div className="border-b border-[#0F1A26]/5 bg-[#F8F6F3] px-3 py-2.5">
                     <div className="min-w-0">
@@ -361,12 +365,7 @@ export function CartSlider() {
                         {t("upsell.title")}
                       </p>
                       <p className="mt-0.5 text-xs font-bold text-[#0F1A26]/70">
-                        {nextQuantityDiscount
-                          ? t("summary.quantityDiscountNext", {
-                              count: Math.max(1, nextQuantityDiscount.minQuantity - totalItems),
-                              percent: nextQuantityDiscount.percent,
-                            })
-                          : t("summary.quantityDiscountUnlocked", { percent: quantityDiscountPercent })}
+                        {offerMessage}
                       </p>
                     </div>
                   </div>
@@ -426,33 +425,26 @@ export function CartSlider() {
         {items.length > 0 && (
           <div className="shrink-0 border-t border-[#0F1A26]/10 bg-[#F1EBE3] p-3 sm:p-4">
             <div className="mb-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {quantityDiscountSettings.enabled && (
-                <div className="rounded-2xl border border-[#0F1A26]/10 bg-white p-2.5">
-                  <div className="mb-1.5 flex items-center justify-between gap-2 text-[10px] font-semibold text-[#0F1A26] sm:text-[11px]">
-                    <span className="line-clamp-1">
-                      {nextQuantityDiscount
-                        ? t("summary.quantityDiscountNext", {
-                            count: Math.max(1, nextQuantityDiscount.minQuantity - totalItems),
-                            percent: nextQuantityDiscount.percent,
-                          })
-                        : t("summary.quantityDiscountUnlocked", { percent: quantityDiscountPercent })}
-                    </span>
-                    <span className="shrink-0">{quantityDiscountPercent}%</span>
-                  </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-[#0F1A26]/10">
-                    <div
-                      className="h-full rounded-full bg-[#0F1A26] transition-all duration-300"
-                      style={{ width: `${quantityDiscountProgress}%` }}
-                    />
-                  </div>
+              <div className="rounded-2xl border border-[#0F1A26]/10 bg-white p-2.5">
+                <div className="mb-1.5 flex items-center justify-between gap-2 text-[10px] font-semibold text-[#0F1A26] sm:text-[11px]">
+                  <span className="line-clamp-1">{offerMessage}</span>
+                  <span className="shrink-0">{offerDiscountPercent}%</span>
                 </div>
-              )}
+                <div className="h-1.5 overflow-hidden rounded-full bg-[#0F1A26]/10">
+                  <div
+                    className="h-full rounded-full bg-[#0F1A26] transition-all duration-300"
+                    style={{ width: `${offerProgress}%` }}
+                  />
+                </div>
+              </div>
               <div className="rounded-2xl border border-[#0F1A26]/10 bg-white p-2.5">
                 <div className="mb-1.5 flex items-center justify-between gap-2 text-[10px] font-semibold text-[#0F1A26] sm:text-[11px]">
                   <span className="line-clamp-1">
-                    {remainingForFreeShipping > 0
-                      ? t("summary.freeShippingProgress", { amount: remainingForFreeShipping })
-                      : t("summary.freeShippingUnlocked")}
+                    {freeDelivery
+                      ? t("summary.freeShippingUnlocked")
+                      : t("summary.freeShippingProgress", {
+                          amount: Math.max(0, FREE_DELIVERY_THRESHOLD - offerSubtotal),
+                        })}
                   </span>
                   <span className="shrink-0">{Math.round(freeShippingProgress)}%</span>
                 </div>

@@ -50,6 +50,7 @@ const ALLOWED_ORDER_STATUSES = new Set([
   "confirmed",
   "pending",
   "pending_instapay_approval",
+  "pending_verification",
   "shipped",
   "delivered",
   "completed",

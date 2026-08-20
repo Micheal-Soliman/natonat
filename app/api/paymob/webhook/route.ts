@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isOrderVerificationEnabled } from "@/lib/order-verification";
 import crypto from "crypto";
 
 type PaymobTransaction = {
@@ -314,7 +315,9 @@ export async function POST(req: Request) {
           source: "paymob_webhook",
           order_ref: paymentDetails.special_reference,
           status: transaction.success
-            ? "confirmed"
+            ? isOrderVerificationEnabled()
+              ? "pending_verification"
+              : "confirmed"
             : transaction.pending
               ? "pending"
               : "failed",
@@ -330,7 +333,7 @@ export async function POST(req: Request) {
   }
 
   // Create Bosta shipment for successful card payments with delivery
-  if (transaction?.success && paymentDetails.special_reference) {
+  if (transaction?.success && paymentDetails.special_reference && !isOrderVerificationEnabled()) {
     try {
       const orderData =
         loggedOrderBeforePaymentUpdate ||

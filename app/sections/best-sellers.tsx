@@ -12,7 +12,6 @@ import { useCart } from "@/app/lib/cart-context";
 import { BundleQuickCustomizer } from "@/app/components/bundle-quick-customizer";
 import { DeliveryCountdown } from "@/app/components/delivery-countdown";
 import { WishlistToggleButton } from "@/app/components/wishlist-toggle-button";
-import { QuantityDiscountRibbon } from "@/app/components/quantity-discount-ribbon";
 import type { Product } from "@/lib/products";
 import { getStockLabel, isProductOutOfStock, isProductSizeOutOfStock } from "@/lib/product-stock";
 
@@ -364,7 +363,6 @@ export function BestSellers() {
                         quality={35}
                       />
 
-                      <QuantityDiscountRibbon compact seed={product.id} className="absolute left-2 top-2 z-10 sm:left-3 sm:top-3" />
 
                     </div>
                     </Link>

@@ -242,6 +242,7 @@ function getTomorrowInputDate() {
 
 const ADMIN_ORDER_STATUSES = [
   { value: "created", label: "Created" },
+  { value: "pending_verification", label: "Pending Verification" },
   { value: "confirmed", label: "Confirmed" },
   { value: "shipped", label: "Shipped" },
   { value: "delivered", label: "Delivered" },
@@ -308,6 +309,7 @@ const BOSTA_TRACKING_STAGES = [
 ] as const;
 
 const OPERATIONAL_TRACKING_STAGES = [
+  { key: "pending_verification", label: "Pending customer verification" },
   { key: "pending_instapay_approval", label: "Pending InstaPay approval" },
   { key: "needs_bosta_replacement", label: "Needs shipment replacement" },
   { key: "bosta_connection_issue", label: "Bosta connection issue" },
@@ -901,6 +903,7 @@ function getBostaTimelineStageKey(order: AdminOrder) {
 }
 
 function getOrderShipmentStatusKey(order: AdminOrder) {
+  if (getStatus(order) === "pending_verification") return "pending_verification";
   if (isPendingInstaPay(order)) return "pending_instapay_approval";
 
   const timelineStage = getBostaTimelineStageKey(order);
@@ -975,6 +978,7 @@ function needsBosta(order: AdminOrder) {
   return (
     getDeliveryBucket(order) === "delivery" &&
     isConfirmed(order) &&
+    getStatus(order) !== "pending_verification" &&
     !isPendingInstaPay(order) &&
     !getTrackingNumber(order)
   );

@@ -4,12 +4,12 @@ import React, { createContext, useContext, useState, useCallback, useEffect, use
 import { useTranslations } from "next-intl";
 
 import { useCatalogProducts } from "@/app/lib/catalog-context";
-import { useQuantityDiscountSettings } from "@/app/lib/site-settings-context";
 import { useToast } from "@/app/components/toast-provider";
 import {
-  applyQuantityDiscount,
-  getQuantityDiscountPercent,
-} from "@/lib/quantity-discount";
+  applyCartDiscount,
+  getCartOffer,
+  type CartOfferMilestone,
+} from "@/lib/cart-offers";
 import {
   getAvailableStockQuantity,
   isProductOutOfStock,
@@ -75,6 +75,12 @@ interface CartContextType {
   subtotal: number;
   discount: number;
   originalSubtotal: number;
+  offerSubtotal: number;
+  offerDiscount: number;
+  offerDiscountPercent: number;
+  freeDelivery: boolean;
+  freeFirstExchange: boolean;
+  nextOfferMilestone: CartOfferMilestone | null;
   appliedDiscounts: string[];
   isOpen: boolean;
   openCart: () => void;
@@ -115,7 +121,6 @@ function readStoredBuyNowItem() {
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const products = useCatalogProducts();
-  const quantityDiscountSettings = useQuantityDiscountSettings();
   const stockT = useTranslations("stock");
   const { showToast } = useToast();
   const [items, setItems] = useState<CartItem[]>(readStoredCartItems);
@@ -371,18 +376,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
       const quantity = Math.min(item.quantity || 1, maxQuantity ?? Number.POSITIVE_INFINITY);
       const basePrice = item.basePrice ?? item.price;
-      const discountPercent = getQuantityDiscountPercent(quantity, quantityDiscountSettings);
+      const discountPercent = getCartOffer(basePrice * quantity).discountPercent;
 
       setBuyNowItemState({
         ...item,
         basePrice,
-        price: applyQuantityDiscount(basePrice, discountPercent),
+        price: applyCartDiscount(basePrice, discountPercent),
         originalPrice: Math.max(item.originalPrice ?? basePrice, basePrice),
         quantityDiscountPercent: discountPercent,
         quantity,
       });
     },
-    [getCartItemMaxQuantity, isCartItemUnavailable, quantityDiscountSettings]
+    [getCartItemMaxQuantity, isCartItemUnavailable]
   );
 
   const catalogItems = useMemo(
@@ -444,12 +449,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
         };
       });
 
-      const totalQuantity = refreshedItems.reduce((sum, item) => sum + item.quantity, 0);
-      const discountPercent = getQuantityDiscountPercent(totalQuantity, quantityDiscountSettings);
+      const offerSubtotal = refreshedItems.reduce(
+        (sum, item) => sum + (item.basePrice ?? item.price) * item.quantity,
+        0,
+      );
+      const discountPercent = getCartOffer(offerSubtotal).discountPercent;
 
       return refreshedItems.map((item) => {
         const basePrice = item.basePrice ?? item.price;
-        const discountedPrice = applyQuantityDiscount(basePrice, discountPercent);
+        const discountedPrice = applyCartDiscount(basePrice, discountPercent);
         const originalPrice = Math.max(item.originalPrice ?? basePrice, basePrice);
 
         return {
@@ -460,7 +468,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         };
       });
     },
-    [getCartItemMaxQuantity, items, products, quantityDiscountSettings]
+    [getCartItemMaxQuantity, items, products]
   );
 
   // Simple total calculation - bundle prices are already calculated by bundle-pricing system
@@ -478,21 +486,34 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    const discountPercent = getQuantityDiscountPercent(
-      cartItems.reduce((sum, item) => sum + item.quantity, 0),
-      quantityDiscountSettings,
+    const offerSubtotal = cartItems.reduce(
+      (sum, item) => sum + (item.basePrice ?? item.price) * item.quantity,
+      0,
     );
+    const offer = getCartOffer(offerSubtotal);
+    const discountPercent = offer.discountPercent;
     if (discountPercent > 0) {
-      appliedDiscounts.push(`${quantityDiscountSettings.title} (${discountPercent}%)`);
+      appliedDiscounts.push(`${discountPercent}%`);
     }
 
     const discount = originalSubtotal - subtotal;
 
-    return { subtotal, discount, originalSubtotal, appliedDiscounts };
-  }, [quantityDiscountSettings]);
+    return {
+      subtotal,
+      discount,
+      originalSubtotal,
+      appliedDiscounts,
+      offerSubtotal,
+      offerDiscount: offer.discountAmount,
+      offerDiscountPercent: offer.discountPercent,
+      freeDelivery: offer.freeDelivery,
+      freeFirstExchange: offer.freeFirstExchange,
+      nextOfferMilestone: offer.nextMilestone,
+    };
+  }, []);
 
   const totalItems = catalogItems.reduce((sum, item) => sum + item.quantity, 0);
-  const { subtotal, discount, originalSubtotal, appliedDiscounts } = calculateTotals(catalogItems);
+  const totals = calculateTotals(catalogItems);
 
   return (
     <CartContext.Provider
@@ -507,10 +528,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         buyNowItem,
         setBuyNowItem,
         totalItems,
-        subtotal,
-        discount,
-        originalSubtotal,
-        appliedDiscounts,
+        ...totals,
         isOpen,
         openCart,
         closeCart,
