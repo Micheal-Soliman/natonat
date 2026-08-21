@@ -492,6 +492,10 @@
     }
   },
   "product": {
+    "offerTracker": {
+      "projectedCart": "Cart after adding",
+      "afterAdding": "Calculated using your current cart and this selected product."
+    },
     "badge": "Premium",
     "sale": "SALE",
     "notFound": "Product Not Found",

@@ -2,7 +2,7 @@
 
 import { useCart } from "@/app/lib/cart-context";
 import { useWishlist } from "@/app/lib/wishlist-context";
-import { memo, useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { memo, useState, useEffect, useRef, useCallback, useMemo, useSyncExternalStore } from "react";
 import type { FormEvent, PointerEvent as ReactPointerEvent } from "react";
 import Image from "next/image";
 import { Link } from "@/i18n/routing";
@@ -28,7 +28,11 @@ import { calculateBundlePrice, getPricingRuleKey } from "@/lib/bundle-pricing";
 import { trackMetaPixelEvent } from "@/lib/meta-pixel";
 import { getStockLabel, isProductOutOfStock, isProductSizeOutOfStock } from "@/lib/product-stock";
 import { getProductRating } from "@/lib/product-rating";
-import { applyCartDiscount, getCartOffer } from "@/lib/cart-offers";
+import {
+  applyCartDiscount,
+  FREE_FIRST_EXCHANGE_THRESHOLD,
+  getCartOffer,
+} from "@/lib/cart-offers";
 
 // Separate component for detailed product description
 interface ProductDetailedDescriptionProps {
@@ -820,6 +824,10 @@ type ProductGalleryProps = {
   t: (key: string, values?: Record<string, string | number | Date>) => string;
 };
 
+const subscribeToHydration = () => () => {};
+const getClientHydrationSnapshot = () => true;
+const getServerHydrationSnapshot = () => false;
+
 const ProductGallery = memo(function ProductGallery({
   product,
   selectedColor,
@@ -911,7 +919,11 @@ const ProductGallery = memo(function ProductGallery({
             isBagCover
               ? "rounded-t-2xl rounded-b-none shadow-[0_24px_65px_rgba(15,26,38,0.09)] sm:rounded-t-[2rem]"
               : "rounded-2xl shadow-[0_28px_80px_rgba(15,26,38,0.10)] sm:rounded-[2rem]"
-          } ${isBundle ? "h-[280px] sm:aspect-square sm:h-auto" : "aspect-[0.96/1] lg:aspect-[1.02/1]"}`}
+          } ${
+            isBundle
+              ? "h-[280px] sm:aspect-square sm:h-auto lg:aspect-auto lg:h-[clamp(380px,48vh,500px)]"
+              : "aspect-[0.96/1] lg:aspect-auto lg:h-[clamp(380px,48vh,500px)]"
+          }`}
           onTouchStart={(event) => {
             didSwipeRef.current = false;
             touchStartXRef.current = event.touches[0]?.clientX ?? null;
@@ -1082,10 +1094,11 @@ export default function ProductPageContent({
   products,
 }: ProductPageContentProps) {
   const t = useTranslations('product');
+  const cartT = useTranslations('cart');
   const promiseT = useTranslations('promise');
   const stockT = useTranslations('stock');
   const locale = useLocale();
-  const { addToCart, setBuyNowItem, validateQuantity } = useCart();
+  const { addToCart, setBuyNowItem, validateQuantity, offerSubtotal } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const router = useRouter();
   const [selectedSize, setSelectedSize] = useState(() => getInitialSelectedSize(product));
@@ -1115,6 +1128,11 @@ export default function ProductPageContent({
     });
   }, [product.id, product.name, product.price]);
   const [quantity, setQuantity] = useState(1);
+  const isCartHydrated = useSyncExternalStore(
+    subscribeToHydration,
+    getClientHydrationSnapshot,
+    getServerHydrationSnapshot,
+  );
   const [activeProductTab, setActiveProductTab] = useState<ProductTabId>("details");
 
   const productCategories = Array.isArray(product.category) ? product.category : [product.category];
@@ -1189,6 +1207,27 @@ export default function ProductPageContent({
   }, [product, bundleSelections, products]);
 
   const currentPrice = product.dynamicPricing ? calculateDynamicBundlePrice() : getPriceBySize(selectedSize);
+  const projectedOfferSubtotal =
+    (isCartHydrated ? offerSubtotal : 0) + currentPrice.price * quantity;
+  const projectedOffer = getCartOffer(projectedOfferSubtotal);
+  const projectedOfferProgress = Math.min(
+    100,
+    (projectedOfferSubtotal / FREE_FIRST_EXCHANGE_THRESHOLD) * 100,
+  );
+  const projectedOfferMessage = projectedOffer.nextMilestone?.unlocksFreeDelivery
+    ? cartT("summary.offerNextFreeDelivery", {
+        amount: projectedOffer.nextMilestone.amountRemaining,
+      })
+    : projectedOffer.nextMilestone?.unlocksFreeFirstExchange
+      ? cartT("summary.offerNextFreeExchange", {
+          amount: projectedOffer.nextMilestone.amountRemaining,
+        })
+      : projectedOffer.nextMilestone
+        ? cartT("summary.offerNextDiscount", {
+            amount: projectedOffer.nextMilestone.amountRemaining,
+            percent: projectedOffer.nextMilestone.discountPercent,
+          })
+        : cartT("summary.offerMaximumUnlocked");
   const quantityDiscountPercent = getCartOffer(currentPrice.price * quantity).discountPercent;
   const discountedUnitPrice = Math.max(
     0,
@@ -1731,7 +1770,7 @@ export default function ProductPageContent({
         </div>
       )}
 
-      <main className="min-h-screen bg-[#F1EBE3] overflow-x-hidden pb-32 lg:pb-0">
+      <main className="min-h-screen bg-[#F1EBE3] overflow-x-clip pb-32 lg:pb-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-30 pb-12">
           {/* Product Navigation - Top */}
           <div className="flex items-center justify-between mb-8 pt-5 md:pt-0">
@@ -1794,9 +1833,9 @@ export default function ProductPageContent({
           </div>
 
           {/* Section 1 & 2: Gallery + Info Grid */}
-          <div className="grid min-w-0 grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1.08fr)_minmax(380px,0.92fr)] lg:gap-12">
+          <div className="grid min-w-0 grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,0.94fr)_minmax(420px,1.06fr)] lg:gap-8 xl:gap-10">
             {/* Section 1: Gallery */}
-            <div className="min-w-0 space-y-3 sm:space-y-4 w-full max-w-full overflow-hidden lg:sticky lg:top-24">
+            <div className="min-w-0 w-full max-w-full space-y-3 sm:space-y-4 lg:sticky lg:top-20 lg:self-start">
               <ProductGallery
                 key={`${product.id}-${selectedColor || "default"}`}
                 product={product}
@@ -1806,6 +1845,60 @@ export default function ProductPageContent({
                 t={t}
               />
 
+              <section className="overflow-hidden rounded-2xl border border-[#EEBC3F]/30 bg-[#0F1A26] p-4 text-white shadow-[0_20px_55px_rgba(15,26,38,0.16)] sm:p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#EEBC3F] px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-[#0F1A26]">
+                      <Sparkles className="h-3 w-3" />
+                      {cartT("summary.valueOffer")}
+                    </span>
+                    <p className="mt-3 text-sm font-bold leading-6 text-white sm:text-base">
+                      {projectedOfferMessage}
+                    </p>
+                  </div>
+                  <div className="shrink-0 text-end">
+                    <span className="block text-[10px] font-bold uppercase text-white/50">
+                      {t("offerTracker.projectedCart")}
+                    </span>
+                    <span className="mt-1 block text-lg font-black text-[#EEBC3F] sm:text-xl">
+                      EGP {projectedOfferSubtotal.toLocaleString(locale)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/12">
+                  <div
+                    className="h-full rounded-full bg-[#EEBC3F] transition-[width] duration-500"
+                    style={{ width: `${projectedOfferProgress}%` }}
+                  />
+                </div>
+
+                <div className="mt-3 grid grid-cols-5 gap-1 text-center">
+                  {[1400, 1600, 1900, 2500, 3000].map((threshold) => {
+                    const isUnlocked = projectedOfferSubtotal >= threshold;
+                    return (
+                      <div key={threshold} className="min-w-0">
+                        <span
+                          className={`mx-auto block h-2.5 w-2.5 rounded-full border-2 ${
+                            isUnlocked
+                              ? "border-[#EEBC3F] bg-[#EEBC3F]"
+                              : "border-white/35 bg-[#0F1A26]"
+                          }`}
+                        />
+                        <span className={`mt-1 block text-[9px] font-black sm:text-[10px] ${
+                          isUnlocked ? "text-[#EEBC3F]" : "text-white/45"
+                        }`}>
+                          {threshold.toLocaleString(locale)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <p className="mt-3 text-xs font-semibold text-white/55">
+                  {t("offerTracker.afterAdding")}
+                </p>
+              </section>
             </div>
 
             {/* Section 2: Product Info */}
