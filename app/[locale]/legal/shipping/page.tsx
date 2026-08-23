@@ -38,8 +38,8 @@ function ShippingContent() {
   }, []);
 
   const shippingRates = [
-    { region: t('rates.cairoGiza'), standard: "75 EGP", express: "-", time: t('rates.cairoTime') },
-    { region: t('rates.alexandria'), standard: "75 EGP", express: "-", time: t('rates.cairoTime') },
+    { region: t('rates.cairoGiza'), standard: "100 EGP", express: "-", time: t('rates.cairoTime') },
+    { region: t('rates.alexandria'), standard: "100 EGP", express: "-", time: t('rates.cairoTime') },
     { region: t('rates.otherGovs'), standard: "100 EGP", express: "-", time: t('rates.govsTime') },
   ];
 

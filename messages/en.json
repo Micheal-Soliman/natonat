@@ -1382,7 +1382,7 @@
       },
       "freeShip": {
         "question": "Do you offer free shipping?",
-        "answer": "Yes! We offer free standard shipping on all orders over EGP 1000 within Egypt. For orders below this amount, shipping is a flat rate of EGP 75."
+        "answer": "Yes! We offer free standard shipping when you spend EGP 1,600 or more within Egypt. Orders below this amount have a flat EGP 100 delivery fee."
       },
       "returnPolicy": {
         "question": "What is your return policy?",
@@ -1411,7 +1411,7 @@
         "subtitle": "Everything you need to know about delivery and returns"
       },
       "shippingTitle": "Shipping Information",
-      "shippingSubtitle": "Flat rate 75 EGP delivery across Egypt",
+      "shippingSubtitle": "Flat rate 100 EGP delivery across Egypt",
       "processing": {
         "title": "Delivery Time",
         "description": "Cairo & Giza: 1-2 business days. Other governorates: 5-7 business days. Orders are processed within 1 business day."

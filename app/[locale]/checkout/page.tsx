@@ -19,6 +19,7 @@ import {
   applyCartDiscount,
   FREE_DELIVERY_THRESHOLD,
   getCartOffer,
+  STANDARD_SHIPPING_FEE,
 } from "@/lib/cart-offers";
 
 const INSTAPAY_PROOF_MAX_BYTES = 5 * 1024 * 1024;
@@ -301,52 +302,16 @@ function getCityOptionSearchTerms(option: CheckoutCityOption) {
   ].filter(Boolean);
 }
 
-function isDiscountShippingCity(city: string) {
-  const cityLower = normalizeCitySearch(city);
-  const cairoDistricts = [
-    "cairo",
-    "new cairo",
-    "nasr city",
-    "maadi",
-    "heliopolis",
-    "zamalek",
-    "down town",
-    "ain shams",
-    "abasya",
-    "el rehab",
-  ];
-  const gizaDistricts = [
-    "giza",
-    "dokki",
-    "mohandiseen",
-    "agouza",
-    "imbaba",
-    "sheikh zayed city",
-    "october city",
-  ];
-  const alexDistricts = ["alexandria"];
-
-  return (
-    cairoDistricts.includes(cityLower) ||
-    gizaDistricts.includes(cityLower) ||
-    alexDistricts.includes(cityLower)
-  );
-}
-
 function getShippingRule({
   deliveryMethod,
   subtotal,
-  city,
 }: {
   deliveryMethod: string;
   subtotal: number;
-  city: string;
 }) {
   if (deliveryMethod === "pickup") return "pickup_free";
   if (subtotal >= FREE_DELIVERY_THRESHOLD) return "subtotal_threshold_free";
-  return isDiscountShippingCity(city)
-    ? "cairo_giza_alex_75"
-    : "other_governorates_100";
+  return "egypt_flat_100";
 }
 
 type CheckoutCityOption = {
@@ -1574,7 +1539,6 @@ function CheckoutContent() {
         const shippingRule = getShippingRule({
           deliveryMethod,
           subtotal: checkoutOfferSubtotal,
-          city: formData.governorate,
         });
 
         const orderLogRes = await fetch("/api/orders/log?fast=1", {
@@ -1670,7 +1634,6 @@ function CheckoutContent() {
       const shippingRuleInstaPay = getShippingRule({
         deliveryMethod,
         subtotal: checkoutOfferSubtotal,
-        city: formData.governorate,
       });
 
       try {
@@ -1777,7 +1740,6 @@ function CheckoutContent() {
     const shippingRuleCOD = getShippingRule({
       deliveryMethod,
       subtotal: checkoutOfferSubtotal,
-      city: formData.governorate,
     });
 
     // Step 1: Bosta shipment is created server-side by /api/orders/log after confirmation.
@@ -1883,11 +1845,10 @@ function CheckoutContent() {
     if (deliveryMethod === "pickup") return 0;
     if (checkoutOfferSubtotal >= FREE_DELIVERY_THRESHOLD) return 0;
 
-    return isDiscountShippingCity(formData.governorate) ? 75 : 100;
+    return STANDARD_SHIPPING_FEE;
   }, [
     deliveryMethod,
     checkoutOfferSubtotal,
-    formData.governorate
   ]);
   const total = useMemo(
     () => checkoutSubtotal + shipping,

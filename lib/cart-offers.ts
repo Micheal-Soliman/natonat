@@ -1,5 +1,6 @@
 export const FREE_DELIVERY_THRESHOLD = 1600;
 export const FREE_FIRST_EXCHANGE_THRESHOLD = 3000;
+export const STANDARD_SHIPPING_FEE = 100;
 
 export type CartValueTier = {
   minSubtotal: number;
@@ -65,4 +66,3 @@ export function getCartOffer(subtotal: number) {
 export function applyCartDiscount(price: number, percent: number) {
   return Math.max(0, Math.round((Number(price) || 0) * (1 - percent / 100)));
 }
-
