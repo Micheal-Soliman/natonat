@@ -20,6 +20,9 @@ export async function GET(request: Request) {
 
   for (const order of orders) {
     if (String(order.status || "").toLowerCase() !== "pending_verification") continue;
+    // A failed WhatsApp delivery stays in the manual queue. It must never be
+    // auto-cancelled because the customer may not have received any message.
+    if (!order.verification_message_sent_at || order.verification_manual_required) continue;
     const createdAt = Date.parse(String(order.verification_requested_at || order.created_at || ""));
     if (!Number.isFinite(createdAt)) continue;
     const ageHours = (now - createdAt) / 3_600_000;
@@ -27,10 +30,13 @@ export async function GET(request: Request) {
     if (ageHours >= 24) {
       await fetch(`${new URL(request.url).origin}/api/orders/log`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-order-verification-secret": process.env.ORDER_CONFIRMATION_SECRET || "",
+        },
         body: JSON.stringify({
           ...order,
-          source: String(order.source || "checkout"),
+          source: "order_verification_auto_cancel",
           status: "cancelled",
           verification_status: "auto_cancelled",
           auto_cancelled_at: new Date().toISOString(),
@@ -47,7 +53,9 @@ export async function GET(request: Request) {
       await upsertOrderToDatabase({
         ...order,
         verification_reminder_sent_at: result.success ? new Date().toISOString() : "",
+        verification_reminder_message_id: result.success ? result.messageId || "" : "",
         verification_reminder_error: result.success ? "" : result.error,
+        verification_manual_required: !result.success,
         updated_at: new Date().toISOString(),
       });
       if (result.success) reminded += 1;
@@ -56,4 +64,3 @@ export async function GET(request: Request) {
 
   return NextResponse.json({ success: true, reminded, cancelled });
 }
-

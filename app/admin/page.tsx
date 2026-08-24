@@ -967,6 +967,7 @@ function isPaid(order: AdminOrder) {
 
 function isConfirmed(order: AdminOrder) {
   const status = getStatus(order);
+  if (status === "pending_verification") return false;
   return ["confirmed", "shipped", "completed", "delivered"].includes(status) || isPaid(order);
 }
 
@@ -2883,6 +2884,41 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const resolveOrderVerification = async (
+    order: AdminOrder,
+    action: "confirm" | "cancel",
+  ) => {
+    const orderRef = getOrderRef(order);
+    if (!orderRef) return;
+    if (action === "cancel" && !window.confirm(`Cancel unconfirmed order ${orderRef}?`)) return;
+
+    setActionLoadingRef(`verification-${action}:${orderRef}`);
+    setError("");
+
+    try {
+      const res = await fetch("/api/admin/order-verification", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(savedToken ? { Authorization: `Bearer ${savedToken}` } : {}),
+        },
+        body: JSON.stringify({ orderRef, action }),
+      });
+      const data = (await res.json()) as AdminActionResponse & { message?: string };
+      if (!res.ok || !data.success) {
+        throw new Error(formatApiError(data.error, data.details, "Could not update verification"));
+      }
+
+      setBostaSyncMessage(data.message || `Order ${orderRef} verification updated.`);
+      setSelectedOrder(null);
+      await loadOrders(savedToken);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not update order verification");
+    } finally {
+      setActionLoadingRef("");
+    }
+  };
+
   const terminateBostaShipmentForReplacement = async (order: AdminOrder) => {
     const orderRef = getOrderRef(order);
     const trackingNumber = getTrackingNumber(order);
@@ -3847,6 +3883,9 @@ export default function AdminDashboardPage() {
     const BostaAttention = filteredMetricOrders
       .filter((order) => getBostaError(order) || needsBosta(order) || needsBostaReplacement(order))
       .slice(0, 12);
+    const verificationAttention = filteredMetricOrders
+      .filter((order) => getStatus(order) === "pending_verification")
+      .slice(0, 12);
     const instapayAttention = filteredMetricOrders.filter(isPendingInstaPay).slice(0, 12);
     const returnsAttention = filteredMetricOrders.filter(isReturned).slice(0, 12);
     const codOrders = revenueOrders.filter((order) => getPaymentBucket(order) === "cod");
@@ -3890,6 +3929,7 @@ export default function AdminDashboardPage() {
       topCities: Array.from(cityMap.values()).sort((a, b) => b.revenue - a.revenue).slice(0, 8),
       productFamilyPieces,
       BostaAttention,
+      verificationAttention,
       instapayAttention,
       returnsAttention,
       fulfillmentRows,
@@ -3898,7 +3938,7 @@ export default function AdminDashboardPage() {
       codDeliveredValue: codDelivered.reduce((sum, order) => sum + getAmount(order), 0),
       codPendingCollectionOrders: codInTransit.length,
       codPendingCollectionValue: codInTransit.reduce((sum, order) => sum + getAmount(order), 0),
-      attentionCount: BostaAttention.length + instapayAttention.length + returnsAttention.length,
+      attentionCount: BostaAttention.length + verificationAttention.length + instapayAttention.length + returnsAttention.length,
     };
   }, [filteredMetricOrders]);
 
@@ -5869,7 +5909,54 @@ export default function AdminDashboardPage() {
               description="This queue separates payment approval, shipment creation/replacement, tracking refresh, pickup requests, and returns so the admin knows exactly which operation will run."
           />
 
-          <div className="mt-5 grid gap-4 lg:grid-cols-4">
+          <div className="mt-5 grid gap-4 lg:grid-cols-2 xl:grid-cols-5">
+            <div className="rounded-3xl bg-sky-50 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="font-black text-sky-900">Customer confirmation</h3>
+                <span className="rounded-full bg-sky-200 px-3 py-1 text-xs font-black text-sky-900">{operations.verificationAttention.length}</span>
+              </div>
+              <p className="mt-2 text-xs font-bold leading-5 text-sky-900/65">
+                No courier shipment is created until the customer or admin confirms.
+              </p>
+              <div className="mt-3 space-y-2">
+                {operations.verificationAttention.length ? operations.verificationAttention.map((order) => {
+                  const orderRef = getOrderRef(order);
+                  const whatsappSent = Boolean(getString(order.verification_message_sent_at));
+                  const whatsappError = getString(order.verification_message_error);
+                  return (
+                    <div key={orderRef} className="rounded-2xl bg-white p-3 text-sm font-bold shadow-sm">
+                      <button onClick={() => setSelectedOrder(order)} className="block w-full text-left">
+                        <span className="block font-black">{orderRef}</span>
+                        <span className="text-[#0F1A26]/50">{money.format(getAmount(order))}</span>
+                        <span className={`mt-1 block text-xs ${whatsappSent ? "text-emerald-700" : "text-amber-700"}`}>
+                          {whatsappSent ? "WhatsApp sent - waiting for reply" : "Manual pending - call customer"}
+                        </span>
+                        {!whatsappSent && whatsappError && (
+                          <span className="mt-1 line-clamp-2 block text-[11px] text-rose-600">{whatsappError}</span>
+                        )}
+                      </button>
+                      <div className="mt-3 grid grid-cols-2 gap-2">
+                        <button
+                          onClick={() => void resolveOrderVerification(order, "confirm")}
+                          disabled={actionLoadingRef === `verification-confirm:${orderRef}`}
+                          className="h-9 rounded-xl bg-emerald-600 px-2 text-[11px] font-black text-white transition hover:-translate-y-0.5 disabled:opacity-60"
+                        >
+                          {actionLoadingRef === `verification-confirm:${orderRef}` ? "Confirming..." : "Confirm & ship"}
+                        </button>
+                        <button
+                          onClick={() => void resolveOrderVerification(order, "cancel")}
+                          disabled={actionLoadingRef === `verification-cancel:${orderRef}`}
+                          className="h-9 rounded-xl border border-rose-200 px-2 text-[11px] font-black text-rose-700 transition hover:bg-rose-50 disabled:opacity-60"
+                        >
+                          {actionLoadingRef === `verification-cancel:${orderRef}` ? "Cancelling..." : "Cancel"}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }) : <p className="text-sm font-bold text-sky-900/60">No orders waiting for confirmation.</p>}
+              </div>
+            </div>
+
             <div className="rounded-3xl bg-amber-50 p-4">
               <div className="flex items-center justify-between gap-3">
                 <h3 className="font-black text-amber-800">InstaPay approval</h3>
@@ -6306,6 +6393,24 @@ export default function AdminDashboardPage() {
                         )}
                       </td>
                       <td className="px-5 py-4 align-top">
+                        {getStatus(order) === "pending_verification" && (
+                          <div className="mb-2 grid gap-2">
+                            <button
+                              onClick={() => void resolveOrderVerification(order, "confirm")}
+                              disabled={actionLoadingRef === `verification-confirm:${orderRef}`}
+                              className="inline-flex h-10 items-center justify-center rounded-2xl bg-emerald-600 px-4 text-xs font-black text-white transition hover:-translate-y-0.5 disabled:opacity-60"
+                            >
+                              {actionLoadingRef === `verification-confirm:${orderRef}` ? "Confirming..." : "Confirm & create shipment"}
+                            </button>
+                            <button
+                              onClick={() => void resolveOrderVerification(order, "cancel")}
+                              disabled={actionLoadingRef === `verification-cancel:${orderRef}`}
+                              className="inline-flex h-10 items-center justify-center rounded-2xl border border-rose-200 bg-white px-4 text-xs font-black text-rose-700 transition hover:bg-rose-50 disabled:opacity-60"
+                            >
+                              {actionLoadingRef === `verification-cancel:${orderRef}` ? "Cancelling..." : "Cancel unconfirmed order"}
+                            </button>
+                          </div>
+                        )}
                         {needsBosta(order) && (
                           <button
                             onClick={() => void createBostaShipmentFromOrder(order)}

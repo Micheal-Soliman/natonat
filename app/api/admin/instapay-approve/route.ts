@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { isAdminAuthorized } from "@/lib/admin-auth";
 import { fetchOrderFromDatabaseIncludingDeleted, isDeletedOrderRecord } from "@/lib/order-database";
+import { isOrderVerificationEnabled } from "@/lib/order-verification";
 
 type LoggedOrder = {
   order_ref?: string;
@@ -102,9 +103,10 @@ export async function POST(req: Request) {
 
   const appOrigin = getAppOrigin(req);
   let bostaPayload: LoggedOrder["bosta"] | null = order.bosta || order.shipment || order.aramex || null;
-  let nextStatus = "confirmed";
+  const requiresCustomerVerification = isOrderVerificationEnabled();
+  let nextStatus = requiresCustomerVerification ? "pending_verification" : "confirmed";
 
-  if (order.delivery_method === "delivery" && order.customer && !bostaPayload?.trackingNumber) {
+  if (!requiresCustomerVerification && order.delivery_method === "delivery" && order.customer && !bostaPayload?.trackingNumber) {
     const shipmentRes = await fetch(`${appOrigin}/api/bosta/shipment`, {
       method: "POST",
       headers: {

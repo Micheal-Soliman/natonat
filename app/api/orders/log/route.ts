@@ -75,10 +75,26 @@ const UPDATE_ONLY_SOURCES = new Set([
   "email_notification_queued",
   "customer_email_notification",
   "meta_capi",
+  "instapay_admin_approved",
+  "admin_instapay_approved",
+  "instapay_admin_approved_bosta_failed",
+  "admin_instapay_approved_bosta_failed",
   "paymob_webhook",
   "paymob_webhook_aramex",
   "paymob_webhook_bosta",
   "order_verification_whatsapp",
+  "order_verification_auto_cancel",
+  "whatsapp_order_verification",
+  "whatsapp_delivery_status",
+  "admin_order_verification",
+]);
+
+const PROTECTED_VERIFICATION_SOURCES = new Set([
+  "order_verification_whatsapp",
+  "order_verification_auto_cancel",
+  "whatsapp_order_verification",
+  "whatsapp_delivery_status",
+  "admin_order_verification",
 ]);
 
 function getNestedString(value: unknown, key: string) {
@@ -215,7 +231,12 @@ function shouldSendOrderEmail(order: StoredOrder, triggerSource?: unknown) {
   const paymentStatus = getOrderStatusValue(order.payment_status);
   const deliveryMethod = getOrderStatusValue(order.delivery_method);
 
-  if (status === "created" || status === "pending" || paymentStatus === "pending") {
+  if (
+    status === "created" ||
+    status === "pending" ||
+    status === "pending_verification" ||
+    paymentStatus === "pending"
+  ) {
     return false;
   }
 
@@ -236,7 +257,14 @@ function shouldSendOrderEmail(order: StoredOrder, triggerSource?: unknown) {
   }
 
   if (source === "instapay_admin_approved" || source === "admin_instapay_approved") {
-    return paymentStatus === "paid";
+    return paymentStatus === "paid" && (status === "confirmed" || status === "shipped");
+  }
+
+  if (source === "whatsapp_order_verification" || source === "admin_order_verification") {
+    const isCod = getOrderStatusValue(order.payment_method) === "cod" ||
+      paymentStatus === "cash on delivery";
+    return (status === "confirmed" || status === "shipped") &&
+      (paymentStatus === "paid" || isCod);
   }
 
   return false;
@@ -343,9 +371,15 @@ function shouldCreateBostaFromOrderLog(order: StoredOrder) {
   const source = getOrderStatusValue(order.source);
   const status = getOrderStatusValue(order.status);
   const deliveryMethod = getOrderStatusValue(order.delivery_method);
+  const shipmentAllowedSources = new Set([
+    "checkout",
+    "checkout_instapay_proof",
+    "whatsapp_order_verification",
+    "admin_order_verification",
+  ]);
 
   return (
-    source === "checkout" &&
+    shipmentAllowedSources.has(source) &&
     deliveryMethod === "delivery" &&
     (status === "confirmed" || status === "shipped") &&
     !getShipmentTracking(order)
@@ -910,6 +944,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
+  const incomingSource = getOrderStatusValue(body.source);
+  if (PROTECTED_VERIFICATION_SOURCES.has(incomingSource)) {
+    const expectedSecret = process.env.ORDER_CONFIRMATION_SECRET || "";
+    const suppliedSecret = req.headers.get("x-order-verification-secret") || "";
+    if (!expectedSecret || suppliedSecret !== expectedSecret) {
+      return NextResponse.json({ error: "Unauthorized verification update" }, { status: 401 });
+    }
+  }
+
   const shouldRequireVerification =
     isOrderVerificationEnabled() &&
     getOrderStatusValue(body.source) === "checkout" &&
@@ -1051,13 +1094,18 @@ export async function POST(req: Request) {
         const result = await sendOrderVerificationWhatsApp(verificationSnapshot);
         await fetch(`${appOrigin}/api/orders/log`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "x-order-verification-secret": process.env.ORDER_CONFIRMATION_SECRET || "",
+          },
           body: JSON.stringify({
             source: "order_verification_whatsapp",
             order_ref: orderRef,
             verification_message_queued_at: "",
             verification_message_sent_at: result.success ? new Date().toISOString() : "",
+            verification_message_id: result.success ? result.messageId || "" : "",
             verification_message_error: result.success ? "" : result.error,
+            verification_manual_required: !result.success,
             updated_at: new Date().toISOString(),
           }),
           cache: "no-store",

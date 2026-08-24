@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 type VerificationOrder = Record<string, unknown>;
+export type OrderVerificationAction = "confirm" | "cancel";
 
 export function isOrderVerificationEnabled() {
   return process.env.ORDER_VERIFICATION_ENABLED === "true";
@@ -10,18 +11,34 @@ function getSecret() {
   return process.env.ORDER_CONFIRMATION_SECRET || "";
 }
 
-export function createOrderConfirmationToken(orderRef: string) {
+export function createOrderConfirmationToken(
+  orderRef: string,
+  action: OrderVerificationAction = "confirm",
+) {
   const secret = getSecret();
   if (!secret) throw new Error("ORDER_CONFIRMATION_SECRET is not configured");
-  return createHmac("sha256", secret).update(orderRef).digest("base64url");
+  return createHmac("sha256", secret)
+    .update(`${action}:${orderRef}`)
+    .digest("base64url");
 }
 
-export function verifyOrderConfirmationToken(orderRef: string, token: string) {
+export function verifyOrderConfirmationToken(
+  orderRef: string,
+  token: string,
+  action: OrderVerificationAction = "confirm",
+) {
   if (!orderRef || !token || !getSecret()) return false;
-  const expected = createOrderConfirmationToken(orderRef);
-  const expectedBuffer = Buffer.from(expected);
   const tokenBuffer = Buffer.from(token);
-  return expectedBuffer.length === tokenBuffer.length && timingSafeEqual(expectedBuffer, tokenBuffer);
+  const candidates = [createOrderConfirmationToken(orderRef, action)];
+  // Keep confirmation links created by the previous URL-button version valid.
+  if (action === "confirm") {
+    candidates.push(createHmac("sha256", getSecret()).update(orderRef).digest("base64url"));
+  }
+
+  return candidates.some((expected) => {
+    const expectedBuffer = Buffer.from(expected);
+    return expectedBuffer.length === tokenBuffer.length && timingSafeEqual(expectedBuffer, tokenBuffer);
+  });
 }
 
 function getObject(value: unknown) {
@@ -38,18 +55,49 @@ function normalizeEgyptPhone(value: unknown) {
   return phone;
 }
 
-function getOrderDetails(order: VerificationOrder) {
+function getOrderTemplateFields(order: VerificationOrder) {
   const items = Array.isArray(order.items) ? order.items : [];
-  return items
-    .map((item) => {
-      const row = getObject(item);
-      const quantity = Math.max(1, Number(row.quantity || 1));
-      const price = Number(row.unit_price_egp || row.price_egp || row.price || 0);
-      const variants = [row.size, row.color].filter(Boolean).join(" / ");
-      return `${quantity}x ${String(row.name || "Product")}${variants ? ` (${variants})` : ""} - EGP ${Math.round(price * quantity)}`;
-    })
-    .join("\n")
-    .slice(0, 900);
+  const rows = items.map((item) => getObject(item));
+  const productNames = rows
+    .map((row) => String(row.name || row.title || row.slug || "Product"))
+    .filter(Boolean)
+    .join("، ")
+    .slice(0, 700);
+  const sizes = rows
+    .map((row) => String(row.size || "-").toUpperCase())
+    .filter(Boolean)
+    .join("، ")
+    .slice(0, 300);
+  const quantity = rows.reduce(
+    (total, row) => total + Math.max(1, Number(row.quantity || row.qty || 1) || 1),
+    0,
+  );
+
+  return {
+    productNames: productNames || "natOnat order",
+    sizes: sizes || "-",
+    quantity: Math.max(1, quantity),
+  };
+}
+
+export function createOrderVerificationPayload(
+  orderRef: string,
+  action: OrderVerificationAction,
+) {
+  return `${action}|${orderRef}|${createOrderConfirmationToken(orderRef, action)}`;
+}
+
+export function parseOrderVerificationPayload(payload: string) {
+  const [actionValue, orderRefValue, token] = String(payload || "").split("|");
+  const action: OrderVerificationAction | null = actionValue === "confirm" || actionValue === "cancel"
+    ? actionValue
+    : null;
+  const orderRef = String(orderRefValue || "").trim().toUpperCase();
+
+  if (!action || !orderRef || !token) return null;
+  if (!verifyOrderConfirmationToken(orderRef, token, action)) return null;
+
+  return { action, orderRef };
 }
 
 export async function sendOrderVerificationWhatsApp(
@@ -69,8 +117,8 @@ export async function sendOrderVerificationWhatsApp(
     return { success: false, error: "WhatsApp order verification is not fully configured" };
   }
 
-  const token = createOrderConfirmationToken(orderRef);
   const total = Number(order.amount_egp || 0);
+  const fields = getOrderTemplateFields(order);
   const response = await fetch(`https://graph.facebook.com/v23.0/${phoneNumberId}/messages`, {
     method: "POST",
     headers: {
@@ -83,22 +131,29 @@ export async function sendOrderVerificationWhatsApp(
       type: "template",
       template: {
         name: templateName,
-        language: { code: String(order.locale || "ar") === "ar" ? "ar" : "en" },
+        language: { code: process.env.WHATSAPP_ORDER_TEMPLATE_LANGUAGE || "ar" },
         components: [
           {
             type: "body",
             parameters: [
               { type: "text", text: String(customer.first_name || "Customer") },
-              { type: "text", text: getOrderDetails(order) || "natOnat order" },
-              { type: "text", text: `EGP ${Math.round(total)}` },
-              { type: "text", text: orderRef },
+              { type: "text", text: fields.productNames },
+              { type: "text", text: fields.sizes },
+              { type: "text", text: String(fields.quantity) },
+              { type: "text", text: String(Math.round(total)) },
             ],
           },
           {
             type: "button",
-            sub_type: "url",
+            sub_type: "quick_reply",
             index: "0",
-            parameters: [{ type: "text", text: `${encodeURIComponent(orderRef)}&token=${encodeURIComponent(token)}` }],
+            parameters: [{ type: "payload", payload: createOrderVerificationPayload(orderRef, "confirm") }],
+          },
+          {
+            type: "button",
+            sub_type: "quick_reply",
+            index: "1",
+            parameters: [{ type: "payload", payload: createOrderVerificationPayload(orderRef, "cancel") }],
           },
         ],
       },
@@ -107,7 +162,11 @@ export async function sendOrderVerificationWhatsApp(
   });
 
   const data = await response.json().catch(() => null);
+  const messageId = data && typeof data === "object" && Array.isArray(data.messages)
+    ? String(data.messages[0]?.id || "")
+    : "";
+
   return response.ok
-    ? { success: true, data }
+    ? { success: true, data, messageId }
     : { success: false, error: `WhatsApp Cloud API ${response.status}: ${JSON.stringify(data)}` };
 }
