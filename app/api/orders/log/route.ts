@@ -84,6 +84,7 @@ const UPDATE_ONLY_SOURCES = new Set([
   "paymob_webhook_bosta",
   "order_verification_whatsapp",
   "order_verification_auto_cancel",
+  "verification_pending_email",
   "whatsapp_order_verification",
   "whatsapp_delivery_status",
   "admin_order_verification",
@@ -92,6 +93,7 @@ const UPDATE_ONLY_SOURCES = new Set([
 const PROTECTED_VERIFICATION_SOURCES = new Set([
   "order_verification_whatsapp",
   "order_verification_auto_cancel",
+  "verification_pending_email",
   "whatsapp_order_verification",
   "whatsapp_delivery_status",
   "admin_order_verification",
@@ -351,6 +353,18 @@ function shouldSendMetaPurchase(order: StoredOrder) {
 
   const orderRef = typeof order.order_ref === "string" ? order.order_ref : "";
   return !order.history?.some((entry) => entry.event_key === `meta_purchase:${orderRef}`);
+}
+
+function getPendingVerificationEmailNeeds(order: StoredOrder) {
+  if (getOrderStatusValue(order.status) !== "pending_verification") {
+    return { admin: false, customer: false };
+  }
+
+  const customerEmail = getNestedString(order.customer, "email");
+  return {
+    admin: !order.verification_pending_admin_email_sent_at,
+    customer: Boolean(customerEmail && !order.verification_pending_customer_email_sent_at),
+  };
 }
 
 function isSideEffectOnlySource(source: unknown) {
@@ -1110,6 +1124,57 @@ export async function POST(req: Request) {
           }),
           cache: "no-store",
         }).catch((error) => console.error("Could not store WhatsApp verification result", error));
+      });
+    }
+
+    const pendingEmailNeeds = getPendingVerificationEmailNeeds(updatedOrder);
+    if (
+      (pendingEmailNeeds.admin || pendingEmailNeeds.customer) &&
+      !updatedOrder.verification_pending_email_queued_at
+    ) {
+      const queuedAt = new Date().toISOString();
+      updatedOrder = { ...updatedOrder, verification_pending_email_queued_at: queuedAt };
+      const pendingEmailSnapshot = updatedOrder;
+      const appOrigin = new URL(req.url).origin;
+      after(async () => {
+        const [adminResult, customerResult] = await Promise.all([
+          pendingEmailNeeds.admin
+            ? sendOrderEmail(pendingEmailSnapshot, { pendingVerification: true })
+            : Promise.resolve({ success: true, skipped: true }),
+          pendingEmailNeeds.customer
+            ? sendCustomerConfirmationEmail(pendingEmailSnapshot, { pendingVerification: true })
+            : Promise.resolve({ success: true, skipped: true }),
+        ]);
+        const changedAt = new Date().toISOString();
+        const adminSent = Boolean(pendingEmailNeeds.admin && adminResult.success);
+        const customerSent = Boolean(pendingEmailNeeds.customer && customerResult.success);
+        const adminError = !adminResult.success && "error" in adminResult
+          ? String(adminResult.error || "Admin pending email failed")
+          : "";
+        const customerError = !customerResult.success && "error" in customerResult
+          ? String(customerResult.error || "Customer pending email failed")
+          : "";
+
+        await fetch(`${appOrigin}/api/orders/log`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-order-verification-secret": process.env.ORDER_CONFIRMATION_SECRET || "",
+          },
+          body: JSON.stringify({
+            source: "verification_pending_email",
+            order_ref: orderRef,
+            verification_pending_email_queued_at: "",
+            verification_pending_admin_email_sent_at: adminSent ? changedAt : undefined,
+            verification_pending_customer_email_sent_at: customerSent ? changedAt : undefined,
+            verification_pending_email_error: {
+              admin: adminError,
+              customer: customerError,
+            },
+            updated_at: changedAt,
+          }),
+          cache: "no-store",
+        }).catch((error) => console.error("Could not store pending verification email result", error));
       });
     }
 

@@ -286,7 +286,10 @@ function renderTotalsHtml(orderData: OrderEmailData) {
   `;
 }
 
-export async function sendOrderEmail(orderData: OrderEmailData) {
+export async function sendOrderEmail(
+  orderData: OrderEmailData,
+  options: { pendingVerification?: boolean } = {},
+) {
   const adminRecipients = getOrderAdminRecipients();
   const itemsHtml = (orderData.items || []).map(renderItemHtml).join('');
   const totalsHtml = renderTotalsHtml(orderData);
@@ -295,10 +298,17 @@ export async function sendOrderEmail(orderData: OrderEmailData) {
     from: getEmailFromAddress(),
     to: adminRecipients.to,
     bcc: adminRecipients.bcc,
-    subject: `New Order: ${orderData.order_ref || 'N/A'}`,
+    subject: options.pendingVerification
+      ? `Order awaiting customer confirmation: ${orderData.order_ref || 'N/A'}`
+      : `New Order: ${orderData.order_ref || 'N/A'}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 10px;">
-        <h2 style="color: #0F1A26; text-align: center;">New Order Received!</h2>
+        <h2 style="color: #0F1A26; text-align: center;">${options.pendingVerification ? 'Order Awaiting Customer Confirmation' : 'New Order Received!'}</h2>
+        ${options.pendingVerification ? `
+          <p style="padding:12px;background:#fff8e1;border-radius:10px;color:#7a5a00;text-align:center;font-weight:bold;">
+            The order is saved, but no Bosta shipment will be created until the customer confirms by WhatsApp or an admin confirms manually.
+          </p>
+        ` : ''}
 
         <p style="font-size: 16px;"><strong>Order Reference:</strong> ${orderData.order_ref}</p>
         <p style="font-size: 16px;"><strong>Customer Name:</strong> ${orderData.customer?.first_name || ''} ${orderData.customer?.last_name || ''}</p>
@@ -498,7 +508,10 @@ export async function sendInstapayPendingCustomerEmail(orderData: OrderEmailData
   return result;
 }
 
-export async function sendCustomerConfirmationEmail(orderData: OrderEmailData) {
+export async function sendCustomerConfirmationEmail(
+  orderData: OrderEmailData,
+  options: { pendingVerification?: boolean } = {},
+) {
   const customerEmail = orderData.customer?.email;
   if (!customerEmail) {
     return { success: false, error: "Missing customer email" };
@@ -509,11 +522,20 @@ export async function sendCustomerConfirmationEmail(orderData: OrderEmailData) {
   const mailOptions = {
     from: getEmailFromAddress(),
     to: customerEmail,
-    subject: `Order Confirmation - ${orderData.order_ref || 'N/A'}`,
+    subject: options.pendingVerification
+      ? `We received your order - ${orderData.order_ref || 'N/A'}`
+      : `Order Confirmation - ${orderData.order_ref || 'N/A'}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 10px;">
-        <h2 style="color: #0F1A26; text-align: center;">Order Confirmed!</h2>
-        <p style="font-size: 16px; text-align: center;">Thank you for your order. We'll ship it right away!</p>
+        <h2 style="color: #0F1A26; text-align: center;">${options.pendingVerification ? 'We Received Your Order' : 'Order Confirmed!'}</h2>
+        <p style="font-size: 16px; text-align: center;">${options.pendingVerification
+          ? 'Please confirm the order from the WhatsApp message. We will create the shipment after confirmation.'
+          : "Thank you for your order. We'll ship it right away!"}</p>
+        ${options.pendingVerification ? `
+          <p style="padding:12px;background:#fff8e1;border-radius:10px;color:#7a5a00;text-align:center;font-weight:bold;">
+            Status: Awaiting customer confirmation. This is not a shipping confirmation.
+          </p>
+        ` : ''}
 
         <p style="font-size: 16px;"><strong>Order Reference:</strong> ${orderData.order_ref}</p>
         <p style="font-size: 16px;"><strong>Customer Name:</strong> ${orderData.customer?.first_name || ''} ${orderData.customer?.last_name || ''}</p>
