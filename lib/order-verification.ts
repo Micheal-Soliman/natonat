@@ -3,6 +3,8 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 type VerificationOrder = Record<string, unknown>;
 export type OrderVerificationAction = "confirm" | "cancel";
 
+let cachedWhatsAppPhoneNumberId = "";
+
 export function isOrderVerificationEnabled() {
   return process.env.ORDER_VERIFICATION_ENABLED === "true";
 }
@@ -53,6 +55,45 @@ function normalizeEgyptPhone(value: unknown) {
   if (phone.startsWith("0")) phone = `20${phone.slice(1)}`;
   if (!phone.startsWith("20")) phone = `20${phone}`;
   return phone;
+}
+
+async function resolveWhatsAppPhoneNumberId(configuredId: string, accessToken: string) {
+  if (cachedWhatsAppPhoneNumberId) return cachedWhatsAppPhoneNumberId;
+
+  const headers = { Authorization: `Bearer ${accessToken}` };
+  const directResponse = await fetch(
+    `https://graph.facebook.com/v23.0/${encodeURIComponent(configuredId)}?fields=id,display_phone_number`,
+    { headers, cache: "no-store" },
+  );
+  const directData = await directResponse.json().catch(() => null) as {
+    id?: string;
+    display_phone_number?: string;
+  } | null;
+
+  if (directResponse.ok && directData?.id && directData.display_phone_number) {
+    cachedWhatsAppPhoneNumberId = directData.id;
+    return cachedWhatsAppPhoneNumberId;
+  }
+
+  // Meta exposes the WABA ID and Phone Number ID in adjacent screens. Accept
+  // either value so a WABA ID cannot silently break order confirmations.
+  const listResponse = await fetch(
+    `https://graph.facebook.com/v23.0/${encodeURIComponent(configuredId)}/phone_numbers?fields=id`,
+    { headers, cache: "no-store" },
+  );
+  const listData = await listResponse.json().catch(() => null) as {
+    data?: Array<{ id?: string }>;
+  } | null;
+  const phoneNumberId = listResponse.ok && listData?.data?.length === 1
+    ? String(listData.data[0]?.id || "")
+    : "";
+
+  if (!phoneNumberId) {
+    throw new Error("WHATSAPP_PHONE_NUMBER_ID is not a usable Phone Number ID or single-number WABA ID");
+  }
+
+  cachedWhatsAppPhoneNumberId = phoneNumberId;
+  return cachedWhatsAppPhoneNumberId;
 }
 
 function getOrderTemplateFields(order: VerificationOrder) {
@@ -119,7 +160,17 @@ export async function sendOrderVerificationWhatsApp(
 
   const total = Number(order.amount_egp || 0);
   const fields = getOrderTemplateFields(order);
-  const response = await fetch(`https://graph.facebook.com/v23.0/${phoneNumberId}/messages`, {
+  let resolvedPhoneNumberId: string;
+  try {
+    resolvedPhoneNumberId = await resolveWhatsAppPhoneNumberId(phoneNumberId, accessToken);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Could not resolve WhatsApp Phone Number ID",
+    };
+  }
+
+  const response = await fetch(`https://graph.facebook.com/v23.0/${resolvedPhoneNumberId}/messages`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,

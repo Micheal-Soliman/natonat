@@ -2886,7 +2886,7 @@ export default function AdminDashboardPage() {
 
   const resolveOrderVerification = async (
     order: AdminOrder,
-    action: "confirm" | "cancel",
+    action: "confirm" | "cancel" | "resend",
   ) => {
     const orderRef = getOrderRef(order);
     if (!orderRef) return;
@@ -5936,6 +5936,15 @@ export default function AdminDashboardPage() {
                         )}
                       </button>
                       <div className="mt-3 grid grid-cols-2 gap-2">
+                        {!whatsappSent && (
+                          <button
+                            onClick={() => void resolveOrderVerification(order, "resend")}
+                            disabled={actionLoadingRef === `verification-resend:${orderRef}`}
+                            className="col-span-2 h-9 rounded-xl bg-sky-600 px-2 text-[11px] font-black text-white transition hover:-translate-y-0.5 disabled:opacity-60"
+                          >
+                            {actionLoadingRef === `verification-resend:${orderRef}` ? "Sending..." : "Resend WhatsApp"}
+                          </button>
+                        )}
                         <button
                           onClick={() => void resolveOrderVerification(order, "confirm")}
                           disabled={actionLoadingRef === `verification-confirm:${orderRef}`}
@@ -6395,6 +6404,15 @@ export default function AdminDashboardPage() {
                       <td className="px-5 py-4 align-top">
                         {getStatus(order) === "pending_verification" && (
                           <div className="mb-2 grid gap-2">
+                            {!getString(order.verification_message_sent_at) && (
+                              <button
+                                onClick={() => void resolveOrderVerification(order, "resend")}
+                                disabled={actionLoadingRef === `verification-resend:${orderRef}`}
+                                className="inline-flex h-10 items-center justify-center rounded-2xl bg-sky-600 px-4 text-xs font-black text-white transition hover:-translate-y-0.5 disabled:opacity-60"
+                              >
+                                {actionLoadingRef === `verification-resend:${orderRef}` ? "Sending..." : "Resend WhatsApp"}
+                              </button>
+                            )}
                             <button
                               onClick={() => void resolveOrderVerification(order, "confirm")}
                               disabled={actionLoadingRef === `verification-confirm:${orderRef}`}
