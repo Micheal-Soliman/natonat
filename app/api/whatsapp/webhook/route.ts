@@ -22,6 +22,14 @@ function getString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function normalizePhone(value: unknown) {
+  let phone = getString(value).replace(/\D/g, "");
+  if (phone.startsWith("00")) phone = phone.slice(2);
+  if (phone.startsWith("0")) phone = `20${phone.slice(1)}`;
+  if (phone && !phone.startsWith("20")) phone = `20${phone}`;
+  return phone;
+}
+
 function verifyMetaSignature(rawBody: string, signature: string | null) {
   const appSecret = process.env.WHATSAPP_APP_SECRET || "";
   if (!appSecret || !signature?.startsWith("sha256=")) return false;
@@ -100,6 +108,24 @@ async function findOrderByOutboundMessageId(messageId: string) {
 
 async function findOrderByMessageContext(message: JsonRecord) {
   return findOrderByOutboundMessageId(getString(getRecord(message.context).id));
+}
+
+async function findLatestPendingOrderByCustomerPhone(message: JsonRecord) {
+  const senderPhone = normalizePhone(message.from);
+  if (!senderPhone) return null;
+
+  const orders = await listOrdersFromDatabase(2000);
+  return orders
+    .filter((order) => {
+      const customer = getRecord(order.customer);
+      return getString(order.status).toLowerCase() === "pending_verification" &&
+        normalizePhone(customer.phone) === senderPhone;
+    })
+    .sort((left, right) => {
+      const leftTime = Date.parse(getString(left.created_at) || getString(left.updated_at)) || 0;
+      const rightTime = Date.parse(getString(right.created_at) || getString(right.updated_at)) || 0;
+      return rightTime - leftTime;
+    })[0] || null;
 }
 
 async function storeDeliveryStatus(origin: string, status: JsonRecord) {
@@ -222,23 +248,40 @@ export async function POST(request: Request) {
   const results = [];
   const origin = new URL(request.url).origin;
 
+  console.info("[WhatsApp Webhook] Event received", {
+    messages: messages.length,
+    statuses: statuses.length,
+    hasEntries: Array.isArray(payload.entry) && payload.entry.length > 0,
+  });
+
   for (const status of statuses) {
     results.push(await storeDeliveryStatus(origin, status));
   }
 
   for (const message of messages) {
-    const parsed = parseOrderVerificationPayload(getButtonPayload(message));
+    const buttonPayload = getButtonPayload(message);
+    const parsed = parseOrderVerificationPayload(buttonPayload);
     if (parsed) {
       results.push(await transitionOrder(origin, parsed.orderRef, parsed.action, message));
       continue;
     }
 
     const action = inferActionFromMessage(message);
-    const contextualOrder = action ? await findOrderByMessageContext(message) : null;
+    const contextualOrder = action
+      ? await findOrderByMessageContext(message) || await findLatestPendingOrderByCustomerPhone(message)
+      : null;
     const orderRef = contextualOrder ? getString(contextualOrder.order_ref).toUpperCase() : "";
     if (action && orderRef) {
       results.push(await transitionOrder(origin, orderRef, action, message));
+      continue;
     }
+
+    console.warn("[WhatsApp Webhook] Message was not actionable", {
+      type: getString(message.type),
+      hasButtonPayload: Boolean(buttonPayload),
+      inferredAction: action || "",
+      hasContext: Boolean(getString(getRecord(message.context).id)),
+    });
   }
 
   const failed = results.find((result) => !result.success && Number(result.status || 0) >= 500);

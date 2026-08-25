@@ -85,6 +85,7 @@ const UPDATE_ONLY_SOURCES = new Set([
   "order_verification_whatsapp",
   "order_verification_auto_cancel",
   "verification_pending_email",
+  "verification_initial_notifications",
   "whatsapp_order_verification",
   "whatsapp_delivery_status",
   "admin_order_verification",
@@ -94,6 +95,7 @@ const PROTECTED_VERIFICATION_SOURCES = new Set([
   "order_verification_whatsapp",
   "order_verification_auto_cancel",
   "verification_pending_email",
+  "verification_initial_notifications",
   "whatsapp_order_verification",
   "whatsapp_delivery_status",
   "admin_order_verification",
@@ -1095,59 +1097,49 @@ export async function POST(req: Request) {
       tracking_link: trackingLink
     } as StoredOrder;
 
-    if (
+    const shouldSendInitialVerificationWhatsApp =
       getOrderStatusValue(updatedOrder.status) === "pending_verification" &&
       !updatedOrder.verification_message_sent_at &&
-      !updatedOrder.verification_message_queued_at
-    ) {
-      const queuedAt = new Date().toISOString();
-      updatedOrder = { ...updatedOrder, verification_message_queued_at: queuedAt };
-      const verificationSnapshot = updatedOrder;
-      const appOrigin = new URL(req.url).origin;
-      after(async () => {
-        const result = await sendOrderVerificationWhatsApp(verificationSnapshot);
-        await fetch(`${appOrigin}/api/orders/log`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-order-verification-secret": process.env.ORDER_CONFIRMATION_SECRET || "",
-          },
-          body: JSON.stringify({
-            source: "order_verification_whatsapp",
-            order_ref: orderRef,
-            verification_message_queued_at: "",
-            verification_message_sent_at: result.success ? new Date().toISOString() : "",
-            verification_message_id: result.success ? result.messageId || "" : "",
-            verification_message_error: result.success ? "" : result.error,
-            verification_manual_required: !result.success,
-            updated_at: new Date().toISOString(),
-          }),
-          cache: "no-store",
-        }).catch((error) => console.error("Could not store WhatsApp verification result", error));
-      });
-    }
-
+      !updatedOrder.verification_message_queued_at;
     const pendingEmailNeeds = getPendingVerificationEmailNeeds(updatedOrder);
-    if (
+    const shouldSendInitialVerificationEmails =
       (pendingEmailNeeds.admin || pendingEmailNeeds.customer) &&
-      !updatedOrder.verification_pending_email_queued_at
-    ) {
+      !updatedOrder.verification_pending_email_queued_at;
+
+    if (shouldSendInitialVerificationWhatsApp || shouldSendInitialVerificationEmails) {
       const queuedAt = new Date().toISOString();
-      updatedOrder = { ...updatedOrder, verification_pending_email_queued_at: queuedAt };
-      const pendingEmailSnapshot = updatedOrder;
+      updatedOrder = {
+        ...updatedOrder,
+        verification_message_queued_at: shouldSendInitialVerificationWhatsApp
+          ? queuedAt
+          : updatedOrder.verification_message_queued_at,
+        verification_pending_email_queued_at: shouldSendInitialVerificationEmails
+          ? queuedAt
+          : updatedOrder.verification_pending_email_queued_at,
+      };
+      const notificationSnapshot = updatedOrder;
       const appOrigin = new URL(req.url).origin;
       after(async () => {
-        const [adminResult, customerResult] = await Promise.all([
+        const [whatsAppResult, adminResult, customerResult] = await Promise.all([
+          shouldSendInitialVerificationWhatsApp
+            ? sendOrderVerificationWhatsApp(notificationSnapshot)
+            : Promise.resolve({ success: true, skipped: true }),
           pendingEmailNeeds.admin
-            ? sendOrderEmail(pendingEmailSnapshot, { pendingVerification: true })
+            ? sendOrderEmail(notificationSnapshot, { pendingVerification: true })
             : Promise.resolve({ success: true, skipped: true }),
           pendingEmailNeeds.customer
-            ? sendCustomerConfirmationEmail(pendingEmailSnapshot, { pendingVerification: true })
+            ? sendCustomerConfirmationEmail(notificationSnapshot, { pendingVerification: true })
             : Promise.resolve({ success: true, skipped: true }),
         ]);
         const changedAt = new Date().toISOString();
+        const whatsAppSent = Boolean(
+          shouldSendInitialVerificationWhatsApp && whatsAppResult.success,
+        );
         const adminSent = Boolean(pendingEmailNeeds.admin && adminResult.success);
         const customerSent = Boolean(pendingEmailNeeds.customer && customerResult.success);
+        const whatsAppError = !whatsAppResult.success && "error" in whatsAppResult
+          ? String(whatsAppResult.error || "WhatsApp verification failed")
+          : "";
         const adminError = !adminResult.success && "error" in adminResult
           ? String(adminResult.error || "Admin pending email failed")
           : "";
@@ -1162,19 +1154,30 @@ export async function POST(req: Request) {
             "x-order-verification-secret": process.env.ORDER_CONFIRMATION_SECRET || "",
           },
           body: JSON.stringify({
-            source: "verification_pending_email",
+            source: "verification_initial_notifications",
             order_ref: orderRef,
-            verification_pending_email_queued_at: "",
+            verification_message_queued_at: shouldSendInitialVerificationWhatsApp ? "" : undefined,
+            verification_message_sent_at: whatsAppSent ? changedAt : undefined,
+            verification_message_id:
+              whatsAppSent && "messageId" in whatsAppResult
+                ? whatsAppResult.messageId || ""
+                : undefined,
+            verification_message_error: shouldSendInitialVerificationWhatsApp
+              ? whatsAppError
+              : undefined,
+            verification_manual_required: shouldSendInitialVerificationWhatsApp
+              ? !whatsAppSent
+              : undefined,
+            verification_pending_email_queued_at: shouldSendInitialVerificationEmails ? "" : undefined,
             verification_pending_admin_email_sent_at: adminSent ? changedAt : undefined,
             verification_pending_customer_email_sent_at: customerSent ? changedAt : undefined,
-            verification_pending_email_error: {
-              admin: adminError,
-              customer: customerError,
-            },
+            verification_pending_email_error: shouldSendInitialVerificationEmails
+              ? { admin: adminError, customer: customerError }
+              : undefined,
             updated_at: changedAt,
           }),
           cache: "no-store",
-        }).catch((error) => console.error("Could not store pending verification email result", error));
+        }).catch((error) => console.error("Could not store initial verification results", error));
       });
     }
 
