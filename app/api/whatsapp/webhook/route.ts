@@ -172,10 +172,9 @@ async function transitionOrder(
 
   const currentStatus = getString(order.status).toLowerCase();
   const targetStatus = action === "confirm" ? "confirmed" : "cancelled";
-  if (currentStatus === targetStatus || (action === "confirm" && currentStatus === "shipped")) {
-    return { success: true, status: 200, idempotent: true };
-  }
-  if (currentStatus !== "pending_verification") {
+  const alreadyAtTarget =
+    currentStatus === targetStatus || (action === "confirm" && currentStatus === "shipped");
+  if (!alreadyAtTarget && currentStatus !== "pending_verification") {
     return { success: false, status: 409, error: `Order is ${currentStatus || "not pending"}` };
   }
 
@@ -192,7 +191,7 @@ async function transitionOrder(
     body: JSON.stringify({
       source: "whatsapp_order_verification",
       order_ref: orderRef,
-      status: targetStatus,
+      status: alreadyAtTarget ? currentStatus : targetStatus,
       verification_status: action === "confirm" ? "confirmed" : "cancelled_by_customer",
       verified_at: action === "confirm" ? changedAt : "",
       verification_cancelled_at: action === "cancel" ? changedAt : "",
@@ -209,7 +208,7 @@ async function transitionOrder(
     return { success: false, status: 502, error: error || "Could not update order" };
   }
 
-  return { success: true, status: 200 };
+  return { success: true, status: 200, reconciled: alreadyAtTarget };
 }
 
 export async function GET(request: Request) {

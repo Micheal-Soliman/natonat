@@ -72,10 +72,9 @@ export async function POST(request: Request) {
   }
 
   const targetStatus = action === "confirm" ? "confirmed" : "cancelled";
-  if (currentStatus === targetStatus || (action === "confirm" && currentStatus === "shipped")) {
-    return NextResponse.json({ success: true, idempotent: true, order_ref: orderRef });
-  }
-  if (currentStatus !== "pending_verification") {
+  const alreadyAtTarget =
+    currentStatus === targetStatus || (action === "confirm" && currentStatus === "shipped");
+  if (!alreadyAtTarget && currentStatus !== "pending_verification") {
     return NextResponse.json(
       { error: `Order is ${currentStatus || "not pending verification"}` },
       { status: 409 },
@@ -96,7 +95,7 @@ export async function POST(request: Request) {
     body: JSON.stringify({
       source: "admin_order_verification",
       order_ref: orderRef,
-      status: targetStatus,
+      status: alreadyAtTarget ? currentStatus : targetStatus,
       verification_status: action === "confirm" ? "manually_confirmed" : "manually_cancelled",
       verified_at: action === "confirm" ? changedAt : "",
       verification_cancelled_at: action === "cancel" ? changedAt : "",
@@ -118,6 +117,7 @@ export async function POST(request: Request) {
   return NextResponse.json({
     success: true,
     action,
+    reconciled: alreadyAtTarget,
     order_ref: orderRef,
     message: action === "confirm"
       ? "Order confirmed. Bosta shipment creation is now allowed."
