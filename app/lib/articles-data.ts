@@ -47,7 +47,7 @@ Unlike traditional methods that require measuring width, depth, and height, our 
 
 With the right size cover, your luggage stays protected from scratches, dirt, and rough handling throughout your journey.
     `,
-    image: "/9.png",
+    image: "/articles/choose-luggage-cover-size.webp",
     category: "Travel Tips",
     author: "natOnat Team",
     date: "2024-03-15",
@@ -77,7 +77,7 @@ The stretchy material adapts to different suitcase shapes, ensuring a snug fit e
 ### 5. Affordable Protection
 Why buy expensive hard-shell luggage when you can protect your existing suitcase for a fraction of the cost?
     `,
-    image: "/12.png",
+    image: "/articles/stretchy-luggage-cover-benefits.webp",
     category: "Product Guide",
     author: "natOnat Team",
     date: "2024-03-10",
@@ -143,7 +143,7 @@ Save luggage space by wearing your bulkiest shoes and jacket on the plane.
 
 Protect your investment! A quality luggage cover keeps your suitcase looking new trip after trip.
     `,
-    image: "/13.png",
+    image: "/articles/smart-packing-tips.webp",
     category: "Travel Tips",
     author: "natOnat Team",
     date: "2024-02-28",
@@ -182,7 +182,7 @@ While Cairo is cosmopolitan, modest dress is appreciated, especially when visiti
 
 With the right gear and knowledge, your Cairo adventure will be unforgettable.
     `,
-    image: "/123.png",
+    image: "/articles/cairo-travel-guide.webp",
     category: "Destinations",
     author: "natOnat Team",
     date: "2024-02-20",
@@ -262,7 +262,7 @@ export const articlesAr: Article[] = [
 
 مع الغطاء المناسب، تظل أمتعتك محمية من الخدوش والأوساخ والتعامل الخشن طوال رحلتك.
     `,
-    image: "/9.png",
+    image: "/articles/choose-luggage-cover-size.webp",
     category: "نصائح السفر",
     author: "فريق نت أونات",
     date: "2024-03-15",
@@ -292,7 +292,7 @@ export const articlesAr: Article[] = [
 ### ٥. حماية بأسعار معقولة
 لماذا تشتري حقائب صلبة باهظة الثمن عندما يمكنك حماية حقيبتك الحالية بجزء بسيط من التكلفة؟
     `,
-    image: "/12.png",
+    image: "/articles/stretchy-luggage-cover-benefits.webp",
     category: "دليل المنتجات",
     author: "فريق نت أونات",
     date: "2024-03-10",
@@ -358,7 +358,7 @@ export const articlesAr: Article[] = [
 
 احمِ استثمارك! غطاء أمتعة عالي الجودة يحافظ على حقيبتك جديدة في كل رحلة.
     `,
-    image: "/13.png",
+    image: "/articles/smart-packing-tips.webp",
     category: "نصائح السفر",
     author: "فريق نت أونات",
     date: "2024-02-28",
@@ -397,7 +397,7 @@ export const articlesAr: Article[] = [
 
 مع المعدات والمعرفة الصحيحة، ستكون مغامرتك في القاهرة لا تُنسى.
     `,
-    image: "/123.png",
+    image: "/articles/cairo-travel-guide.webp",
     category: "وجهات",
     author: "فريق نت أونات",
     date: "2024-02-20",

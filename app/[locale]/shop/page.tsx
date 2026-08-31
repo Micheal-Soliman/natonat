@@ -17,7 +17,6 @@ import { useCatalogProducts } from "@/app/lib/catalog-context";
 import { useSizeGuideSizes } from "@/app/lib/site-settings-context";
 import { useCart } from "@/app/lib/cart-context";
 import { getStockLabel, isProductOutOfStock, isProductSizeOutOfStock } from "@/lib/product-stock";
-import { ProductComparisonTable } from "@/app/components/product-comparison-table";
 
 function ShopContent() {
   const t = useTranslations('shop');
@@ -377,8 +376,6 @@ function ShopContent() {
             </div>
           </div>
         </div>
-
-        {activeCategory === "luggage-covers" && <ProductComparisonTable />}
 
         <div ref={ref} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="flex gap-8">

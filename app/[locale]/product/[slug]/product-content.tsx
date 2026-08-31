@@ -62,6 +62,65 @@ type ProductVideoItem = {
   label?: string;
 };
 
+function DeferredProductVideo({
+  src,
+  poster,
+  className,
+}: {
+  src: string;
+  poster?: string;
+  className: string;
+}) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [shouldLoad, setShouldLoad] = useState(false);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || shouldLoad) return;
+
+    if (!("IntersectionObserver" in window)) {
+      setShouldLoad(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        setShouldLoad(true);
+        observer.disconnect();
+      },
+      {
+        rootMargin: "240px 0px 240px 0px",
+        threshold: 0.35,
+      },
+    );
+
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [shouldLoad]);
+
+  return (
+    <div ref={containerRef} className="absolute inset-0 z-10">
+      {shouldLoad ? (
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          controls
+          preload="metadata"
+          className={className}
+          poster={poster}
+        >
+          <source src={src} type={src.toLowerCase().endsWith(".mov") ? "video/quicktime" : "video/mp4"} />
+          <track kind="captions" src="/captions/silent-video.vtt" srcLang="en" label="English captions" />
+          Your browser does not support the video tag.
+        </video>
+      ) : null}
+    </div>
+  );
+}
+
 const getNestedProductMessage = (source: unknown, path: string): unknown => {
   if (!source || typeof source !== "object") return undefined;
 
@@ -202,21 +261,11 @@ function ProductVideoSection({
                         loading="lazy"
                         quality={45}
                       />
-                      <video
-                        autoPlay
-                        muted
-                        loop
-                        playsInline
-                        controls
-                        preload="metadata"
-                        className={`${videoClassName} relative z-10 bg-transparent`}
+                      <DeferredProductVideo
+                        src={video.src}
                         poster={video.poster}
-                      >
-                        <source src={video.src} type="video/mp4" />
-                        <source src={video.src} type="video/quicktime" />
-                        <track kind="captions" src="/captions/silent-video.vtt" srcLang="en" label="English captions" />
-                        Your browser does not support the video tag.
-                      </video>
+                        className={`${videoClassName} bg-transparent`}
+                      />
                     </div>
 
                     {video.label && (
@@ -247,21 +296,13 @@ function ProductVideoSection({
                   quality={50}
                 />
               )}
-              <video
-                autoPlay
-                muted
-                loop
-                playsInline
-                controls
-                preload="metadata"
-                className={`${videoClassName} relative z-10 bg-transparent`}
-                poster={poster}
-              >
-                {src && <source src={src} type="video/mp4" />}
-                {src && <source src={src} type="video/quicktime" />}
-                <track kind="captions" src="/captions/silent-video.vtt" srcLang="en" label="English captions" />
-                Your browser does not support the video tag.
-              </video>
+              {src && (
+                <DeferredProductVideo
+                  src={src}
+                  poster={poster}
+                  className={`${videoClassName} bg-transparent`}
+                />
+              )}
             </div>
           )}
 
@@ -2390,7 +2431,7 @@ export default function ProductPageContent({
               title={t('videoSection.title')}
               subtitle={t('videoSection.passportSubtitle')}
               poster="/passport%20wallet/Cognac%20brown/1.png"
-              src="/passport%20wallet/Wallet%20landscape%20without%20logo.mov"
+              src="/passport%20wallet/Wallet%20landscape%20optimized.mp4"
               fullWidth
             />
           )}
@@ -2400,7 +2441,7 @@ export default function ProductPageContent({
               title={t('videoSection.title')}
               subtitle={t('videoSection.subtitle')}
               poster="/packOnat/Black/1.png"
-              src="/packOnat/Cloth%20case%20landscape%20without%20logo.mov"
+              src="/packOnat/Cloth%20case%20landscape%20optimized.mp4"
               fullWidth
               videoFit="contain"
             />

@@ -607,52 +607,6 @@
       "4": "Wheels remain free for easy rolling",
       "title": "Why You'll Love It"
     },
-    "comparison": {
-      "eyebrow": "Quality is the difference",
-      "title": "Why Choose natOnat?",
-      "subtitle": "A clearer look at what separates natOnat from ordinary alternatives.",
-      "feature": "Feature",
-      "bestChoice": "Best Choice",
-      "natonat": "natOnat",
-      "competitors": "Other Competitors",
-      "rows": {
-        "elastic": {
-          "feature": "Elastic Quality",
-          "natonat": "World-class Tommy-grade elastic",
-          "competitors": "Standard low-quality elastic"
-        },
-        "zipper": {
-          "feature": "Zipper System",
-          "natonat": "Dual premium zippers with refined accessories",
-          "competitors": "Single zipper or none"
-        },
-        "fabric": {
-          "feature": "Fabric Quality",
-          "natonat": "Custom-manufactured exclusive fabric",
-          "competitors": "Generic off-the-shelf spandex"
-        },
-        "print": {
-          "feature": "Print Quality",
-          "natonat": "Market-ceiling print quality",
-          "competitors": "Standard print that fades quickly"
-        },
-        "designs": {
-          "feature": "Design Variety",
-          "natonat": "30+ exclusive designs",
-          "competitors": "Limited and repetitive designs"
-        },
-        "ecosystem": {
-          "feature": "Product Ecosystem",
-          "natonat": "Cover, PackOnat, and passport wallet ecosystem",
-          "competitors": "Single product with no ecosystem"
-        },
-        "guarantee": {
-          "feature": "Quality Guarantee",
-          "natonat": "Full guarantee with professional support",
-          "competitors": "No clear quality promise"
-        }
-      }
-    },
     "features": {
       "title": "Why You'll Love It",
       "items": [
