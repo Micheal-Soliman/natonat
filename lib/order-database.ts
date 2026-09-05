@@ -1,5 +1,7 @@
 type OrderRecord = Record<string, unknown>;
 
+const ORDER_DATABASE_TIMEOUT_MS = 4_000;
+
 type SupabaseOrderRow = {
   order_ref: string;
   source?: string | null;
@@ -303,6 +305,7 @@ export async function upsertOrderToDatabase(order: OrderRecord) {
     },
     body: JSON.stringify(row),
     cache: "no-store",
+    signal: AbortSignal.timeout(ORDER_DATABASE_TIMEOUT_MS),
   });
 
   if (!res.ok) {
@@ -326,6 +329,7 @@ export async function fetchOrderFromDatabaseIncludingDeleted(orderRef: string) {
     method: "GET",
     headers: getHeaders(config.serviceRoleKey),
     cache: "no-store",
+    signal: AbortSignal.timeout(ORDER_DATABASE_TIMEOUT_MS),
   });
 
   if (!res.ok) return null;
@@ -353,6 +357,7 @@ export async function deleteOrderFromDatabase(orderRef: string) {
       prefer: "return=minimal",
     },
     cache: "no-store",
+    signal: AbortSignal.timeout(ORDER_DATABASE_TIMEOUT_MS),
   });
 
   if (!res.ok) {
@@ -402,6 +407,7 @@ export async function markOrderDeletedInDatabase(orderRef: string) {
     },
     body: JSON.stringify(row),
     cache: "no-store",
+    signal: AbortSignal.timeout(ORDER_DATABASE_TIMEOUT_MS),
   });
 
   if (!res.ok) {
@@ -425,6 +431,7 @@ export async function listOrdersFromDatabase(limit = 500) {
     method: "GET",
     headers: getHeaders(config.serviceRoleKey),
     cache: "no-store",
+    signal: AbortSignal.timeout(ORDER_DATABASE_TIMEOUT_MS),
   });
 
   if (!res.ok) {

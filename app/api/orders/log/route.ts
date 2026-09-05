@@ -28,6 +28,7 @@ import {
 import { createBostaDelivery } from "@/lib/bosta";
 import type { Product } from "@/lib/products";
 import { isOrderVerificationEnabled, sendOrderVerificationWhatsApp } from "@/lib/order-verification";
+import { fetchOrderFromGoogleSheets, fetchOrderFromStorage } from "@/lib/order-storage";
 
 type OrderLogBody = Record<string, unknown>;
 type OrderHistoryEntry = {
@@ -688,28 +689,6 @@ async function enrichOrderItemsFromCms(body: OrderLogBody) {
   };
 }
 
-async function fetchOrderFromGoogleSheets(orderRef: string) {
-  const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL;
-  if (!webhookUrl) return null;
-
-  const url = new URL(webhookUrl);
-  url.searchParams.set("order_ref", orderRef);
-
-  const res = await fetch(url.toString(), {
-    method: "GET",
-    cache: "no-store",
-  });
-
-  if (!res.ok) return null;
-
-  const data = (await res.json()) as {
-    success?: boolean;
-    order?: OrderLogBody;
-  };
-
-  return data.success && data.order ? data.order : null;
-}
-
 // GET endpoint to retrieve order by reference
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -722,15 +701,7 @@ export async function GET(req: Request) {
     );
   }
 
-  const databaseOrder = await fetchOrderFromDatabaseIncludingDeleted(order_ref);
-  if (isDeletedOrderRecord(databaseOrder)) {
-    return NextResponse.json(
-      { error: "Order not found" },
-      { status: 404 }
-    );
-  }
-
-  const order = databaseOrder || await fetchOrderFromGoogleSheets(order_ref);
+  const order = await fetchOrderFromStorage(order_ref);
   
   if (!order) {
     return NextResponse.json(
@@ -1019,7 +990,21 @@ export async function POST(req: Request) {
 
   const orderRef = body.order_ref as string | undefined;
   if (orderRef) {
-    const databaseExisting = (await fetchOrderFromDatabaseIncludingDeleted(orderRef)) as StoredOrder | null;
+    const [databaseExistingResult, sheetExistingResult] = await Promise.allSettled([
+      fetchOrderFromDatabaseIncludingDeleted(orderRef),
+      isInitialCardCheckout ? Promise.resolve(null) : fetchOrderFromGoogleSheets(orderRef),
+    ]);
+    const databaseExisting = databaseExistingResult.status === "fulfilled"
+      ? databaseExistingResult.value as StoredOrder | null
+      : null;
+    if (databaseExistingResult.status === "rejected") {
+      console.error("Could not read existing Supabase order; continuing with Google Sheets", {
+        order_ref: orderRef,
+        error: databaseExistingResult.reason instanceof Error
+          ? databaseExistingResult.reason.message
+          : String(databaseExistingResult.reason),
+      });
+    }
     if (isDeletedOrderRecord(databaseExisting)) {
       return NextResponse.json({
         success: true,
@@ -1031,9 +1016,9 @@ export async function POST(req: Request) {
 
     const existing =
       databaseExisting ||
-      (isInitialCardCheckout
-        ? undefined
-        : ((await fetchOrderFromGoogleSheets(orderRef)) as StoredOrder | null)) ||
+      (sheetExistingResult.status === "fulfilled"
+        ? sheetExistingResult.value as StoredOrder | null
+        : null) ||
       undefined;
 
     // New checkout timestamps must come from our server. Customer devices can
@@ -1390,7 +1375,7 @@ export async function POST(req: Request) {
   let databaseStored = false;
   let databaseError = "";
 
-  if (orderRef && databaseConfigured) {
+  if (orderRef && databaseConfigured && (fastStore || !webhookUrl)) {
     try {
       await upsertOrderToDatabase(body as OrderLogBody);
       databaseStored = true;
@@ -1440,11 +1425,35 @@ export async function POST(req: Request) {
   let sheetsStored = false;
   let sheetsError = "";
 
-  if (webhookUrl) {
-    const result = await mirrorOrderToGoogleSheets(webhookUrl, body);
-    sheetsResponse = result.response;
-    sheetsStored = result.stored;
-    sheetsError = result.error;
+  const [databaseWriteResult, sheetsWriteResult] = await Promise.allSettled([
+    orderRef && databaseConfigured && !databaseStored
+      ? upsertOrderToDatabase(body as OrderLogBody)
+      : Promise.resolve({ skipped: true }),
+    webhookUrl
+      ? mirrorOrderToGoogleSheets(webhookUrl, body)
+      : Promise.resolve(null),
+  ]);
+
+  if (databaseWriteResult.status === "fulfilled" && orderRef && databaseConfigured) {
+    databaseStored = true;
+  } else if (databaseWriteResult.status === "rejected") {
+    databaseError = databaseWriteResult.reason instanceof Error
+      ? databaseWriteResult.reason.message
+      : String(databaseWriteResult.reason);
+    console.error("Failed to write order to Supabase", {
+      order_ref: orderRef,
+      error: databaseError,
+    });
+  }
+
+  if (sheetsWriteResult.status === "fulfilled" && sheetsWriteResult.value) {
+    sheetsResponse = sheetsWriteResult.value.response;
+    sheetsStored = sheetsWriteResult.value.stored;
+    sheetsError = sheetsWriteResult.value.error;
+  } else if (sheetsWriteResult.status === "rejected") {
+    sheetsError = sheetsWriteResult.reason instanceof Error
+      ? sheetsWriteResult.reason.message
+      : String(sheetsWriteResult.reason);
   }
 
   if (!databaseStored && !sheetsStored) {
@@ -1528,6 +1537,16 @@ export async function POST(req: Request) {
     ok: true,
     data: sheetsResponse,
     order_ref: orderRef,
+    shipment: (() => {
+      const shipment = (body.bosta || body.shipment || body.aramex) as StoredOrder["bosta"] | undefined;
+      return {
+        success: Boolean(shipment?.trackingNumber || shipment?.guid),
+        trackingNumber: shipment?.trackingNumber || "",
+        guid: shipment?.guid || "",
+        error: getNestedString(shipment, "error"),
+        status: getNestedString(shipment, "status"),
+      };
+    })(),
     storage: {
       supabase: databaseStored ? "stored" : databaseConfigured ? "failed" : "not_configured",
       google_sheets: sheetsStored ? "stored" : webhookUrl ? "failed" : "not_configured",

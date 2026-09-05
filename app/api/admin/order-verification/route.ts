@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { isAdminAuthorized } from "@/lib/admin-auth";
-import { fetchOrderFromDatabase } from "@/lib/order-database";
+import { fetchOrderFromStorage } from "@/lib/order-storage";
 import {
   sendOrderVerificationWhatsApp,
   type OrderVerificationAction,
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "orderRef and a valid action are required" }, { status: 400 });
   }
 
-  const order = await fetchOrderFromDatabase(orderRef);
+  const order = await fetchOrderFromStorage(orderRef);
   if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
 
   const currentStatus = String(order.status || "").toLowerCase();
@@ -105,11 +105,35 @@ export async function POST(request: Request) {
     }),
     cache: "no-store",
   });
-  const result = await response.json().catch(() => ({}));
+  const result = await response.json().catch(() => ({})) as {
+    error?: string;
+    shipment?: {
+      success?: boolean;
+      trackingNumber?: string;
+      guid?: string;
+      error?: string;
+      status?: string;
+    };
+  };
 
   if (!response.ok) {
     return NextResponse.json(
       { error: "Could not update order verification", details: result },
+      { status: 502 },
+    );
+  }
+
+  const requiresShipment =
+    action === "confirm" && String(order.delivery_method || "").toLowerCase() === "delivery";
+  const trackingNumber = result.shipment?.trackingNumber || result.shipment?.guid || "";
+  if (requiresShipment && !trackingNumber) {
+    return NextResponse.json(
+      {
+        error: "Order confirmed, but Bosta shipment creation failed",
+        details: result.shipment?.error || result.shipment?.status || "Bosta did not return a tracking number",
+        order_ref: orderRef,
+        confirmed: true,
+      },
       { status: 502 },
     );
   }
@@ -120,7 +144,9 @@ export async function POST(request: Request) {
     reconciled: alreadyAtTarget,
     order_ref: orderRef,
     message: action === "confirm"
-      ? "Order confirmed. Bosta shipment creation is now allowed."
+      ? trackingNumber
+        ? `Order confirmed and Bosta shipment created: ${trackingNumber}.`
+        : "Order confirmed. No courier shipment is required."
       : refundRequired
         ? "Order cancelled. No Bosta shipment was created; the paid amount needs refund review."
         : "Order cancelled. No Bosta shipment was created.",
